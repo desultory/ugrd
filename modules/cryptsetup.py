@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '0.2.0'
+__version__ = '0.2.5'
 
 
 def configure_library_dir(self):
@@ -18,7 +18,9 @@ def crypt_init(self):
         self.logger.debug("Processing root device: %s" % root_device)
         key_type = parameters.get('key_type', self.config_dict.get('key_type'))
         partition_location_cmd = f"blkid -t UUID='{parameters['uuid']}' -s TYPE -o device"
+        out += [f"echo 'Attempting to unlock device: {root_device}'"]
         if key_type == 'gpg':
+            out += [f"echo 'Enter passphrase for key file: {parameters['key_file']}'"]
             out += [f"gpg --decrypt {parameters['key_file']} | cryptsetup open --key-file - $({partition_location_cmd}) {root_device}"]
         else:
             out += [f"cryptsetup open --key-file {parameters['key_file']} $({partition_location_cmd}) {root_device}"]
