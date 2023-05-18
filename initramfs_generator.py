@@ -133,6 +133,7 @@ class InitramfsGenerator:
         Loads the config from the specified yaml file
         """
         with open(self.config_filename, 'r') as config_file:
+            self.logger.info("Loading config file: %s" % config_file.name)
             raw_config = safe_load(config_file)
 
         # Process into the config dict, it should handle parsing

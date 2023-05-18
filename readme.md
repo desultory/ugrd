@@ -2,10 +2,17 @@
 
 This project is a framework which can be used to generate an initramfs.
 
-Executing `python ./main.py` will read the config from `config.yaml` and use that to generate an initramfs.
+Executing `./main.py` will read the config from `config.yaml` and use that to generate an initramfs.
 
 The goal of the project was to design one that can be used to enter GPG keys for LUKS keyfiles over serial, to boot a btrfs raided filesystem.
 
+## Usage
+
+To use this script, configure `config.yaml` to meet specifications and run `./main.py` as root.
+
+Another config file can be used by passing it as an argument to `main.py`.
+
+The example config can be used with `./main.py example_config.yaml`
 
 ## Configuration
 
@@ -36,7 +43,7 @@ All entries in the `paths` list will be created as folders under the `./initramf
 They should not start with a leading /
 
 
-### Modules
+### modules
 
 This file contains a list of modules which will be loaded, such as `base`, `serial` or `crypsetup`.
 
@@ -47,7 +54,7 @@ The order in which modules/directives are loaded is very important!
 All of the config could be placed in a single file, but it makes more sense to organize it.
 
 
-### Imports
+### imports
 
 The most powerful part of a module is the imports.
 
