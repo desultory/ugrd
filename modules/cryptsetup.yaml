@@ -1,0 +1,16 @@
+imports:
+  init_pre:
+    cryptsetup:
+      - configure_library_dir
+  init_main:
+    cryptsetup:
+      - crypt_init
+  build_tasks:
+    cryptsetup:
+      - copy_libgcc
+
+binaries:
+  - cryptsetup
+
+paths:
+  - usr/lib64

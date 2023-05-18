@@ -1,0 +1,6 @@
+initramfs/*
+*.swp
+*.swo
+__pycache__/*
+*.pyc
+config.yaml

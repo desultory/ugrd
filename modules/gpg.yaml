@@ -1,0 +1,14 @@
+imports:
+  init_pre:
+    gpg:
+      - symlink_pinentry
+
+binaries:
+  - ln
+  - gpg
+  - gpg-agent
+  - pinentry-tty
+  - tty
+
+paths:
+  - usr/bin

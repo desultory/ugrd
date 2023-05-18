@@ -1,0 +1,8 @@
+imports:
+  custom_init:
+    serial:
+      - custom_init
+
+binaries:
+  - agetty
+

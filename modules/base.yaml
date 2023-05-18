@@ -1,0 +1,54 @@
+imports:
+  config_processing:
+    base:
+      - _process_mounts
+  build_tasks:
+    base:
+      - generate_fstab
+  init_pre:
+    base:
+      - mount_fstab
+  init_late:
+    base:
+      - mount_root
+  init_final:
+    base:
+      - clean_mounts
+      - switch_root
+
+shebang: '#!/bin/bash'
+
+binaries:
+  - bash
+  - ls
+  - cat
+  - lsblk
+  - blkid
+  - mount
+  - umount
+  - switch_root
+
+paths:
+  - bin
+  - boot
+  - dev
+  - etc
+  - lib
+  - lib64
+  - mnt/root
+  - root
+  - run
+  - sbin
+  - sys
+
+mounts:
+  proc:
+    type: proc
+    source: proc
+  sys:
+    type: sysfs
+    source: sysfs
+  dev:
+    type: devtmpfs
+    source: devtmpfs
+

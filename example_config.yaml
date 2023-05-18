@@ -1,0 +1,33 @@
+modules:
+  - base
+  - serial
+  - cryptsetup
+  - gpg
+  - btrfs
+
+root_mount:
+  label: rootfs
+  uuid: 6f590517-3a29-477c-8200-e7e8cee7e342
+
+serial:
+  ttyS0:
+    baud: 115200
+    type: vt100
+    local: true
+
+key_type: gpg
+
+mounts:
+  boot:
+    source:
+      uuid: F3C7-4935
+    type: vfat
+
+root_devices:
+  drive1:
+    uuid: 26fc4a31-3303-4696-9805-c545af115110 
+    key_file: /boot/keys/key1.gpg
+  crypt2:
+    uuid: dddfddfa-9fab-4886-ac7e-39dcbf97f25a 
+    key_file: /boot/keys/key2.gpg
+

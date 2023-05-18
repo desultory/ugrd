@@ -1,0 +1,7 @@
+imports:
+  init_main:
+    btrfs:
+      - btrfs_scan
+
+binaries:
+  - btrfs
