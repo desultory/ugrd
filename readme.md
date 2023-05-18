@@ -7,9 +7,20 @@ Executing `python ./main.py` will read the config from `config.yaml` and use tha
 The goal of the project was to design one that can be used to enter GPG keys for LUKS keyfiles over serial, to boot a btrfs raided filesystem.
 
 
-## Connfiguration
+## Configuration
 
 The main configuration file is `config.yaml`
+
+### General config
+
+#### out_dir
+
+Setting `out_dir` changes where the script writes the output files, it defaults to `initramfs` in the local dir.
+
+#### clean
+
+Setting `clean` to `true` makes the script clean the output directory prior to generating it.
+
 
 ### binaries
 

@@ -62,7 +62,7 @@ class InitramfsConfigDict(dict):
             self[name][key] = value
             self.logger.info("Set %s[%s] to: %s" % (name, key, value))
         else:
-            self.logger.warning("%s[%s] is already set" % (name, key))
+            self.logger.warning("%s[%s] already set" % (name, key))
 
     @handle_plural
     def update_list(self, name: str, value: str):
@@ -73,7 +73,7 @@ class InitramfsConfigDict(dict):
             self[name].append(value)
             self.logger.info("Added '%s' to %s" % (value, name))
         else:
-            self.logger.warning("%s is already defined: %s" % (name, value))
+            self.logger.warning("%s already defined: %s" % (name, value))
 
     @handle_plural
     def _process_binaries(self, binary):
@@ -141,6 +141,9 @@ class InitramfsGenerator:
             self.config_dict[config] = value
 
         self.logger.debug("Loaded config: %s" % self.config_dict)
+
+        for parameter in ['out_dir', 'clean']:
+            setattr(self, parameter, self.config_dict.get(parameter, getattr(self, parameter)))
 
     def build_structure(self):
         """

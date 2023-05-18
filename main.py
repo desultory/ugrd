@@ -6,5 +6,5 @@ import logging
 
 
 if __name__ == '__main__':
-    logging.getLogger().setLevel(5)
-    generator = InitramfsGenerator(clean=False)
+    logging.getLogger().setLevel(20)
+    generator = InitramfsGenerator()
