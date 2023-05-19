@@ -40,7 +40,7 @@ All entires specified in the `binaries` list will be imported into the initramfs
 
 All entries in the `paths` list will be created as folders under the `./initramfs` directory.
 
-They should not start with a leading /
+They should not start with a leading `/`
 
 
 ### modules
@@ -56,14 +56,19 @@ All of the config could be placed in a single file, but it makes more sense to o
 
 ### imports
 
-The most powerful part of a module is the imports.
+The most powerful part of a module is the `imports` directive.
 
 Imports are used to hook into the general processing scheme, and become part of the main `InitramfsGenerator` object.
 
+Portions are loaded into the InitramfsGenerator's `config_dict` which is an `InitramfsConfigDict`
+
+Imported functions have access to the entire `self` scope, giving them full control of whatever other modules are loaded when they are executed, and the capability to dynamically create new functions.
+
+This script should be executed as root, to have access to all files and libraries required to boot, so special care should be taken when loading and creating modules. 
 
 #### config_processing
 
-These imports are very special, they can be used to change how parameters are parsed.
+These imports are very special, they can be used to change how parameters are parsed by the internal `config_dict`.
 
 A good example of this is in `base.py`:
 
@@ -79,7 +84,9 @@ def _process_mounts(self, key, mount_config):
 
 This module manages mount management, and loads new mounts into fstab objects, also defined in the base module.
 
-The name of it is important, it must be formatted like `_process_{name}` where the name is the root variable name in the yaml config.
+The name of `config_prcessing` functions is very important, it must be formatted like `_process_{name}` where the name is the root variable name in the yaml config.
+
+A new root varaible named `oops` could be defined, and a function `_process_oops` could be created and imported, raising an error when this vlaue is found, for example.
 
 This module is loaded in the imports section of the `base.yaml` file:
 
@@ -114,11 +121,15 @@ The `base` module contains one for generating the fstab using mounts loaded into
 
 By default, the specified init hooks are: `'init_pre', 'init_main', 'init_late', 'init_final'`
 
-When the init scripts are generated, functions in these lists (in the config) will be called to generate the init scripts.
+These hooks are defined under the `init_types` list in the `InitramfsGenerator` object.
 
-Each function should return a list of strings containing the shell lines.
+When the init scripts are generated, functions under dicts in the config defined by the names in this list will be called to generate the init scripts.
 
-The general procedure for generating the init is to write the chosen `shebang`, build in `init_pre`, then everything but `init_final`, then finally `init_final`.  These init portions are added to one file.
+This list can be updated to add or disable portions.  The order is important, as most internal hooks use `init_pre` and `init_final` to wrap every other init category, in order.
+
+Each function should return a list of strings containing the shell lines, which will be written to the `init` file.
+
+A general overview of the procedure used for generating the init is to write the chosen `shebang`, build in `init_pre`, then everything but `init_final`, then finally `init_final`.  These init portions are added to one file.
 
 #### custom_init
 
@@ -130,4 +141,43 @@ Like with the typical flow, it starts by creating the base `init` file with the 
 
 Finally, like the standard init build, the `init_final` is written to the main `init` file.
 
+```
+imports:
+  custom_init:
+    serial:
+      - custom_init
 
+
+```
+
+```
+def custom_init(self):
+    """
+    init override
+    """
+    from os import chmod
+    with open(f"{self.out_dir}/init_main.sh", 'w', encoding='utf-8') as main_init:
+        main_init.write("#!/bin/bash\n")
+        [main_init.write(f"{line}\n") for line in self.generate_init_main()]
+    chmod(f"{self.out_dir}/init_main.sh", 0o755)
+    return serial_init(self)
+
+
+def serial_init(self):
+    """
+    start agetty
+    """
+    try:
+        out = list()
+        for name, config in self.config_dict['serial'].items():
+            if config.get('local'):
+                out.append(f"agetty --autologin root --login-program /init_main.sh -L {config['baud']} {name} {config['type']}")
+            else:
+                out.append(f"agetty --autologin root --login-program /init_main.sh {config['baud']} {name} {config['type']}")
+        return out
+
+```
+
+This function creates a new `init_main.sh` file which contains everything but the `init_pre` and `init_final` bits, and returns the ouput of the `serial_init` function which references that new `init_main.sh` file.
+
+The end result is the init script starting a shell in the location specified using the `serial` config dict which calls and runs the main portion of the init.
