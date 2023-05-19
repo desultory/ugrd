@@ -234,3 +234,19 @@ class ColorLognameFormatter(logging.Formatter):
             pass
 
         return format_str
+
+
+@class_logger
+class NoDupFlatList(list):
+    """
+    List that automatically filters duplicate elements
+    """
+    __version__ = "0.1.0"
+
+    @handle_plural
+    def append(self, item):
+        if item not in self:
+            self.logger.debug("Adding list item: %s" % item)
+            super().append(item)
+        else:
+            self.logger.warning("List item already exists: %s" % item)

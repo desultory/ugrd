@@ -1,7 +1,8 @@
 from subprocess import run
 from yaml import safe_load
 
-from zen_custom import class_logger, handle_plural
+from lib_sniffer import LibrarySniffer
+from zen_custom import class_logger, handle_plural, NoDupFlatList
 
 
 def calculate_dependencies(binary):
@@ -21,21 +22,22 @@ class InitramfsConfigDict(dict):
         This dict does not act like a normal dict, setitem is designed to append when the overrides are used
         These overrides exist for binaries, dependencies, and modules
     """
-    builtin_parameters = {'binaries': list,
-                          'dependencies': list,
-                          'paths': list,
-                          'modules': list,
+    builtin_parameters = {'binaries': NoDupFlatList,
+                          'dependencies': NoDupFlatList,
+                          'paths': NoDupFlatList,
+                          'modules': NoDupFlatList,
                           'mounts': dict,
                           'imports': dict}
 
     def __init__(self, *args, **kwargs):
+        self.lib_sniffer = LibrarySniffer()
         for parameter, default_type in self.builtin_parameters.items():
             super().__setitem__(parameter, default_type())
 
     def __setitem__(self, key, value):
         if key in self.builtin_parameters:
-            if self.builtin_parameters[key] is list:
-                self.update_list(key, value)
+            if self.builtin_parameters[key] is NoDupFlatList:
+                self[key].append(value)
             elif self.builtin_parameters[key] is dict:
                 self.update_dict(key, value)
             elif self.builtin_parameters[key] is str:
@@ -63,17 +65,6 @@ class InitramfsConfigDict(dict):
             self.logger.info("Set %s[%s] to: %s" % (name, key, value))
         else:
             self.logger.warning("%s[%s] already set" % (name, key))
-
-    @handle_plural
-    def update_list(self, name: str, value: str):
-        """
-        Updates a list in the internal dictionary
-        """
-        if value not in self[name]:
-            self[name].append(value)
-            self.logger.info("Added '%s' to %s" % (value, name))
-        else:
-            self.logger.warning("%s already defined: %s" % (name, value))
 
     @handle_plural
     def _process_binaries(self, binary):
