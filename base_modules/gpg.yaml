@@ -1,6 +1,6 @@
 imports:
   init_pre:
-    gpg:
+    base_modules.gpg:
       - symlink_pinentry
 
 binaries:

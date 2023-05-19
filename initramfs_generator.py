@@ -91,7 +91,7 @@ class InitramfsConfigDict(dict):
         """
         from importlib import import_module
         for module_name, function_names in import_value.items():
-            function_list = [getattr(import_module(f"modules.{module_name}"), function_name) for function_name in function_names]
+            function_list = [getattr(import_module(f"{module_name}"), function_name) for function_name in function_names]
             if not isinstance(self['imports'][import_type], list):
                 self['imports'][import_type] = list()
             self['imports'][import_type] += function_list
@@ -103,7 +103,7 @@ class InitramfsConfigDict(dict):
         processes a single module into the config
         takes list with decorator
         """
-        with open(f"modules/{module}.yaml", 'r') as module_file:
+        with open(f"{module.replace('.', '/')}.yaml", 'r') as module_file:
             module_config = safe_load(module_file)
         if 'binaries' not in module_config:
             self.logger.warning("No binaries passed as part of module: %s" % module_config)

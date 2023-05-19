@@ -1,6 +1,6 @@
 imports:
   init_main:
-    btrfs:
+    base_modules.btrfs:
       - btrfs_scan
 
 binaries:

@@ -1,6 +1,6 @@
 imports:
   custom_init:
-    serial:
+    base_modules.serial:
       - custom_init
 
 binaries:

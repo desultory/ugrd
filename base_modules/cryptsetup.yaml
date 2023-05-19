@@ -1,12 +1,12 @@
 imports:
   init_pre:
-    cryptsetup:
+    base_modules.cryptsetup:
       - configure_library_dir
   init_main:
-    cryptsetup:
+    base_modules.cryptsetup:
       - crypt_init
   build_tasks:
-    cryptsetup:
+    base_modules.cryptsetup:
       - copy_libgcc
 
 binaries:

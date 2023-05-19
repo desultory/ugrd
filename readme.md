@@ -45,7 +45,9 @@ They should not start with a leading `/`
 
 ### modules
 
-This file contains a list of modules which will be loaded, such as `base`, `serial` or `crypsetup`.
+The modules config directive should contain a list with names specifying the path of which will be loaded, such as `base_modules.base`, `base_modules.serial` or `base_modules.crypsetup`.
+
+Another directory for modules can be created, the naming scheme is similar to how python imports work.
 
 When a module is loaded, `initramfs_generator.py` will try to load that yaml file, parsing it in the same manner `config.yaml` is parsed.
 
@@ -61,6 +63,8 @@ The most powerful part of a module is the `imports` directive.
 Imports are used to hook into the general processing scheme, and become part of the main `InitramfsGenerator` object.
 
 Portions are loaded into the InitramfsGenerator's `config_dict` which is an `InitramfsConfigDict`
+
+`imports` are defined with the first key being the nameof the import type, the value being the path of the python module to be imported, which has a list containing functions to be imported, in order.
 
 Imported functions have access to the entire `self` scope, giving them full control of whatever other modules are loaded when they are executed, and the capability to dynamically create new functions.
 

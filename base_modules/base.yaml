@@ -1,18 +1,18 @@
 imports:
   config_processing:
-    base:
+    base_modules.base:
       - _process_mounts
   build_tasks:
-    base:
+    base_modules.base:
       - generate_fstab
   init_pre:
-    base:
+    base_modules.base:
       - mount_fstab
   init_late:
-    base:
+    base_modules.base:
       - mount_root
   init_final:
-    base:
+    base_modules.base:
       - clean_mounts
       - switch_root
 

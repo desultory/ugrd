@@ -1,9 +1,9 @@
 modules:
-  - base
-  - serial
-  - cryptsetup
-  - gpg
-  - btrfs
+  - base_modules.base
+  - base_modules.serial
+  - base_modules.cryptsetup
+  - base_modules.gpg
+  - base_modules.btrfs
 
 root_mount:
   label: rootfs
