@@ -149,12 +149,20 @@ def class_logger(cls):
             parent_logger = kwargs.pop('logger') if isinstance(kwargs.get('logger'), logging.Logger) else logging.getLogger()
             self.logger = parent_logger.getChild(cls.__name__)
             self.logger.setLevel(self.logger.parent.level)
-            self.parent_logger = parent_logger
 
-            if not self.logger.handlers and not self.parent_logger.handlers and not logging.getLogger().handlers:
+            def has_handler(logger):
+                parent = logger
+                while parent:
+                    if parent.handlers:
+                        return True
+                    parent = parent.parent
+                return False
+
+            if not has_handler(self.logger):
                 color_stream_handler = logging.StreamHandler()
                 color_stream_handler.setFormatter(ColorLognameFormatter())
                 self.logger.addHandler(color_stream_handler)
+                self.logger.info("Adding default handler: %s" % self.logger)
 
             self.logger.info("Intializing class: %s" % cls.__name__)
 
@@ -249,7 +257,7 @@ class NoDupFlatList(list):
 
     def __init__(self, no_warn=False, log_bump=0, *args, **kwargs):
         self.no_warn = no_warn
-        self.logger.setLevel(self.parent_logger.level + log_bump)
+        self.logger.setLevel(self.logger.parent.level + log_bump)
 
     @handle_plural
     def append(self, item):
