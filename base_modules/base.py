@@ -56,7 +56,7 @@ def clean_mounts(self):
     return [f"umount /{mount}" for mount in self.config_dict['mounts']]
 
 
-def _process_mounts(self, key, mount_config):
+def _process_mounts_multi(self, key, mount_config):
     """
     Processes the passed mounts into fstab mount objects
     under 'fstab_mounts'

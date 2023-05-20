@@ -77,7 +77,7 @@ These imports are very special, they can be used to change how parameters are pa
 A good example of this is in `base.py`:
 
 ```
-def _process_mounts(self, key, mount_config):
+def _process_mounts_multi(self, key, mount_config):
     """
     Processes the passed mounts into fstab mount objects
     under 'fstab_mounts'
@@ -89,6 +89,8 @@ def _process_mounts(self, key, mount_config):
 This module manages mount management, and loads new mounts into fstab objects, also defined in the base module.
 
 The name of `config_prcessing` functions is very important, it must be formatted like `_process_{name}` where the name is the root variable name in the yaml config.
+
+If the function name has `_mulit` at the end, it will be called using the `handle_plural` function, iterating over passed lists/dicts automatically.
 
 A new root varaible named `oops` could be defined, and a function `_process_oops` could be created and imported, raising an error when this vlaue is found, for example.
 

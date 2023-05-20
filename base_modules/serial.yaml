@@ -3,6 +3,9 @@ imports:
     base_modules.serial:
       - custom_init
 
+custom_parameters:
+  serial: dict
+
 binaries:
   - agetty
 

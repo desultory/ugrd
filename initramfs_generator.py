@@ -1,3 +1,8 @@
+
+__author__ = "desultory"
+__version__ = "0.3.0"
+
+
 from subprocess import run
 from yaml import safe_load
 
@@ -20,40 +25,45 @@ class InitramfsConfigDict(dict):
 
     IMPORTANT:
         This dict does not act like a normal dict, setitem is designed to append when the overrides are used
-        These overrides exist for binaries, dependencies, and modules
+        Default parameters are defined in builtin_parameters
     """
+    __version__ = "0.3.4"
+
     builtin_parameters = {'binaries': NoDupFlatList,
                           'dependencies': NoDupFlatList,
                           'paths': NoDupFlatList,
                           'modules': NoDupFlatList,
                           'mounts': dict,
-                          'imports': dict}
+                          'imports': dict,
+                          'custom_parameters': dict}
 
     def __init__(self, *args, **kwargs):
+        self.custom_parameters = {'custom_processing': dict()}
         self.lib_sniffer = LibrarySniffer()
+
+        # Define the default parameters
         for parameter, default_type in self.builtin_parameters.items():
             super().__setitem__(parameter, default_type())
 
     def __setitem__(self, key, value):
-        if key in self.builtin_parameters:
-            if self.builtin_parameters[key] is NoDupFlatList:
+        # If the type is registered, use the appropriate update function
+        if expected_type := self.builtin_parameters.get(key, self.custom_parameters.get(key)):
+            if hasattr(self, f"_process_{key}"):
+                self.logger.debug("Using builtin setitem for: %s" % key)
+                getattr(self, f"_process_{key}")(value)
+            elif f"_process_{key}" in self.custom_parameters['custom_processing']:
+                self.logger.info("Using custom setitem for: %s" % key)
+                self.custom_parameters['custom_processing'][f"_process_{key}"](self, value)
+            elif f"_process_{key}_multi" in self.custom_parameters['custom_processing']:
+                self.logger.info("Using custom plural setitem for: %s" % key)
+                handle_plural(self.custom_parameters['custom_processing'][f"_process_{key}_multi"])(self, value)
+            elif expected_type in (list, NoDupFlatList):
                 self[key].append(value)
-            elif self.builtin_parameters[key] is dict:
-                self.update_dict(key, value)
-            elif self.builtin_parameters[key] is str:
-                super().__setitem(key, value)
-        else:
-            self.logger.warning("Detected custom type '%s' with value: %s" % (key, value))
+            else:
+                super().__setitem__(key, value)
+        else:  # Otherwise set it like a normal dict item
+            self.logger.error("Detected undefined parameter type '%s' with value: %s" % (key, value))
             super().__setitem__(key, value)
-
-        if hasattr(self, f"_process_{key}"):
-            self.logger.debug("Using custom setitem for: %s" % key)
-            getattr(self, f"_process_{key}")(value)
-        elif 'config_processing' in self['imports']:
-            for func in self['imports']['config_processing']:
-                if func.__name__ == f"_process_{key}":
-                    self.logger.debug("Using imported setitem for: %s" % key)
-                    handle_plural(func)(self, value)
 
     @handle_plural
     def update_dict(self, name: str, key: str, value: dict):
@@ -64,7 +74,16 @@ class InitramfsConfigDict(dict):
             self[name][key] = value
             self.logger.info("Set %s[%s] to: %s" % (name, key, value))
         else:
+            self[name][key] = value
             self.logger.warning("%s[%s] already set" % (name, key))
+
+    @handle_plural
+    def _process_custom_parameters(self, parameter_name, parameter_type):
+        """
+        Updates the custom_parameters attribute
+        """
+        self.custom_parameters[parameter_name] = eval(parameter_type)
+        self.logger.info("Registered custom parameter '%s' with type: %s" % (parameter_name, parameter_type))
 
     @handle_plural
     def _process_binaries(self, binary):
@@ -73,7 +92,10 @@ class InitramfsConfigDict(dict):
         then updates the dependencies using the passed binary name
         """
         self.logger.debug("Calculating dependencies for: %s" % binary)
-        self['dependencies'] = calculate_dependencies(binary)
+        deps = calculate_dependencies(binary)
+
+        self['dependencies'] = deps
+        self['binaries'].append(binary)
 
     @handle_plural
     def _process_imports(self, import_type: str, import_value: dict):
@@ -83,10 +105,14 @@ class InitramfsConfigDict(dict):
         from importlib import import_module
         for module_name, function_names in import_value.items():
             function_list = [getattr(import_module(f"{module_name}"), function_name) for function_name in function_names]
-            if not isinstance(self['imports'][import_type], list):
-                self['imports'][import_type] = list()
+            if import_type not in self['imports']:
+                self['imports'][import_type] = NoDupFlatList()
             self['imports'][import_type] += function_list
             self.logger.info("Updated import '%s': %s" % (import_type, function_list))
+            if import_type == 'config_processing':
+                for function in function_list:
+                    self.custom_parameters['custom_processing'][function.__name__] = function
+                    self.logger.info("Registered config processing function: %s" % function.__name__)
 
     @handle_plural
     def _process_modules(self, module):
@@ -96,15 +122,14 @@ class InitramfsConfigDict(dict):
         """
         with open(f"{module.replace('.', '/')}.yaml", 'r') as module_file:
             module_config = safe_load(module_file)
-        if 'binaries' not in module_config:
-            self.logger.warning("No binaries passed as part of module: %s" % module_config)
-        # Call it this way to use the override function
         for name, value in module_config.items():
             self[name] = value
 
 
 @class_logger
 class InitramfsGenerator:
+    __version__ = "0.2.1"
+
     def __init__(self, config='config.yaml', out_dir='initramfs', clean=False, *args, **kwargs):
         self.config_filename = config
         self.out_dir = out_dir

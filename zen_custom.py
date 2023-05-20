@@ -1,7 +1,7 @@
 """
 A collection of classes and decorators
 """
-__version__ = '2.1.4'
+__version__ = '2.2.5'
 __author__ = 'desultory'
 
 import logging
@@ -32,20 +32,21 @@ def handle_plural(function):
     the last argument should be iterable
     """
     def wrapper(self, *args):
-        from collections.abc import Iterable
-        focus_arg = args[-1]
-        other_args = args[:-1]
-        if isinstance(focus_arg, Iterable) and not isinstance(focus_arg, str):
-            if isinstance(focus_arg, list):
-                for item in focus_arg:
-                    function(self, *other_args, item)
-            elif isinstance(focus_arg, dict):
-                for key, value in focus_arg.items():
-                    function(self, *other_args, key, value)
-            else:
-                self.logger.error("Unable to process: %s" % focus_arg)
+        if len(args) == 1:
+            focus_arg = args[0]
+            other_args = tuple()
         else:
-            function(self, *other_args, focus_arg)
+            focus_arg = args[-1]
+            other_args = args[:-1]
+        if isinstance(focus_arg, list):
+            for item in focus_arg:
+                function(self, *(other_args + (item,)))
+        elif isinstance(focus_arg, dict):
+            for key, value in focus_arg.items():
+                function(self, *(other_args + (key, value,)))
+        else:
+            self.logger.error("Unable to handle plural args: %s" % args)
+            function(self, *args)
     return wrapper
 
 
@@ -239,7 +240,7 @@ class ColorLognameFormatter(logging.Formatter):
 @class_logger
 class NoDupFlatList(list):
     """
-    List that automatically filters duplicate elements
+    List that automatically filters duplicate elements when appended
     """
     __version__ = "0.1.0"
 

@@ -1,7 +1,7 @@
 imports:
   config_processing:
     base_modules.base:
-      - _process_mounts
+      - _process_mounts_multi
   build_tasks:
     base_modules.base:
       - generate_fstab
@@ -15,6 +15,12 @@ imports:
     base_modules.base:
       - clean_mounts
       - switch_root
+
+custom_parameters:
+  shebang: str
+  mounts: dict
+  clean: bool
+  root_mount: dict
 
 shebang: '#!/bin/bash'
 

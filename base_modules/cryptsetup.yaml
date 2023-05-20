@@ -9,6 +9,10 @@ imports:
     base_modules.cryptsetup:
       - copy_libgcc
 
+custom_parameters:
+  root_devices: dict
+  key_type: str
+
 binaries:
   - cryptsetup
 
