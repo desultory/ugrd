@@ -1,6 +1,6 @@
 
 __author__ = "desultory"
-__version__ = "0.3.0"
+__version__ = "0.3.1"
 
 
 from subprocess import run
@@ -27,7 +27,7 @@ class InitramfsConfigDict(dict):
         This dict does not act like a normal dict, setitem is designed to append when the overrides are used
         Default parameters are defined in builtin_parameters
     """
-    __version__ = "0.3.4"
+    __version__ = "0.3.5"
 
     builtin_parameters = {'binaries': NoDupFlatList,
                           'dependencies': NoDupFlatList,
@@ -35,28 +35,31 @@ class InitramfsConfigDict(dict):
                           'modules': NoDupFlatList,
                           'mounts': dict,
                           'imports': dict,
-                          'custom_parameters': dict}
+                          'custom_parameters': dict,
+                          'custom_processing': dict}
 
     def __init__(self, *args, **kwargs):
-        self.custom_parameters = {'custom_processing': dict()}
         self.lib_sniffer = LibrarySniffer()
 
         # Define the default parameters
         for parameter, default_type in self.builtin_parameters.items():
-            super().__setitem__(parameter, default_type())
+            if default_type == NoDupFlatList:
+                super().__setitem__(parameter, default_type(no_warn=True, log_bump=10, logger=self.logger))
+            else:
+                super().__setitem__(parameter, default_type())
 
     def __setitem__(self, key, value):
         # If the type is registered, use the appropriate update function
-        if expected_type := self.builtin_parameters.get(key, self.custom_parameters.get(key)):
+        if expected_type := self.builtin_parameters.get(key, self['custom_parameters'].get(key)):
             if hasattr(self, f"_process_{key}"):
                 self.logger.debug("Using builtin setitem for: %s" % key)
                 getattr(self, f"_process_{key}")(value)
-            elif f"_process_{key}" in self.custom_parameters['custom_processing']:
+            elif func := self['custom_processing'].get(f"_process_{key}"):
                 self.logger.info("Using custom setitem for: %s" % key)
-                self.custom_parameters['custom_processing'][f"_process_{key}"](self, value)
-            elif f"_process_{key}_multi" in self.custom_parameters['custom_processing']:
+                func(self, value)
+            elif func := self['custom_processing'].get(f"_process_{key}_multi"):
                 self.logger.info("Using custom plural setitem for: %s" % key)
-                handle_plural(self.custom_parameters['custom_processing'][f"_process_{key}_multi"])(self, value)
+                handle_plural(func)(self, value)
             elif expected_type in (list, NoDupFlatList):
                 self[key].append(value)
             else:
@@ -82,19 +85,19 @@ class InitramfsConfigDict(dict):
         """
         Updates the custom_parameters attribute
         """
-        self.custom_parameters[parameter_name] = eval(parameter_type)
+        self['custom_parameters'][parameter_name] = eval(parameter_type)
+
         self.logger.info("Registered custom parameter '%s' with type: %s" % (parameter_name, parameter_type))
 
     @handle_plural
     def _process_binaries(self, binary):
         """
         processes passed binary(ies) into the 'binaries' list
-        then updates the dependencies using the passed binary name
+        updates the dependencies using the passed binary name
         """
         self.logger.debug("Calculating dependencies for: %s" % binary)
-        deps = calculate_dependencies(binary)
 
-        self['dependencies'] = deps
+        self['dependencies'] = calculate_dependencies(binary)
         self['binaries'].append(binary)
 
     @handle_plural
@@ -106,12 +109,12 @@ class InitramfsConfigDict(dict):
         for module_name, function_names in import_value.items():
             function_list = [getattr(import_module(f"{module_name}"), function_name) for function_name in function_names]
             if import_type not in self['imports']:
-                self['imports'][import_type] = NoDupFlatList()
+                self['imports'][import_type] = NoDupFlatList(log_bump=10, logger=self.logger)
             self['imports'][import_type] += function_list
             self.logger.info("Updated import '%s': %s" % (import_type, function_list))
             if import_type == 'config_processing':
                 for function in function_list:
-                    self.custom_parameters['custom_processing'][function.__name__] = function
+                    self['custom_processing'][function.__name__] = function
                     self.logger.info("Registered config processing function: %s" % function.__name__)
 
     @handle_plural
@@ -124,6 +127,7 @@ class InitramfsConfigDict(dict):
             module_config = safe_load(module_file)
         for name, value in module_config.items():
             self[name] = value
+            self.logger.debug("Using module '%s, set '%s' to: %s" % (module, name, value))
 
 
 @class_logger
@@ -136,7 +140,7 @@ class InitramfsGenerator:
         self.clean = clean
         self.pre_build = [self.generate_structure]
         self.build_tasks = [self.deploy_dependencies]
-        self.config_dict = InitramfsConfigDict()
+        self.config_dict = InitramfsConfigDict(logger=self.logger)
 
         self.init_types = ['init_pre', 'init_main', 'init_late', 'init_final']
 

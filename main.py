@@ -17,9 +17,10 @@ if __name__ == '__main__':
 
     args = argparser.parse_args()
 
-    logging.getLogger().setLevel(20)
+    logger = logging.getLogger()
+    logger.setLevel(10)
 
-    kwargs = dict()
+    kwargs = {'logger': logger}
     if config := args.config_file:
         kwargs['config'] = config
     generator = InitramfsGenerator(**kwargs)

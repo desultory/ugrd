@@ -1,7 +1,7 @@
 """
 A collection of classes and decorators
 """
-__version__ = '2.2.5'
+__version__ = '2.3.3'
 __author__ = 'desultory'
 
 import logging
@@ -38,6 +38,7 @@ def handle_plural(function):
         else:
             focus_arg = args[-1]
             other_args = args[:-1]
+
         if isinstance(focus_arg, list):
             for item in focus_arg:
                 function(self, *(other_args + (item,)))
@@ -45,7 +46,7 @@ def handle_plural(function):
             for key, value in focus_arg.items():
                 function(self, *(other_args + (key, value,)))
         else:
-            self.logger.error("Unable to handle plural args: %s" % args)
+            self.logger.debug("Arguments were not expanded: %s" % args)
             function(self, *args)
     return wrapper
 
@@ -147,8 +148,10 @@ def class_logger(cls):
         def __init__(self, *args, **kwargs):
             parent_logger = kwargs.pop('logger') if isinstance(kwargs.get('logger'), logging.Logger) else logging.getLogger()
             self.logger = parent_logger.getChild(cls.__name__)
+            self.logger.setLevel(self.logger.parent.level)
+            self.parent_logger = parent_logger
 
-            if not self.logger.handlers and not parent_logger.handlers and not logging.getLogger().handlers:
+            if not self.logger.handlers and not self.parent_logger.handlers and not logging.getLogger().handlers:
                 color_stream_handler = logging.StreamHandler()
                 color_stream_handler.setFormatter(ColorLognameFormatter())
                 self.logger.addHandler(color_stream_handler)
@@ -242,12 +245,16 @@ class NoDupFlatList(list):
     """
     List that automatically filters duplicate elements when appended
     """
-    __version__ = "0.1.0"
+    __version__ = "0.1.5"
+
+    def __init__(self, no_warn=False, log_bump=0, *args, **kwargs):
+        self.no_warn = no_warn
+        self.logger.setLevel(self.parent_logger.level + log_bump)
 
     @handle_plural
     def append(self, item):
         if item not in self:
             self.logger.debug("Adding list item: %s" % item)
             super().append(item)
-        else:
+        elif not self.no_warn:
             self.logger.warning("List item already exists: %s" % item)
