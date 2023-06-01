@@ -1,12 +1,13 @@
 """
 A collection of classes and decorators
 """
-__version__ = '2.3.3'
+__version__ = '2.4.0'
 __author__ = 'desultory'
 
 import logging
 from sys import modules
 from threading import Thread, Event
+from queue import Queue
 
 
 def update_init(decorator):
@@ -39,7 +40,7 @@ def handle_plural(function):
             focus_arg = args[-1]
             other_args = args[:-1]
 
-        if isinstance(focus_arg, list):
+        if isinstance(focus_arg, list) and not isinstance(focus_arg, str):
             for item in focus_arg:
                 function(self, *(other_args + (item,)))
         elif isinstance(focus_arg, dict):
@@ -53,14 +54,26 @@ def handle_plural(function):
 
 def threaded(function):
     """
-    Simply starts a function in a thread, returns it for optional handling
+    Simply starts a function in a thread
+    Adds it to an internal _threads list for handling
     """
     def wrapper(self, *args, **kwargs):
         if not hasattr(self, '_threads'):
             self._threads = list()
-        thread = Thread(target=lambda: function(self, *args, **kwargs))
+
+        thread_exception = Queue()
+
+        def exception_wrapper(*args, **kwargs):
+            try:
+                function(*args, **kwargs)
+            except Exception as e:
+                self.logger.warning("Exception in thread: %s" % function.__name__)
+                thread_exception.put(e)
+                self.logger.debug(e)
+
+        thread = Thread(target=exception_wrapper, args=(self, *args), kwargs=kwargs, name=function.__name__)
         thread.start()
-        self._threads.append(thread)
+        self._threads.append((thread, thread_exception))
     return wrapper
 
 
@@ -164,16 +177,19 @@ def class_logger(cls):
                 self.logger.addHandler(color_stream_handler)
                 self.logger.info("Adding default handler: %s" % self.logger)
 
-            self.logger.info("Intializing class: %s" % cls.__name__)
+            if kwargs.get('_log_init', True) is True:
+                self.logger.info("Intializing class: %s" % cls.__name__)
 
-            if args:
-                self.logger.debug("Args: %s" % repr(args))
-            if kwargs:
-                self.logger.debug("Kwargs: %s" % repr(kwargs))
-            if module_version := getattr(modules[cls.__module__], '__version__', None):
-                self.logger.info("Module version: %s" % module_version)
-            if class_version := getattr(cls, '__version__', None):
-                self.logger.info("Class version: %s" % class_version)
+                if args:
+                    self.logger.debug("Args: %s" % repr(args))
+                if kwargs:
+                    self.logger.debug("Kwargs: %s" % repr(kwargs))
+                if module_version := getattr(modules[cls.__module__], '__version__', None):
+                    self.logger.info("Module version: %s" % module_version)
+                if class_version := getattr(cls, '__version__', None):
+                    self.logger.info("Class version: %s" % class_version)
+            else:
+                self.logger.log(5, "Init debug logging disabled for: %s" % cls.__name__)
 
             super().__init__(*args, **kwargs)
 
@@ -251,9 +267,9 @@ class ColorLognameFormatter(logging.Formatter):
 @class_logger
 class NoDupFlatList(list):
     """
-    List that automatically filters duplicate elements when appended
+    List that automatically filters duplicate elements when appended and concatenated
     """
-    __version__ = "0.1.5"
+    __version__ = "0.2.0"
 
     def __init__(self, no_warn=False, log_bump=0, *args, **kwargs):
         self.no_warn = no_warn
@@ -266,3 +282,8 @@ class NoDupFlatList(list):
             super().append(item)
         elif not self.no_warn:
             self.logger.warning("List item already exists: %s" % item)
+
+    def __iadd__(self, item):
+        self.append(item)
+        return self
+
