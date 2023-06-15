@@ -43,7 +43,6 @@ paths:
   - lib64
   - mnt/root
   - root
-  - run
   - sbin
   - sys
 
