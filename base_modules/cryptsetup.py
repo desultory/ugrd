@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '0.2.5'
+__version__ = '0.3.0'
 
 
 def configure_library_dir(self):
@@ -22,8 +22,10 @@ def crypt_init(self):
         if key_type == 'gpg':
             out += [f"echo 'Enter passphrase for key file: {parameters['key_file']}'"]
             out += [f"gpg --decrypt {parameters['key_file']} | cryptsetup open --key-file - $({partition_location_cmd}) {root_device}"]
-        else:
+        elif key_type == 'keyfile':
             out += [f"cryptsetup open --key-file {parameters['key_file']} $({partition_location_cmd}) {root_device}"]
+        else:
+            out += [f"cryptsetup open $({partition_location_cmd}) {root_device}"]
     return out
 
 
