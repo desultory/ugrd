@@ -90,7 +90,7 @@ This module manages mount management, and loads new mounts into fstab objects, a
 
 The name of `config_prcessing` functions is very important, it must be formatted like `_process_{name}` where the name is the root variable name in the yaml config.
 
-If the function name has `_mulit` at the end, it will be called using the `handle_plural` function, iterating over passed lists/dicts automatically.
+If the function name has `_multi` at the end, it will be called using the `handle_plural` function, iterating over passed lists/dicts automatically.
 
 A new root varaible named `oops` could be defined, and a function `_process_oops` could be created and imported, raising an error when this vlaue is found, for example.
 

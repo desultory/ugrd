@@ -1,7 +1,7 @@
 """
 A collection of classes and decorators
 """
-__version__ = '2.4.0'
+__version__ = '2.6.0'
 __author__ = 'desultory'
 
 import logging
@@ -106,26 +106,37 @@ def add_thread(name, target, description=None):
                 self.logger.info("Re-creating thread")
                 getattr(self, f"create_{name}_thread")()
                 thread = self.threads[name]
+
             if thread._started.is_set() and not thread._is_stopped:
                 self.logger.warning("%s thread is already started" % name)
             else:
                 self.logger.info("Starting thread: %s" % name)
                 thread.start()
+                return True
 
         def stop_thread(self):
             thread = self.threads[name]
-            getattr(self, f"_stop_processing_{name}").set()
+            dont_join = False
             if not thread._started.is_set() or thread._is_stopped:
                 self.logger.warning("Thread is not active: %s" % name)
-            else:
-                if hasattr(self, f"stop_{name}_thread_actions"):
-                    self.logger.debug("Calling: %s" % f"stop_{name}_thread_actions")
-                    getattr(self, f"stop_{name}_thread_actions")()
-                if hasattr(self, f"_{name}_timer"):
-                    self.logger.info("Stopping the timer for thread: %s" % name)
-                    getattr(self, f"_{name}_timer").cancel()
+                dont_join = True
+
+            if hasattr(self, f"_stop_processing_{name}"):
+                self.logger.debug("Setting stop event for thread: %s" % name)
+                getattr(self, f"_stop_processing_{name}").set()
+
+            if hasattr(self, f"stop_{name}_thread_actions"):
+                self.logger.debug("Calling: %s" % f"stop_{name}_thread_actions")
+                getattr(self, f"stop_{name}_thread_actions")()
+
+            if hasattr(self, f"_{name}_timer"):
+                self.logger.info("Stopping the timer for thread: %s" % name)
+                getattr(self, f"_{name}_timer").cancel()
+
+            if not dont_join:
                 self.logger.info("Waiting on thread to end: %s" % name)
                 thread.join()
+            return True
 
         setattr(cls, f"create_{name}_thread", create_thread)
         setattr(cls, f"start_{name}_thread", start_thread)
@@ -154,10 +165,6 @@ def class_logger(cls):
     Decorator for classes to add a logging object and log basic tasks
     """
     class ClassWrapper(cls):
-        __name__ = cls.__name__
-        __module__ = cls.__module__
-        __qualname__ = cls.__qualname__
-
         def __init__(self, *args, **kwargs):
             parent_logger = kwargs.pop('logger') if isinstance(kwargs.get('logger'), logging.Logger) else logging.getLogger()
             self.logger = parent_logger.getChild(cls.__name__)
@@ -173,7 +180,7 @@ def class_logger(cls):
 
             if not has_handler(self.logger):
                 color_stream_handler = logging.StreamHandler()
-                color_stream_handler.setFormatter(ColorLognameFormatter())
+                color_stream_handler.setFormatter(ColorLognameFormatter(fmt='%(levelname)s | %(name)-42s | %(message)s'))
                 self.logger.addHandler(color_stream_handler)
                 self.logger.info("Adding default handler: %s" % self.logger)
 
@@ -202,6 +209,10 @@ def class_logger(cls):
                 self.logger.log(5, "Set '%s' to:\n%s" % (name, value))
             else:
                 self.logger.log(5, "Set '%s' to: %s" % (name, value))
+
+    ClassWrapper.__name__ = cls.__name__
+    ClassWrapper.__module__ = cls.__module__
+    ClassWrapper.__qualname__ = cls.__qualname__
 
     return ClassWrapper
 
