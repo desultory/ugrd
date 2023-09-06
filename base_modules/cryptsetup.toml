@@ -1,0 +1,15 @@
+binaries = [ "cryptsetup" ]
+paths = [ "usr/lib64", "run" ]
+
+[imports.init_pre]
+"base_modules.cryptsetup" = [ "configure_library_dir" ]
+
+[imports.init_main]
+"base_modules.cryptsetup" = [ "crypt_init" ]
+
+[imports.build_tasks]
+"base_modules.cryptsetup" = [ "copy_libgcc" ]
+
+[custom_parameters]
+root_devices = "dict"
+key_type = "str"

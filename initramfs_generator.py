@@ -1,10 +1,10 @@
 
 __author__ = "desultory"
-__version__ = "0.3.1"
+__version__ = "0.4.0"
 
 
 from subprocess import run
-from yaml import safe_load
+from tomllib import load
 
 from lib_sniffer import LibrarySniffer
 from zen_custom import class_logger, handle_plural, NoDupFlatList
@@ -27,7 +27,7 @@ class InitramfsConfigDict(dict):
         This dict does not act like a normal dict, setitem is designed to append when the overrides are used
         Default parameters are defined in builtin_parameters
     """
-    __version__ = "0.3.5"
+    __version__ = "0.4.0"
 
     builtin_parameters = {'binaries': NoDupFlatList,
                           'dependencies': NoDupFlatList,
@@ -36,7 +36,8 @@ class InitramfsConfigDict(dict):
                           'mounts': dict,
                           'imports': dict,
                           'custom_parameters': dict,
-                          'custom_processing': dict}
+                          'custom_processing': dict,
+                          'out_dir': str}
 
     def __init__(self, *args, **kwargs):
         self.lib_sniffer = LibrarySniffer()
@@ -105,13 +106,17 @@ class InitramfsConfigDict(dict):
         """
         Processes imports in a module
         """
+        self.logger.debug("Processing imports of type '%s'" % import_type)
+
         from importlib import import_module
         for module_name, function_names in import_value.items():
             function_list = [getattr(import_module(f"{module_name}"), function_name) for function_name in function_names]
+
             if import_type not in self['imports']:
                 self['imports'][import_type] = NoDupFlatList(log_bump=10, logger=self.logger)
             self['imports'][import_type] += function_list
             self.logger.info("Updated import '%s': %s" % (import_type, function_list))
+
             if import_type == 'config_processing':
                 for function in function_list:
                     self['custom_processing'][function.__name__] = function
@@ -123,18 +128,27 @@ class InitramfsConfigDict(dict):
         processes a single module into the config
         takes list with decorator
         """
-        with open(f"{module.replace('.', '/')}.yaml", 'r') as module_file:
-            module_config = safe_load(module_file)
+        self.logger.debug("Processing module: %s" % module)
+
+        with open(f"{module.replace('.', '/')}.toml", 'rb') as module_file:
+            module_config = load(module_file)
+            self.logger.debug("Loaded module config: %s" % module_config)
+
+        if 'custom_parameters' in module_config:
+            self['custom_parameters'] = module_config['custom_parameters']
+
         for name, value in module_config.items():
+            if name == 'custom_parameters':
+                continue
             self[name] = value
             self.logger.debug("Using module '%s, set '%s' to: %s" % (module, name, value))
 
 
 @class_logger
 class InitramfsGenerator:
-    __version__ = "0.2.1"
+    __version__ = "0.2.2"
 
-    def __init__(self, config='config.yaml', out_dir='initramfs', clean=False, *args, **kwargs):
+    def __init__(self, config='config.toml', out_dir='initramfs', clean=False, *args, **kwargs):
         self.config_filename = config
         self.out_dir = out_dir
         self.clean = clean
@@ -150,11 +164,11 @@ class InitramfsGenerator:
 
     def load_config(self):
         """
-        Loads the config from the specified yaml file
+        Loads the config from the specified toml file
         """
-        with open(self.config_filename, 'r') as config_file:
+        with open(self.config_filename, 'rb') as config_file:
             self.logger.info("Loading config file: %s" % config_file.name)
-            raw_config = safe_load(config_file)
+            raw_config = load(config_file)
 
         # Process into the config dict, it should handle parsing
         for config, value in raw_config.items():

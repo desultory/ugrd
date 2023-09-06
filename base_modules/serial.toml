@@ -1,0 +1,7 @@
+binaries = [ "agetty" ]
+
+[imports.custom_init]
+"base_modules.serial" = [ "custom_init" ]
+
+[custom_parameters]
+serial = "dict"

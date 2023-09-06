@@ -1,0 +1,56 @@
+shebang = "#!/bin/bash"
+binaries = [
+  "bash",
+  "ls",
+  "cat",
+  "lsblk",
+  "blkid",
+  "mount",
+  "umount",
+  "switch_root"
+]
+paths = [
+  "bin",
+  "boot",
+  "dev",
+  "etc",
+  "lib",
+  "lib64",
+  "mnt/root",
+  "root",
+  "sbin",
+  "sys"
+]
+
+[imports.config_processing]
+"base_modules.base" = [ "_process_mounts_multi" ]
+
+[imports.build_tasks]
+"base_modules.base" = [ "generate_fstab" ]
+
+[imports.init_pre]
+"base_modules.base" = [ "mount_fstab" ]
+
+[imports.init_late]
+"base_modules.base" = [ "mount_root" ]
+
+[imports.init_final]
+"base_modules.base" = [ "clean_mounts", "switch_root" ]
+
+[custom_parameters]
+shebang = "str"
+mounts = "dict"
+clean = "bool"
+root_mount = "dict"
+
+[mounts.proc]
+type = "proc"
+source = "proc"
+
+[mounts.sys]
+type = "sysfs"
+source = "sysfs"
+
+[mounts.dev]
+type = "devtmpfs"
+source = "devtmpfs"

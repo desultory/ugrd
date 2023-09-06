@@ -1,0 +1,32 @@
+modules = [
+  "base_modules.base",
+  "base_modules.serial",
+  "base_modules.cryptsetup",
+  "base_modules.gpg",
+  "base_modules.btrfs"
+]
+clean = true
+key_type = "gpg"
+
+[root_mount]
+label = "rootfs"
+uuid = "d36ce220-298a-4600-8b0d-0183bd577452"
+
+[serial.ttyS1]
+baud = 115_200
+type = "vt100"
+local = true
+
+[mounts.boot]
+type = "vfat"
+
+  [mounts.boot.source]
+  uuid = "4A48-F4DC"
+
+[root_devices.crypt1]
+uuid = "9e04e825-7f60-4171-815a-86e01ec4c4d3"
+key_file = "/boot/keys/crypt1.gpg"
+
+[root_devices.crypt2]
+uuid = "37b8e5ad-e855-4248-b93d-23df30c6e6aa"
+key_file = "/boot/keys/crypt2.gpg"
