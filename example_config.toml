@@ -1,8 +1,10 @@
 modules = [
   "base_modules.base",
   "base_modules.cryptsetup",
-  "base_modules.btrfs"
+  "base_modules.btrfs",
+  "base_modules.kmod"
 ]
+
 out_dir = "/usr/src/initramfs"
 clean = true
 
