@@ -1,5 +1,11 @@
 binaries = [ "ln", "gpg", "gpg-agent", "pinentry-tty", "tty" ]
 paths = [ "usr/bin" ]
 
+[custom_parameters]
+gpg_public_key = "str"  # The path to the public key to import
+
 [imports.init_pre]
-"base_modules.gpg" = [ "symlink_pinentry" ]
+"base_modules.gpg" = [ "symlink_pinentry", "import_keys" ]
+
+[imports.build_pre]
+"base_modules.gpg" = [ "fetch_keys" ]

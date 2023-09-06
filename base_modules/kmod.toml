@@ -1,0 +1,6 @@
+[custom_parameters]
+kernel_modules = "str"  # Kernel modules to pull into the initramfs
+
+
+[imports.build_pre]
+"base_modules.kmod" = [ "fetch_modules" ]

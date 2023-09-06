@@ -1,0 +1,17 @@
+modules = [
+  "base_modules.base",
+  "base_modules.kmod",
+  "base_modules.cryptsetup",
+  "base_modules.btrfs"
+]
+out_dir = "/usr/src/initramfs"
+clean = true
+kernel_modules = ['dm_crypt', 'amdgpu', 'edac_mce_amd', 'uvcvideo', 'kvm_amd', 'uvc', 'videobuf2_vmalloc', 'drm_suballoc_helper', 'videobuf2_memops', 'amdxcp', 'videobuf2_v4l2', 'iommu_v2', 'kvm', 'gpu_sched', 'videobuf2_common',
+                  'irqbypass', 'vfat', 'fat', 'uas', 'nvme_core', 'nvme', 'nvme_common', 'video' ]
+
+[root_mount]
+label = "rootfs"
+uuid = "d36ce220-298a-4600-8b0d-0183bd577452"
+
+[root_devices.crypt]
+uuid = "9e04e825-7f60-4171-815a-86e01ec4c4d3"

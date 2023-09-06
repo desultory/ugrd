@@ -146,13 +146,13 @@ class InitramfsConfigDict(dict):
 
 @class_logger
 class InitramfsGenerator:
-    __version__ = "0.2.2"
+    __version__ = "0.3.0"
 
     def __init__(self, config='config.toml', out_dir='initramfs', clean=False, *args, **kwargs):
         self.config_filename = config
         self.out_dir = out_dir
         self.clean = clean
-        self.pre_build = [self.generate_structure]
+        self.build_pre = [self.generate_structure]
         self.build_tasks = [self.deploy_dependencies]
         self.config_dict = InitramfsConfigDict(logger=self.logger)
 
@@ -184,26 +184,40 @@ class InitramfsGenerator:
         """
         builds the initramfs structure
         """
+        # If clean is set, clear the target build dir
         if self.clean:
             from shutil import rmtree
             from os.path import isdir
+            # If the build dir is present, clean it, otherwise log and continue
             if isdir(self.out_dir):
                 self.logger.warning("Cleaning build dir: %s" % self.out_dir)
                 rmtree(self.out_dir)
             else:
                 self.logger.info("Build dir is not present, not cleaning: %s" % self.out_dir)
 
+        # Run pre-build tasks, by default just calls 'generate_structure'
         self.logger.info("Running pre build tasks")
-        self.logger.debug(self.pre_build)
-        for task in self.pre_build:
+        self.logger.debug(self.build_pre)
+        for task in self.build_pre:
             task()
 
+        # Run custom pre-build tasks imported from modules
+        if 'build_pre' in self.config_dict['imports']:
+            self.logger.info("Running custom pre build tasks")
+            self.logger.debug(self.config_dict['imports']['build_pre'])
+            for task in self.config_dict['imports']['build_pre']:
+                task(self)
+
+        # Run all build tasks, by default just calls 'deploy_dependencies'
         self.logger.info("Running build tasks")
         self.logger.debug(self.build_tasks)
         for task in self.build_tasks:
             task()
 
+        # Run custom build tasks imported from modules
         if 'build_tasks' in self.config_dict['imports']:
+            self.logger.info("Running custom build tasks")
+            self.logger.debug(self.config_dict['imports']['build_tasks'])
             for task in self.config_dict['imports']['build_tasks']:
                 task(self)
 
@@ -256,8 +270,18 @@ class InitramfsGenerator:
         should be used after generate_structure
         """
         from shutil import copy2
+        from os.path import dirname, isdir
+        from os import makedirs
+
         for dependency in self.config_dict['dependencies']:
             dest_file = f"{self.out_dir}{dependency}"
+
+            dir_name = dirname(dest_file)
+            if not isdir(dir_name):
+                makedirs(dir_name)
+                self.logger.info("Created subdirectory: %s" % dir_name)
+
             copy2(dependency, dest_file)
             self.logger.info("Copied '%s' to: %s" % (dependency, dest_file))
+
 
