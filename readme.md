@@ -42,6 +42,7 @@ All entries in the `paths` list will be created as folders under the `./initramf
 
 They should not start with a leading `/`
 
+This section can be used to add kernel modules.
 
 ### modules
 
