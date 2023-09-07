@@ -27,7 +27,7 @@ class InitramfsConfigDict(dict):
         This dict does not act like a normal dict, setitem is designed to append when the overrides are used
         Default parameters are defined in builtin_parameters
     """
-    __version__ = "0.4.0"
+    __version__ = "0.4.1"
 
     builtin_parameters = {'binaries': NoDupFlatList,
                           'dependencies': NoDupFlatList,
@@ -36,8 +36,7 @@ class InitramfsConfigDict(dict):
                           'mounts': dict,
                           'imports': dict,
                           'custom_parameters': dict,
-                          'custom_processing': dict,
-                          'out_dir': str}
+                          'custom_processing': dict}
 
     def __init__(self, *args, **kwargs):
         self.lib_sniffer = LibrarySniffer()

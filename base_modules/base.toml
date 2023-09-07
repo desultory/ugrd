@@ -1,4 +1,5 @@
 shebang = "#!/bin/bash"
+
 binaries = [
   "bash",
   "ls",
@@ -9,6 +10,7 @@ binaries = [
   "umount",
   "switch_root"
 ]
+
 paths = [
   "bin",
   "boot",
@@ -38,10 +40,15 @@ paths = [
 "base_modules.base" = [ "clean_mounts", "switch_root" ]
 
 [custom_parameters]
-shebang = "str"
-mounts = "dict"
-clean = "bool"
-root_mount = "dict"
+shebang = "str"  # Add the shebang property, used because this is a bash script
+mounts = "dict"  # Add the mounts property, used to define the mounts to be made in the fstab
+out_dir = "str"  # Add the out_dir property, used to define the output directory
+clean = "bool"  # Add the clean property, used to define if the mounts should be cleaned up after boot
+root_mount = "dict"  # Add the root_mount property, used to define the root mount
+
+# Define the default mounts
+# The format is mounts.mount where the mount is the name of the mount
+# Alternatively, the destination option can be used to define the mount point
 
 [mounts.proc]
 type = "proc"

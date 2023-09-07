@@ -1,12 +1,16 @@
 __author__ = 'desultory'
-__version__ = '0.1.7'
+__version__ = '0.2.0'
+
+from pathlib import Path
 
 
 def generate_fstab(self):
     """
     Generates the fstab from the mounts
     """
-    with open(f"{self.out_dir}/etc/fstab", 'w') as fstab_file:
+    fstab_path = Path(self.out_dir) / 'etc/fstab'
+
+    with open(fstab_path, 'w') as fstab_file:
         for mount, config in self.config_dict['mounts'].items():
             fstab_file.write(f"{config}\n")
 
@@ -61,7 +65,15 @@ def _process_mounts_multi(self, key, mount_config):
     Processes the passed mounts into fstab mount objects
     under 'fstab_mounts'
     """
-    self['mounts'][key] = FstabMount(destination=f"/{key}", **mount_config)
+    if 'destination' not in mount_config:
+        mount_config['destination'] = f"/{key}"  # prepend a slash
+
+    try:
+        self['mounts'][key] = FstabMount(**mount_config)
+        self['paths'].append(mount_config['destination'])
+    except ValueError as e:
+        self.logger.error("Unable to process mount: %s" % key)
+        self.logger.error(e)
 
 
 class FstabMount:
@@ -73,9 +85,20 @@ class FstabMount:
     def __init__(self, *args, **kwargs):
         for parameter in self.parameters:
             if kwargs.get(parameter):
+                # Validate if ther is a validator function
+                if hasattr(self, f'validate_{parameter}') and not getattr(self, f'validate_{parameter}')(kwargs.get(parameter)):
+                    raise ValueError("Invalid value passed for parameter: %s" % parameter)
                 setattr(self, parameter, kwargs.pop(parameter))
             elif self.parameters[parameter]:
                 raise ValueError("Required parameter was not passed: %s" % parameter)
+
+    def validate_destination(self, destination):
+        """
+        Validates the destination
+        """
+        if not destination.startswith('/'):
+            return False
+        return True
 
     def get_source(self):
         """

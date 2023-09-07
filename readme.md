@@ -2,23 +2,29 @@
 
 This project is a framework which can be used to generate an initramfs.
 
-Executing `./main.py` will read the config from `config.yaml` and use that to generate an initramfs.
+Executing `./main.py` will read the config from `config.toml` and use that to generate an initramfs.
 
 The goal of the project was to design one that can be used to enter GPG keys for LUKS keyfiles over serial, to boot a btrfs raided filesystem.
 
 ## Usage
 
-To use this script, configure `config.yaml` to meet specifications and run `./main.py` as root.
+To use this script, configure `config.toml` to meet specifications and run `./main.py` as root.
+
+> Example configs are available in the repo
+
+### Passing a config file by name
 
 Another config file can be used by passing it as an argument to `main.py`.
 
-The example config can be used with `./main.py example_config.yaml`
+The example config can be used with `./main.py example_config.toml`
 
 ## Configuration
 
-The main configuration file is `config.yaml`
+The main configuration file is `config.toml`
 
-### General config
+### Module config
+
+#### base_modules.base
 
 #### out_dir
 
@@ -28,21 +34,21 @@ Setting `out_dir` changes where the script writes the output files, it defaults 
 
 Setting `clean` to `true` makes the script clean the output directory prior to generating it.
 
+### General config
 
-### binaries
+The following configuration options can exist in any module, or the bse condfig
+
+#### binaries
 
 All entires specified in the `binaries` list will be imported into the initramfs.
 
 `lddtree` is used to find the required libraries.
 
-
-### paths
+#### paths
 
 All entries in the `paths` list will be created as folders under the `./initramfs` directory.
 
 They should not start with a leading `/`
-
-This section can be used to add kernel modules.
 
 ### modules
 
@@ -50,12 +56,9 @@ The modules config directive should contain a list with names specifying the pat
 
 Another directory for modules can be created, the naming scheme is similar to how python imports work.
 
-When a module is loaded, `initramfs_generator.py` will try to load that yaml file, parsing it in the same manner `config.yaml` is parsed.
+When a module is loaded, `initramfs_generator.py` will try to load a toml file for that module, parsing it in the same manner `config.yaml` is parsed.
 
 The order in which modules/directives are loaded is very important!
-
-All of the config could be placed in a single file, but it makes more sense to organize it.
-
 
 ### imports
 
@@ -65,7 +68,21 @@ Imports are used to hook into the general processing scheme, and become part of 
 
 Portions are loaded into the InitramfsGenerator's `config_dict` which is an `InitramfsConfigDict`
 
-`imports` are defined with the first key being the nameof the import type, the value being the path of the python module to be imported, which has a list containing functions to be imported, in order.
+`imports` are defined like:
+
+```
+[imports.<hook>]
+"module_dir.module_name" = [ "function_to_inject" ]
+```
+
+For example:
+
+```
+[imports.build_tasks]
+"base_modules.base" = [ "generate_fstab" ]
+```
+
+Is used in the base module to make the initramfs generator generate a fstab durinf the `build_tasks` phase.
 
 Imported functions have access to the entire `self` scope, giving them full control of whatever other modules are loaded when they are executed, and the capability to dynamically create new functions.
 
@@ -83,8 +100,15 @@ def _process_mounts_multi(self, key, mount_config):
     Processes the passed mounts into fstab mount objects
     under 'fstab_mounts'
     """
-    self['mounts'][key] = FstabMount(destination=f"/{key}", **mount_config)
+    if 'destination' not in mount_config:
+        mount_config['destination'] = f"/{key}"  # prepend a slash
 
+    try:
+        self['mounts'][key] = FstabMount(**mount_config)
+        self['paths'].append(mount_config['destination'])
+    except ValueError as e:
+        self.logger.error("Unable to process mount: %s" % key)
+        self.logger.error(e)
 ```
 
 This module manages mount management, and loads new mounts into fstab objects, also defined in the base module.
@@ -98,33 +122,22 @@ A new root varaible named `oops` could be defined, and a function `_process_oops
 This module is loaded in the imports section of the `base.yaml` file:
 
 ```
-mports:
-  config_processing:
-    base:
-      - _process_mounts
-  build_tasks:
-    base:
-      - generate_fstab
-  init_pre:
-    base:
-      - mount_fstab
-  init_late:
-    base:
-      - mount_root
-  init_final:
-    base:
-      - clean_mounts
-      - switch_root
-
+[imports.config_processing]
+"base_modules.base" = [ "_process_mounts_multi" ]
 ```
 
 #### build_tasks
 
 Build tasks are functions which will be executed after the directory structure has been generated using the specified `paths`.
 
-The `base` module contains one for generating the fstab using mounts loaded into the `FstabMount` objects.
+The base module includes a build task for generating the fstab, which is activated with:
 
-#### init_hook
+```
+[imports.build_tasks]
+"base_modules.base" = [ "generate_fstab" ]
+```
+
+#### init hooks
 
 By default, the specified init hooks are: `'init_pre', 'init_main', 'init_late', 'init_final'`
 
@@ -149,13 +162,13 @@ Like with the typical flow, it starts by creating the base `init` file with the 
 Finally, like the standard init build, the `init_final` is written to the main `init` file.
 
 ```
-imports:
-  custom_init:
-    serial:
-      - custom_init
-
-
+[imports.custom_init]
+"base_modules.serial" = [ "custom_init" ]
 ```
+
+The custom init works by creating an `init_main` file and returning a config line which will execute that file in a getty session.
+This `init_main` file contains everything that would be in the standard init file, but without the `init_pre` and `init_final` portions. 
+
 
 ```
 def custom_init(self):
@@ -184,7 +197,3 @@ def serial_init(self):
         return out
 
 ```
-
-This function creates a new `init_main.sh` file which contains everything but the `init_pre` and `init_final` bits, and returns the ouput of the `serial_init` function which references that new `init_main.sh` file.
-
-The end result is the init script starting a shell in the location specified using the `serial` config dict which calls and runs the main portion of the init.
