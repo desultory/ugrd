@@ -42,9 +42,10 @@ If the module is loaded, but configuration options are not passed, the generator
 
 #### base_modules.gpg
 
-This module is required to perform GPG decryption within the initramfs
+This module is required to perform GPG decryption within the initramfs.
 
 `gpg_public_key` is used to specify the location of a GPG public key to be added to the initramfs and imported into the keyring on start.
+This should be defined globally and cen be used with a YubiKey.
 
 #### base_modules.cryptsetup
 
