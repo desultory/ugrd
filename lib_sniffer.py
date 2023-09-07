@@ -3,10 +3,10 @@ Similar to lddtree
 """
 
 
-from zen_custom import class_logger, NoDupFlatList
+from zen_custom import loggify, NoDupFlatList
 
 
-@class_logger
+@loggify
 class LibrarySniffer:
     """
     Designed to take binary files and find out what libraries/dependencies are required by the program

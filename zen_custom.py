@@ -1,7 +1,7 @@
 """
 A collection of classes and decorators
 """
-__version__ = '2.6.0'
+__version__ = '2.7.0'
 __author__ = 'desultory'
 
 import logging
@@ -160,14 +160,14 @@ def thread_wrapped(thread_name):
     return decorator
 
 
-def class_logger(cls):
+def loggify(cls):
     """
     Decorator for classes to add a logging object and log basic tasks
     """
     class ClassWrapper(cls):
         def __init__(self, *args, **kwargs):
             parent_logger = kwargs.pop('logger') if isinstance(kwargs.get('logger'), logging.Logger) else logging.getLogger()
-            self.logger = parent_logger.getChild(cls.__name__)
+            self.logger = parent_logger.getChild(self.__class__.__name__)
             self.logger.setLevel(self.logger.parent.level)
 
             def has_handler(logger):
@@ -275,7 +275,7 @@ class ColorLognameFormatter(logging.Formatter):
         return format_str
 
 
-@class_logger
+@loggify
 class NoDupFlatList(list):
     """
     List that automatically filters duplicate elements when appended and concatenated

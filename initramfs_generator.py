@@ -7,7 +7,7 @@ from subprocess import run
 from tomllib import load
 
 from lib_sniffer import LibrarySniffer
-from zen_custom import class_logger, handle_plural, NoDupFlatList
+from zen_custom import loggify, handle_plural, NoDupFlatList
 
 
 def calculate_dependencies(binary):
@@ -18,7 +18,7 @@ def calculate_dependencies(binary):
     return dependencies.stdout.decode('utf-8').splitlines()
 
 
-@class_logger
+@loggify
 class InitramfsConfigDict(dict):
     """
     Dict for containing config for the InitramfsGenerator
@@ -143,7 +143,7 @@ class InitramfsConfigDict(dict):
             self.logger.debug("Using module '%s, set '%s' to: %s" % (module, name, value))
 
 
-@class_logger
+@loggify
 class InitramfsGenerator:
     __version__ = "0.3.0"
 
