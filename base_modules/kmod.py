@@ -1,6 +1,6 @@
 __author__ = 'desultory'
 
-__version__ = '0.2.2'
+__version__ = '0.2.3'
 
 from subprocess import run
 
@@ -138,6 +138,6 @@ def load_modules(self):
     self.logger.info("Init kernel modules: %s" % kmods)
 
     module_str = ' '.join(kmods)
-    return [f"modprobe -v {module_str}"]
+    return [f"modprobe -av {module_str}"]
 
 
