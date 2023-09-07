@@ -64,7 +64,7 @@ class InitramfsConfigDict(dict):
             elif expected_type in (list, NoDupFlatList):
                 self[key].append(value)
             else:
-                super().__setitem__(key, value)
+                super().__setitem__(key, expected_type(value))
         else:  # Otherwise set it like a normal dict item
             self.logger.error("Detected undefined parameter type '%s' with value: %s" % (key, value))
             super().__setitem__(key, value)
@@ -285,7 +285,9 @@ class InitramfsGenerator:
 
         for dependency in self.config_dict['dependencies']:
             source_file_path = Path(dependency)
-            dest_file_path = self.out_dir / source_file_path.relative_to(source_file_path.anchor)
+            dest_file_path = self.out_dir / source_file_path.relative_to('/')
+
+            source_file_path.relative_to(source_file_path.anchor)
             dir_name = dirname(dest_file_path)
 
             if not isdir(dir_name):

@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '0.2.0'
+__version__ = '0.2.5'
 
 from pathlib import Path
 
@@ -8,11 +8,28 @@ def generate_fstab(self):
     """
     Generates the fstab from the mounts
     """
-    fstab_path = Path(self.out_dir) / 'etc/fstab'
+    fstab_path = self.config_dict['out_dir'] / 'etc/fstab'
 
     with open(fstab_path, 'w') as fstab_file:
         for mount, config in self.config_dict['mounts'].items():
             fstab_file.write(f"{config}\n")
+
+
+def generate_nodes(self):
+    """
+    Generates specified device nodes
+    """
+    from os import makedev, mknod
+    from stat import S_IFCHR
+
+    for node, config in self.config_dict['dev_nodes'].items():
+        node_path_abs = Path(config['path'])
+
+        node_path = self.config_dict['out_dir'] / node_path_abs.relative_to(node_path_abs.anchor)
+        node_mode = S_IFCHR | config['mode']
+
+        mknod(node_path, mode=node_mode, device=makedev(config['major'], config['minor']))
+        self.logger.info("Created device node %s at path: %s" % (node, node_path))
 
 
 def switch_root(self):
