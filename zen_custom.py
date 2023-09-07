@@ -280,7 +280,7 @@ class NoDupFlatList(list):
     """
     List that automatically filters duplicate elements when appended and concatenated
     """
-    __version__ = "0.2.0"
+    __version__ = "0.3.0"
 
     def __init__(self, no_warn=False, log_bump=0, *args, **kwargs):
         self.no_warn = no_warn
@@ -288,7 +288,12 @@ class NoDupFlatList(list):
 
     @handle_plural
     def append(self, item):
-        if item not in self:
+        from collections.abc import Iterable
+
+        if isinstance(item, Iterable) and not isinstance(item, str):
+            self.logger.debug("Adding list items: %s" % item)
+            self.append(item)
+        elif item not in self:
             self.logger.debug("Adding list item: %s" % item)
             super().append(item)
         elif not self.no_warn:

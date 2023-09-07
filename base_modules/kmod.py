@@ -8,7 +8,7 @@ MODULE_METADATA_FILES = ['modules.alias', 'modules.alias.bin', 'modules.builtin'
                          'modules.dep', 'modules.dep.bin', 'modules.devname', 'modules.order', 'modules.softdep', 'modules.symbols', 'modules.symbols.bin']
 
 
-def resolve_kmod(self, module_name):
+def resolve_kmod_path(self, module_name):
     """
     Gets the file path of a kernel module
     """
@@ -19,8 +19,7 @@ def resolve_kmod(self, module_name):
 
     cmd = run(args, capture_output=True)
     if cmd.returncode != 0:
-        self.logger.error(f'Kernel module {module_name} not found')
-        self.logger.debug(f'Error: {cmd.stderr.decode("utf-8").strip()}')
+        self.logger.error("Failed to get kernel module path for: %s" % module_name)
         return
 
     module_path = cmd.stdout.decode('utf-8').strip()
@@ -32,6 +31,33 @@ def resolve_kmod(self, module_name):
     self.logger.debug(f'Kernel module {module_name} is located at {module_path}')
 
     return module_path
+
+
+def resolve_kmod(self, module_name):
+    """
+    Gets the file path of a single kernel module.
+    Gets the file path of all dependenceis of they exist
+    """
+    self.logger.debug("Resolving kernel module dependencies for: %s" % module_name)
+    args = ['modinfo', '--field', 'depends', module_name]
+
+    if self.config_dict.get('kernel_version'):
+        args += ['--set-version', self.config_dict['kernel_version']]
+
+    cmd = run(args, capture_output=True)
+    if cmd.returncode != 0:
+        self.logger.error("Failed to get kernel module dependencies for: %s" % module_name)
+        return
+
+    dependencies = cmd.stdout.decode('utf-8').strip().split(',')
+
+    if not dependencies[0]:
+        self.logger.debug('Kernel module has no dependencies: %s' % module_name)
+        return resolve_kmod_path(self, module_name)
+    else:
+        self.logger.debug("Kernel module '%s' has dependencies: %s" % (module_name, dependencies))
+        dependency_paths = [resolve_kmod(self, dependency) for dependency in dependencies] + [resolve_kmod_path(self, module_name)]
+        return dependency_paths
 
 
 def get_all_modules(self):
@@ -86,9 +112,11 @@ def fetch_modules(self):
     modules = self.config_dict.get('kernel_modules', get_all_modules(self))
 
     for module in modules:
-        if module_path := resolve_kmod(self, module):
-            self.config_dict['dependencies'].append(module_path)
+        if module_paths := resolve_kmod(self, module):
+            self.config_dict['dependencies'].append(module_paths)
         else:
             self.logger.warning(f'Failed to add kernel module {module} to dependencies')
+
+    self.logger.warning(self.config_dict['dependencies'])
 
     get_module_metadata(self)

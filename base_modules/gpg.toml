@@ -3,9 +3,10 @@ paths = [ "usr/bin" ]
 
 [custom_parameters]
 gpg_public_key = "str"  # The path to the public key to import
+gpg_tty_path = "str"  # The path to the tty to use for pinentry
 
 [imports.init_pre]
-"base_modules.gpg" = [ "symlink_pinentry", "import_keys" ]
+"base_modules.gpg" = [ "symlink_pinentry", "set_gpg_tty", "import_keys" ]
 
 [imports.build_pre]
 "base_modules.gpg" = [ "fetch_keys" ]

@@ -1,6 +1,6 @@
 __author__ = 'desultory'
 
-__version__ = '0.1.6'
+__version__ = '0.2.0'
 
 
 def fetch_keys(self):
@@ -31,3 +31,11 @@ def symlink_pinentry(self):
     """
     pinentry = self.config_dict.get('pinentry', 'pinentry-tty')
     return [f"ln -s /usr/bin/{pinentry} /usr/bin/pinentry"]
+
+
+def set_gpg_tty(self):
+    """
+    Set GPG_TTY
+    """
+    tty_path = self.config_dict.get('gpg_tty_path', '/dev/console')
+    return [f'export GPG_TTY={tty_path}']

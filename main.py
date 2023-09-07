@@ -23,4 +23,12 @@ if __name__ == '__main__':
     kwargs = {'logger': logger}
     if config := args.config_file:
         kwargs['config'] = config
+
     generator = InitramfsGenerator(**kwargs)
+
+    try:
+        generator.build_structure()
+        generator.generate_init()
+    except Exception as e:
+        logger.error(e)
+        print(generator.config_dict)
