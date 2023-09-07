@@ -73,7 +73,7 @@ def get_all_modules(self):
     modules = cmd.stdout.decode('utf-8').split('\n')[1:]
     modules = [module.split()[0] for module in modules if module and module.split()[0] != 'Module']
 
-    self.logger.info(f'Found {len(modules)} active kernel modules')
+    self.logger.debug(f'Found {len(modules)} active kernel modules')
     return modules
 
 
@@ -110,6 +110,7 @@ def fetch_modules(self):
     Fetches all kernel modules
     """
     modules = self.config_dict.get('kernel_modules', get_all_modules(self))
+    self.logger.info("Loading kernel modules: %s" % modules)
 
     for module in modules:
         if module_paths := resolve_kmod(self, module):
@@ -120,3 +121,23 @@ def fetch_modules(self):
     self.logger.warning(self.config_dict['dependencies'])
 
     get_module_metadata(self)
+
+
+def load_modules(self):
+    """
+    Loads all kernel modules
+    """
+    kmods = self.config_dict['init_kmods']
+
+    if not kmods:
+        if kmods := self.config_dict.get('kernel_modules'):
+            self.logger.info("Using kernel_modules as init_kmods")
+        else:
+            kmods = get_all_modules(self)
+
+    self.logger.info("Init kernel modules: %s" % kmods)
+
+    module_str = ' '.join(kmods)
+    return [f"modprobe -v {module_str}"]
+
+

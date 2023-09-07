@@ -30,5 +30,6 @@ if __name__ == '__main__':
         generator.build_structure()
         generator.generate_init()
     except Exception as e:
-        logger.error(e)
+        logger.error("\n\nError: %s\n\n" % e)
+        logger.info("Dumping config dict:\n")
         print(generator.config_dict)

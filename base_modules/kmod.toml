@@ -4,7 +4,10 @@ binaries = [ "modprobe" ]
 [custom_parameters]
 kernel_modules = "NoDupFlatList"  # Kernel modules to pull into the initramfs
 kernel_version = "str"  # Kernel version to use for the initramfs
-
+init_kmods = "NoDupFlatList"  # Kernel modules to load at initramfs startup
 
 [imports.build_pre]
 "base_modules.kmod" = [ "fetch_modules" ]
+
+[imports.init_pre]
+"base_modules.kmod" = [ "load_modules" ]
