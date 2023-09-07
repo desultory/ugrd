@@ -26,13 +26,38 @@ The main configuration file is `config.toml`
 
 #### base_modules.base
 
-#### out_dir
-
 Setting `out_dir` changes where the script writes the output files, it defaults to `initramfs` in the local dir.
-
-#### clean
-
 Setting `clean` to `true` makes the script clean the output directory prior to generating it.
+`shebang` is set by default, and sets the shebang on the init script.
+`root_mount` takes a label or UUID for a volume to be mounted as the root filesystem.
+`mounts.<mountname>` is defined with fstab details, such as `source`, `destination` and `type`.
+
+#### base_modules.kmod
+
+This module is used to embed kernel modules into the initramfs. Both parameters are optional.
+If the module is loaded, but configuration options are not passed, the generator will pull all currently running kernel modules from the active kernel.
+
+`kernel_modules` is used to define a list of kernel module names to pull into the initramfs.
+`kernel_version` is used to specify the kernel version to pull modules for, should be a directory under `/lib/modules/<kernel_version>`.
+
+#### base_modules.gpg
+
+This module is required to perform GPG decryption within the initramfs
+
+`gpg_public_key` is used to specify the location of a GPG public key to be added to the initramfs and imported into the keyring on start.
+
+#### base_modules.cryptsetup
+
+This module is used to decrypt LUKS volumes in the initramfs.
+
+`root_devices` is a dictionary that contains the root devices to decrypt. `key_file` is optional within this dict, but `uuid` is required, ex:
+
+```
+[root_devices.crypt]
+uuid = "9e04e825-7f60-4171-815a-86e01ec4c4d3"
+```
+
+`key_type` can be either `gpg` or `keyfile`. If it is not set, cryptsetup will prompt for a passphrase. If this is set globally, it applies to all `root_devices`.
 
 ### General config
 

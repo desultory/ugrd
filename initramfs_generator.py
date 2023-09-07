@@ -5,6 +5,7 @@ __version__ = "0.4.1"
 
 from subprocess import run
 from tomllib import load
+from pathlib import Path
 
 from lib_sniffer import LibrarySniffer
 from zen_custom import loggify, handle_plural, NoDupFlatList
@@ -145,7 +146,7 @@ class InitramfsConfigDict(dict):
 
 @loggify
 class InitramfsGenerator:
-    __version__ = "0.3.0"
+    __version__ = "0.3.1"
 
     def __init__(self, config='config.toml', out_dir='initramfs', clean=False, *args, **kwargs):
         self.config_filename = config
@@ -236,16 +237,20 @@ class InitramfsGenerator:
         Generates the init file
         """
         from os import chmod
+
         init = [self.config_dict['shebang']]
         [init.extend(func(self)) for func in self.config_dict['imports'].get('init_pre')]
         if self.config_dict['imports'].get('custom_init'):
             [init.extend(func(self)) for func in self.config_dict['imports'].get('custom_init')]
         else:
             init += self.generate_init_main()
+
         [init.extend(func(self)) for func in self.config_dict['imports'].get('init_final')]
-        with open(f"{self.out_dir}/init", 'w', encoding='utf-8') as init_file:
+
+        init_path = Path(self.out_dir, 'init')
+        with open(init_path, 'w', encoding='utf-8') as init_file:
             [init_file.write(f"{line}\n") for line in init]
-        chmod(f"{self.out_dir}/init", 0o755)
+        chmod(init_path, 0o755)
 
     def generate_structure(self):
         """
@@ -253,15 +258,21 @@ class InitramfsGenerator:
         """
         from os.path import isdir
         from os import makedirs
+
         if not isdir(self.out_dir):
             makedirs(self.out_dir)
             self.logger.info("Created output directory: %s" % self.out_dir)
 
-        for subdir in set(self.config_dict['paths'] + list(self.config_dict['mounts'].keys())):
-            target_dir = f"{self.out_dir}/{subdir}"
+        for subdir in set(self.config_dict['paths']):
+            subdir_path = Path(subdir)
+            subdir_relative_path = subdir_path.relative_to(subdir_path.anchor)
+            target_dir = self.out_dir / subdir_relative_path
+
             if not isdir(target_dir):
                 makedirs(target_dir)
                 self.logger.info("Created subdirectory: %s" % target_dir)
+            else:
+                self.logger.info("Subdirectory already exists: %s" % target_dir)
 
     def deploy_dependencies(self):
         """
@@ -273,14 +284,15 @@ class InitramfsGenerator:
         from os import makedirs
 
         for dependency in self.config_dict['dependencies']:
-            dest_file = f"{self.out_dir}{dependency}"
+            source_file_path = Path(dependency)
+            dest_file_path = self.out_dir / source_file_path.relative_to(source_file_path.anchor)
+            dir_name = dirname(dest_file_path)
 
-            dir_name = dirname(dest_file)
             if not isdir(dir_name):
                 makedirs(dir_name)
                 self.logger.info("Created subdirectory: %s" % dir_name)
 
-            copy2(dependency, dest_file)
-            self.logger.info("Copied '%s' to: %s" % (dependency, dest_file))
+            copy2(dependency, dest_file_path)
+            self.logger.info("Copied '%s' to: %s" % (dependency, dest_file_path))
 
 

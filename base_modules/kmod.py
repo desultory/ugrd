@@ -1,6 +1,6 @@
 __author__ = 'desultory'
 
-__version__ = '0.1.5'
+__version__ = '0.2.0'
 
 from subprocess import run
 
@@ -9,7 +9,12 @@ def resolve_kmod(self, module_name):
     """
     Gets the file path of a kernel module
     """
-    cmd = run(['modinfo', '--field', 'filename', module_name], capture_output=True)
+    args = ['modinfo', '--field', 'filename', module_name]
+
+    if self.config_dict.get('kernel_version'):
+        args += ['--set-version', self.config_dict['kernel_version']]
+
+    cmd = run(args, capture_output=True)
     if cmd.returncode != 0:
         self.logger.error(f'Kernel module {module_name} not found')
         self.logger.debug(f'Error: {cmd.stderr.decode("utf-8").strip()}')

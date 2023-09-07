@@ -11,5 +11,5 @@ paths = [ "usr/lib64", "run" ]
 "base_modules.cryptsetup" = [ "copy_libgcc" ]
 
 [custom_parameters]
-root_devices = "dict"
-key_type = "str"
+root_devices = "dict"  # Dict of root devices, keyed by device name
+key_type = "str"  # Type of key to use for unlocking, can be set for each device

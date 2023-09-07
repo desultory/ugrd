@@ -1,5 +1,6 @@
 [custom_parameters]
 kernel_modules = "str"  # Kernel modules to pull into the initramfs
+kernel_version = "str"  # Kernel version to use for the initramfs
 
 
 [imports.build_pre]
