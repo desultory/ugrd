@@ -1,6 +1,6 @@
 
 __author__ = "desultory"
-__version__ = "0.4.0"
+__version__ = "0.4.1"
 
 
 from subprocess import run
@@ -27,7 +27,7 @@ class InitramfsConfigDict(dict):
         This dict does not act like a normal dict, setitem is designed to append when the overrides are used
         Default parameters are defined in builtin_parameters
     """
-    __version__ = "0.4.1"
+    __version__ = "0.4.2"
 
     builtin_parameters = {'binaries': NoDupFlatList,
                           'dependencies': NoDupFlatList,
@@ -39,12 +39,12 @@ class InitramfsConfigDict(dict):
                           'custom_processing': dict}
 
     def __init__(self, *args, **kwargs):
-        self.lib_sniffer = LibrarySniffer()
+        self.lib_sniffer = LibrarySniffer(logger=self.logger)
 
         # Define the default parameters
         for parameter, default_type in self.builtin_parameters.items():
             if default_type == NoDupFlatList:
-                super().__setitem__(parameter, default_type(no_warn=True, log_bump=10, logger=self.logger))
+                super().__setitem__(parameter, default_type(no_warn=True, log_bump=10, logger=self.logger, _log_init=False))
             else:
                 super().__setitem__(parameter, default_type())
 
@@ -112,7 +112,7 @@ class InitramfsConfigDict(dict):
             function_list = [getattr(import_module(f"{module_name}"), function_name) for function_name in function_names]
 
             if import_type not in self['imports']:
-                self['imports'][import_type] = NoDupFlatList(log_bump=10, logger=self.logger)
+                self['imports'][import_type] = NoDupFlatList(log_bump=10, logger=self.logger, _log_init=False)
             self['imports'][import_type] += function_list
             self.logger.info("Updated import '%s': %s" % (import_type, function_list))
 

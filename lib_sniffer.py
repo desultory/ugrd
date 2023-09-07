@@ -22,7 +22,7 @@ class LibrarySniffer:
                 raise ValueError("Computed value has an invalid type: %s\nExpected: %s, Detected: %s" % (val, type(default), type(val)))
             setattr(self, parameter, kwargs.get(parameter, default))
 
-        self.library_paths = NoDupFlatList()
+        self.library_paths = NoDupFlatList(logger=self.logger, log_bump=10, _log_init=False)
 
         self.parse_ldso()
 
