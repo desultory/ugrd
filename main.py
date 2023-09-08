@@ -18,7 +18,7 @@ if __name__ == '__main__':
     args = argparser.parse_args()
 
     logger = logging.getLogger()
-    logger.setLevel(10)
+    logger.setLevel(20)
 
     kwargs = {'logger': logger}
     if config := args.config_file:

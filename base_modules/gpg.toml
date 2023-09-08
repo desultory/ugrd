@@ -1,4 +1,4 @@
-binaries = [ "ln", "gpg", "gpg-agent", "gpg-connect-agent", "pinentry-tty", "tty", "/usr/libexec/scdaemon" ]
+binaries = [ "ln", "gpg", "gpg-agent", "gpg-connect-agent", "pinentry-tty", "tty" ]
 paths = [ "usr/bin" ]
 
 # GPG works best under agetty for input

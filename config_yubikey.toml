@@ -1,0 +1,38 @@
+# This module generates an initramfs that uses a yubikey to decrypt a luks keyfile.
+# The sc_public_key must be specified.
+
+
+modules = [
+  "base_modules.base",
+  "base_modules.kmod",
+  "base_modules.cryptsetup",
+  "base_modules.btrfs",
+  "base_modules.serial",
+  "base_modules.gpg",
+  "base_modules.smartcard"
+]
+
+out_dir = "/usr/src/initramfs"
+clean = true
+sc_public_key = "/home/larry/yubikey_public.asc"
+
+# The dm-crypt module is added in the cryptsetup module, activated by the kmod module.
+kernel_modules = [ 'nvme', 'uas', 'vfat' ]
+
+# This is only necessary if the keyfile is on another device.
+# The keyfile could be added as a dependency.
+[mounts.boot]
+type = "vfat"
+
+  [mounts.boot.source]
+  uuid = "4886-A631"
+
+# The label of the volume under the LUKS partition, a UUID could be used
+[root_mount]
+label = "rootfs"
+
+# Information about the LUKS volume
+[root_devices.crypt]
+uuid = "eee3611d-9b36-42b3-8ed2-62173064c76a"
+key_type = "gpg"
+key_file = "/boot/2t.luks.gpg"
