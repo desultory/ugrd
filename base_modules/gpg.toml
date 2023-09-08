@@ -5,17 +5,11 @@ paths = [ "usr/bin" ]
 depends = [ "base_modules.serial" ]
 primary_console = "tty0"
 
-[custom_parameters]
-gpg_public_key = "str"  # The path to the public key to import
-
 [imports.init_pre]
 "base_modules.gpg" = [ "symlink_pinentry" ]
 
 [imports.init_main]
-"base_modules.gpg" = [ "start_agent", "import_keys" ]
-
-[imports.build_pre]
-"base_modules.gpg" = [ "fetch_keys" ]
+"base_modules.gpg" = [ "start_agent" ]
 
 [serial.tty0]
 type = "tty"

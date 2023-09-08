@@ -11,8 +11,15 @@ def generate_fstab(self):
     fstab_path = self.config_dict['out_dir'] / 'etc/fstab'
 
     with open(fstab_path, 'w') as fstab_file:
-        for mount, config in self.config_dict['mounts'].items():
-            fstab_file.write(f"{config}\n")
+        for mount_name, mount_info in self.config_dict['mounts'].items():
+            fstab_file.write(f"{mount_info.to_fstab_entry()}\n")
+
+
+def mount_base(self):
+    """
+    Generates mount commands for the base mounts
+    """
+    return [mount.to_mount_cmd() for mount in self.config_dict['mounts'].values() if mount.base_mount]
 
 
 def generate_nodes(self):
@@ -43,7 +50,7 @@ def mount_fstab(self):
     """
     Generates the init line for mounting the fstab
     """
-    padding = r"echo '\n\n\n'"
+    padding = r'echo "\n\n\n"'
     wait_prompt = "read -p 'Press enter once devices have settled'"
     mount_cmd = "mount -a || (echo 'Failed to mount fstab. Please ensure mounts are made and then exit.' && bash)"
     return [padding, wait_prompt, mount_cmd]
@@ -60,14 +67,6 @@ def mount_root(self):
         mount_str += f"-U {self.config_dict['root_mount']['uuid']} "
     else:
         self.logger.critical("UNABLE TO CONFIGURE ROOT MOUNT")
-        self.logger.critical("""
-                             A root mount must be configured with:
-                             root_mount:
-                               mount_type: parameter
-                             ex:
-                             root_mount:
-                               label: rootfs
-                             """)
     mount_str += "/mnt/root || (echo 'Failed to mount root partition' && bash)"
     return [mount_str]
 
@@ -88,14 +87,19 @@ def _process_mounts_multi(self, key, mount_config):
         mount_config['destination'] = f"/{key}"  # prepend a slash
 
     try:
-        self['mounts'][key] = FstabMount(**mount_config)
+        self['mounts'][key] = Mount(**mount_config)
         self['paths'].append(mount_config['destination'])
     except ValueError as e:
         self.logger.error("Unable to process mount: %s" % key)
         self.logger.error(e)
 
 
-class FstabMount:
+class Mount:
+    """
+    Abstracts a linux mount.
+    """
+    __version__ = '0.2.0'
+
     parameters = {'destination': True,
                   'source': True,
                   'type': True,
@@ -111,6 +115,8 @@ class FstabMount:
             elif self.parameters[parameter]:
                 raise ValueError("Required parameter was not passed: %s" % parameter)
 
+        self.base_mount = kwargs.pop('base_mount', False)
+
     def validate_destination(self, destination):
         """
         Validates the destination
@@ -119,26 +125,57 @@ class FstabMount:
             return False
         return True
 
-    def get_source(self):
+    def get_source(self, pad=False):
         """
-        returns the fstab source string based on the config
+        returns the mount source string based on the config
         """
+        out_str = ''
         if isinstance(self.source, dict):
             if 'uuid' in self.source:
-                return f"UUID={self.source['uuid']}".ljust(44, ' ')
+                out_str = f"UUID={self.source['uuid']}"
+            elif 'label' in self.source:
+                out_str = f"LABEL={self.source['label']}"
             else:
                 raise ValueError("Unable to process source entry: %s" % repr(self.source))
         else:
-            return self.source.ljust(16, ' ')
+            out_str = self.source
 
-    def __str__(self):
+        if pad:
+            out_str = out_str.ljust(44, ' ')
+
+        return out_str
+
+    def to_fstab_entry(self):
         """
         Prints the object as a fstab entry
         """
         out_str = ''
-        out_str += self.get_source()
+        out_str += self.get_source(pad=True)
         out_str += self.destination.ljust(16, ' ')
         out_str += self.type.ljust(8, ' ')
         if hasattr(self, 'options'):
             out_str += self.options
         return out_str
+
+    def to_mount_cmd(self):
+        """
+        Prints the object as a mount command
+        """
+        out_str = f"mount -t {self.type} {self.get_source()} {self.destination}"
+        if hasattr(self, 'options'):
+            out_str += f" -o {self.options}"
+
+        return out_str
+
+    def __str__(self):
+        """
+        Returns the fstab entry if it's not a base mount,
+        otherwise returns the mount command
+        """
+        if self.base_mount:
+            self.logger.debug("Base mount: %s" % self.destination)
+            return self.to_mount_cmd()
+        else:
+            self.logger.debug("Fstab mount: %s" % self.destination)
+            return self.to_fstab_entry()
+

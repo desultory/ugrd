@@ -35,6 +35,9 @@ minor = 1
 [imports.build_tasks]
 "base_modules.base" = [ "generate_fstab", "generate_nodes" ]
 
+[imports.init_pre]
+"base_modules.base" = [ "mount_base" ]
+
 [imports.init_main]
 "base_modules.base" = [ "mount_fstab" ]
 
@@ -56,11 +59,17 @@ dev_nodes = "dict"  # Add the dev_nodes property, used to define the dev nodes t
 [mounts.proc]
 type = "proc"
 source = "proc"
+options = "nodev,noexec,nosuid"
+base_mount = true
 
 [mounts.sys]
 type = "sysfs"
 source = "sysfs"
+options = "nodev,noexec,nosuid"
+base_mount = true
 
 [mounts.dev]
 type = "devtmpfs"
 source = "devtmpfs"
+options = "nosuid,mode=0755"
+base_mount = true

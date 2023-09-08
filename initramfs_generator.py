@@ -161,7 +161,6 @@ class InitramfsConfigDict(dict):
             self['custom_parameters'] = module_config['custom_parameters']
 
         for name, value in module_config.items():
-            self.logger.warning(name)
             if name in ('custom_parameters', 'depends'):
                 continue
             self[name] = value

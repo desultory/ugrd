@@ -1,0 +1,14 @@
+binaries = [ "/usr/libexec/scdaemon" ]
+
+depends = [ "base_modules.gpg" ]
+primary_console = "tty0"
+
+[custom_parameters]
+sc_public_key = "str"  # The path to the public key to import
+
+[imports.build_pre]
+"base_modules.smartcard" = [ "fetch_keys" ]
+
+[imports.init_main]
+"base_modules.smartcard" = [ "import_keys", "check_card" ]
+
