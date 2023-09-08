@@ -34,7 +34,7 @@ minor = 1
 [imports.build_tasks]
 "base_modules.base" = [ "generate_fstab", "generate_nodes" ]
 
-[imports.init_pre]
+[imports.init_main]
 "base_modules.base" = [ "mount_fstab" ]
 
 [imports.init_late]

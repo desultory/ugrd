@@ -118,8 +118,6 @@ def fetch_modules(self):
         else:
             self.logger.warning(f'Failed to add kernel module {module} to dependencies')
 
-    self.logger.warning(self.config_dict['dependencies'])
-
     get_module_metadata(self)
 
 

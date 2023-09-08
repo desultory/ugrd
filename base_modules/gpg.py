@@ -33,9 +33,3 @@ def symlink_pinentry(self):
     return [f"ln -s /usr/bin/{pinentry} /usr/bin/pinentry"]
 
 
-def set_gpg_tty(self):
-    """
-    Set GPG_TTY
-    """
-    tty_path = self.config_dict.get('gpg_tty_path', '/dev/console')
-    return [f'export GPG_TTY={tty_path}']

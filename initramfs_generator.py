@@ -62,8 +62,18 @@ class InitramfsConfigDict(dict):
                 self.logger.info("Using custom plural setitem for: %s" % key)
                 handle_plural(func)(self, value)
             elif expected_type in (list, NoDupFlatList):
+                self.logger.debug("Using list setitem for: %s" % key)
                 self[key].append(value)
+            elif expected_type == dict:
+                self.logger.debug("Using dict setitem for: %s" % key)
+                if key not in self:
+                    self.logger.info("Setting dict '%s' to: %s" % (key, value))
+                    super().__setitem__(key, value)
+                else:
+                    self.logger.info("Updating dict '%s' with: %s" % (key, value))
+                    self[key].update(value)
             else:
+                self.logger.error("Detected undefined parameter type '%s' with value: %s" % (key, value))
                 super().__setitem__(key, expected_type(value))
         else:  # Otherwise set it like a normal dict item
             self.logger.error("Detected undefined parameter type '%s' with value: %s" % (key, value))
@@ -91,7 +101,6 @@ class InitramfsConfigDict(dict):
 
         if parameter_type == "NoDupFlatList":
             super().__setitem__(parameter_name, NoDupFlatList(no_warn=True, log_bump=10, logger=self.logger, _log_init=False))
-            self.logger.warning("Initializing custom parameter '%s' as a NoDupFlatList" % parameter_name)
         elif parameter_type == "list":
             super().__setitem__(parameter_name, [])
             self[parameter_name] = []
