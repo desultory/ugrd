@@ -35,4 +35,4 @@ label = "rootfs"
 [root_devices.crypt]
 uuid = "eee3611d-9b36-42b3-8ed2-62173064c76a"
 key_type = "gpg"
-key_file = "/boot/2t.luks.gpg"
+key_file = "/boot/rootfs.luks.gpg"
