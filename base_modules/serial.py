@@ -1,3 +1,7 @@
+__author__ = "desultory"
+__version__ = "0.2.0"
+
+
 def custom_init(self):
     """
     init override
@@ -14,27 +18,19 @@ def serial_init(self):
     """
     start agetty
     """
-    try:
-        out = list()
-        for name, config in self.config_dict['serial'].items():
-            if config.get('local'):
-                out.append(f"agetty --autologin root --login-program /init_main.sh -L {config['baud']} {name} {config['type']}")
-            else:
-                out.append(f"agetty --autologin root --login-program /init_main.sh {config['baud']} {name} {config['type']}")
-        return out
-    except (KeyError, AttributeError):
-        self.logger.error("UNABLE TO COFIGURE SERIAL")
-        self.logger.error("""
-                          A serial dict configured with:
-                          serial:
-                            interface_name:
-                              baud: baud rate
-                              type: interface type
-                          optional config:
-                            local: bool - controls the -L flag for agetty
-                          ex:
-                          serial:
-                            ttyS1:
-                              baud: 115200
-                              type: vt100
-                          """)
+    name = self.config_dict['primary_console']
+    out_str = f"agetty --autologin root --login-program /init_main.sh {name}"
+
+    config = self.config_dict['serial'][name]
+
+    if config.get('local'):
+        out_str += " -L"
+
+    if config.get('baud'):
+        out_str += f" {config['baud']}"
+
+    if config.get('type'):
+        out_str += f" {config['type']}"
+
+    return [out_str]
+

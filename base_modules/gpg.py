@@ -1,6 +1,6 @@
 __author__ = 'desultory'
 
-__version__ = '0.2.0'
+__version__ = '0.2.2'
 
 
 def fetch_keys(self):
@@ -33,3 +33,8 @@ def symlink_pinentry(self):
     return [f"ln -s /usr/bin/{pinentry} /usr/bin/pinentry"]
 
 
+def start_agent(self):
+    """
+    Start the GPG agent
+    """
+    return ["gpg-agent"]

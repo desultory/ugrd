@@ -7,6 +7,7 @@ binaries = [
   "lsblk",
   "blkid",
   "mount",
+  "sleep",
   "umount",
   "switch_root"
 ]
@@ -37,11 +38,8 @@ minor = 1
 [imports.init_main]
 "base_modules.base" = [ "mount_fstab" ]
 
-[imports.init_late]
-"base_modules.base" = [ "mount_root" ]
-
 [imports.init_final]
-"base_modules.base" = [ "clean_mounts", "switch_root" ]
+"base_modules.base" = [ "mount_root", "clean_mounts", "switch_root" ]
 
 [custom_parameters]
 shebang = "str"  # Add the shebang property, used because this is a bash script

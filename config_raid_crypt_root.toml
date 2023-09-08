@@ -1,8 +1,8 @@
 modules = [
   "base_modules.base",
   "base_modules.serial",
-  "base_modules.cryptsetup",
   "base_modules.gpg",
+  "base_modules.cryptsetup",
   "base_modules.btrfs"
 ]
 clean = true

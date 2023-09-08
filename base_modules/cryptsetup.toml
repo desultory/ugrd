@@ -4,7 +4,7 @@ paths = [ "usr/lib64", "run" ]
 [imports.init_pre]
 "base_modules.cryptsetup" = [ "configure_library_dir" ]
 
-[imports.init_main]
+[imports.init_late]
 "base_modules.cryptsetup" = [ "crypt_init" ]
 
 [imports.build_tasks]

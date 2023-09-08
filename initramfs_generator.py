@@ -1,7 +1,6 @@
 
 __author__ = "desultory"
-__version__ = "0.4.4"
-
+__version__ = "0.5.0"
 
 from subprocess import run
 from tomllib import load
@@ -28,7 +27,7 @@ class InitramfsConfigDict(dict):
         This dict does not act like a normal dict, setitem is designed to append when the overrides are used
         Default parameters are defined in builtin_parameters
     """
-    __version__ = "0.4.3"
+    __version__ = "0.4.4"
 
     builtin_parameters = {'binaries': NoDupFlatList,
                           'dependencies': NoDupFlatList,
@@ -73,7 +72,6 @@ class InitramfsConfigDict(dict):
                     self.logger.info("Updating dict '%s' with: %s" % (key, value))
                     self[key].update(value)
             else:
-                self.logger.error("Detected undefined parameter type '%s' with value: %s" % (key, value))
                 super().__setitem__(key, expected_type(value))
         else:  # Otherwise set it like a normal dict item
             self.logger.error("Detected undefined parameter type '%s' with value: %s" % (key, value))
@@ -112,8 +110,11 @@ class InitramfsConfigDict(dict):
         updates the dependencies using the passed binary name
         """
         self.logger.debug("Calculating dependencies for: %s" % binary)
+        dependencies = calculate_dependencies(binary)
 
-        self['dependencies'] = calculate_dependencies(binary)
+        self.logger.debug("Calculating library paths for: %s" % dependencies)
+        self['dependencies'] += dependencies
+
         self['binaries'].append(binary)
 
     @handle_plural
@@ -125,6 +126,7 @@ class InitramfsConfigDict(dict):
 
         from importlib import import_module
         for module_name, function_names in import_value.items():
+            self.logger.debug("Importing module: %s" % module_name)
             function_list = [getattr(import_module(f"{module_name}"), function_name) for function_name in function_names]
 
             if import_type not in self['imports']:
@@ -149,19 +151,28 @@ class InitramfsConfigDict(dict):
             module_config = load(module_file)
             self.logger.debug("Loaded module config: %s" % module_config)
 
+        if 'depends' in module_config:
+            for depend in module_config['depends']:
+                if depend not in self['modules']:
+                    print(self)
+                    raise KeyError(f"Module '{depend}' not found in config")
+
         if 'custom_parameters' in module_config:
             self['custom_parameters'] = module_config['custom_parameters']
 
         for name, value in module_config.items():
-            if name == 'custom_parameters':
+            self.logger.warning(name)
+            if name in ('custom_parameters', 'depends'):
                 continue
             self[name] = value
             self.logger.debug("Using module '%s, set '%s' to: %s" % (module, name, value))
 
+        self['modules'].append(module)
+
 
 @loggify
 class InitramfsGenerator:
-    __version__ = "0.3.3"
+    __version__ = "0.3.5"
 
     def __init__(self, config='config.toml', out_dir='initramfs', clean=False, *args, **kwargs):
         self.config_filename = config
@@ -240,9 +251,12 @@ class InitramfsGenerator:
         """
         out = list()
         for init_type in self.init_types:
-            self.logger.info("Configuring init stage: %s" % init_type)
             if init_type != 'init_pre' and init_type != 'init_final':
-                [out.extend(func(self)) for func in self.config_dict['imports'].get(init_type, [])]
+                self.logger.info("Configuring init stage: %s" % init_type)
+                out += ["\n\n# Begin %s" % init_type]
+                for func in self.config_dict['imports'].get(init_type, []):
+                    self.logger.info("Running init generator function: %s" % func.__name__)
+                    out.extend(func(self))
         return out
 
     def generate_init(self):
@@ -262,7 +276,6 @@ class InitramfsGenerator:
             init += ["\n\n# Begin custom_init"]
             [init.extend(func(self)) for func in self.config_dict['imports'].get('custom_init')]
         else:
-            init += ["\n\n# Begin init_main"]
             init += self.generate_init_main()
 
         init += ["\n\n# Begin init_final"]
@@ -309,7 +322,7 @@ class InitramfsGenerator:
 
         for dependency in self.config_dict['dependencies']:
             source_file_path = Path(dependency)
-            dest_file_path = self.out_dir / source_file_path.relative_to('/')
+            dest_file_path = self.out_dir / source_file_path.relative_to(source_file_path.anchor)
 
             source_file_path.relative_to(source_file_path.anchor)
             dir_name = dirname(dest_file_path)

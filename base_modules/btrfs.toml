@@ -1,4 +1,4 @@
 binaries = [ "btrfs" ]
 
-[imports.init_main]
+[imports.init_late]
 "base_modules.btrfs" = [ "btrfs_scan" ]

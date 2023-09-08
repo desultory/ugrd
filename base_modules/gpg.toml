@@ -1,17 +1,22 @@
-binaries = [ "ln", "gpg", "gpg-agent", "pinentry-tty", "tty" ]
+binaries = [ "ln", "gpg", "gpg-agent", "gpg-connect-agent", "pinentry-tty", "tty", "/usr/libexec/scdaemon" ]
 paths = [ "usr/bin" ]
+
+# GPG works best under agetty for input
+depends = [ "base_modules.serial" ]
+primary_console = "tty0"
 
 [custom_parameters]
 gpg_public_key = "str"  # The path to the public key to import
 
-[dev_nodes.tty]
-path = "/dev/tty"
-mode = 0o666
-major = 5
-minor = 0
-
 [imports.init_pre]
-"base_modules.gpg" = [ "symlink_pinentry", "import_keys" ]
+"base_modules.gpg" = [ "symlink_pinentry" ]
+
+[imports.init_main]
+"base_modules.gpg" = [ "start_agent", "import_keys" ]
 
 [imports.build_pre]
 "base_modules.gpg" = [ "fetch_keys" ]
+
+[serial.tty0]
+type = "tty"
+

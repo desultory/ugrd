@@ -4,4 +4,5 @@ binaries = [ "agetty" ]
 "base_modules.serial" = [ "custom_init" ]
 
 [custom_parameters]
-serial = "dict"
+serial = "dict"  # Contains serial port entries
+primary_console = "str"  # Contains the primary console device
