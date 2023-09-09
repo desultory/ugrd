@@ -16,8 +16,8 @@ out_dir = "/usr/src/initramfs"
 clean = true
 sc_public_key = "/home/larry/yubikey_public.asc"
 
-# The dm-crypt module is added in the cryptsetup module, activated by the kmod module.
-kernel_modules = [ 'nvme', 'uas', 'vfat' ]
+# Different modules will be required on different systems. Only modules needed to mount the root are required.
+kernel_modules = [ 'nvme', 'uas', 'vfat', 'dm_crypt' ]
 
 # This is only necessary if the keyfile is on another device.
 # The keyfile could be added as a dependency.

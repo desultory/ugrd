@@ -2,8 +2,13 @@
 Similar to lddtree
 """
 
+__author__ = 'desultory'
+__version__ = '0.1.0'
+
 
 from zen_custom import loggify, NoDupFlatList
+
+from pathlib import Path
 
 
 @loggify
@@ -13,7 +18,7 @@ class LibrarySniffer:
     First sees what the environment is using
     """
 
-    parameters = {'ldso_file': '/etc/ld.so.conf'}
+    parameters = {'ldso_file': Path('/etc/ld.so.conf')}
 
     def __init__(self, *args, **kwargs):
         for parameter, default in self.parameters.items():
@@ -32,18 +37,19 @@ class LibrarySniffer:
         """
         if not config_file:
             config_file = self.ldso_file
-        if not config_file.startswith('/'):
-            config_file = f"/etc/{config_file}"
-            self.logger.debug("Relative path detected")
-        if '*' in config_file:
-            from glob import glob
-            self.logger.info("Glob detected, evaluating and recursing: %s" % config_file)
-            for file in glob(config_file):
-                return self.parse_ldso(config_file=file)
+
+        config_file = config_file if config_file.is_absolute() else "/etc" / config_file
+
+        # Handle globs
+        if any(char in '*?[]' for char in str(config_file)):
+            self.logger.info("Glob detected, evaluating: %s" % config_file)
+            for file_match in config_file.parent.glob(config_file.name):
+                self.logger.info("Recursing into glob match: %s" % file_match)
+                return self.parse_ldso(config_file=Path(file_match))
 
         self.logger.info("Attempting to parse ld.so file: %s" % config_file)
         with open(config_file, 'r') as ldso:
-            from os.path import isdir
+            from os.path import isdir  # just used to check if the line in a file is a directory
             for line in ldso:
                 line = line.rstrip()  # remove newline
                 if line.startswith("#"):
@@ -52,7 +58,7 @@ class LibrarySniffer:
                 elif line.startswith("include "):
                     include = line.removeprefix("include ")
                     self.logger.info("ld.so include detected, loading: %s" % include)
-                    self.parse_ldso(config_file=include)
+                    self.parse_ldso(config_file=Path(include))
                 elif isdir(line):
                     self.logger.info("Detected ldso config path: %s" % line)
                     self.library_paths.append(line)

@@ -1,12 +1,12 @@
 
 __author__ = "desultory"
-__version__ = "0.5.0"
+__version__ = "0.5.5"
 
 from subprocess import run
 from tomllib import load
 from pathlib import Path
 
-from lib_sniffer import LibrarySniffer
+#  from lib_sniffer import LibrarySniffer
 from zen_custom import loggify, handle_plural, NoDupFlatList
 
 
@@ -27,7 +27,7 @@ class InitramfsConfigDict(dict):
         This dict does not act like a normal dict, setitem is designed to append when the overrides are used
         Default parameters are defined in builtin_parameters
     """
-    __version__ = "0.4.4"
+    __version__ = "0.5.0"
 
     builtin_parameters = {'binaries': NoDupFlatList,
                           'dependencies': NoDupFlatList,
@@ -39,8 +39,6 @@ class InitramfsConfigDict(dict):
                           'custom_processing': dict}
 
     def __init__(self, *args, **kwargs):
-        self.lib_sniffer = LibrarySniffer(logger=self.logger)
-
         # Define the default parameters
         for parameter, default_type in self.builtin_parameters.items():
             if default_type == NoDupFlatList:

@@ -1,7 +1,5 @@
 binaries = [ "cryptsetup" ]
 paths = [ "usr/lib64", "run" ]
-kernel_modules = [ "dm_crypt" ]  # This should warn if the kmod module is not being used, but this is not strictly required
-
 
 [imports.init_pre]
 "base_modules.cryptsetup" = [ "configure_library_dir" ]
