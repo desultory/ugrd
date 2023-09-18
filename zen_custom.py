@@ -1,7 +1,7 @@
 """
 A collection of classes and decorators
 """
-__version__ = '2.7.0'
+__version__ = '2.8.0'
 __author__ = 'desultory'
 
 import logging
@@ -209,6 +209,17 @@ def loggify(cls):
                 self.logger.log(5, "Set '%s' to:\n%s" % (name, value))
             else:
                 self.logger.log(5, "Set '%s' to: %s" % (name, value))
+
+        def __setitem__(self, name, value):
+            """
+            Override for dicts,
+            return an error if the parent class doesn't have __setitem__
+            """
+            if hasattr(super(), '__setitem__'):
+                super().__setitem__(name, value)
+                self.logger.log(5, "Set '%s' to: %s" % (name, value))
+            else:
+                raise NotImplementedError("The parent class does not have __setitem__")
 
     ClassWrapper.__name__ = cls.__name__
     ClassWrapper.__module__ = cls.__module__

@@ -1,6 +1,6 @@
 __author__ = 'desultory'
 
-__version__ = '0.2.3'
+__version__ = '0.2.5'
 
 from subprocess import run
 
@@ -109,10 +109,13 @@ def fetch_modules(self):
     """
     Fetches all kernel modules
     """
-    modules = self.config_dict.get('kernel_modules', get_all_modules(self))
-    self.logger.info("Loading kernel modules: %s" % modules)
+    if 'kernel_modules' not in self.config_dict or not self.config_dict['kernel_modules']:
+        self.logger.info("No kernel modules specified, fetching all")
+        self.config_dict['kernel_modules'] = get_all_modules(self)
 
-    for module in modules:
+    self.logger.info("Fetching kernel modules: %s" % self.config_dict['kernel_modules'])
+
+    for module in self.config_dict['kernel_modules']:
         if module_paths := resolve_kmod(self, module):
             self.config_dict['dependencies'].append(module_paths)
         else:
