@@ -357,6 +357,12 @@ class InitramfsGenerator:
         from shutil import copy2
         from os import chown
 
+        if not dest.parent.is_dir():
+            self.logger.info("Parent directory for '%s' does not exist: %s" % (dest.name, dest.parent))
+            self._mkdir(dest.parent)
+
+        if dest.is_file():
+            self.logger.warning("File already exists: %s" % dest)
         self.logger.info("Copying '%s' to '%s'" % (source, dest))
         copy2(source, dest)
 
@@ -374,6 +380,5 @@ class InitramfsGenerator:
 
             source_file_path.relative_to(source_file_path.anchor)
 
-            self._mkdir(dest_file_path)
             self._copy(dependency, dest_file_path)
 
