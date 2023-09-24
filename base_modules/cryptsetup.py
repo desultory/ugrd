@@ -1,6 +1,6 @@
 __author__ = 'desultory'
 
-__version__ = '0.3.3'
+__version__ = '0.3.5'
 
 
 def configure_library_dir(self):
@@ -36,13 +36,12 @@ def copy_libgcc(self):
     Copies libgcc_s.so
     """
     from subprocess import run
-    from shutil import copy2
 
     ldconfig = run(['ldconfig', '-p'], capture_output=True).stdout.decode('utf-8').split("\n")
     libgcc = [lib for lib in ldconfig if 'libgcc_s' in lib and 'libc6,x86-64' in lib][0]
     source_path = libgcc.partition('=> ')[-1]
     destination_path = self.out_dir / 'lib64'
 
-    copy2(source_path, destination_path)
+    self._copy(source_path, destination_path)
     self.logger.info("Copied libgcc from %s to %s" % (source_path, destination_path))
 

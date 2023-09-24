@@ -78,6 +78,28 @@ def clean_mounts(self):
     return [f"umount /{mount}" for mount in self.config_dict['mounts']]
 
 
+def _process_file_owner(self, owner):
+    """
+    Processes the passed file owner into a uid
+    """
+    from pwd import getpwnam
+
+    if isinstance(owner, str):
+        try:
+            self.logger.debug("Processing file owner: %s" % owner)
+            self['_file_owner_uid'] = getpwnam(owner).pw_uid
+            self.logger.info("Detected file owner uid: %s" % self['_file_owner_uid'])
+        except KeyError as e:
+            self.logger.error("Unable to process file owner: %s" % owner)
+            self.logger.error(e)
+    elif isinstance(owner, int):
+        self['_file_owner_uid'] = owner
+        self.logger.info("Set file owner uid: %s" % self['_file_owner_uid'])
+    else:
+        self.logger.error("Unable to process file owner: %s" % owner)
+        raise ValueError("Invalid type passed for file owner: %s" % type(owner))
+
+
 def _process_mounts_multi(self, key, mount_config):
     """
     Processes the passed mounts into fstab mount objects

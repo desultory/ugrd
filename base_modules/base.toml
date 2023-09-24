@@ -23,6 +23,8 @@ paths = [
   "sbin"
 ]
 
+file_owner = "portage"
+
 [dev_nodes.console]
 path = "/dev/console"
 mode = 0o644
@@ -30,7 +32,7 @@ major = 5
 minor = 1
 
 [imports.config_processing]
-"base_modules.base" = [ "_process_mounts_multi" ]
+"base_modules.base" = [ "_process_mounts_multi", "_process_file_owner" ]
 
 [imports.build_tasks]
 "base_modules.base" = [ "generate_fstab", "generate_nodes" ]
@@ -51,6 +53,8 @@ out_dir = "Path"  # Add the out_dir property, used to define the output director
 clean = "bool"  # Add the clean property, used to define if the mounts should be cleaned up after boot
 root_mount = "dict"  # Add the root_mount property, used to define the root mount
 dev_nodes = "dict"  # Add the dev_nodes property, used to define the dev nodes to be created
+file_owner = "str"  # Add the file_owner property, used to define who should own the copied initramfs files
+_file_owner_uid = "int"  # Add the _file_owner_uid property, used to store the uid of the file owner
 
 # Define the default mounts
 # The format is mounts.mount where the mount is the name of the mount

@@ -15,10 +15,17 @@ if __name__ == '__main__':
                            nargs='?',
                            help='Config file location')
 
+    argparser.add_argument('-v', '--verbose',
+                           action='store_true',
+                           help='Verbose output')
+
     args = argparser.parse_args()
 
     logger = logging.getLogger()
-    logger.setLevel(20)
+    if args.verbose:
+        logger.setLevel(10)
+    else:
+        logger.setLevel(20)
 
     kwargs = {'logger': logger}
     if config := args.config_file:
