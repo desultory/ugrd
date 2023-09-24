@@ -50,7 +50,7 @@ def mount_fstab(self):
     """
     Generates the init line for mounting the fstab
     """
-    padding = r'echo "\n\n\n"'
+    padding = r'echo -e "\n\n\n"'
     wait_prompt = "read -p 'Press enter once devices have settled'"
     mount_cmd = "mount -a || (echo 'Failed to mount fstab. Please ensure mounts are made and then exit.' && bash)"
     return [padding, wait_prompt, mount_cmd]
