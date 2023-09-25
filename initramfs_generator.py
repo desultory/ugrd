@@ -358,7 +358,7 @@ class InitramfsGenerator:
         from os import chown
 
         if not dest.parent.is_dir():
-            self.logger.info("Parent directory for '%s' does not exist: %s" % (dest.name, dest.parent))
+            self.logger.debug("Parent directory for '%s' does not exist: %s" % (dest.name, dest.parent))
             self._mkdir(dest.parent)
 
         if dest.is_file():
