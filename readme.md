@@ -39,6 +39,9 @@ If the module is loaded, but configuration options are not passed, the generator
 
 `kernel_modules` is used to define a list of kernel module names to pull into the initramfs.
 `kernel_version` is used to specify the kernel version to pull modules for, should be a directory under `/lib/modules/<kernel_version>`.
+`kmod_ignore` is used to specify kernel modules to ignore. If a module depends on one of these, it will throw an error and drop it from being included.
+`kmod_init` is used to specify kernel modules to load at boot. If set, ONLY these modules will be loaded with modprobe.
+
 
 #### base_modules.gpg
 

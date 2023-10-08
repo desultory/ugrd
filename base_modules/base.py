@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '0.3.0'
+__version__ = '0.3.1'
 
 from pathlib import Path
 
@@ -67,7 +67,7 @@ def mount_root(self):
         mount_str += f"-U {self.config_dict['root_mount']['uuid']} "
     else:
         self.logger.critical("UNABLE TO CONFIGURE ROOT MOUNT")
-    mount_str += "/mnt/root || (echo 'Failed to mount root partition' && bash)"
+    mount_str += "/mnt/root -o ro || (echo 'Failed to mount root partition' && bash)"
     return [mount_str]
 
 

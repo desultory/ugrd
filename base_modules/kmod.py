@@ -1,6 +1,6 @@
 __author__ = 'desultory'
 
-__version__ = '0.2.5'
+__version__ = '0.3.0'
 
 from subprocess import run
 
@@ -38,6 +38,9 @@ def resolve_kmod(self, module_name):
     Gets the file path of a single kernel module.
     Gets the file path of all dependenceis of they exist
     """
+    if module_name in self.config_dict['kmod_ignore']:
+        raise ValueError("Kernel module is in ignore list: %s" % module_name)
+
     self.logger.debug("Resolving kernel module dependencies for: %s" % module_name)
     args = ['modinfo', '--field', 'depends', module_name]
 
@@ -55,8 +58,22 @@ def resolve_kmod(self, module_name):
         self.logger.debug('Kernel module has no dependencies: %s' % module_name)
         return resolve_kmod_path(self, module_name)
     else:
+        dependency_paths = []
+        if any(dependency in self.config_dict['kmod_ignore'] for dependency in dependencies):
+            self.logger.warning("Kernel module '%s' has dependencies in ignore list: %s" % (module_name, dependencies))
+            self.config_dict['kmod_ignore'].append(module_name)
+            return
+
         self.logger.debug("Kernel module '%s' has dependencies: %s" % (module_name, dependencies))
-        dependency_paths = [resolve_kmod(self, dependency) for dependency in dependencies] + [resolve_kmod_path(self, module_name)]
+        for dependency in dependencies:
+            if dependency_path := resolve_kmod(self, dependency):
+                dependency_paths.append(dependency_path)
+            else:
+                self.logger.error("Failed to resolve kernel module dependency: %s" % dependency)
+                self.config_dict['kmod_ignore'].append(module_name)
+                return
+        dependency_paths.append(resolve_kmod_path(self, module_name))
+        self.logger.debug("Calculated kernel module dependencies for '%s': %s" % (module_name, dependency_paths))
         return dependency_paths
 
 
@@ -71,7 +88,7 @@ def get_all_modules(self):
         return
 
     modules = cmd.stdout.decode('utf-8').split('\n')[1:]
-    modules = [module.split()[0] for module in modules if module and module.split()[0] != 'Module']
+    modules = [module.split()[0] for module in modules if module and module.split()[0] != 'Module' and module.split()[0] not in self.config_dict['kmod_ignore']]
 
     self.logger.debug(f'Found {len(modules)} active kernel modules')
     return modules
@@ -116,10 +133,13 @@ def fetch_modules(self):
     self.logger.info("Fetching kernel modules: %s" % self.config_dict['kernel_modules'])
 
     for module in self.config_dict['kernel_modules']:
-        if module_paths := resolve_kmod(self, module):
+        if module in self.config_dict['kmod_ignore']:
+            self.logger.info("Ignoring kernel module: %s" % module)
+        elif module_paths := resolve_kmod(self, module):
             self.config_dict['dependencies'].append(module_paths)
+            self.logger.info("Resolved dependency paths for kernel module '%s': %s" % (module, module_paths))
         else:
-            self.logger.warning(f'Failed to add kernel module {module} to dependencies')
+            self.logger.error("Failed to resolve dependencies for: %s" % module)
 
     get_module_metadata(self)
 
@@ -128,17 +148,20 @@ def load_modules(self):
     """
     Loads all kernel modules
     """
-    kmods = self.config_dict['init_kmods']
+    kmods = self.config_dict['kmod_init']
 
     if not kmods:
         if kmods := self.config_dict.get('kernel_modules'):
-            self.logger.info("Using kernel_modules as init_kmods")
+            self.logger.info("Using kernel_modules as 'kmod_init'")
         else:
             kmods = get_all_modules(self)
+
+    if self.config_dict.get('kmod_ignore'):
+        self.logger.info("Ignoring kernel modules: %s" % self.config_dict['kmod_ignore'])
+        kmods = [kmod for kmod in kmods if kmod not in self.config_dict['kmod_ignore']]
 
     self.logger.info("Init kernel modules: %s" % kmods)
 
     module_str = ' '.join(kmods)
     return [f"modprobe -av {module_str}"]
-
 
