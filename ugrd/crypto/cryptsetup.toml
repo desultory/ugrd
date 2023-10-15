@@ -1,0 +1,15 @@
+binaries = [ "cryptsetup" ]
+paths = [ "usr/lib64", "run" ]
+
+[imports.init_pre]
+"ugrd.crypto.cryptsetup" = [ "configure_library_dir" ]
+
+[imports.init_late]
+"ugrd.crypto.cryptsetup" = [ "crypt_init" ]
+
+[imports.build_tasks]
+"ugrd.crypto.cryptsetup" = [ "copy_libgcc" ]
+
+[custom_parameters]
+cryptsetup = "dict"  # Dict of cryptsetup volume to be unlocked, keyed by mapped device name
+key_type = "str"  # Type of key to use for unlocking, can be set for each device

@@ -8,7 +8,7 @@ kmod_init = "NoDupFlatList"  # Kernel modules to load at initramfs startup
 kmod_ignore = "NoDupFlatList"  # Kernel modules to ignore when loading
 
 [imports.build_pre]
-"base_modules.kmod" = [ "fetch_modules" ]
+"ugrd.base.kmod" = [ "fetch_modules" ]
 
 [imports.init_pre]
-"base_modules.kmod" = [ "load_modules" ]
+"ugrd.base.kmod" = [ "load_modules" ]

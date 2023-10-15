@@ -3,13 +3,13 @@
 
 
 modules = [
-  "base_modules.base",
-  "base_modules.kmod",
-  "base_modules.cryptsetup",
-  "base_modules.btrfs",
-  "base_modules.serial",
-  "base_modules.gpg",
-  "base_modules.smartcard"
+  "ugrd.base.base",
+  "ugrd.base.kmod",
+  "ugrd.crypto.cryptsetup",
+  "ugrd.base.btrfs",
+  "ugrd.base.serial",
+  "ugrd.crypto.gpg",
+  "ugrd.crypto.smartcard"
 ]
 
 out_dir = "/usr/src/initramfs"
@@ -32,7 +32,7 @@ type = "vfat"
 label = "rootfs"
 
 # Information about the LUKS volume
-[root_devices.crypt]
+[root_devices.root]
 uuid = "eee3611d-9b36-42b3-8ed2-62173064c76a"
 key_type = "gpg"
 key_file = "/boot/rootfs.luks.gpg"

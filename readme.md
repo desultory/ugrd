@@ -24,7 +24,7 @@ The main configuration file is `config.toml`
 
 ### Module config
 
-#### base_modules.base
+#### base.base
 
 Setting `out_dir` changes where the script writes the output files, it defaults to `initramfs` in the local dir.
 Setting `clean` to `true` makes the script clean the output directory prior to generating it.
@@ -32,7 +32,7 @@ Setting `clean` to `true` makes the script clean the output directory prior to g
 `root_mount` takes a label or UUID for a volume to be mounted as the root filesystem.
 `mounts.<mountname>` is defined with fstab details, such as `source`, `destination` and `type`.
 
-#### base_modules.kmod
+#### base.kmod
 
 This module is used to embed kernel modules into the initramfs. Both parameters are optional.
 If the module is loaded, but configuration options are not passed, the generator will pull all currently running kernel modules from the active kernel.
@@ -43,29 +43,29 @@ If the module is loaded, but configuration options are not passed, the generator
 `kmod_init` is used to specify kernel modules to load at boot. If set, ONLY these modules will be loaded with modprobe.
 
 
-#### base_modules.gpg
+#### crypto.gpg
 
 This module is required to perform GPG decryption within the initramfs.
 
 `gpg_public_key` is used to specify the location of a GPG public key to be added to the initramfs and imported into the keyring on start.
 This should be defined globally and cen be used with a YubiKey.
 
-#### base_modules.cryptsetup
+#### crypto.cryptsetup
 
 This module is used to decrypt LUKS volumes in the initramfs.
 
-`root_devices` is a dictionary that contains the root devices to decrypt. `key_file` is optional within this dict, but `uuid` is required, ex:
+`cryptsetup` is a dictionary that contains the root devices to decrypt. `key_file` is optional within this dict, but `uuid` is required, ex:
 
 ```
-[root_devices.crypt]
+[cryptsetup.root]
 uuid = "9e04e825-7f60-4171-815a-86e01ec4c4d3"
 ```
 
-`key_type` can be either `gpg` or `keyfile`. If it is not set, cryptsetup will prompt for a passphrase. If this is set globally, it applies to all `root_devices`.
+`key_type` can be either `gpg` or `keyfile`. If it is not set, cryptsetup will prompt for a passphrase. If this is set globally, it applies to all `cryptsetup` definitions.
 
 ### General config
 
-The following configuration options can exist in any module, or the bse condfig
+The following configuration options can exist in any module, or the base config
 
 #### binaries
 
@@ -81,7 +81,7 @@ They should not start with a leading `/`
 
 ### modules
 
-The modules config directive should contain a list with names specifying the path of which will be loaded, such as `base_modules.base`, `base_modules.serial` or `base_modules.crypsetup`.
+The modules config directive should contain a list with names specifying the path of which will be loaded, such as `base.base`, `base.serial` or `crypto.crypsetup`.
 
 Another directory for modules can be created, the naming scheme is similar to how python imports work.
 
@@ -108,7 +108,7 @@ For example:
 
 ```
 [imports.build_tasks]
-"base_modules.base" = [ "generate_fstab" ]
+"base.base" = [ "generate_fstab" ]
 ```
 
 Is used in the base module to make the initramfs generator generate a fstab durinf the `build_tasks` phase.
@@ -152,7 +152,7 @@ This module is loaded in the imports section of the `base.yaml` file:
 
 ```
 [imports.config_processing]
-"base_modules.base" = [ "_process_mounts_multi" ]
+"base.base" = [ "_process_mounts_multi" ]
 ```
 
 #### build_tasks
@@ -163,7 +163,7 @@ The base module includes a build task for generating the fstab, which is activat
 
 ```
 [imports.build_tasks]
-"base_modules.base" = [ "generate_fstab" ]
+"base.base" = [ "generate_fstab" ]
 ```
 
 #### init hooks
@@ -192,7 +192,7 @@ Finally, like the standard init build, the `init_final` is written to the main `
 
 ```
 [imports.custom_init]
-"base_modules.serial" = [ "custom_init" ]
+"base.serial" = [ "custom_init" ]
 ```
 
 The custom init works by creating an `init_main` file and returning a config line which will execute that file in a getty session.

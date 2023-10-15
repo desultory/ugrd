@@ -1,9 +1,9 @@
 modules = [
-  "base_modules.base",
-  "base_modules.serial",
-  "base_modules.gpg",
-  "base_modules.cryptsetup",
-  "base_modules.btrfs"
+  "ugrd.base.base",
+  "ugrd.base.serial",
+  "ugrd.crypto.gpg",
+  "ugrd.crypto.cryptsetup",
+  "ugrd.base.btrfs"
 ]
 clean = true
 key_type = "gpg"

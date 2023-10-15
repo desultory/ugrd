@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from initramfs_generator import InitramfsGenerator
+from ugrd.initramfs_generator import InitramfsGenerator
 
 from argparse import ArgumentParser
 import logging

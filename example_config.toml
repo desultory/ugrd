@@ -4,25 +4,21 @@
 
 
 modules = [
-  "base_modules.base",
-  "base_modules.cryptsetup",
-  "base_modules.btrfs",
-  "base_modules.kmod"
+  "ugrd.base.base",
+  "ugrd.crypto.cryptsetup",
+  "ugrd.base.btrfs",
+  "ugrd.base.kmod"
 ]
 
 out_dir = "/usr/src/initramfs"
 clean = true
-
-[mounts.boot]
-type = "vfat"
-
-  [mounts.boot.source]
-  uuid = "1234-ABCD"
+# Optionally supply a kernel version
+#kernel_version = "6.1.53-gentoo-dist"
 
 
 [root_mount]
 label = "rootfs"
 
-[root_devices.crypt]
+# The UUID of the encrypted volume, mounted at /dev/mapper/root
+[cryptsetup.root]
 uuid = "fdf442da-0574-4531-98c7-55227a041f1d"
-key_file = "/boot/crypt_key.luks"

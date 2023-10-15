@@ -1,6 +1,6 @@
 __author__ = 'desultory'
 
-__version__ = '0.3.5'
+__version__ = '0.4.0'
 
 
 def configure_library_dir(self):
@@ -15,19 +15,22 @@ def crypt_init(self):
     Generates the bash script portion to prompt for keys
     """
     out = ["read -p 'Press enter to start drive decryption'"]
-    for root_device, parameters in self.config_dict['root_devices'].items():
-        self.logger.debug("Processing root device: %s" % root_device)
+    for name, parameters in self.config_dict['cryptsetup'].items():
+        self.logger.debug("Processing cryptsetup volume: %s" % name)
+
         key_type = parameters.get('key_type', self.config_dict.get('key_type'))
+
         partition_location_cmd = f"blkid -t UUID='{parameters['uuid']}' -s TYPE -o device"
-        out += [f"echo 'Attempting to unlock device: {root_device}'"]
+
+        out += [f"echo 'Attempting to unlock device: {name}'"]
 
         if key_type == 'gpg':
             out += [f"echo 'Enter passphrase for key file: {parameters['key_file']}'"]
-            out += [f"gpg --decrypt {parameters['key_file']} | cryptsetup open --key-file - \"$({partition_location_cmd})\" {root_device}"]
+            out += [f"gpg --decrypt {parameters['key_file']} | cryptsetup open --key-file - \"$({partition_location_cmd})\" {name}"]
         elif key_type == 'keyfile':
-            out += [f"cryptsetup open --key-file {parameters['key_file']} $({partition_location_cmd}) {root_device}"]
+            out += [f"cryptsetup open --key-file {parameters['key_file']} $({partition_location_cmd}) {name}"]
         else:
-            out += [f"cryptsetup open --tries 5 $({partition_location_cmd}) {root_device}"]
+            out += [f"cryptsetup open --tries 5 $({partition_location_cmd}) {name}"]
     return out
 
 

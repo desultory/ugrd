@@ -1,13 +1,13 @@
 
 __author__ = "desultory"
-__version__ = "0.6.0"
+__version__ = "0.6.1"
 
 from subprocess import run
 from tomllib import load
 from pathlib import Path
 
 #  from lib_sniffer import LibrarySniffer
-from zen_custom import loggify, handle_plural, NoDupFlatList
+from ugrd.zen_custom import loggify, handle_plural, NoDupFlatList
 
 
 def calculate_dependencies(binary):
@@ -306,13 +306,9 @@ class InitramfsGenerator:
         Generates the initramfs directory structure
         """
         from os.path import isdir
-        from os import makedirs, chown
 
         if not isdir(self.out_dir):
-            makedirs(self.out_dir)
-            self.logger.info("Created output directory: %s" % self.out_dir)
-            chown(self.out_dir, self.config_dict['_file_owner_uid'], self.config_dict['_file_owner_uid'])
-            self.logger.debug("Set output directory owner: %s" % self.config_dict['_file_owner_uid'])
+            self._mkdir(self.out_dir)
 
         for subdir in set(self.config_dict['paths']):
             subdir_path = Path(subdir)

@@ -32,19 +32,19 @@ major = 5
 minor = 1
 
 [imports.config_processing]
-"base_modules.base" = [ "_process_mounts_multi", "_process_file_owner" ]
+"ugrd.base.base" = [ "_process_mounts_multi", "_process_file_owner" ]
 
 [imports.build_tasks]
-"base_modules.base" = [ "generate_fstab", "generate_nodes" ]
+"ugrd.base.base" = [ "generate_fstab", "generate_nodes" ]
 
 [imports.init_pre]
-"base_modules.base" = [ "mount_base" ]
+"ugrd.base.base" = [ "mount_base" ]
 
 [imports.init_main]
-"base_modules.base" = [ "mount_fstab" ]
+"ugrd.base.base" = [ "mount_fstab" ]
 
 [imports.init_final]
-"base_modules.base" = [ "mount_root", "clean_mounts", "switch_root" ]
+"ugrd.base.base" = [ "mount_root", "clean_mounts", "switch_root" ]
 
 [custom_parameters]
 shebang = "str"  # Add the shebang property, used because this is a bash script
