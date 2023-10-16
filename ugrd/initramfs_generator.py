@@ -1,8 +1,7 @@
 
 __author__ = "desultory"
-__version__ = "0.6.2"
+__version__ = "0.6.3"
 
-from subprocess import run
 from tomllib import load
 from pathlib import Path
 
@@ -11,7 +10,11 @@ from ugrd.zen_custom import loggify, handle_plural, NoDupFlatList
 
 
 def calculate_dependencies(binary):
-    binary_path = run(['command', '-v', binary], capture_output=True).stdout.decode('utf-8').strip()
+    from shuit import which
+    from subprocess import run
+
+    binary_path = which(binary)
+
     dependencies = run(['lddtree', '-l', binary_path], capture_output=True)
     if dependencies.returncode != 0:
         raise OSError(dependencies.stderr.decode('utf-8'))
