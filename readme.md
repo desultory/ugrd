@@ -27,10 +27,18 @@ The main configuration file is `config.toml`
 #### base.base
 
 Setting `out_dir` changes where the script writes the output files, it defaults to `initramfs` in the local dir.
+
 Setting `clean` to `true` makes the script clean the output directory prior to generating it.
+
 `shebang` is set by default, and sets the shebang on the init script.
+
 `root_mount` takes a label or UUID for a volume to be mounted as the root filesystem.
+
 `mounts.<mountname>` is defined with fstab details, such as `source`, `destination` and `type`.
+
+`mount_wait` if set to true, waits for user input before attenmpting to mount the generated fstab at runtime, disabled by default. 
+
+`mount_timeout` timeout for mount_wait to automatically continue.
 
 #### base.kmod
 
@@ -38,8 +46,11 @@ This module is used to embed kernel modules into the initramfs. Both parameters 
 If the module is loaded, but configuration options are not passed, the generator will pull all currently running kernel modules from the active kernel.
 
 `kernel_modules` is used to define a list of kernel module names to pull into the initramfs.
+
 `kernel_version` is used to specify the kernel version to pull modules for, should be a directory under `/lib/modules/<kernel_version>`.
+
 `kmod_ignore` is used to specify kernel modules to ignore. If a module depends on one of these, it will throw an error and drop it from being included.
+
 `kmod_init` is used to specify kernel modules to load at boot. If set, ONLY these modules will be loaded with modprobe.
 
 

@@ -26,7 +26,7 @@ def crypt_init(self):
 
         if key_type == 'gpg':
             out += [f"echo 'Enter passphrase for key file: {parameters['key_file']}'"]
-            out += [f"gpg --decrypt {parameters['key_file']} | cryptsetup open --key-file - \"$({partition_location_cmd})\" {name}"]
+            out += [f"gpg --decrypt {parameters['key_file']} | cryptsetup open --key-file - $({partition_location_cmd}) {name}"]
         elif key_type == 'keyfile':
             out += [f"cryptsetup open --key-file {parameters['key_file']} $({partition_location_cmd}) {name}"]
         else:

@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '0.3.1'
+__version__ = '0.3.2'
 
 from pathlib import Path
 
@@ -50,10 +50,19 @@ def mount_fstab(self):
     """
     Generates the init line for mounting the fstab
     """
-    padding = r'echo -e "\n\n\n"'
-    wait_prompt = "read -p 'Press enter once devices have settled'"
-    mount_cmd = "mount -a || (echo 'Failed to mount fstab. Please ensure mounts are made and then exit.' && bash)"
-    return [padding, wait_prompt, mount_cmd]
+    out = []
+
+    # Only wait if root_wait is specified
+    if self.config_dict.get('mount_wait', False):
+        out += [r'echo -e "\n\n\nPress enter once devices have settled.\n\n\n"']
+        if self.config_dict.get('mount_timeout', False):
+            out += [f"read -sr -t {self.config_dict['mount_timeout']}"]
+        else:
+            out += ["read -sr"]
+
+    out += ["mount -a || (echo 'Failed to mount fstab. Please ensure mounts are made and then exit.' && bash)"]
+
+    return out
 
 
 def mount_root(self):
