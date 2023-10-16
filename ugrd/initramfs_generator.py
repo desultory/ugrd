@@ -1,6 +1,6 @@
 
 __author__ = "desultory"
-__version__ = "0.6.1"
+__version__ = "0.6.2"
 
 from subprocess import run
 from tomllib import load
@@ -11,7 +11,7 @@ from ugrd.zen_custom import loggify, handle_plural, NoDupFlatList
 
 
 def calculate_dependencies(binary):
-    binary_path = run(['which', binary], capture_output=True).stdout.decode('utf-8').strip()
+    binary_path = run(['command', '-v', binary], capture_output=True).stdout.decode('utf-8').strip()
     dependencies = run(['lddtree', '-l', binary_path], capture_output=True)
     if dependencies.returncode != 0:
         raise OSError(dependencies.stderr.decode('utf-8'))
@@ -108,7 +108,10 @@ class InitramfsConfigDict(dict):
         updates the dependencies using the passed binary name
         """
         self.logger.debug("Calculating dependencies for: %s" % binary)
-        dependencies = calculate_dependencies(binary)
+        try:
+            dependencies = calculate_dependencies(binary)
+        except OSError as e:
+            raise RuntimeError("Failed to calculate dependencies for '%s': %s" % (binary, e))
 
         self.logger.debug("Calculating library paths for: %s" % dependencies)
         self['dependencies'] += dependencies
