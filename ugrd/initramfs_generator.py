@@ -1,6 +1,6 @@
 
 __author__ = "desultory"
-__version__ = "0.6.3"
+__version__ = "0.6.4"
 
 from tomllib import load
 from pathlib import Path
@@ -14,6 +14,8 @@ def calculate_dependencies(binary):
     from subprocess import run
 
     binary_path = which(binary)
+    if not binary_path:
+        raise RuntimeError("'%s' not found in PATH" % binary)
 
     dependencies = run(['lddtree', '-l', binary_path], capture_output=True)
     if dependencies.returncode != 0:
