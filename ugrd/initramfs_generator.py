@@ -10,7 +10,7 @@ from ugrd.zen_custom import loggify, handle_plural, NoDupFlatList
 
 
 def calculate_dependencies(binary):
-    from shuit import which
+    from shutil import which
     from subprocess import run
 
     binary_path = which(binary)
