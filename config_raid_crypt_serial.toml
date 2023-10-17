@@ -8,9 +8,8 @@ modules = [
 
 key_type = "gpg"
 
-[root_mount]
+[root_mount.source]
 label = "rootfs"
-uuid = "d36ce220-298a-4600-8b0d-0183bd577452"
 
 [console.ttyS1]
 baud = 115_200

@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '0.3.2'
+__version__ = '0.4.0'
 
 from pathlib import Path
 
@@ -69,14 +69,20 @@ def mount_root(self):
     """
     Mounts the root partition
     """
-    mount_str = "mount "
-    if 'label' in self.config_dict['root_mount']:
-        mount_str += f"-L {self.config_dict['root_mount']['label']} "
-    elif 'uuid' in self.config_dict['root_mount']:
-        mount_str += f"-U {self.config_dict['root_mount']['uuid']} "
+    mount_info = self.config_dict['root_mount']
+
+    if 'destination' in mount_info:
+        raise ValueError("Root mount should not have a destination specified")
     else:
-        self.logger.critical("UNABLE TO CONFIGURE ROOT MOUNT")
-    mount_str += "/mnt/root -o ro || (echo 'Failed to mount root partition' && bash)"
+        mount_info['destination'] = '/mnt/root'
+
+    if 'options' not in mount_info:
+        mount_info['options'] = 'ro'
+
+    root_mount = Mount(**mount_info)
+
+    mount_str = root_mount.to_mount_cmd() + " || (echo 'Failed to mount root partition' && bash)"
+
     return [mount_str]
 
 
@@ -129,11 +135,11 @@ class Mount:
     """
     Abstracts a linux mount.
     """
-    __version__ = '0.2.0'
+    __version__ = '0.3.0'
 
     parameters = {'destination': True,
                   'source': True,
-                  'type': True,
+                  'type': False,
                   'options': False}
 
     def __init__(self, *args, **kwargs):
@@ -180,6 +186,9 @@ class Mount:
         """
         Prints the object as a fstab entry
         """
+        if not hasattr(self, 'type'):
+            raise ValueError("Mount type not specified, required for fstab entries.")
+
         out_str = ''
         out_str += self.get_source(pad=True)
         out_str += self.destination.ljust(16, ' ')
@@ -192,9 +201,13 @@ class Mount:
         """
         Prints the object as a mount command
         """
-        out_str = f"mount -t {self.type} {self.get_source()} {self.destination}"
+        out_str = f"mount {self.get_source()} {self.destination}"
+
         if hasattr(self, 'options'):
             out_str += f" -o {self.options}"
+
+        if hasattr(self, 'type'):
+            out_str += f" -t {self.type}"
 
         return out_str
 

@@ -1,6 +1,6 @@
 __author__ = 'desultory'
 
-__version__ = '0.4.0'
+__version__ = '0.4.2'
 
 
 def configure_library_dir(self):
@@ -14,7 +14,7 @@ def crypt_init(self):
     """
     Generates the bash script portion to prompt for keys
     """
-    out = ["read -p 'Press enter to start drive decryption'"]
+    out = [r'echo -e "\n\n\nPress enter to start drive decryption.\n\n\n"', "read -sr"]
     for name, parameters in self.config_dict['cryptsetup'].items():
         self.logger.debug("Processing cryptsetup volume: %s" % name)
 

@@ -34,11 +34,13 @@ The main configuration file is `config.toml`
 
 `root_mount` takes a label or UUID for a volume to be mounted as the root filesystem.
 
-`mounts.<mountname>` is defined with fstab details, such as `source`, `destination` and `type`.
+`mounts.<mountname>` is defined with fstab details, such as `source`, `destination` and `type`. `destination` defaults to the mountname. `type` can be set to autodect the type, but will not work with fstab entries.
 
 `mount_wait` (false) waits for user input before attenmpting to mount the generated fstab at runtime.
 
 `mount_timeout` timeout for mount_wait to automatically continue.
+
+`root_mount` a dict that acts similarly to user defined `mounts`. `destination` is hardcoded to `/mnt/root`.
 
 #### base.kmod
 
