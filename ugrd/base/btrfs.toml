@@ -1,5 +1,5 @@
 binaries = [ "btrfs" ]
-_kmod_depend = [ "btrfs", "zstd" ]
+_kmod_depend = [ "btrfs" ]
 
 [imports.init_late]
 "ugrd.base.btrfs" = [ "btrfs_scan" ]
