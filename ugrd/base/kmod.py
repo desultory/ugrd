@@ -71,6 +71,7 @@ def resolve_kmod_softdeps(self, module_name):
     if cmd.returncode != 0:
         raise DependencyResolutionError("Failed to get kernel module soft dependencies for: %s" % module_name)
 
+    self.logger.debug("Running command: %s" % args)
     softdeps = cmd.stdout.decode().strip().split()
     if softdeps:
         softdeps = softdeps[1::2]
@@ -78,7 +79,7 @@ def resolve_kmod_softdeps(self, module_name):
         return softdeps
 
 
-def resolve_kmod_dependencies(self, module_name):
+def resolve_kmod_harddeps(self, module_name):
     """
     Gets all kernel module dependencies.
     """
@@ -89,6 +90,7 @@ def resolve_kmod_dependencies(self, module_name):
     if self.config_dict.get('kernel_version'):
         args += ['--set-version', self.config_dict['kernel_version']]
 
+    self.logger.debug("Running command: %s" % args)
     cmd = run(args, capture_output=True)
     if cmd.returncode != 0:
         raise DependencyResolutionError("Failed to get kernel module dependencies for: %s" % module_name)
@@ -111,7 +113,7 @@ def resolve_kmod(self, module_name):
 
     dependencies = []
 
-    if harddeps := resolve_kmod_dependencies(self, module_name):
+    if harddeps := resolve_kmod_harddeps(self, module_name):
         dependencies += harddeps
 
     if sofdeps := resolve_kmod_softdeps(self, module_name):
