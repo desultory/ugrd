@@ -184,12 +184,10 @@ class InitramfsConfigDict(dict):
 
 @loggify
 class InitramfsGenerator:
-    __version__ = "0.4.0"
+    __version__ = "0.4.2"
 
-    def __init__(self, config='config.toml', out_dir='initramfs', clean=False, *args, **kwargs):
+    def __init__(self, config='config.toml', *args, **kwargs):
         self.config_filename = config
-        self.out_dir = out_dir
-        self.clean = clean
         self.build_pre = [self.generate_structure]
         self.build_tasks = [self.deploy_dependencies]
         self.config_dict = InitramfsConfigDict(logger=self.logger)
@@ -214,7 +212,11 @@ class InitramfsGenerator:
         self.logger.debug("Loaded config: %s" % self.config_dict)
 
         for parameter in ['out_dir', 'clean']:
-            setattr(self, parameter, self.config_dict.get(parameter, getattr(self, parameter)))
+            dict_value = self.config_dict[parameter]
+            if dict_value is not None:
+                setattr(self, parameter, dict_value)
+            else:
+                raise KeyError("Required parameter '%s' not found in config" % parameter)
 
     def build_structure(self):
         """
@@ -230,6 +232,8 @@ class InitramfsGenerator:
                 rmtree(self.out_dir)
             else:
                 self.logger.info("Build dir is not present, not cleaning: %s" % self.out_dir)
+        else:
+            self.logger.info("Not cleaning build dir: %s" % self.out_dir)
 
         # Run pre-build tasks, by default just calls 'generate_structure'
         self.logger.info("Running pre build tasks")

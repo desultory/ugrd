@@ -1,8 +1,8 @@
 binaries = [ "agetty" ]
 
 [imports.custom_init]
-"ugrd.base.serial" = [ "custom_init" ]
+"ugrd.base.console" = [ "custom_init" ]
 
 [custom_parameters]
-serial = "dict"  # Contains serial port entries
+console = "dict"  # Contains console configuration
 primary_console = "str"  # Contains the primary console device

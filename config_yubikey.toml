@@ -7,13 +7,12 @@ modules = [
   "ugrd.base.kmod",
   "ugrd.crypto.cryptsetup",
   "ugrd.base.btrfs",
-  "ugrd.base.serial",
+  "ugrd.base.console",
   "ugrd.crypto.gpg",
   "ugrd.crypto.smartcard"
 ]
 
 out_dir = "/usr/src/initramfs"
-clean = true
 sc_public_key = "/home/larry/yubikey_public.asc"
 
 # Different modules will be required on different systems. Only modules needed to mount the root are required.

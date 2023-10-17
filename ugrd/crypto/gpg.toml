@@ -2,15 +2,15 @@ binaries = [ "ln", "gpg", "gpg-agent", "gpg-connect-agent", "pinentry-tty", "tty
 paths = [ "usr/bin" ]
 
 # GPG works best under agetty for input
-depends = [ "ugrd.base.serial" ]
+depends = [ "ugrd.base.console" ]
 primary_console = "tty0"
+
+[console.tty0]
+type = "tty"
 
 [imports.init_pre]
 "ugrd.crypto.gpg" = [ "symlink_pinentry" ]
 
 [imports.init_main]
 "ugrd.crypto.gpg" = [ "start_agent" ]
-
-[serial.tty0]
-type = "tty"
 

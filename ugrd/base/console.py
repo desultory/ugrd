@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "0.2.0"
+__version__ = "0.3.3"
 
 
 def custom_init(self):
@@ -11,26 +11,28 @@ def custom_init(self):
         main_init.write("#!/bin/bash\n")
         [main_init.write(f"{line}\n") for line in self.generate_init_main()]
     chmod(f"{self.out_dir}/init_main.sh", 0o755)
-    return serial_init(self)
+    return console_init(self)
 
 
-def serial_init(self):
+def console_init(self):
     """
     start agetty
     """
     name = self.config_dict['primary_console']
     out_str = f"agetty --autologin root --login-program /init_main.sh {name}"
 
-    config = self.config_dict['serial'][name]
+    console = self.config_dict['console'][name]
 
-    if config.get('local'):
+    if console.get('local'):
         out_str += " -L"
 
-    if config.get('baud'):
-        out_str += f" {config['baud']}"
+    console_type = console.get('type', 'tty')
 
-    if config.get('type'):
-        out_str += f" {config['type']}"
+    if console_type != 'tty':
+        baud_rate = console['baud']
+        out_str += f" {console_type} {baud_rate}"
+    else:
+        out_str += f" {console_type}"
 
     return [out_str]
 

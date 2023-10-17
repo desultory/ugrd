@@ -11,12 +11,9 @@ modules = [
 ]
 
 out_dir = "/usr/src/initramfs"
-clean = true
+
 # Optionally supply a kernel version
 #kernel_version = "6.1.53-gentoo-dist"
-mount_wait = true
-mount_timeout = 2
-
 
 [root_mount]
 label = "rootfs"

@@ -24,6 +24,9 @@ paths = [
 ]
 
 file_owner = "portage"
+out_dir = "/tmp/initramfs"
+clean = true
+mount_wait = false
 
 [dev_nodes.console]
 path = "/dev/console"
