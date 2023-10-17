@@ -1,6 +1,6 @@
 
 __author__ = "desultory"
-__version__ = "0.6.4"
+__version__ = "0.6.5"
 
 from tomllib import load
 from pathlib import Path
@@ -20,7 +20,8 @@ def calculate_dependencies(binary):
     dependencies = run(['lddtree', '-l', binary_path], capture_output=True)
     if dependencies.returncode != 0:
         raise OSError(dependencies.stderr.decode('utf-8'))
-    return dependencies.stdout.decode('utf-8').splitlines()
+
+    return [Path(dependency) for dependency in dependencies.stdout.decode('utf-8').splitlines()]
 
 
 @loggify
@@ -32,7 +33,7 @@ class InitramfsConfigDict(dict):
         This dict does not act like a normal dict, setitem is designed to append when the overrides are used
         Default parameters are defined in builtin_parameters
     """
-    __version__ = "0.5.5"
+    __version__ = "0.5.6"
 
     builtin_parameters = {'binaries': NoDupFlatList,
                           'dependencies': NoDupFlatList,
@@ -69,10 +70,10 @@ class InitramfsConfigDict(dict):
             elif expected_type == dict:
                 self.logger.debug("Using dict setitem for: %s" % key)
                 if key not in self:
-                    self.logger.info("Setting dict '%s' to: %s" % (key, value))
+                    self.logger.debug("Setting dict '%s' to: %s" % (key, value))
                     super().__setitem__(key, value)
                 else:
-                    self.logger.info("Updating dict '%s' with: %s" % (key, value))
+                    self.logger.debug("Updating dict '%s' with: %s" % (key, value))
                     self[key].update(value)
             else:
                 super().__setitem__(key, expected_type(value))
@@ -308,6 +309,8 @@ class InitramfsGenerator:
         self.logger.debug("Set init file permissions: %s" % oct(0o755))
         chown(init_path, self.config_dict['_file_owner_uid'], self.config_dict['_file_owner_uid'])
         self.logger.debug("Set init file owner: %s" % self.config_dict['_file_owner_uid'])
+
+        self.logger.debug("Final config: %s" % self.config_dict)
 
     def generate_structure(self):
         """

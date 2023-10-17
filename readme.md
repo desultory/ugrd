@@ -45,14 +45,17 @@ Setting `clean` to `true` makes the script clean the output directory prior to g
 This module is used to embed kernel modules into the initramfs. Both parameters are optional.
 If the module is loaded, but configuration options are not passed, the generator will pull all currently running kernel modules from the active kernel.
 
-`kernel_modules` is used to define a list of kernel module names to pull into the initramfs.
-
 `kernel_version` is used to specify the kernel version to pull modules for, should be a directory under `/lib/modules/<kernel_version>`.
+
+`kernel_modules` is used to define a list of kernel module names to pull into the initramfs. If it is not set, all loaded kernel modules will be pulled.
 
 `kmod_ignore` is used to specify kernel modules to ignore. If a module depends on one of these, it will throw an error and drop it from being included.
 
-`kmod_init` is used to specify kernel modules to load at boot. If set, ONLY these modules will be loaded with modprobe.
+`kmod_init` is used to specify kernel modules to load at boot. If set, ONLY these modules will be loaded with modprobe. If unset, `kernel_modules` is used.
 
+`_kmod_depend` is meant to be used within modules, specifies kernel modules which should be added to `kernel_modules` and `kmod_init`.
+
+`kmod_ignore_softdeps` if set to true, ignores softdeps
 
 #### crypto.gpg
 

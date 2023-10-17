@@ -17,7 +17,11 @@ clean = true
 sc_public_key = "/home/larry/yubikey_public.asc"
 
 # Different modules will be required on different systems. Only modules needed to mount the root are required.
-kernel_modules = [ 'nvme', 'uas', 'vfat', 'dm_crypt' ]
+kernel_modules = [ 'nvme', 'uas', 'vfat' ]
+
+# Wait a few seconds for storage to settle after modules are loaded
+mount_wait = true
+mount_timeout = 3
 
 # This is only necessary if the keyfile is on another device.
 # The keyfile could be added as a dependency.

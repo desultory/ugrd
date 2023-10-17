@@ -1,5 +1,7 @@
 binaries = [ "/usr/libexec/scdaemon" ]
 
+_kmod_depend = "uhid"
+
 depends = [ "ugrd.crypto.gpg" ]
 primary_console = "tty0"
 

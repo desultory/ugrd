@@ -5,9 +5,9 @@
 
 modules = [
   "ugrd.base.base",
+  "ugrd.base.kmod",
   "ugrd.crypto.cryptsetup",
   "ugrd.base.btrfs",
-  "ugrd.base.kmod"
 ]
 
 out_dir = "/usr/src/initramfs"
