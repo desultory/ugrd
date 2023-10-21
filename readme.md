@@ -36,6 +36,10 @@ The main configuration file is `config.toml`
 
 `mounts.<mountname>` is defined with fstab details, such as `source`, `destination` and `type`. `destination` defaults to the mountname. `type` can be set to autodect the type, but will not work with fstab entries.
 
+`mounts.base_mount` is used for builtin mounts such as `/dev`, `/sys`, and `/proc`. Setting this to mounts it with a mount command in `init_pre` instead of waiting for `init_main`.
+
+`mounts.skip_unmount` is used for the builtin `/dev` mount, since it will fail to unmount when in use.
+
 `mount_wait` (false) waits for user input before attenmpting to mount the generated fstab at runtime.
 
 `mount_timeout` timeout for mount_wait to automatically continue.

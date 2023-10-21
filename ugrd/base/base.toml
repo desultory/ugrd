@@ -82,3 +82,4 @@ type = "devtmpfs"
 source = "devtmpfs"
 options = "nosuid,mode=0755"
 base_mount = true
+skip_unmount = true

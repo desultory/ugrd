@@ -5,7 +5,6 @@ __version__ = "0.6.5"
 from tomllib import load
 from pathlib import Path
 
-#  from lib_sniffer import LibrarySniffer
 from ugrd.zen_custom import loggify, handle_plural, NoDupFlatList
 
 
@@ -161,7 +160,6 @@ class InitramfsConfigDict(dict):
         if 'depends' in module_config:
             for depend in module_config['depends']:
                 if depend not in self['modules']:
-                    print(self)
                     raise KeyError(f"Module '{depend}' not found in config")
 
         if 'custom_parameters' in module_config:
@@ -184,7 +182,7 @@ class InitramfsConfigDict(dict):
 
 @loggify
 class InitramfsGenerator:
-    __version__ = "0.4.2"
+    __version__ = "0.4.4"
 
     def __init__(self, config='config.toml', *args, **kwargs):
         self.config_filename = config

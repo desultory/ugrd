@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '0.4.0'
+__version__ = '0.4.2'
 
 from pathlib import Path
 
@@ -19,7 +19,7 @@ def mount_base(self):
     """
     Generates mount commands for the base mounts
     """
-    return [mount.to_mount_cmd() for mount in self.config_dict['mounts'].values() if mount.base_mount]
+    return [str(mount) for mount in self.config_dict['mounts'].values() if mount.base_mount]
 
 
 def generate_nodes(self):
@@ -90,7 +90,7 @@ def clean_mounts(self):
     """
     Generates init lines to unmount all mounts
     """
-    return [f"umount /{mount}" for mount in self.config_dict['mounts']]
+    return [f"umount /{mount}" for mount, mount_info in self.config_dict['mounts'].items() if not mount_info.skip_unmount]
 
 
 def _process_file_owner(self, owner):
@@ -135,15 +135,20 @@ class Mount:
     """
     Abstracts a linux mount.
     """
-    __version__ = '0.3.0'
+    __version__ = '0.3.2'
 
     parameters = {'destination': True,
                   'source': True,
                   'type': False,
-                  'options': False}
+                  'options': False,
+                  'base_mount': False,
+                  'skip_unmount': False}
 
     def __init__(self, *args, **kwargs):
         for parameter in self.parameters:
+            # For each parameter, check if it was passed, and try to validate and set it
+            # If the parameter is not passed, check if it is required
+            # If it's not required and not passed, set it to None
             if kwargs.get(parameter):
                 # Validate if ther is a validator function
                 if hasattr(self, f'validate_{parameter}') and not getattr(self, f'validate_{parameter}')(kwargs.get(parameter)):
@@ -151,8 +156,8 @@ class Mount:
                 setattr(self, parameter, kwargs.pop(parameter))
             elif self.parameters[parameter]:
                 raise ValueError("Required parameter was not passed: %s" % parameter)
-
-        self.base_mount = kwargs.pop('base_mount', False)
+            else:
+                setattr(self, parameter, None)
 
     def validate_destination(self, destination):
         """
@@ -185,15 +190,17 @@ class Mount:
     def to_fstab_entry(self):
         """
         Prints the object as a fstab entry
+        The type must be specified
         """
-        if not hasattr(self, 'type'):
+        if self.type is None:
             raise ValueError("Mount type not specified, required for fstab entries.")
 
         out_str = ''
         out_str += self.get_source(pad=True)
-        out_str += self.destination.ljust(16, ' ')
-        out_str += self.type.ljust(8, ' ')
-        if hasattr(self, 'options'):
+        out_str += self.destination.ljust(24, ' ')
+        out_str += self.type.ljust(16, ' ')
+
+        if self.options is not None:
             out_str += self.options
         return out_str
 
@@ -203,10 +210,10 @@ class Mount:
         """
         out_str = f"mount {self.get_source()} {self.destination}"
 
-        if hasattr(self, 'options'):
+        if self.options is not None:
             out_str += f" -o {self.options}"
 
-        if hasattr(self, 'type'):
+        if self.type is not None:
             out_str += f" -t {self.type}"
 
         return out_str
@@ -217,9 +224,7 @@ class Mount:
         otherwise returns the mount command
         """
         if self.base_mount:
-            self.logger.debug("Base mount: %s" % self.destination)
             return self.to_mount_cmd()
         else:
-            self.logger.debug("Fstab mount: %s" % self.destination)
             return self.to_fstab_entry()
 
