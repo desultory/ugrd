@@ -126,6 +126,8 @@ When a module is loaded, `initramfs_generator.py` will try to load a toml file f
 
 The order in which modules/directives are loaded is very important!
 
+If a module depends on another module, it can be added to the `mod_depends` list in the module config. A `ValueError` will be thrown if the module is not present.
+
 ### imports
 
 The most powerful part of a module is the `imports` directive.

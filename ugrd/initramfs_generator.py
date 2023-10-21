@@ -32,16 +32,17 @@ class InitramfsConfigDict(dict):
         This dict does not act like a normal dict, setitem is designed to append when the overrides are used
         Default parameters are defined in builtin_parameters
     """
-    __version__ = "0.5.6"
+    __version__ = "0.6.0"
 
-    builtin_parameters = {'binaries': NoDupFlatList,
-                          'dependencies': NoDupFlatList,
-                          'paths': NoDupFlatList,
-                          'modules': NoDupFlatList,
-                          'mounts': dict,
-                          'imports': dict,
-                          'custom_parameters': dict,
-                          'custom_processing': dict}
+    builtin_parameters = {'binaries': NoDupFlatList,  # Binaries which should be included in the initramfs, dependencies are automatically calculated
+                          'dependencies': NoDupFlatList,  # Raw dependencies, files which should be included in the initramfs
+                          'mod_depends': NoDupFlatList,  # Modules required by other modules, will be re-checked calling .verify_deps()
+                          'paths': NoDupFlatList,  # Paths which will be created in the initramfs
+                          'modules': NoDupFlatList,  # A list of the names of modules which have been loaded, mostly used for dependency checking
+                          'mounts': dict,  # A dict of Mount objects
+                          'imports': dict,  # A dict of functions to be imported into the initramfs, under their respective hooks
+                          'custom_parameters': dict,  # Custom parameters loaded from imports
+                          'custom_processing': dict}  # Custom processing functions which will be run to validate and process parameters
 
     def __init__(self, *args, **kwargs):
         # Define the default parameters
@@ -126,9 +127,9 @@ class InitramfsConfigDict(dict):
     @handle_plural
     def _process_imports(self, import_type: str, import_value: dict):
         """
-        Processes imports in a module
+        Processes imports in a module, importing the functions and adding them to the appropriate list
         """
-        self.logger.debug("Processing imports of type '%s'" % import_type)
+        self.logger.debug("Processing imports of type: %s" % import_type)
 
         from importlib import import_module
         for module_name, function_names in import_value.items():
@@ -146,6 +147,25 @@ class InitramfsConfigDict(dict):
                     self.logger.info("Registered config processing function: %s" % function.__name__)
 
     @handle_plural
+    def _process_mod_depends(self, module):
+        """
+        Processes module dependencies
+        """
+        self.logger.debug("Processing module dependency: %s" % module)
+        if module not in self['modules']:
+            self.logger.warning("Module depenncy added, but required dependency is not loaded: %s" % module)
+
+        self['mod_depends'].append(module)
+
+    def verify_deps(self):
+        """ Verifies that all module dependencies are met """
+        for module in self['mod_depends']:
+            if module not in self['modules']:
+                raise KeyError(f"Required module '{module}' not found in config")
+
+        self.logger.info("Verified module depndencies: %s" % self['mod_depends'])
+
+    @handle_plural
     def _process_modules(self, module):
         """
         processes a single module into the config
@@ -157,10 +177,8 @@ class InitramfsConfigDict(dict):
             module_config = load(module_file)
             self.logger.debug("[%s] Loaded module config: %s" % (module, module_config))
 
-        if 'depends' in module_config:
-            for depend in module_config['depends']:
-                if depend not in self['modules']:
-                    raise KeyError(f"Module '{depend}' not found in config")
+        if 'mod_depends' in module_config:
+            self['mod_depends'] = module_config['mod_depends']
 
         if 'custom_parameters' in module_config:
             self['custom_parameters'] = module_config['custom_parameters']
@@ -193,6 +211,7 @@ class InitramfsGenerator:
         self.init_types = ['init_pre', 'init_main', 'init_late', 'init_final']
 
         self.load_config()
+        self.config_dict.verify_deps()
 
     def load_config(self):
         """

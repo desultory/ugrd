@@ -2,7 +2,7 @@ binaries = [ "ln", "gpg", "gpg-agent", "gpg-connect-agent", "pinentry-tty", "tty
 paths = [ "usr/bin" ]
 
 # GPG works best under agetty for input
-depends = [ "ugrd.base.console" ]
+mod_depends = [ "ugrd.base.console" ]
 primary_console = "tty0"
 
 [console.tty0]
