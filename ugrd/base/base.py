@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '0.4.2'
+__version__ = '0.4.3'
 
 from pathlib import Path
 
@@ -78,6 +78,10 @@ def mount_root(self):
 
     if 'options' not in mount_info:
         mount_info['options'] = 'ro'
+    else:
+        mount_options = mount_info['options'].split(',')
+        if 'ro' not in mount_options:
+            mount_info['options'] += ',ro'
 
     root_mount = Mount(**mount_info)
 

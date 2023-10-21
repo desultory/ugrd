@@ -15,9 +15,11 @@ out_dir = "/usr/src/initramfs"
 # Optionally supply a kernel version
 #kernel_version = "6.1.53-gentoo-dist"
 
+[root_mount]
+options = "subvol=gentoo"
+
 [root_mount.source]
 label = "rootfs"
-options = "subvol=gentoo"
 
 # The UUID of the encrypted volume, mounted at /dev/mapper/root
 [cryptsetup.root]
