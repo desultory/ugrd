@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '0.4.4'
+__version__ = '0.4.5'
 
 from pathlib import Path
 
@@ -21,6 +21,13 @@ def mount_base(self):
     Generates mount commands for the base mounts
     """
     return [str(mount) for mount in self.config_dict['mounts'].values() if mount.base_mount]
+
+
+def remake_mountpoints(self):
+    """
+    Remakes mountpoints, especially useful when mounting over something like /dev
+    """
+    return [f"mkdir --parents {mount.destination}" for mount in self.config_dict['mounts'].values() if mount.remake_mountpoint]
 
 
 def generate_nodes(self):
@@ -138,14 +145,15 @@ class Mount:
     """
     Abstracts a linux mount.
     """
-    __version__ = '0.3.2'
+    __version__ = '0.3.5'
 
     parameters = {'destination': True,
                   'source': True,
                   'type': False,
                   'options': False,
                   'base_mount': False,
-                  'skip_unmount': False}
+                  'skip_unmount': False,
+                  'remake_mountpoint': False}
 
     def __init__(self, *args, **kwargs):
         for parameter in self.parameters:

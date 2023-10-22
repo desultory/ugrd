@@ -1,12 +1,13 @@
 
-dependencies = ['/usr/sbin/plymouthd', '/usr/bin/plymouth']
+binaries = ['plymouthd', 'plymouth']
 
 paths = ['/run/plymouth']
 
 [mounts.devpts]
 type = "devpts"
 destination = "/dev/pts"
-source = "devpts"
+source = "/dev/pts"
+remake_mountpoint = true
 
 [imports.build_pre]
 "ugrd.base.plymouth" = [ "populate_initrd" ]

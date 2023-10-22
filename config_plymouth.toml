@@ -14,6 +14,3 @@ out_dir = "/usr/src/initramfs"
 [root_mount.source]
 label = "rootfs"
 
-# The UUID of the encrypted volume, mounted at /dev/mapper/root
-[cryptsetup.root]
-uuid = "fdf442da-0574-4531-98c7-55227a041f1d"

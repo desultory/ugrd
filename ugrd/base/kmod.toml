@@ -1,4 +1,4 @@
-binaries = [ "modprobe" ]
+binaries = [ "modprobe", "lsmod" ]
 
 [custom_parameters]
 kernel_modules = "NoDupFlatList"  # Kernel modules to pull into the initramfs

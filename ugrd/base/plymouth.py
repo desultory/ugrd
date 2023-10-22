@@ -11,4 +11,4 @@ def start_plymouth(self):
     """
     Runs plymouthd
     """
-    return ['/usr/sbin/plymouthd --attach-to-session --pid-file /run/plymouth/pid --mode=boot']
+    return ['plymouthd --attach-to-session --pid-file /run/plymouth/pid --mode=boot', 'plymouth show-splash']

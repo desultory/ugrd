@@ -44,6 +44,8 @@ The main configuration file is `config.toml`
 
 `mount_timeout` timeout for mount_wait to automatically continue.
 
+`remake_mountpoint` will recreate the mountpoint with mkdir before the `mount -a` is called.
+
 `root_mount` a dict that acts similarly to user defined `mounts`. `destination` is hardcoded to `/mnt/root`.
 
 #### base.kmod
