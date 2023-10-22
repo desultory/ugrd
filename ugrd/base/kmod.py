@@ -1,6 +1,6 @@
 __author__ = 'desultory'
 
-__version__ = '0.4.1'
+__version__ = '0.4.2'
 
 from pathlib import Path
 
@@ -125,7 +125,7 @@ def resolve_kmod(self, module_name):
     dependency_paths = []
     if dependencies:
         if any(dependency in self.config_dict['kmod_ignore'] for dependency in dependencies):
-            self.logger.warning("Kernel module '%s' has dependencies in ignore list: %s" % (module_name, dependencies))
+            self.logger.error("Kernel module '%s' has dependencies in ignore list: %s" % (module_name, dependencies))
             self.config_dict['kmod_ignore'] = module_name
             raise IgnoredKernelModule("Kernel module is in ignore list: %s" % module_name)
 
