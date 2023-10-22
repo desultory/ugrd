@@ -100,7 +100,7 @@ def clean_mounts(self):
     """
     Generates init lines to unmount all mounts
     """
-    return [f"umount /{mount.destination}" for mount in self.config_dict['mounts'].values() if not mount.skip_unmount]
+    return [f"umount {mount.destination}" for mount in self.config_dict['mounts'].values() if not mount.skip_unmount]
 
 
 def _process_file_owner(self, owner):
