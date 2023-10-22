@@ -135,22 +135,20 @@ def resolve_kmod(self, module_name):
                 dependency_paths.append(resolve_kmod_path(self, dependency))
                 self.config_dict['kernel_modules'] = dependency
             except BuiltinKernelModule:
-                self.logger.warning("Kernel module dependency is built-in: %s" % dependency)
+                self.logger.warning("[%s] Kernel module dependency is built-in: %s" % (module_name, dependency))
                 self.config_dict['kmod_ignore'] = module_name
 
     try:
         dependency_paths.append(resolve_kmod_path(self, module_name))
-        self.logger.debug("Calculated kernel module dependencies for '%s': %s" % (module_name, dependency_paths))
-        return dependency_paths
+        self.logger.debug("[%s] Calculated kernel module dependencies: %s" % (module_name, dependency_paths))
     except BuiltinKernelModule:
-        self.logger.warning("Kernel module '%s' is built-in" % module_name)
+        self.logger.warning("[%s] Kernel module is built-in." % module_name)
         self.config_dict['kmod_ignore'] = module_name
 
     if dependency_paths:
-        self.logger.error(dependency_paths)
         return dependency_paths
     else:
-        self.logger.warning("Kernel module '%s' has no dependencies" % module_name)
+        self.logger.warning("[%s] Kernel module has no dependencies." % module_name)
 
 
 def get_all_modules(self):
