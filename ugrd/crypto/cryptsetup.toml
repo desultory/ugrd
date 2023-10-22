@@ -1,7 +1,7 @@
 binaries = [ "cryptsetup" ]
 paths = [ "usr/lib64", "run" ]
 
-_kmod_depend = [ "dm_crypt" ]
+_kmod_depend = [ "dm_crypt", "sha256" ]
 
 [imports.config_processing]
 "ugrd.crypto.cryptsetup" = [ "_process_cryptsetup" ]
