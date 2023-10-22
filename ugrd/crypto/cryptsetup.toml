@@ -3,6 +3,9 @@ paths = [ "usr/lib64", "run" ]
 
 _kmod_depend = [ "dm_crypt" ]
 
+[imports.config_processing]
+"ugrd.crypto.cryptsetup" = [ "_process_cryptsetup" ]
+
 [imports.init_pre]
 "ugrd.crypto.cryptsetup" = [ "configure_library_dir" ]
 

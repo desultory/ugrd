@@ -102,6 +102,8 @@ uuid = "9e04e825-7f60-4171-815a-86e01ec4c4d3"
 
 `key_type` can be either `gpg` or `keyfile`. If it is not set, cryptsetup will prompt for a passphrase. If this is set globally, it applies to all `cryptsetup` definitions.
 
+If a key is being used, it can be specified with `key_file` under the cryptsetup entry. This WILL NOT be pulled as a dependency, and is indented to be on some `mount` which is properly mounted.
+
 ### General config
 
 The following configuration options can exist in any module, or the base config

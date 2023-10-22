@@ -3,6 +3,19 @@ __author__ = 'desultory'
 __version__ = '0.4.2'
 
 
+def _process_cryptsetup(self, config_dict):
+    """
+    Processes the cryptsetup configuration
+    """
+    self.logger.debug("Processing cryptsetup configuration: %s" % config_dict)
+    for values in config_dict.values():
+        if values.get('key_type') == 'gpg':
+            self.logger.info("Key type is GPG, adding gpg to mod_depends")
+            self['mod_depends'] = 'ugrd.crypto.gpg'
+
+    self['cryptsetup'].update(config_dict)
+
+
 def configure_library_dir(self):
     """
     exports the libtary path for cryptsetup

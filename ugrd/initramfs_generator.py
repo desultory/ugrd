@@ -32,7 +32,7 @@ class InitramfsConfigDict(dict):
         This dict does not act like a normal dict, setitem is designed to append when the overrides are used
         Default parameters are defined in builtin_parameters
     """
-    __version__ = "0.6.2"
+    __version__ = "0.6.3"
 
     builtin_parameters = {'binaries': NoDupFlatList,  # Binaries which should be included in the initramfs, dependencies are automatically calculated
                           'dependencies': NoDupFlatList,  # Raw dependencies, files which should be included in the initramfs
@@ -103,9 +103,8 @@ class InitramfsConfigDict(dict):
 
         if parameter_type == "NoDupFlatList":
             super().__setitem__(parameter_name, NoDupFlatList(no_warn=True, log_bump=5, logger=self.logger, _log_init=False))
-        elif parameter_type == "list":
-            super().__setitem__(parameter_name, [])
-            self[parameter_name] = []
+        elif parameter_type in ("list", "dict"):
+            super().__setitem__(parameter_name, eval(parameter_type)())
 
     @handle_plural
     def _process_binaries(self, binary):
@@ -115,13 +114,14 @@ class InitramfsConfigDict(dict):
         """
         self.logger.debug("Calculating dependencies for: %s" % binary)
         try:
+            self.logger.debug("Calculating dependencies for: %s" % binary)
             dependencies = calculate_dependencies(binary)
+            self.logger.debug("[%s] Dependencies: %s" % (binary, dependencies))
         except OSError as e:
             raise RuntimeError("Failed to calculate dependencies for '%s': %s" % (binary, e))
 
-        self.logger.debug("Calculating library paths for: %s" % dependencies)
         self['dependencies'] += dependencies
-
+        # Append, don't set or it will recursively call this function
         self['binaries'].append(binary)
 
     @handle_plural
