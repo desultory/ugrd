@@ -1,6 +1,6 @@
 __author__ = 'desultory'
 
-__version__ = '0.4.0'
+__version__ = '0.4.1'
 
 from pathlib import Path
 
@@ -122,8 +122,8 @@ def resolve_kmod(self, module_name):
         else:
             dependencies += sofdeps
 
+    dependency_paths = []
     if dependencies:
-        dependency_paths = []
         if any(dependency in self.config_dict['kmod_ignore'] for dependency in dependencies):
             self.logger.warning("Kernel module '%s' has dependencies in ignore list: %s" % (module_name, dependencies))
             self.config_dict['kmod_ignore'] = module_name
@@ -138,16 +138,18 @@ def resolve_kmod(self, module_name):
                 self.logger.warning("Kernel module dependency is built-in: %s" % dependency)
                 self.config_dict['kmod_ignore'] = module_name
 
+    try:
         dependency_paths.append(resolve_kmod_path(self, module_name))
         self.logger.debug("Calculated kernel module dependencies for '%s': %s" % (module_name, dependency_paths))
         return dependency_paths
+    except BuiltinKernelModule:
+        self.logger.warning("Kernel module '%s' is built-in" % module_name)
+        self.config_dict['kmod_ignore'] = module_name
+
+    if dependency_paths:
+        return dependency_paths
     else:
-        self.logger.debug('Kernel module has no dependencies: %s' % module_name)
-        try:
-            return resolve_kmod_path(self, module_name)
-        except BuiltinKernelModule:
-            self.logger.warning("Kernel module '%s' is built-in" % module_name)
-            self.config_dict['kmod_ignore'] = module_name
+        raise DependencyResolutionError("Failed to resolve kernel module dependencies for: %s" % module_name)
 
 
 def get_all_modules(self):
@@ -228,9 +230,6 @@ def calculate_modules(self):
             self.logger.info("Resolved dependency paths for kernel module '%s': %s" % (module, module_paths))
         except IgnoredKernelModule:
             self.logger.warning("Ignoring kernel module: %s" % module)
-        except BuiltinKernelModule as e:
-            self.logger.warning("Kernel module is built-in: %s" % e)
-            self.config_dict['kmod_ignore'] = module
 
     get_module_metadata(self)
 
