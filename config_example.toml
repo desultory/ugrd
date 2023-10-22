@@ -1,5 +1,5 @@
-# This config will decrypt the colume fdf442da-0574-4531-98c7-55227a041f1d, mappint it to "crypt"
-# It will attempt to mount the btrfs volume with label "rootfs" to /root
+# This config will decrypt the colume fdf442da-0574-4531-98c7-55227a041f1d, mapping it to "/dev/mapper/root"
+# It will attempt to mount the btrfs volume with label "rootfs" to /mnt/root
 # It will pull all current kernel modules from the active kernel version
 
 
@@ -10,12 +10,14 @@ modules = [
   "ugrd.base.btrfs",
 ]
 
+# Will use /tmp/initramfs if not specified
 out_dir = "/usr/src/initramfs"
 
-# Optionally supply a kernel version
+# Optionally supply a kernel version, uses the current kernel version if not specified
 #kernel_version = "6.1.53-gentoo-dist"
 
 [root_mount.source]
+# The lable of the root filesystem, a uuid could be used instead
 label = "rootfs"
 
 # The UUID of the encrypted volume, mounted at /dev/mapper/root
