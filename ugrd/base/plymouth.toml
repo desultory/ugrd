@@ -10,3 +10,6 @@ source = "devpts"
 
 [imports.build_pre]
 "ugrd.base.plymouth" = [ "populate_initrd" ]
+
+[imports.init_main]
+"ugrd.base.plymouth" = [ "start_plymouth" ]
