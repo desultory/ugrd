@@ -32,7 +32,7 @@ class InitramfsConfigDict(dict):
         This dict does not act like a normal dict, setitem is designed to append when the overrides are used
         Default parameters are defined in builtin_parameters
     """
-    __version__ = "0.6.0"
+    __version__ = "0.6.2"
 
     builtin_parameters = {'binaries': NoDupFlatList,  # Binaries which should be included in the initramfs, dependencies are automatically calculated
                           'dependencies': NoDupFlatList,  # Raw dependencies, files which should be included in the initramfs
@@ -48,7 +48,7 @@ class InitramfsConfigDict(dict):
         # Define the default parameters
         for parameter, default_type in self.builtin_parameters.items():
             if default_type == NoDupFlatList:
-                super().__setitem__(parameter, default_type(no_warn=True, log_bump=10, logger=self.logger, _log_init=False))
+                super().__setitem__(parameter, default_type(no_warn=True, log_bump=5, logger=self.logger, _log_init=False))
             else:
                 super().__setitem__(parameter, default_type())
 
@@ -102,7 +102,7 @@ class InitramfsConfigDict(dict):
         self.logger.info("Registered custom parameter '%s' with type: %s" % (parameter_name, parameter_type))
 
         if parameter_type == "NoDupFlatList":
-            super().__setitem__(parameter_name, NoDupFlatList(no_warn=True, log_bump=10, logger=self.logger, _log_init=False))
+            super().__setitem__(parameter_name, NoDupFlatList(no_warn=True, log_bump=5, logger=self.logger, _log_init=False))
         elif parameter_type == "list":
             super().__setitem__(parameter_name, [])
             self[parameter_name] = []

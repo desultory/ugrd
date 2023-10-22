@@ -15,14 +15,15 @@ if __name__ == '__main__':
                            nargs='?',
                            help='Config file location')
 
-    argparser.add_argument('-v', '--verbose',
-                           action='store_true',
-                           help='Verbose output')
+    argparser.add_argument('-d', '--debug', action='store_true', help='Debug mode')
+    argparser.add_argument('-dd', '--verbose-debug', action='store_true', help='Verbose debug mode')
 
     args = argparser.parse_args()
 
     logger = logging.getLogger()
-    if args.verbose:
+    if args.verbose_debug:
+        logger.setLevel(5)
+    elif args.debug:
         logger.setLevel(10)
     else:
         logger.setLevel(20)
