@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '0.4.5'
+__version__ = '0.4.6'
 
 from pathlib import Path
 
@@ -100,7 +100,7 @@ def clean_mounts(self):
     """
     Generates init lines to unmount all mounts
     """
-    return [f"umount /{mount}" for mount, mount_info in self.config_dict['mounts'].items() if not mount_info.skip_unmount]
+    return [f"umount /{mount.destination}" for mount in self.config_dict['mounts'].values() if not mount.skip_unmount]
 
 
 def _process_file_owner(self, owner):
