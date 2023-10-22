@@ -1,0 +1,12 @@
+
+dependencies = ['/usr/sbin/plymouthd', '/usr/bin/plymouth']
+
+paths = ['/run/plymouth']
+
+[mounts.devpts]
+type = "devpts"
+destination = "/dev/pts"
+source = "devpts"
+
+[imports.build_pre]
+"ugrd.base.plymouth" = "populate_initrd"
