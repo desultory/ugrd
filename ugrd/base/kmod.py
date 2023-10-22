@@ -147,9 +147,10 @@ def resolve_kmod(self, module_name):
         self.config_dict['kmod_ignore'] = module_name
 
     if dependency_paths:
+        self.logger.error(dependency_paths)
         return dependency_paths
     else:
-        raise DependencyResolutionError("Failed to resolve kernel module dependencies for: %s" % module_name)
+        self.logger.warning("Kernel module '%s' has no dependencies" % module_name)
 
 
 def get_all_modules(self):
@@ -225,9 +226,11 @@ def calculate_modules(self):
             raise IgnoredKernelModule("Kernel module is in ignore list: %s" % module)
 
         try:
-            module_paths = resolve_kmod(self, module)
-            self.config_dict['dependencies'] = module_paths
-            self.logger.info("Resolved dependency paths for kernel module '%s': %s" % (module, module_paths))
+            if module_paths := resolve_kmod(self, module):
+                self.config_dict['dependencies'] = module_paths
+                self.logger.info("Resolved dependency paths for kernel module '%s': %s" % (module, module_paths))
+            else:
+                self.logger.warning("Failed to resolve dependency paths for kernel module '%s'" % module)
         except IgnoredKernelModule:
             self.logger.warning("Ignoring kernel module: %s" % module)
 
