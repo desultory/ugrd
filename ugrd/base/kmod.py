@@ -257,10 +257,13 @@ def load_modules(self):
 
     if self.config_dict.get('kmod_ignore'):
         self.logger.info("Ignoring kernel modules: %s" % self.config_dict['kmod_ignore'])
-        kmods = [kmod for kmod in kmods if kmod not in self.config_dict['kmod_ignore']]
+        kmod_init = [kmod for kmod in kmods if kmod not in self.config_dict['kmod_ignore']]
 
-    self.logger.info("Init kernel modules: %s" % kmods)
+    self.logger.info("Init kernel modules: %s" % kmod_init)
 
-    module_str = ' '.join(kmods)
+    if kmod_init != kmods:
+        self.logger.warning("Ignoring kernel modules: %s" % (set(kmods) - set(kmod_init)))
+
+    module_str = ' '.join(kmod_init)
     return [f"modprobe -av {module_str}"]
 
