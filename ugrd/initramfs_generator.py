@@ -4,13 +4,13 @@ __version__ = "0.6.5"
 
 from tomllib import load
 from pathlib import Path
+from subprocess import run
 
 from ugrd.zen_custom import loggify, handle_plural, NoDupFlatList
 
 
 def calculate_dependencies(binary):
     from shutil import which
-    from subprocess import run
 
     binary_path = which(binary)
     if not binary_path:
@@ -396,6 +396,20 @@ class InitramfsGenerator:
 
         self.logger.debug("Setting ownership of '%s' to: %s" % (dest, self.config_dict['_file_owner_uid']))
         chown(dest, self.config_dict['_file_owner_uid'], self.config_dict['_file_owner_uid'])
+
+    def _run(self, args):
+        """
+        Runs a command, returns the object
+        """
+        self.logger.debug("Running command: %s" % args)
+        cmd = run(args, capture_output=True)
+        if cmd.returncode != 0:
+            self.logger.error("Failed to run command: %s" % cmd.args)
+            self.logger.error("Command output: %s" % cmd.stdout.decode('utf-8'))
+            self.logger.error("Command error: %s" % cmd.stderr.decode('utf-8'))
+            raise RuntimeError("Failed to run command: %s" % cmd.args)
+
+        return cmd
 
     def deploy_dependencies(self):
         """

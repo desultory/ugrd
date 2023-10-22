@@ -1,8 +1,7 @@
 __author__ = 'desultory'
 
-__version__ = '0.3.5'
+__version__ = '0.4.0'
 
-from subprocess import run
 from pathlib import Path
 
 
@@ -43,9 +42,10 @@ def resolve_kmod_path(self, module_name):
     if self.config_dict.get('kernel_version'):
         args += ['--set-version', self.config_dict['kernel_version']]
 
-    cmd = run(args, capture_output=True)
-    if cmd.returncode != 0:
-        raise DependencyResolutionError("Failed to get kernel module path for: %s" % module_name)
+    try:
+        cmd = self._run(args)
+    except RuntimeError as e:
+        raise DependencyResolutionError("Failed to get kernel module path for: %s" % module_name) from e
 
     module_path = cmd.stdout.decode('utf-8').strip()
 
@@ -67,11 +67,11 @@ def resolve_kmod_softdeps(self, module_name):
     if self.config_dict.get('kernel_version'):
         args += ['--set-version', self.config_dict['kernel_version']]
 
-    cmd = run(args, capture_output=True)
-    if cmd.returncode != 0:
-        raise DependencyResolutionError("Failed to get kernel module soft dependencies for: %s" % module_name)
+    try:
+        cmd = self._run(args)
+    except RuntimeError as e:
+        raise DependencyResolutionError("Failed to get kernel module soft dependencies for: %s" % module_name) from e
 
-    self.logger.debug("Running command: %s" % args)
     softdeps = cmd.stdout.decode().strip().split()
     if softdeps:
         softdeps = softdeps[1::2]
@@ -90,10 +90,10 @@ def resolve_kmod_harddeps(self, module_name):
     if self.config_dict.get('kernel_version'):
         args += ['--set-version', self.config_dict['kernel_version']]
 
-    self.logger.debug("Running command: %s" % args)
-    cmd = run(args, capture_output=True)
-    if cmd.returncode != 0:
-        raise DependencyResolutionError("Failed to get kernel module dependencies for: %s" % module_name)
+    try:
+        cmd = self._run(args)
+    except RuntimeError as e:
+        raise DependencyResolutionError("Failed to get kernel module dependencies for: %s" % module_name) from e
 
     dependencies = cmd.stdout.decode().strip().split(',')
 
@@ -154,10 +154,10 @@ def get_all_modules(self):
     """
     Gets the name of all currently installed kernel modules
     """
-    cmd = run(['lsmod'], capture_output=True)
-    if cmd.returncode != 0:
-        self.logger.error(cmd.stderr.decode("utf-8").strip())
-        raise DependencyResolutionError('Failed to get list of kernel modules')
+    try:
+        cmd = self._run(['lsmod'])
+    except RuntimeError as e:
+        raise DependencyResolutionError('Failed to get list of kernel modules') from e
 
     raw_modules = cmd.stdout.decode('utf-8').split('\n')[1:]
     modules = []
@@ -182,10 +182,10 @@ def get_module_metadata(self):
     """
     if 'kernel_version' not in self.config_dict:
         self.logger.info("Kernel version not specified, using current kernel")
-        cmd = run(['uname', '-r'], capture_output=True)
-        if cmd.returncode != 0:
-            self.logger.error(f'Error: {cmd.stderr.decode("utf-8").strip()}')
-            raise ValueError('Failed to get kernel version')
+        try:
+            cmd = self._run(['uname', '-r'])
+        except RuntimeError as e:
+            raise DependencyResolutionError('Failed to get kernel version') from e
 
         kernel_version = cmd.stdout.decode('utf-8').strip()
         self.logger.info(f'Using detected kernel version: {kernel_version}')
