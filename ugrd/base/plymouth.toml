@@ -9,4 +9,4 @@ destination = "/dev/pts"
 source = "devpts"
 
 [imports.build_pre]
-"ugrd.base.plymouth" = "populate_initrd"
+"ugrd.base.plymouth" = [ "populate_initrd" ]
