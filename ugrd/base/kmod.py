@@ -1,6 +1,6 @@
 __author__ = 'desultory'
 
-__version__ = '0.4.2'
+__version__ = '0.4.3'
 
 from pathlib import Path
 
@@ -221,7 +221,7 @@ def calculate_modules(self):
     for module in self.config_dict['kernel_modules']:
         self.logger.debug("Processing kernel module: %s" % module)
         if module in self.config_dict['kmod_ignore']:
-            raise IgnoredKernelModule("Kernel module is in ignore list: %s" % module)
+            self.logger.warning("Kernel module is in ignore list: %s" % module)
 
         try:
             if module_paths := resolve_kmod(self, module):
