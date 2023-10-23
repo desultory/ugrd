@@ -1,3 +1,5 @@
+# Config to mount a zfs rootfs called rpool with gpg keyfiles in /mnt/usb/root.luks.gpg
+
 modules = [
   "ugrd.base.base",
   "ugrd.base.kmod",
@@ -5,28 +7,27 @@ modules = [
   "ugrd.base.zfs",
   "ugrd.base.console",
   "ugrd.crypto.gpg",
-  "ugrd.crypto.smartcard",
 ]
 
 #out_dir = "/usr/src/initramfs"
-sc_public_key = "/etc/ugrd/pubkey.gpg"
 
 #kernel_version = "6.5.6-gentoo-initramfs"
-kmod_init = ['nvme', 'uas', 'vfat']
+kmod_init = ['nvme', 'uas', 'fat' ]
 
 mount_wait = true
 mount_timeout = 2
 
-[mounts.boot]
+[mounts.usb]
 type = "vfat"
+destination = "/mnt/usb"
 
   [mounts.boot.source]
   uuid = "4182-B466"
 
 [root_mount.source]
-label = "2t"
+label = "rpool"
 
 [cryptsetup.root]
-uuid = "96636938-b518-4103-8693-8b8f2d305ecd"
+uuid = "3ffbb856-ac38-495e-bf8d-2a0fb7faf47f"
 key_type = "gpg"
-key_file = "/boot/2t.luks.gpg"
+key_file = "/mnt/usb/root.luks.gpg"
