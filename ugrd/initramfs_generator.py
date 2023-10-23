@@ -32,7 +32,7 @@ class InitramfsConfigDict(dict):
         This dict does not act like a normal dict, setitem is designed to append when the overrides are used
         Default parameters are defined in builtin_parameters
     """
-    __version__ = "0.6.3"
+    __version__ = "0.6.5"
 
     builtin_parameters = {'binaries': NoDupFlatList,  # Binaries which should be included in the initramfs, dependencies are automatically calculated
                           'dependencies': NoDupFlatList,  # Raw dependencies, files which should be included in the initramfs
@@ -41,6 +41,7 @@ class InitramfsConfigDict(dict):
                           'modules': NoDupFlatList,  # A list of the names of modules which have been loaded, mostly used for dependency checking
                           'mounts': dict,  # A dict of Mount objects
                           'imports': dict,  # A dict of functions to be imported into the initramfs, under their respective hooks
+                          'mask': dict,  # A dict of imported functions to be masked
                           'custom_parameters': dict,  # Custom parameters loaded from imports
                           'custom_processing': dict}  # Custom processing functions which will be run to validate and process parameters
 
@@ -165,6 +166,17 @@ class InitramfsConfigDict(dict):
 
         self.logger.info("Verified module depndencies: %s" % self['mod_depends'])
 
+    def verify_mask(self):
+        """
+        Processes masked imports
+        """
+        for mask_hook, mask_items in self['mask'].items():
+            if self['imports'].get(mask_hook):
+                for function in self['imports'][mask_hook]:
+                    if function.__name__ in mask_items:
+                        self.logger.warning("Masking import: %s" % function.__name__)
+                        self['imports'][mask_hook].remove(function)
+
     @handle_plural
     def _process_modules(self, module):
         """
@@ -188,6 +200,10 @@ class InitramfsConfigDict(dict):
             self['imports'] = module_config['imports']
             self.logger.debug("[%s] Registered imports: %s" % (module, self['imports']))
 
+        if 'mask' in module_config:
+            self['mask'] = module_config['mask']
+            self.logger.debug("[%s] Registered mask: %s" % (module, self['mask']))
+
         for name, value in module_config.items():
             if name in ('custom_parameters', 'depends', 'imports'):
                 self.logger.debug("[%s] Skipping '%s'" % (module, name))
@@ -200,7 +216,7 @@ class InitramfsConfigDict(dict):
 
 @loggify
 class InitramfsGenerator:
-    __version__ = "0.4.4"
+    __version__ = "0.4.5"
 
     def __init__(self, config='config.toml', *args, **kwargs):
         self.config_filename = config
@@ -208,10 +224,11 @@ class InitramfsGenerator:
         self.build_tasks = [self.deploy_dependencies]
         self.config_dict = InitramfsConfigDict(logger=self.logger)
 
-        self.init_types = ['init_pre', 'init_main', 'init_late', 'init_final']
+        self.init_types = ['init_pre', 'init_main', 'init_late', 'init_mount', 'init_final']
 
         self.load_config()
         self.config_dict.verify_deps()
+        self.config_dict.verify_mask()
 
     def load_config(self):
         """

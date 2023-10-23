@@ -258,6 +258,8 @@ def load_modules(self):
     if self.config_dict.get('kmod_ignore'):
         self.logger.info("Ignoring kernel modules: %s" % self.config_dict['kmod_ignore'])
         kmod_init = [kmod for kmod in kmods if kmod not in self.config_dict['kmod_ignore']]
+    else:
+        kmod_init = kmods
 
     self.logger.info("Init kernel modules: %s" % kmod_init)
 

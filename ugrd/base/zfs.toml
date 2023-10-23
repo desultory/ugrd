@@ -1,0 +1,10 @@
+
+binaries = ['zfs', 'zpool']
+
+_kmod_depend = ['zfs']
+
+[mask]
+init_mount = ['mount_root']
+
+[imports.init_mount]
+"ugrd.base.zfs" = [ 'mount_zfs_root']

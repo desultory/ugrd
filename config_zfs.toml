@@ -1,0 +1,32 @@
+modules = [
+  "ugrd.base.base",
+  "ugrd.base.kmod",
+  "ugrd.crypto.cryptsetup",
+  "ugrd.base.zfs",
+  "ugrd.base.console",
+  "ugrd.crypto.gpg",
+  "ugrd.crypto.smartcard",
+]
+
+#out_dir = "/usr/src/initramfs"
+sc_public_key = "/etc/ugrd/pubkey.gpg"
+
+#kernel_version = "6.5.6-gentoo-initramfs"
+kmod_init = ['nvme', 'uas', 'vfat']
+
+mount_wait = true
+mount_timeout = 2
+
+[mounts.boot]
+type = "vfat"
+
+  [mounts.boot.source]
+  uuid = "4182-B466"
+
+[root_mount.source]
+label = "2t"
+
+[cryptsetup.root]
+uuid = "96636938-b518-4103-8693-8b8f2d305ecd"
+key_type = "gpg"
+key_file = "/boot/2t.luks.gpg"

@@ -76,6 +76,16 @@ This module creates an agetty session. This is used by the `ugrd.crypto.gpg` mod
 `consle.{name}.local` specifies whether or not the `-L` flag should be passed to agetty.
 
 
+#### base.btrfs
+
+Importing this module will run `btrfs device scan` and pull btrfs modules. No config is required.
+
+#### base.zfs
+
+Importing this module imports zfs userspace utils and the zfs kernel modules. The `root_mount.source.label` must be set for this to function.
+
+This module masks the `urgd.base.base.mount_root` function from `init_mount`.
+
 #### crypto.gpg
 
 This module is required to perform GPG decryption within the initramfs. It depends on the `ugrd.base.console` module for agetty, which is required for input.
@@ -159,6 +169,18 @@ Is used in the base module to make the initramfs generator generate a fstab duri
 Imported functions have access to the entire `self` scope, giving them full control of whatever other modules are loaded when they are executed, and the capability to dynamically create new functions.
 
 This script should be executed as root, to have access to all files and libraries required to boot, so special care should be taken when loading and creating modules. 
+
+#### masks
+
+To mask an import used by another module, the mask parameter can be used:
+
+```
+[mask]
+init_final = ['mount_root']
+
+```
+
+This will mask the `mount_root` function pulled by the base module, if another mount function is being used.
 
 #### config_processing
 

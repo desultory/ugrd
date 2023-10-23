@@ -47,8 +47,11 @@ minor = 1
 [imports.init_main]
 "ugrd.base.base" = [ "remake_mountpoints", "mount_fstab" ]
 
+[imports.init_mount]
+"ugrd.base.base" = [ "mount_root" ]
+
 [imports.init_final]
-"ugrd.base.base" = [ "mount_root", "clean_mounts", "switch_root" ]
+"ugrd.base.base" = [ "clean_mounts", "switch_root" ]
 
 [custom_parameters]
 shebang = "str"  # Add the shebang property, used because this is a bash script
@@ -58,6 +61,7 @@ clean = "bool"  # Add the clean property, used to define if the mounts should be
 root_mount = "dict"  # Add the root_mount property, used to define the root mount
 mount_wait = "bool"  # Add the mount_wait property, if defined, user input will be required before attempting to mount entries
 mount_timeout = "int"  # Add the mount_timeout property, used to define the timeout for mount_wait
+mount_cmd = "str"  # The mount command called by mount_root, can be overridden
 dev_nodes = "dict"  # Add the dev_nodes property, used to define the dev nodes to be created
 file_owner = "str"  # Add the file_owner property, used to define who should own the copied initramfs files
 _file_owner_uid = "int"  # Add the _file_owner_uid property, used to store the uid of the file owner
