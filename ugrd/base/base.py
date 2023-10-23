@@ -186,6 +186,8 @@ class Mount:
         if isinstance(self.source, dict):
             if 'uuid' in self.source:
                 out_str = f"UUID={self.source['uuid']}"
+            if 'partuuid' in self.source:
+                out_str = f"PARTUUID={self.source['partuuid']}"
             elif 'label' in self.source:
                 out_str = f"LABEL={self.source['label']}"
             else:

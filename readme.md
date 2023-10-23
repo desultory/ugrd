@@ -34,7 +34,9 @@ The main configuration file is `config.toml`
 
 `root_mount` takes a label or UUID for a volume to be mounted as the root filesystem.
 
-`mounts.<mountname>` is defined with fstab details, such as `source`, `destination` and `type`. `destination` defaults to the mountname. `type` can be set to autodect the type, but will not work with fstab entries.
+`mounts.<mountname>` is defined with fstab details, such as `source`, `destination` and `type`. `destination` defaults to the mountname. 
+  `type` can be set to autodect the type, but will not work with fstab entries.
+  `source` if left as a string, will be used as the mount source path. If set to a dict and the `label`, `partuuid`, or `uuid` are set, those will be used to mount the device.
 
 `mounts.base_mount` is used for builtin mounts such as `/dev`, `/sys`, and `/proc`. Setting this to mounts it with a mount command in `init_pre` instead of waiting for `init_main`.
 
