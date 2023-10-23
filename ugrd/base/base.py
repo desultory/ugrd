@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '0.4.6'
+__version__ = '0.4.7'
 
 from pathlib import Path
 
@@ -145,7 +145,7 @@ class Mount:
     """
     Abstracts a linux mount.
     """
-    __version__ = '0.3.5'
+    __version__ = '0.4.0'
 
     parameters = {'destination': True,
                   'source': True,
@@ -182,6 +182,8 @@ class Mount:
         """
         returns the mount source string based on the config
         """
+        pad_size = 44
+
         out_str = ''
         if isinstance(self.source, dict):
             if 'uuid' in self.source:
@@ -196,7 +198,9 @@ class Mount:
             out_str = self.source
 
         if pad:
-            out_str = out_str.ljust(44, ' ')
+            if len(out_str) > pad_size:
+                pad_size = len(out_str) + 1
+            out_str = out_str.ljust(pad_size, ' ')
 
         return out_str
 
