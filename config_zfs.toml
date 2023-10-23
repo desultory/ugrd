@@ -21,7 +21,7 @@ mount_timeout = 2
 type = "vfat"
 destination = "/mnt/usb"
 
-  [mounts.boot.source]
+  [mounts.usb.source]
   uuid = "4182-B466"
 
 [root_mount.source]
