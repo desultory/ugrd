@@ -32,7 +32,6 @@ The main configuration file is `config.toml`
 
 `shebang` (#!/bin/bash) sets the shebang on the init script.
 
-
 ##### Mounts
 
 `mounts`: A dictionary containing entries for mounts, with their associated config.
@@ -78,20 +77,21 @@ These are set at the global level and are not associated with an individual moun
 
 #### base.kmod
 
-This module is used to embed kernel modules into the initramfs. Both parameters are optional.
-If the module is loaded, but configuration options are not passed, the generator will pull all currently running kernel modules from the active kernel.
+This module is used to embed kernel modules into the initramfs.
+
+Modules can use `_kmod_depend` to add required modules. Simply using the `ugrd.crypto.cryptsetup` module, for example, will try to add the `dm_crypt` kmod.
 
 `kernel_version` (uname -r) is used to specify the kernel version to pull modules for, should be a directory under `/lib/modules/<kernel_version>`.
 
-`kernel_modules` is used to define a list of kernel module names to pull into the initramfs. If it is not set, all loaded kernel modules will be pulled.
+`kmod_autodetect` (false) if set to `true`, will populate `kernel_modules` with modules listed in `lsmod`.
+
+`kernel_modules` is used to define a list of kernel module names to pull into the initramfs. These modules will not be `modprobe`'d automatically.
 
 `kmod_ignore` is used to specify kernel modules to ignore. If a module depends on one of these, it will throw an error and drop it from being included.
 
-`kmod_init`  is used to specify kernel modules to load at boot. If set, ONLY these modules will be loaded with modprobe. If unset, `kernel_modules` is used.
+`kmod_init`  is used to specify kernel modules to load at boot. If set, ONLY these modules will be loaded with modprobe.
 
-`kmod_autodetect` (false) if set to `true`, will populate `kernel_modules` with modules listed in `lsmod`.
-
-`_kmod_depend` is meant to be used within modules, specifies kernel modules which should be added to `kernel_modules` and `kmod_init`.
+`_kmod_depend` is meant to be used within modules, specifies kernel modules which should be added to `kmod_init`.
 
 `kmod_ignore_softdeps` (false) ignore softdeps for kernel modules.
 

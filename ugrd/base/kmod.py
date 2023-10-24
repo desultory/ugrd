@@ -1,6 +1,6 @@
 __author__ = 'desultory'
 
-__version__ = '0.4.3'
+__version__ = '0.4.4'
 
 from pathlib import Path
 
@@ -156,6 +156,11 @@ def get_all_modules(self):
     """
     Gets the name of all currently installed kernel modules
     """
+    from platform import uname
+
+    if self.config_dict.get('kernel_version') and self.config_dict['kernel_version'] != uname().release:
+        self.logger.warning("Kernel version is set to %s, but the current kernel version is %s" % (self.config_dict['kernel_version'], uname().release))
+
     try:
         cmd = self._run(['lsmod'])
     except RuntimeError as e:
@@ -217,20 +222,21 @@ def calculate_modules(self):
 
     if self.config_dict['_kmod_depend']:
         self.logger.info("Adding internal dependencies to kernel modules: %s" % self.config_dict['_kmod_depend'])
-        self.config_dict['kernel_modules'] += self.config_dict['_kmod_depend']
-
-    self.logger.info("Fetching kernel modules: %s" % self.config_dict['kernel_modules'])
+        self.config_dict['kernel_modules'] = self.config_dict['_kmod_depend']
 
     for module in self.config_dict['kernel_modules']:
         self.logger.debug("Processing kernel module: %s" % module)
         try:
             if module_paths := resolve_kmod(self, module):
                 self.config_dict['dependencies'] = module_paths
-                self.logger.info("Resolved dependency paths for kernel module '%s': %s" % (module, module_paths))
+                self.logger.debug("Resolved dependency paths for kernel module '%s': %s" % (module, module_paths))
             else:
                 self.logger.warning("Failed to resolve dependency paths for kernel module '%s'" % module)
         except IgnoredKernelModule:
             self.logger.warning("Ignoring kernel module: %s" % module)
+            self.config_dict['kernel_modules'].remove(module)
+
+    self.logger.info("Included kernel modules: %s" % self.config_dict['kernel_modules'])
 
     get_module_metadata(self)
 
