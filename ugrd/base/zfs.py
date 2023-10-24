@@ -6,6 +6,7 @@ def mount_zfs_root(self):
     """
     Mounts the ZFS root pool
     """
+    self.logger.error("ZFS SUPPORT IS CURRENTLY EXPERIMENTAL")
     zpool_cmd = f"zpool import -R /mnt/root {self.config_dict['root_mount']['source']['label']} || (echo 'Failed to import ZFS root pool' && bash)"
     zmount_cmd = "zfs mount -a || (echo 'Failed to mount ZFS root.' && bash)"
 

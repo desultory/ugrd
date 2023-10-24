@@ -145,7 +145,7 @@ class Mount:
     """
     Abstracts a linux mount.
     """
-    __version__ = '0.4.0'
+    __version__ = '0.4.1'
 
     parameters = {'destination': True,
                   'source': True,
@@ -188,7 +188,7 @@ class Mount:
         if isinstance(self.source, dict):
             if 'uuid' in self.source:
                 out_str = f"UUID={self.source['uuid']}"
-            if 'partuuid' in self.source:
+            elif 'partuuid' in self.source:
                 out_str = f"PARTUUID={self.source['partuuid']}"
             elif 'label' in self.source:
                 out_str = f"LABEL={self.source['label']}"
@@ -209,13 +209,13 @@ class Mount:
         Prints the object as a fstab entry
         The type must be specified
         """
-        if self.type is None:
-            raise ValueError("Mount type not specified, required for fstab entries.")
+        fs_type = self.type if self.type else 'auto'
+        mount_source = self.get_source(pad=True)
 
         out_str = ''
-        out_str += self.get_source(pad=True)
+        out_str += mount_source
         out_str += self.destination.ljust(24, ' ')
-        out_str += self.type.ljust(16, ' ')
+        out_str += fs_type.ljust(16, ' ')
 
         if self.options is not None:
             out_str += self.options

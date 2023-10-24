@@ -32,23 +32,49 @@ The main configuration file is `config.toml`
 
 `shebang` (#!/bin/bash) sets the shebang on the init script.
 
-`root_mount` takes a label or UUID for a volume to be mounted as the root filesystem.
 
-`mounts.<mountname>` is defined with fstab details, such as `source`, `destination` and `type`. `destination` defaults to the mountname. 
-  `type` can be set to autodect the type, but will not work with fstab entries.
-  `source` if left as a string, will be used as the mount source path. If set to a dict and the `label`, `partuuid`, or `uuid` are set, those will be used to mount the device.
+##### Mounts
 
-`mounts.base_mount` is used for builtin mounts such as `/dev`, `/sys`, and `/proc`. Setting this to mounts it with a mount command in `init_pre` instead of waiting for `init_main`.
+`mounts`: A dictionary containing entries for mounts, with their associated config.
 
-`mounts.skip_unmount` is used for the builtin `/dev` mount, since it will fail to unmount when in use.
+`root_mount` a dict that acts similarly to user defined `mounts`. `destination` is hardcoded to `/mnt/root`.
 
-`mount_wait` (false) waits for user input before attenmpting to mount the generated fstab at runtime.
+The most minimal mount entry that can be created must have a name, which will be used as the `destination`, and a `source`.
+If the source is a dict, options such as the `uuid`, `partuuid`, and `label` can be defined as targets, in that order.
+If the source is a string, that path will be used as the mount source.
 
-`mount_timeout` timeout for mount_wait to automatically continue.
+If `type` is not set, `auto` will be used for fstab entries, and for mount commands, the type will be left unspecified.
+
+The following configuration mounts the device with `uuid` `ABCD-1234` at `/boot`:
+
+```
+[mounts.boot.source]
+uuid = "ABCD-1234"
+```
+
+The following configuration mounts the device with `label` `extra` to `/mnt/extra`:
+
+```
+[mounts.extra]
+destination = "/mnt/extra"
+
+[mounts.extra.source]
+label = "extra"
+```
+
+`base_mount` (false) is used for builtin mounts such as `/dev`, `/sys`, and `/proc`. Setting this to mounts it with a mount command in `init_pre` instead of waiting for `init_main`.
+
+`skip_unmount` (false) is used for the builtin `/dev` mount, since it will fail to unmount when in use. Like the name suggests, this skips running `umount`.
 
 `remake_mountpoint` will recreate the mountpoint with mkdir before the `mount -a` is called.
 
-`root_mount` a dict that acts similarly to user defined `mounts`. `destination` is hardcoded to `/mnt/root`.
+##### General mount options
+
+These are set at the global level and are not associated with an individual mount.
+
+`mount_wait` (false) waits for user input before attenmpting to mount the generated fstab at runtime.
+
+`mount_timeout` timeout for `mount_wait` to automatically continue.
 
 #### base.kmod
 
