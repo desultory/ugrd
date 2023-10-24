@@ -214,7 +214,7 @@ def calculate_modules(self):
     Adds the contents of _kmod_depend if specified.
     If kernel_modules is empty, pulls all currently loaded kernel modules.
     """
-    if self.config_dict.get('kmod_autodetect'):
+    if self.config_dict['kmod_autodetect']:
         self.logger.info("Autodetecting kernel modules")
         autodetected_modules = get_all_modules(self)
         self.logger.info("Autodetected kernel modules: %s" % autodetected_modules)
@@ -249,11 +249,11 @@ def load_modules(self):
     kmods = self.config_dict['kmod_init']
 
     # Finally, add the internal dependencies from _kmod_depend
-    if depends := self.config_dict.get('_kmod_depend'):
+    if depends := self.config_dict['_kmod_depend']:
         self.logger.info("Adding internal dependencies to kmod_init: %s" % depends)
         kmods += depends
 
-    if self.config_dict.get('kmod_ignore'):
+    if self.config_dict['kmod_ignore']:
         kmod_init = [kmod for kmod in kmods if kmod not in self.config_dict['kmod_ignore']]
     else:
         kmod_init = kmods

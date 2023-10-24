@@ -106,6 +106,8 @@ class InitramfsConfigDict(dict):
             super().__setitem__(parameter_name, NoDupFlatList(no_warn=True, log_bump=5, logger=self.logger, _log_init=False))
         elif parameter_type in ("list", "dict"):
             super().__setitem__(parameter_name, eval(parameter_type)())
+        elif parameter_type == "bool":
+            super().__setitem__(parameter_name, False)
 
     @handle_plural
     def _process_binaries(self, binary):
