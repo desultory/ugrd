@@ -5,9 +5,9 @@ kernel_modules = "NoDupFlatList"  # Kernel modules to pull into the initramfs
 kernel_version = "str"  # Kernel version to use for the initramfs
 kmod_ignore_softdeps = "bool"  # Whether or not softdeps are ignored
 kmod_init = "NoDupFlatList"  # Kernel modules to load at initramfs startup
+kmod_autodetect = "bool"  # Whether or not to automatically pull currently loaded kernel modules
 kmod_ignore = "NoDupFlatList"  # Kernel modules to ignore when loading
 _kmod_depend = "NoDupFlatList"  # Meant to be used internally, defines kernel modules to automatically load, typically within other module config
-
 
 [imports.config_processing]
 "ugrd.base.kmod" = [ "_process_kmod_init_multi" ]

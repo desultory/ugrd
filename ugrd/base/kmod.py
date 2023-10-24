@@ -124,10 +124,11 @@ def resolve_kmod(self, module_name):
 
     dependency_paths = []
     if dependencies:
-        if any(dependency in self.config_dict['kmod_ignore'] for dependency in dependencies):
-            self.logger.error("Kernel module '%s' has dependencies in ignore list: %s" % (module_name, dependencies))
-            self.config_dict['kmod_ignore'] = module_name
-            raise IgnoredKernelModule("Kernel module is in ignore list: %s" % module_name)
+        for ignored_kmod in self.config_dict['kmod_ignore']:
+            if ignored_kmod in dependencies:
+                self.logger.error("Kernel module dependency is in ignore list: %s" % ignored_kmod)
+                self.config_dict['kmod_ignore'] = module_name
+                raise IgnoredKernelModule("[%s] Kernel module dependency is in ignore list: %s" % (module_name, ignored_kmod))
 
         self.logger.debug("Resolving dependencies: %s" % dependencies)
         for dependency in dependencies:
@@ -208,9 +209,11 @@ def calculate_modules(self):
     Adds the contents of _kmod_depend if specified.
     If kernel_modules is empty, pulls all currently loaded kernel modules.
     """
-    if not self.config_dict['kernel_modules']:
-        self.logger.info("No kernel modules specified, adding all currently loaded kernel modules")
-        self.config_dict['kernel_modules'] = get_all_modules(self)
+    if self.config_dict.get('kmod_autodetect'):
+        self.logger.info("Autodetecting kernel modules")
+        autodetected_modules = get_all_modules(self)
+        self.logger.info("Autodetected kernel modules: %s" % autodetected_modules)
+        self.config_dict['kernel_modules'] = autodetected_modules
 
     if self.config_dict['_kmod_depend']:
         self.logger.info("Adding internal dependencies to kernel modules: %s" % self.config_dict['_kmod_depend'])
@@ -239,24 +242,19 @@ def load_modules(self):
     # Start by using the kmod_init variable
     kmods = self.config_dict['kmod_init']
 
-    # If it's empty, try to use kernel_modules, and fail by reading all kernel modules
-    if not kmods:
-        if kmods := self.config_dict.get('kernel_modules'):
-            self.logger.info("Using kernel_modules as 'kmod_init'")
-        else:
-            self.logger.warning("No kernel modules specified, loading all")
-            kmods = get_all_modules(self)
-
     # Finally, add the internal dependencies from _kmod_depend
     if depends := self.config_dict.get('_kmod_depend'):
-        self.logger.info("Adding internal dependencies to kernel modules: %s" % depends)
+        self.logger.info("Adding internal dependencies to kmod_init: %s" % depends)
         kmods += depends
 
     if self.config_dict.get('kmod_ignore'):
-        self.logger.info("Ignoring kernel modules: %s" % self.config_dict['kmod_ignore'])
         kmod_init = [kmod for kmod in kmods if kmod not in self.config_dict['kmod_ignore']]
     else:
         kmod_init = kmods
+
+    if not kmod_init:
+        self.logger.error("No kernel modules to load")
+        return
 
     self.logger.info("Init kernel modules: %s" % kmod_init)
 

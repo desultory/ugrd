@@ -89,6 +89,8 @@ If the module is loaded, but configuration options are not passed, the generator
 
 `kmod_init`  is used to specify kernel modules to load at boot. If set, ONLY these modules will be loaded with modprobe. If unset, `kernel_modules` is used.
 
+`kmod_autodetect` (false) if set to `true`, will populate `kernel_modules` with modules listed in `lsmod`.
+
 `_kmod_depend` is meant to be used within modules, specifies kernel modules which should be added to `kernel_modules` and `kmod_init`.
 
 `kmod_ignore_softdeps` (false) ignore softdeps for kernel modules.
