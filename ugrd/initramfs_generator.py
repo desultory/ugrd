@@ -218,7 +218,7 @@ class InitramfsConfigDict(dict):
 
 @loggify
 class InitramfsGenerator:
-    __version__ = "0.4.5"
+    __version__ = "0.4.7"
 
     def __init__(self, config='config.toml', *args, **kwargs):
         self.config_filename = config
@@ -326,7 +326,6 @@ class InitramfsGenerator:
         """
         Generates the init file
         """
-        from os import chmod, chown
         self.logger.info("Running init generator functions")
 
         init = [self.config_dict['shebang']]
@@ -339,15 +338,7 @@ class InitramfsGenerator:
 
         init += ["\n\n# END INIT"]
 
-        init_path = Path(self.out_dir, 'init')
-        with open(init_path, 'w', encoding='utf-8') as init_file:
-            [init_file.write(f"{line}\n") for line in init]
-
-        self.logger.info("Wrote init file: %s" % init_path)
-        chmod(init_path, 0o755)
-        self.logger.debug("Set init file permissions: %s" % oct(0o755))
-        chown(init_path, self.config_dict['_file_owner_uid'], self.config_dict['_file_owner_uid'])
-        self.logger.debug("Set init file owner: %s" % self.config_dict['_file_owner_uid'])
+        self._write('init', init, 0o755)
 
         self.logger.debug("Final config: %s" % self.config_dict)
 
@@ -395,6 +386,26 @@ class InitramfsGenerator:
             self.logger.info("Directory already exists: %s" % path_dir)
             chown(path_dir, self.config_dict['_file_owner_uid'], self.config_dict['_file_owner_uid'])
             self.logger.debug("Set directory '%s' owner: %s" % (path_dir, self.config_dict['_file_owner_uid']))
+
+    def _write(self, file_name, contents, chmod_mask=0o644, in_build_dir=True):
+        """
+        Writes a file and owns it as self.config_dict['_file_owner_uid']
+        Sets the passed chmod
+        """
+        from os import chown, chmod
+
+        if in_build_dir:
+            file_name = Path(self.out_dir, file_name)
+
+        self.logger.debug("[%s] Writing contents: %s: " % (file_name, contents))
+        with open(file_name, 'w') as file:
+            file.writelines("\n".join(contents))
+
+        self.logger.info("Wrote file: %s" % file_name)
+        chmod(file_name, chmod_mask)
+        self.logger.debug("[%s] Set file permissions: %s" % (file_name, chmod_mask))
+        chown(file_name, self.config_dict['_file_owner_uid'], self.config_dict['_file_owner_uid'])
+        self.logger.debug("[%s] Set file owner: %s" % (file_name, self.config_dict['_file_owner_uid']))
 
     def _copy(self, source, dest):
         """

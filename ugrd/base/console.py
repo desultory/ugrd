@@ -1,16 +1,17 @@
 __author__ = "desultory"
-__version__ = "0.3.3"
+__version__ = "0.3.5"
 
 
 def custom_init(self):
     """
     init override
     """
-    from os import chmod
-    with open(f"{self.out_dir}/init_main.sh", 'w', encoding='utf-8') as main_init:
-        main_init.write("#!/bin/bash\n")
-        [main_init.write(f"{line}\n") for line in self.generate_init_main()]
-    chmod(f"{self.out_dir}/init_main.sh", 0o755)
+    custom_init_contents = [self.config_dict['shebang'],
+                            f"# Console module version v{__version__}"]
+    custom_init_contents += self.generate_init_main()
+
+    self._write("init_main.sh", custom_init_contents, 0o755)
+
     return console_init(self)
 
 

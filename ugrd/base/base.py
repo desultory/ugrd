@@ -16,8 +16,7 @@ def generate_fstab(self):
         if not mount_info.base_mount:
             fstab_info.append(str(mount_info))
 
-    with open(fstab_path, 'w') as fstab_file:
-        fstab_file.writelines("\n".join(fstab_info))
+    self._write(fstab_path, fstab_info)
 
 
 def mount_base(self):
