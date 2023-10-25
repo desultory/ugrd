@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '0.4.8'
+__version__ = '0.5.0'
 
 from pathlib import Path
 
@@ -54,7 +54,7 @@ def switch_root(self):
     """
     Should be the final statement, switches root
     """
-    return ["exec switch_root /mnt/root /sbin/init"]
+    return "exec switch_root /mnt/root /sbin/init"
 
 
 def mount_fstab(self):
@@ -96,7 +96,7 @@ def mount_root(self):
 
     mount_str = root_mount.to_mount_cmd() + " || (echo 'Failed to mount root partition' && bash)"
 
-    return [mount_str]
+    return mount_str
 
 
 def clean_mounts(self):
@@ -131,7 +131,7 @@ def _process_file_owner(self, owner):
 def _process_mounts_multi(self, key, mount_config):
     """
     Processes the passed mounts into fstab mount objects
-    under 'fstab_mounts'
+    under 'mounts'
     """
     if 'destination' not in mount_config:
         mount_config['destination'] = f"/{key}"  # prepend a slash

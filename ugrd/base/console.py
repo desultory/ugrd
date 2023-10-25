@@ -35,5 +35,5 @@ def console_init(self):
     else:
         out_str += f" {console_type}"
 
-    return [out_str]
+    return out_str
 

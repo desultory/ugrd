@@ -316,8 +316,12 @@ class InitramfsGenerator:
         for func in self.config_dict['imports'].get(level):
             self.logger.info("Running init generator function: %s" % func.__name__)
             if function_output := func(self):
-                self.logger.debug("Function returned output: %s" % function_output)
-                out.extend(function_output)
+                if isinstance(function_output, str):
+                    self.logger.debug("[%s] Function returned string: %s" % (func.__name__, function_output))
+                    out += [function_output]
+                else:
+                    self.logger.debug("[%s] Function returned output: %s" % (func.__name__, function_output))
+                    out.extend(function_output)
             else:
                 self.logger.warning("Function returned no output: %s" % func.__name__)
         return out

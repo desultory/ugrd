@@ -1,6 +1,6 @@
 __author__ = 'desultory'
 
-__version__ = '0.2.2'
+__version__ = '0.2.5'
 
 
 def fetch_keys(self):
@@ -20,9 +20,7 @@ def import_keys(self):
     Import GPG public keys
     """
     if 'gpg_public_key' in self.config_dict:
-        return [f"gpg --import {self.config_dict['gpg_public_key']}"]
-    else:
-        return []
+        return f"gpg --import {self.config_dict['gpg_public_key']}"
 
 
 def symlink_pinentry(self):
@@ -30,11 +28,11 @@ def symlink_pinentry(self):
     Symlink pinentry
     """
     pinentry = self.config_dict.get('pinentry', 'pinentry-tty')
-    return [f"ln -s /usr/bin/{pinentry} /usr/bin/pinentry"]
+    return f"ln -s /usr/bin/{pinentry} /usr/bin/pinentry"
 
 
 def start_agent(self):
     """
     Start the GPG agent
     """
-    return ["gpg-agent"]
+    return "gpg-agent"

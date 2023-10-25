@@ -1,6 +1,6 @@
 __author__ = 'desultory'
 
-__version__ = '0.4.2'
+__version__ = '0.4.4'
 
 
 def _process_cryptsetup(self, config_dict):
@@ -20,7 +20,7 @@ def configure_library_dir(self):
     """
     exports the libtary path for cryptsetup
     """
-    return ['export LD_LIBRARY_PATH=/lib64']
+    return 'export LD_LIBRARY_PATH=/lib64'
 
 
 def crypt_init(self):

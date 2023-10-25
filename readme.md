@@ -222,7 +222,7 @@ A good example of this is in `base.py`:
 def _process_mounts_multi(self, key, mount_config):
     """
     Processes the passed mounts into fstab mount objects
-    under 'fstab_mounts'
+    under 'mounts'
     """
     if 'destination' not in mount_config:
         mount_config['destination'] = f"/{key}"  # prepend a slash
@@ -263,7 +263,7 @@ The base module includes a build task for generating the fstab, which is activat
 
 #### init hooks
 
-By default, the specified init hooks are: `'init_pre', 'init_main', 'init_late', 'init_final'`
+By default, the specified init hooks are: `'init_pre', 'init_main', 'init_late', 'init_mount', 'init_final'`
 
 These hooks are defined under the `init_types` list in the `InitramfsGenerator` object.
 
@@ -295,15 +295,17 @@ This `init_main` file contains everything that would be in the standard init fil
 
 
 ```
+
 def custom_init(self):
     """
     init override
     """
-    from os import chmod
-    with open(f"{self.out_dir}/init_main.sh", 'w', encoding='utf-8') as main_init:
-        main_init.write("#!/bin/bash\n")
-        [main_init.write(f"{line}\n") for line in self.generate_init_main()]
-    chmod(f"{self.out_dir}/init_main.sh", 0o755)
+    custom_init_contents = [self.config_dict['shebang'],
+                            f"# Console module version v{__version__}"]
+    custom_init_contents += self.generate_init_main()
+
+    self._write("init_main.sh", custom_init_contents, 0o755)
+
     return console_init(self)
 
 
@@ -327,5 +329,8 @@ def console_init(self):
     else:
         out_str += f" {console_type}"
 
-    return [out_str]
+    return out_str
 ```
+
+
+`self._write(file_name, contents, chmod)` should be used instead of manually writing to a file.

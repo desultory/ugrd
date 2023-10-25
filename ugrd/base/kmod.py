@@ -269,5 +269,5 @@ def load_modules(self):
         self.logger.warning("Ignoring kernel modules: %s" % (set(kmods) - set(kmod_init)))
 
     module_str = ' '.join(kmod_init)
-    return [f"modprobe -av {module_str}"]
+    return f"modprobe -av {module_str}"
 

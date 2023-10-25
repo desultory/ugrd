@@ -1,6 +1,6 @@
 __author__ = 'desultory'
 
-__version__ = '0.1.0'
+__version__ = '0.1.2'
 
 
 def fetch_keys(self):
@@ -19,7 +19,7 @@ def check_card(self):
     """
     Check if a smartcard is present.
     """
-    return ["gpg --card-status"]
+    return "gpg --card-status"
 
 
 def import_keys(self):
@@ -27,7 +27,5 @@ def import_keys(self):
     Import GPG public keys.
     """
     if 'sc_public_key' in self.config_dict:
-        return [f"gpg --import {self.config_dict['sc_public_key']}"]
-    else:
-        return []
+        return f"gpg --import {self.config_dict['sc_public_key']}"
 
