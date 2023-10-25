@@ -20,7 +20,16 @@ def calculate_dependencies(binary):
     if dependencies.returncode != 0:
         raise OSError(dependencies.stderr.decode('utf-8'))
 
-    return [Path(dependency).resolve() for dependency in dependencies.stdout.decode('utf-8').splitlines()]
+    dependency_paths = []
+    for dependency in dependencies.stdout.decode('utf-8').splitlines():
+        dep_path = Path(dependency)
+        try:
+            dep_path.relative_to('/')
+        except ValueError:
+            dep_path = dep_path.resolve()
+        dependency_paths.append(dep_path)
+
+    return dependency_paths
 
 
 @loggify
@@ -117,7 +126,6 @@ class InitramfsConfigDict(dict):
         """
         self.logger.debug("Calculating dependencies for: %s" % binary)
         try:
-            self.logger.debug("Calculating dependencies for: %s" % binary)
             dependencies = calculate_dependencies(binary)
             self.logger.debug("[%s] Dependencies: %s" % (binary, dependencies))
         except OSError as e:
