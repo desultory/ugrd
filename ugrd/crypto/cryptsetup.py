@@ -50,11 +50,11 @@ def crypt_init(self):
 
         if key_type == 'gpg':
             out += [f"echo 'Enter passphrase for key file: {parameters['key_file']}'"]
-            out += [f"gpg --decrypt {parameters['key_file']} | cryptsetup open --key-file - $CRYPTSETUP_DEVICE_{name} {name}"]
+            out += [f'gpg --decrypt {parameters["key_file"]} | cryptsetup open --key-file - "$CRYPTSETUP_DEVICE_{name}" {name}']
         elif key_type == 'keyfile':
-            out += [f"cryptsetup open --key-file {parameters['key_file']} $CRYPTSETUP_DEVICE_{name} {name}"]
+            out += [f'cryptsetup open --key-file {parameters["key_file"]} "$CRYPTSETUP_DEVICE_{name}" {name}']
         else:
-            out += [f"cryptsetup open --tries 5 $CRYPTSETUP_DEVICE_{name} {name}"]
+            out += [f'cryptsetup open --tries 5 "$CRYPTSETUP_DEVICE_{name}" {name}']
     return out
 
 
