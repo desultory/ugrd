@@ -8,15 +8,13 @@ def generate_fstab(self):
     """
     Generates the fstab from the mounts
     """
-    fstab_path = self.config_dict['out_dir'] / 'etc/fstab'
-
     fstab_info = [f"# Mount generator v{Mount.__version__}", f"# Base version v{__version__}"]
 
     for mount_name, mount_info in self.config_dict['mounts'].items():
         if not mount_info.base_mount:
             fstab_info.append(str(mount_info))
 
-    self._write(fstab_path, fstab_info)
+    self._write('/etc/fstab/', fstab_info)
 
 
 def mount_base(self):

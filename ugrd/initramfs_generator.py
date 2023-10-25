@@ -20,7 +20,7 @@ def calculate_dependencies(binary):
     if dependencies.returncode != 0:
         raise OSError(dependencies.stderr.decode('utf-8'))
 
-    return [Path(dependency) for dependency in dependencies.stdout.decode('utf-8').splitlines()]
+    return [Path(dependency).resolve() for dependency in dependencies.stdout.decode('utf-8').splitlines()]
 
 
 @loggify
@@ -413,34 +413,56 @@ class InitramfsGenerator:
         from os import chmod
 
         if in_build_dir:
-            file_name = Path(self.out_dir, file_name)
+            if file_name.startswith('/'):
+                file_path = self.config_dict['out_dir'] / Path(file_name).relative_to('/')
+            else:
+                file_path = self.config_dict['out_dir'] / file_name
+        else:
+            file_path = Path(file_name)
 
-        self.logger.debug("[%s] Writing contents: %s: " % (file_name, contents))
-        with open(file_name, 'w') as file:
+        self.logger.debug("[%s] Writing contents: %s: " % (file_path, contents))
+        with open(file_path, 'w') as file:
             file.writelines("\n".join(contents))
 
-        self.logger.info("Wrote file: %s" % file_name)
-        chmod(file_name, chmod_mask)
-        self.logger.debug("[%s] Set file permissions: %s" % (file_name, chmod_mask))
+        self.logger.info("Wrote file: %s" % file_path)
+        chmod(file_path, chmod_mask)
+        self.logger.debug("[%s] Set file permissions: %s" % (file_path, chmod_mask))
 
-        self._chown(file_name)
+        self._chown(file_path)
 
-    def _copy(self, source, dest):
+    def _copy(self, source, dest=None, in_build_dir=True):
         """
         Copies a file, chowns it as self.config_dict['_file_owner_uid']
         """
         from shutil import copy2
 
-        if not dest.parent.is_dir():
-            self.logger.debug("Parent directory for '%s' does not exist: %s" % (dest.name, dest.parent))
-            self._mkdir(dest.parent)
+        if not isinstance(source, Path):
+            source = Path(source)
 
-        if dest.is_file():
-            self.logger.warning("File already exists: %s" % dest)
-        self.logger.info("Copying '%s' to '%s'" % (source, dest))
-        copy2(source, dest)
+        if not dest:
+            self.logger.debug("No destination specified, using source: %s" % source)
+            dest = source
+        elif not isinstance(dest, Path):
+            dest = Path(dest)
 
-        self._chown(dest)
+        if in_build_dir:
+            if dest.is_absolute():
+                dest_path = self.config_dict['out_dir'] / Path(dest).relative_to('/')
+            else:
+                dest_path = self.config_dict['out_dir'] / dest
+        else:
+            dest_path = Path(dest)
+
+        if not dest_path.parent.is_dir():
+            self.logger.debug("Parent directory for '%s' does not exist: %s" % (dest_path.name, dest.parent))
+            self._mkdir(dest_path.parent)
+
+        if dest_path.is_file():
+            self.logger.warning("File already exists: %s" % dest_path)
+        self.logger.info("Copying '%s' to '%s'" % (source, dest_path))
+        copy2(source, dest_path)
+
+        self._chown(dest_path)
 
     def _run(self, args):
         """
@@ -462,10 +484,5 @@ class InitramfsGenerator:
         should be used after generate_structure
         """
         for dependency in self.config_dict['dependencies']:
-            source_file_path = Path(dependency)
-            dest_file_path = self.out_dir / source_file_path.relative_to(source_file_path.anchor)
-
-            source_file_path.relative_to(source_file_path.anchor)
-
-            self._copy(dependency, dest_file_path)
-
+            self.logger.debug("Deploying dependency: %s" % dependency)
+            self._copy(dependency)
