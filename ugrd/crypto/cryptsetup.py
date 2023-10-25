@@ -52,11 +52,12 @@ def copy_libgcc(self):
     Copies libgcc_s.so
     """
     from subprocess import run
+    from pathlib import Path
 
     ldconfig = run(['ldconfig', '-p'], capture_output=True).stdout.decode('utf-8').split("\n")
     libgcc = [lib for lib in ldconfig if 'libgcc_s' in lib and 'libc6,x86-64' in lib][0]
-    source_path = libgcc.partition('=> ')[-1]
-    self.logger.debug(f"Source path for libgcc_s.so: {source_path}")
+    source_path = Path(libgcc.partition('=> ')[-1])
+    self.logger.debug("Source path for libgcc_s: %s" % source_path)
 
-    self._copy(source_path, '/lib64/libgcc_s.so.1')
+    self._copy(source_path, f"/lib64/{source_path.name}")
 
