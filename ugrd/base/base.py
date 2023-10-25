@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '0.4.7'
+__version__ = '0.4.8'
 
 from pathlib import Path
 
@@ -10,10 +10,14 @@ def generate_fstab(self):
     """
     fstab_path = self.config_dict['out_dir'] / 'etc/fstab'
 
+    fstab_info = [f"# Mount generator v{Mount.__version__}", f"# Base version v{__version__}"]
+
+    for mount_name, mount_info in self.config_dict['mounts'].items():
+        if not mount_info.base_mount:
+            fstab_info.append(str(mount_info))
+
     with open(fstab_path, 'w') as fstab_file:
-        for mount_name, mount_info in self.config_dict['mounts'].items():
-            if not mount_info.base_mount:
-                fstab_file.write(f"{mount_info}\n")
+        fstab_file.writelines("\n".join(fstab_info))
 
 
 def mount_base(self):
