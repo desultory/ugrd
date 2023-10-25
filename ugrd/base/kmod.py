@@ -1,6 +1,6 @@
 __author__ = 'desultory'
 
-__version__ = '0.4.4'
+__version__ = '0.4.5'
 
 from pathlib import Path
 
@@ -30,6 +30,7 @@ def _process_kmod_init_multi(self, module):
 
     self.logger.info("Adding kmod_init module to kernel_modules: %s", module)
     self['kernel_modules'] = module
+    self['kmod_init'] = module
 
 
 def resolve_kmod_path(self, module_name):
