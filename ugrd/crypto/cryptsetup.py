@@ -56,7 +56,7 @@ def copy_libgcc(self):
     ldconfig = run(['ldconfig', '-p'], capture_output=True).stdout.decode('utf-8').split("\n")
     libgcc = [lib for lib in ldconfig if 'libgcc_s' in lib and 'libc6,x86-64' in lib][0]
     source_path = libgcc.partition('=> ')[-1]
-    destination_path = self.out_dir / 'lib64'
+    self.logger.debug(f"Source path for libgcc_s.so: {source_path}")
 
-    self._copy(source_path, destination_path)
+    self._copy(source_path)
 
