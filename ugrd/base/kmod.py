@@ -28,7 +28,7 @@ def _process_kmod_init_multi(self, module):
     if module in self['kmod_ignore']:
         raise IgnoredKernelModule("Kernel module is in ignore list: %s" % module)
 
-    self.logger.info("Adding kmod_init module to kernel_modules: %s", module)
+    self.logger.debug("Adding kmod_init module to kernel_modules: %s", module)
     self['kernel_modules'] = module
     self['kmod_init'].append(module)
 

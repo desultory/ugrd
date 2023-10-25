@@ -60,10 +60,10 @@ class InitramfsConfigDict(dict):
                 self.logger.debug("Using builtin setitem for: %s" % key)
                 getattr(self, f"_process_{key}")(value)
             elif func := self['custom_processing'].get(f"_process_{key}"):
-                self.logger.info("Using custom setitem for: %s" % key)
+                self.logger.debug("Using custom setitem for: %s" % key)
                 func(self, value)
             elif func := self['custom_processing'].get(f"_process_{key}_multi"):
-                self.logger.info("Using custom plural setitem for: %s" % key)
+                self.logger.debug("Using custom plural setitem for: %s" % key)
                 handle_plural(func)(self, value)
             elif expected_type in (list, NoDupFlatList):
                 self.logger.debug("Using list setitem for: %s" % key)
@@ -100,7 +100,7 @@ class InitramfsConfigDict(dict):
         Updates the custom_parameters attribute
         """
         self['custom_parameters'][parameter_name] = eval(parameter_type)
-        self.logger.info("Registered custom parameter '%s' with type: %s" % (parameter_name, parameter_type))
+        self.logger.debug("Registered custom parameter '%s' with type: %s" % (parameter_name, parameter_type))
 
         if parameter_type == "NoDupFlatList":
             super().__setitem__(parameter_name, NoDupFlatList(no_warn=True, log_bump=5, logger=self.logger, _log_init=False))
@@ -142,12 +142,12 @@ class InitramfsConfigDict(dict):
             if import_type not in self['imports']:
                 self['imports'][import_type] = NoDupFlatList(log_bump=10, logger=self.logger, _log_init=False)
             self['imports'][import_type] += function_list
-            self.logger.info("Updated import '%s': %s" % (import_type, function_list))
+            self.logger.debug("Updated import '%s': %s" % (import_type, function_list))
 
             if import_type == 'config_processing':
                 for function in function_list:
                     self['custom_processing'][function.__name__] = function
-                    self.logger.info("Registered config processing function: %s" % function.__name__)
+                    self.logger.debug("Registered config processing function: %s" % function.__name__)
 
     @handle_plural
     def _process_mod_depends(self, module):
@@ -218,7 +218,7 @@ class InitramfsConfigDict(dict):
 
 @loggify
 class InitramfsGenerator:
-    __version__ = "0.4.7"
+    __version__ = "0.4.8"
 
     def __init__(self, config='config.toml', *args, **kwargs):
         self.config_filename = config
@@ -367,7 +367,7 @@ class InitramfsGenerator:
         Creates a directory, chowns it as self.config_dict['_file_owner_uid']
         """
         from os.path import isdir
-        from os import mkdir, chown
+        from os import mkdir
 
         self.logger.debug("Creating directory for: %s" % path)
 
@@ -378,25 +378,39 @@ class InitramfsGenerator:
             path_dir = path
 
         if not isdir(path_dir.parent):
-            self.logger.info("Parent directory does not exist: %s" % path_dir.parent)
+            self.logger.debug("Parent directory does not exist: %s" % path_dir.parent)
             self._mkdir(path_dir.parent)
 
         if not isdir(path_dir):
             mkdir(path)
             self.logger.info("Created directory: %s" % path)
-            chown(path, self.config_dict['_file_owner_uid'], self.config_dict['_file_owner_uid'])
-            self.logger.debug("Set directory owner: %s" % self.config_dict['_file_owner_uid'])
         else:
-            self.logger.info("Directory already exists: %s" % path_dir)
-            chown(path_dir, self.config_dict['_file_owner_uid'], self.config_dict['_file_owner_uid'])
-            self.logger.debug("Set directory '%s' owner: %s" % (path_dir, self.config_dict['_file_owner_uid']))
+            self.logger.debug("Directory already exists: %s" % path_dir)
+
+        self._chown(path_dir)
+
+    def _chown(self, path):
+        """
+        Chowns a file or directory as self.config_dict['_file_owner_uid']
+        """
+        from os import chown
+
+        if path.owner() == self.config_dict['_file_owner_uid'] and path.group() == self.config_dict['_file_owner_uid']:
+            self.logger.debug("File '%s' already owned by: %s" % (path, self.config_dict['_file_owner_uid']))
+            return
+
+        chown(path, self.config_dict['_file_owner_uid'], self.config_dict['_file_owner_uid'])
+        if path.is_dir():
+            self.logger.debug("Set directory '%s' owner: %s" % (path, self.config_dict['_file_owner_uid']))
+        else:
+            self.logger.debug("Set file '%s' owner: %s" % (path, self.config_dict['_file_owner_uid']))
 
     def _write(self, file_name, contents, chmod_mask=0o644, in_build_dir=True):
         """
         Writes a file and owns it as self.config_dict['_file_owner_uid']
         Sets the passed chmod
         """
-        from os import chown, chmod
+        from os import chmod
 
         if in_build_dir:
             file_name = Path(self.out_dir, file_name)
@@ -408,15 +422,14 @@ class InitramfsGenerator:
         self.logger.info("Wrote file: %s" % file_name)
         chmod(file_name, chmod_mask)
         self.logger.debug("[%s] Set file permissions: %s" % (file_name, chmod_mask))
-        chown(file_name, self.config_dict['_file_owner_uid'], self.config_dict['_file_owner_uid'])
-        self.logger.debug("[%s] Set file owner: %s" % (file_name, self.config_dict['_file_owner_uid']))
+
+        self._chown(file_name)
 
     def _copy(self, source, dest):
         """
         Copies a file, chowns it as self.config_dict['_file_owner_uid']
         """
         from shutil import copy2
-        from os import chown
 
         if not dest.parent.is_dir():
             self.logger.debug("Parent directory for '%s' does not exist: %s" % (dest.name, dest.parent))
@@ -427,8 +440,7 @@ class InitramfsGenerator:
         self.logger.info("Copying '%s' to '%s'" % (source, dest))
         copy2(source, dest)
 
-        self.logger.debug("Setting ownership of '%s' to: %s" % (dest, self.config_dict['_file_owner_uid']))
-        chown(dest, self.config_dict['_file_owner_uid'], self.config_dict['_file_owner_uid'])
+        self._chown(dest)
 
     def _run(self, args):
         """
