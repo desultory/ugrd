@@ -30,7 +30,7 @@ def _process_kmod_init_multi(self, module):
 
     self.logger.info("Adding kmod_init module to kernel_modules: %s", module)
     self['kernel_modules'] = module
-    self['kmod_init'] = module
+    self['kmod_init'].append(module)
 
 
 def resolve_kmod_path(self, module_name):
