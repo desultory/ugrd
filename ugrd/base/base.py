@@ -146,7 +146,7 @@ class Mount:
     """
     Abstracts a linux mount.
     """
-    __version__ = '0.4.1'
+    __version__ = '0.5.0'
 
     parameters = {'destination': True,
                   'source': True,
@@ -188,11 +188,11 @@ class Mount:
         out_str = ''
         if isinstance(self.source, dict):
             if 'uuid' in self.source:
-                out_str = f"UUID={self.source['uuid']}"
+                out_str = f"--uuid {self.source['uuid']}"
             elif 'partuuid' in self.source:
                 out_str = f"PARTUUID={self.source['partuuid']}"
             elif 'label' in self.source:
-                out_str = f"LABEL={self.source['label']}"
+                out_str = f"--label {self.source['label']}"
             else:
                 raise ValueError("Unable to process source entry: %s" % repr(self.source))
         else:
@@ -229,10 +229,10 @@ class Mount:
         out_str = f"mount {self.get_source()} {self.destination}"
 
         if self.options is not None:
-            out_str += f" -o {self.options}"
+            out_str += f" --options {self.options}"
 
         if self.type is not None:
-            out_str += f" -t {self.type}"
+            out_str += f" --types {self.type}"
 
         return out_str
 

@@ -1,4 +1,5 @@
 binaries = [ "agetty" ]
+_custom_init_file = "init_main.sh"
 
 [imports.custom_init]
 "ugrd.base.console" = [ "custom_init" ]

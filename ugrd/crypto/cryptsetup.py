@@ -1,6 +1,6 @@
 __author__ = 'desultory'
 
-__version__ = '0.4.4'
+__version__ = '0.4.5'
 
 
 def _process_cryptsetup(self, config_dict):
@@ -23,6 +23,19 @@ def configure_library_dir(self):
     return 'export LD_LIBRARY_PATH=/lib64'
 
 
+def get_crypt_sources(self):
+    """
+    Goes through each cryptsetup device, sets $CRYPTSETUP_SOURCE_NAME to the source device
+    """
+    out = []
+    for name, parameters in self.config_dict['cryptsetup'].items():
+        blkid_command = f"CRYPTSETUP_DEVICE_{name}=$(blkid --match-token UUID='{parameters['uuid']}' --match-tag TYPE --output device)"
+        check_command = f'if [ -z "$CRYPTSETUP_DEVICE_{name}" ]; then echo "Unable to resolve UUID for {name}"; bash; fi'
+        out += [f"\necho 'Attempting to get device path for {name}'", blkid_command, check_command]
+
+    return out
+
+
 def crypt_init(self):
     """
     Generates the bash script portion to prompt for keys
@@ -33,17 +46,15 @@ def crypt_init(self):
 
         key_type = parameters.get('key_type', self.config_dict.get('key_type'))
 
-        partition_location_cmd = f"blkid -t UUID='{parameters['uuid']}' -s TYPE -o device"
-
         out += [f"echo 'Attempting to unlock device: {name}'"]
 
         if key_type == 'gpg':
             out += [f"echo 'Enter passphrase for key file: {parameters['key_file']}'"]
-            out += [f"gpg --decrypt {parameters['key_file']} | cryptsetup open --key-file - $({partition_location_cmd}) {name}"]
+            out += [f"gpg --decrypt {parameters['key_file']} | cryptsetup open --key-file - $CRYPTSETUP_DEVICE_{name} {name}"]
         elif key_type == 'keyfile':
-            out += [f"cryptsetup open --key-file {parameters['key_file']} $({partition_location_cmd}) {name}"]
+            out += [f"cryptsetup open --key-file {parameters['key_file']} $CRYPTSETUP_DEVICE_{name} {name}"]
         else:
-            out += [f"cryptsetup open --tries 5 $({partition_location_cmd}) {name}"]
+            out += [f"cryptsetup open --tries 5 $CRYPTSETUP_DEVICE_{name} {name}"]
     return out
 
 

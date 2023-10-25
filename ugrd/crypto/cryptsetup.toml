@@ -9,6 +9,9 @@ _kmod_depend = [ "dm_crypt" ]
 [imports.init_pre]
 "ugrd.crypto.cryptsetup" = [ "configure_library_dir" ]
 
+[imports.init_main]
+"ugrd.crypto.cryptsetup" = [ "get_crypt_sources" ]
+
 [imports.init_late]
 "ugrd.crypto.cryptsetup" = [ "crypt_init" ]
 

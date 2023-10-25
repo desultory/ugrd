@@ -1,3 +1,9 @@
+# This configuration file is used to run agetty on ttyS1, where the keys for the gpg encrypted LUKS keyfiles can be entered.
+# This example decrypts 2 root drives which are in btrfs raid 1.
+# In this example, all required kernel modules are assumed to be in the kernel.
+# This means this initramfs works as long as kernel modules are not required, and does not have to be updated with each kernel update.
+
+
 modules = [
   "ugrd.base.base",
   "ugrd.base.console",
@@ -6,11 +12,18 @@ modules = [
   "ugrd.base.btrfs"
 ]
 
+# Set the key type for all cryptsetup keys
 key_type = "gpg"
 
+# Set the primary_console to ttyS1
+# The gpg module uses agetty on tty so this must be overridden
+primary_console = "ttyS1"
+
+# Define the root label
 [root_mount.source]
 label = "rootfs"
 
+# Define console information
 [console.ttyS1]
 baud = 115_200
 type = "vt100"

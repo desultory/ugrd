@@ -65,6 +65,7 @@ mount_cmd = "str"  # The mount command called by mount_root, can be overridden
 dev_nodes = "dict"  # Add the dev_nodes property, used to define the dev nodes to be created
 file_owner = "str"  # Add the file_owner property, used to define who should own the copied initramfs files
 _file_owner_uid = "int"  # Add the _file_owner_uid property, used to store the uid of the file owner
+_custom_init_file = "str"  # Add the _custom_init_file propety, used to set where the custom init file is located
 
 # Define the default mounts
 # The format is mounts.mount where the mount is the name of the mount

@@ -6,6 +6,8 @@ Executing `./main.py` will read the config from `config.toml` and use that to ge
 
 The goal of the project was to design one that can be used to enter GPG keys for LUKS keyfiles over serial, to boot a btrfs raided filesystem.
 
+There are example configurations which can be used for Yubikey based GPG keyfile handling for LUKS, as well as mounting a btrfs subvolume.
+
 ## Usage
 
 To use this script, configure `config.toml` to meet specifications and run `./main.py` as root.
@@ -111,6 +113,7 @@ This module creates an agetty session. This is used by the `ugrd.crypto.gpg` mod
 
 `consle.{name}.local` specifies whether or not the `-L` flag should be passed to agetty.
 
+`primary_console` is used to set which console will be initialized with agetty on boot.
 
 #### base.btrfs
 
