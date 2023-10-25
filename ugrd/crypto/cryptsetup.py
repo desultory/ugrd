@@ -58,5 +58,5 @@ def copy_libgcc(self):
     source_path = libgcc.partition('=> ')[-1]
     self.logger.debug(f"Source path for libgcc_s.so: {source_path}")
 
-    self._copy(source_path)
+    self._copy(source_path, '/lib64/libgcc_s.so.1')
 
