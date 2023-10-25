@@ -271,7 +271,7 @@ When the init scripts are generated, functions under dicts in the config defined
 
 This list can be updated to add or disable portions.  The order is important, as most internal hooks use `init_pre` and `init_final` to wrap every other init category, in order.
 
-Each function should return a list of strings containing the shell lines, which will be written to the `init` file.
+Init functions should return a string or list of strings that contain shell lines to be added to the `init` file.
 
 A general overview of the procedure used for generating the init is to write the chosen `shebang`, build in `init_pre`, then everything but `init_final`, then finally `init_final`.  These init portions are added to one file.
 
