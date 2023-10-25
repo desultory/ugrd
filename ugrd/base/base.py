@@ -146,7 +146,7 @@ class Mount:
     """
     Abstracts a linux mount.
     """
-    __version__ = '0.5.0'
+    __version__ = '0.5.1'
 
     parameters = {'destination': True,
                   'source': True,
@@ -182,17 +182,18 @@ class Mount:
     def get_source(self, pad=False):
         """
         returns the mount source string based on the config
+        uses NAME= format so it works in both the fstab and mount command
         """
         pad_size = 44
 
         out_str = ''
         if isinstance(self.source, dict):
             if 'uuid' in self.source:
-                out_str = f"--uuid {self.source['uuid']}"
+                out_str = f"UUID={self.source['uuid']}"
             elif 'partuuid' in self.source:
                 out_str = f"PARTUUID={self.source['partuuid']}"
             elif 'label' in self.source:
-                out_str = f"--label {self.source['label']}"
+                out_str = f"LABEL={self.source['label']}"
             else:
                 raise ValueError("Unable to process source entry: %s" % repr(self.source))
         else:
