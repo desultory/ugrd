@@ -1,0 +1,1 @@
+binaries = ['cp', 'mv', 'rm', 'nano', 'find', 'grep', 'dmesg', 'chmod', 'touch']

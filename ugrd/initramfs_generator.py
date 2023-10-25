@@ -22,11 +22,11 @@ def calculate_dependencies(binary):
 
     dependency_paths = []
     for dependency in dependencies.stdout.decode('utf-8').splitlines():
+        # Remove extra slash at the start if it exists
+        if dependency.startswith('//'):
+            dependency = dependency[1:]
+
         dep_path = Path(dependency)
-        try:
-            dep_path.relative_to('/')
-        except ValueError:
-            dep_path = dep_path.resolve()
         dependency_paths.append(dep_path)
 
     return dependency_paths
@@ -409,9 +409,9 @@ class InitramfsGenerator:
 
         chown(path, self.config_dict['_file_owner_uid'], self.config_dict['_file_owner_uid'])
         if path.is_dir():
-            self.logger.debug("Set directory '%s' owner: %s" % (path, self.config_dict['_file_owner_uid']))
+            self.logger.debug("[%s] Set directory owner: %s" % (path, self.config_dict['_file_owner_uid']))
         else:
-            self.logger.debug("Set file '%s' owner: %s" % (path, self.config_dict['_file_owner_uid']))
+            self.logger.debug("[%s] Set file owner: %s" % (path, self.config_dict['_file_owner_uid']))
 
     def _write(self, file_name, contents, chmod_mask=0o644, in_build_dir=True):
         """

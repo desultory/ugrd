@@ -1,0 +1,3 @@
+mod_depends = ['ugrd.base.kmod']
+
+_kmod_depend = ['nvme']

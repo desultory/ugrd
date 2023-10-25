@@ -95,6 +95,12 @@ Modules can use `_kmod_depend` to add required modules. Simply using the `ugrd.c
 
 `kmod_ignore_softdeps` (false) ignore softdeps for kernel modules.
 
+##### Kernel module helpers
+
+Some helper modules have been created to make importing required kernel modules easier.
+
+`base.ugrd.kmod_nvme`, `kmod_usb`, and `kmod_fat` can be used to load modules for NVME's, USB storage, and the FAT file system respectively.
+
 #### base.console
 
 This module creates an agetty session. This is used by the `ugrd.crypto.gpg` module so the tty can be used for input and output.
