@@ -1,6 +1,6 @@
 __author__ = 'desultory'
 
-__version__ = '0.4.5'
+__version__ = '0.4.6'
 
 
 def _process_cryptsetup(self, config_dict):
@@ -48,13 +48,22 @@ def crypt_init(self):
 
         out += [f"echo 'Attempting to unlock device: {name}'"]
 
+        cryptsetup_command = ""
+
         if key_type == 'gpg':
             out += [f"echo 'Enter passphrase for key file: {parameters['key_file']}'"]
-            out += [f'gpg --decrypt {parameters["key_file"]} | cryptsetup open --key-file - "$CRYPTSETUP_DEVICE_{name}" {name}']
+            cryptsetup_command += f'gpg --decrypt {parameters["key_file"]} | cryptsetup open --key-file -'
         elif key_type == 'keyfile':
-            out += [f'cryptsetup open --key-file {parameters["key_file"]} "$CRYPTSETUP_DEVICE_{name}" {name}']
+            cryptsetup_command += f'cryptsetup open --key-file {parameters["key_file"]}'
         else:
-            out += [f'cryptsetup open --tries 5 "$CRYPTSETUP_DEVICE_{name}" {name}']
+            cryptsetup_command += 'cryptsetup open --tries 5'
+
+        if header_file := parameters.get('header_file'):
+            cryptsetup_command += f' --header {header_file}'
+
+        cryptsetup_command += f' $CRYPTSETUP_DEVICE_{name} {name}'
+
+        out += [cryptsetup_command]
     return out
 
 
