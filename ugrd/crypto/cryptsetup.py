@@ -1,6 +1,6 @@
 __author__ = 'desultory'
 
-__version__ = '0.4.8'
+__version__ = '0.4.9'
 
 
 def _process_cryptsetup(self, config_dict):
@@ -36,7 +36,7 @@ def get_crypt_sources(self):
         else:
             raise ValueError("Unable to determine source device for %s" % name)
 
-        check_command = f'if [ -z "$CRYPTSETUP_SOURCE_{name}" ]; then echo "Unable to resolve device source for {name}"; bash; fi'
+        check_command = f'if [ -z "$CRYPTSETUP_SOURCE_{name}" ]; then echo "Unable to resolve device source for {name}"; bash; else; echo "Resolved device source: $CRYPTSETUP_SOURCE_{name}";  fi'
         out += [f"\necho 'Attempting to get device path for {name}'", blkid_command, check_command]
 
     return out
@@ -65,6 +65,7 @@ def crypt_init(self):
             cryptsetup_command += 'cryptsetup open --tries 5'
 
         if header_file := parameters.get('header_file'):
+            out += [f"echo 'Using header file: {header_file}'"]
             cryptsetup_command += f' --header {header_file}'
 
         cryptsetup_command += f' $CRYPTSETUP_SOURCE_{name} {name}'
