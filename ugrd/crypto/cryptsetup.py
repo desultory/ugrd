@@ -36,7 +36,7 @@ def get_crypt_sources(self):
         else:
             raise ValueError("Unable to determine source device for %s" % name)
 
-        check_command = f'if [ -z "$CRYPTSETUP_SOURCE_{name}" ]; then echo "Unable to resolve device source for {name}"; bash; else; echo "Resolved device source: $CRYPTSETUP_SOURCE_{name}";  fi'
+        check_command = f'if [ -z "$CRYPTSETUP_SOURCE_{name}" ]; then echo "Unable to resolve device source for {name}"; bash; else echo "Resolved device source: $CRYPTSETUP_SOURCE_{name}"; fi'
         out += [f"\necho 'Attempting to get device path for {name}'", blkid_command, check_command]
 
     return out
