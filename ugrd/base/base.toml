@@ -25,7 +25,8 @@ paths = [
 ]
 
 file_owner = "portage"
-out_dir = "/tmp/initramfs"
+build_dir = "/tmp/initramfs"
+out_dir = "/tmp/initramfs_out"
 clean = true
 mount_wait = false
 
@@ -55,7 +56,8 @@ minor = 1
 [custom_parameters]
 shebang = "str"  # Add the shebang property, used because this is a bash script
 mounts = "dict"  # Add the mounts property, used to define the mounts to be made in the fstab
-out_dir = "Path"  # Add the out_dir property, used to define the output directory
+build_dir = "Path"  # The directory where the initramfs is built
+out_dir = "Path"  # The directory where the initramfs is packed/output. If no packer is used, this is the final output directory.
 clean = "bool"  # Add the clean property, used to define if the mounts should be cleaned up after boot
 root_mount = "dict"  # Add the root_mount property, used to define the root mount
 mount_wait = "bool"  # Add the mount_wait property, if defined, user input will be required before attempting to mount entries

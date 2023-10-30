@@ -1,6 +1,6 @@
 __author__ = 'desultory'
 
-__version__ = '0.1.2'
+__version__ = '0.1.3'
 
 
 def fetch_keys(self):
@@ -10,7 +10,7 @@ def fetch_keys(self):
     if 'sc_public_key' in self.config_dict:
         public_key = self.config_dict['sc_public_key']
         self.logger.info("Adding GPG public key file to dependencies: %s", public_key)
-        self.config_dict['dependencies'].append(public_key)
+        self.config_dict['dependencies'] = public_key
     else:
         self.logger.debug("No GPG public key specified, skipping")
 

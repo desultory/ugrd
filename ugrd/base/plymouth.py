@@ -4,7 +4,7 @@ def populate_initrd(self):
     """
     Runs /usr/libexec/plymouth/plymouth-populate-initrd
     """
-    self._run(['/usr/libexec/plymouth/plymouth-populate-initrd', '-t', self.out_dir])
+    self._run(['/usr/libexec/plymouth/plymouth-populate-initrd', '-t', self.build_dir])
 
 
 def start_plymouth(self):

@@ -1,6 +1,6 @@
 # This config will decrypt the volume with UUID "38a5c4d2-f5af-404a-a663-d789e443a40c", mapping it to /dev/mapper/root
 # It will pull kmods required by btrfs, since it is an included module, and virtio_blk which is part of kmod_vm.
-# The out dir is set to /usr/src/initramfs, and the kernel version is set to 6.1.57-gentoo-custom
+# The kernel version is set to 6.1.57-gentoo-custom
 # The root filesystem has the label "rootfs", and is mounted at /mnt/rootfs
 
 modules = [
@@ -11,7 +11,6 @@ modules = [
   "ugrd.base.btrfs"
 ]
 
-out_dir = "/usr/src/initramfs"
 # Optionally supply a kernel version
 kernel_version = "6.1.57-gentoo-custom"
 

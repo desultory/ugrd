@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '0.5.5'
+__version__ = '0.5.6'
 
 from pathlib import Path
 
@@ -65,7 +65,7 @@ def generate_nodes(self):
     for node, config in self.config_dict['nodes'].items():
         node_path_abs = Path(config['path'])
 
-        node_path = self.config_dict['out_dir'] / node_path_abs.relative_to(node_path_abs.anchor)
+        node_path = self.config_dict['build_dir'] / node_path_abs.relative_to(node_path_abs.anchor)
         node_mode = S_IFCHR | config['mode']
 
         mknod(node_path, mode=node_mode, device=makedev(config['major'], config['minor']))

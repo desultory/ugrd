@@ -1,5 +1,31 @@
 __author__ = "desultory"
-__version__ = "0.0.1"
+__version__ = "0.0.2"
+
+from subprocess import run
+
+
+def pack_cpio(self):
+    """
+    Packs the CPIO file using gen_init_cpio
+    """
+    if not self.config_dict['gen_init_cpio_path'].exists():
+        raise FileNotFoundError("gen_init_cpio not found at: %s" % self.config_dict['gen_init_cpio_path'])
+    gen_init_cpio = str(self.config_dict['gen_init_cpio_path'])
+
+    self.logger.debug("Using gen_init_cpio at: %s" % self.config_dict['gen_init_cpio_path'])
+
+    packing_list = str(self.out_dir / self.config_dict['cpio_list_name'])
+    self.logger.info("Creating CPIO file from packing list: %s" % packing_list)
+
+    out_cpio = self.out_dir / self.config_dict['cpio_filename']
+
+    with open(out_cpio, 'wb') as cpio_file:
+        cmd = run([gen_init_cpio, packing_list], stdout=cpio_file)
+        if cmd.returncode != 0:
+            raise RuntimeError("gen_init_cpio failed with error: %s" % cmd.stderr.decode())
+
+    self.logger.info("CPIO file created at: %s" % out_cpio)
+    self._chown(out_cpio)
 
 
 def generate_cpio_mknods(self):
@@ -18,11 +44,14 @@ def generate_cpio_mknods(self):
 
 def make_cpio_list(self):
     """
-    Generates a CPIO list file for gen_init_cpio
-    All folders and file in the build directory are included.
+    Generates a CPIO list file for gen_init_cpio.
+
+    All folders and files in self.build_dir are included.
     The file uid and gid will be set to 0 within the cpio.
     Device node information will be included if nodes are in the path,
     if cpio_nodes is set to true, nodes will be created in the cpio only.
+
+    The cpio packing list is written to self.out_dir/cpio.list
     """
     from os import walk, minor, major
     from pathlib import Path
@@ -32,9 +61,9 @@ def make_cpio_list(self):
     symlink_list = []
     node_list = []
 
-    for root_dir, dirs, files in walk(self.out_dir):
+    for root_dir, dirs, files in walk(self.build_dir):
         current_dir = Path(root_dir)
-        relative_dir = current_dir.relative_to(self.out_dir)
+        relative_dir = current_dir.relative_to(self.build_dir)
 
         if relative_dir == Path("."):
             self.logger.log(5, "Skipping root directory")
@@ -46,7 +75,7 @@ def make_cpio_list(self):
             file_dest = relative_dir / file
             file_source = current_dir / file
             if file_source.is_symlink():
-                symlink_list.append(f"slink /{file_dest} /{file_source.resolve().relative_to(self.out_dir)} 777 0 0")
+                symlink_list.append(f"slink /{file_dest} /{file_source.resolve().relative_to(self.build_dir)} 777 0 0")
             elif file_source.is_char_device():
                 node_major = major(file_source.stat().st_rdev)
                 node_minor = minor(file_source.stat().st_rdev)
@@ -73,5 +102,5 @@ def make_cpio_list(self):
 
     packing_list = directory_list + file_list + symlink_list + node_list
 
-    self._write('cpio.list', packing_list)
+    self._write(self.out_dir / self.config_dict['cpio_list_name'], packing_list, in_build_dir=False)
 

@@ -41,7 +41,7 @@ class InitramfsConfigDict(dict):
         This dict does not act like a normal dict, setitem is designed to append when the overrides are used
         Default parameters are defined in builtin_parameters
     """
-    __version__ = "0.6.7"
+    __version__ = "0.6.8"
 
     builtin_parameters = {'binaries': NoDupFlatList,  # Binaries which should be included in the initramfs, dependencies are automatically calculated
                           'dependencies': NoDupFlatList,  # Raw dependencies, files which should be included in the initramfs
@@ -119,6 +119,20 @@ class InitramfsConfigDict(dict):
             super().__setitem__(parameter_name, False)
 
     @handle_plural
+    def _process_dependencies(self, dependency):
+        """
+        Checks if a dependency exists before adding it to the list
+        """
+        if not isinstance(dependency, Path):
+            self.logger.debug("Converting dependency '%s' to Path" % dependency)
+            dependency = Path(dependency)
+
+        if not dependency.exists():
+            raise FileNotFoundError(dependency)
+
+        self['dependencies'].append(dependency)
+
+    @handle_plural
     def _process_binaries(self, binary):
         """
         processes passed binary(ies) into the 'binaries' list
@@ -131,7 +145,7 @@ class InitramfsConfigDict(dict):
         except OSError as e:
             raise RuntimeError("Failed to calculate dependencies for '%s': %s" % (binary, e))
 
-        self['dependencies'] += dependencies
+        self['dependencies'] = dependencies
         # Append, don't set or it will recursively call this function
         self['binaries'].append(binary)
 
@@ -224,7 +238,7 @@ class InitramfsConfigDict(dict):
 
 @loggify
 class InitramfsGenerator:
-    __version__ = "0.5.0"
+    __version__ = "0.5.1"
 
     def __init__(self, config='config.toml', *args, **kwargs):
         self.config_filename = config
@@ -254,7 +268,7 @@ class InitramfsGenerator:
 
         self.logger.debug("Loaded config: %s" % self.config_dict)
 
-        for parameter in ['out_dir', 'clean']:
+        for parameter in ['build_dir', 'out_dir', 'clean']:
             dict_value = self.config_dict[parameter]
             if dict_value is not None:
                 setattr(self, parameter, dict_value)
@@ -270,13 +284,13 @@ class InitramfsGenerator:
             from shutil import rmtree
             from os.path import isdir
             # If the build dir is present, clean it, otherwise log and continue
-            if isdir(self.out_dir):
-                self.logger.warning("Cleaning build dir: %s" % self.out_dir)
-                rmtree(self.out_dir)
+            if isdir(self.build_dir):
+                self.logger.warning("Cleaning build dir: %s" % self.build_dir)
+                rmtree(self.build_dir)
             else:
-                self.logger.info("Build dir is not present, not cleaning: %s" % self.out_dir)
+                self.logger.info("Build dir is not present, not cleaning: %s" % self.build_dir)
         else:
-            self.logger.info("Not cleaning build dir: %s" % self.out_dir)
+            self.logger.debug("Not cleaning build dir: %s" % self.build_dir)
 
         # Run pre-build tasks, by default just calls 'generate_structure'
         self.logger.info("Running pre build tasks")
@@ -360,13 +374,13 @@ class InitramfsGenerator:
         """
         from os.path import isdir
 
-        if not isdir(self.out_dir):
-            self._mkdir(self.out_dir)
+        if not isdir(self.build_dir):
+            self._mkdir(self.build_dir)
 
         for subdir in set(self.config_dict['paths']):
             subdir_path = Path(subdir)
             subdir_relative_path = subdir_path.relative_to(subdir_path.anchor)
-            target_dir = self.out_dir / subdir_relative_path
+            target_dir = self.build_dir / subdir_relative_path
 
             self._mkdir(target_dir)
 
@@ -380,7 +394,7 @@ class InitramfsGenerator:
             for func in pack_funcs:
                 func(self)
         else:
-            self.logger.info("No custom pack functions found, skipping")
+            self.logger.warning("No pack functions specified, the final build is present in: %s" % self.build_dir)
 
     def _mkdir(self, path):
         """
@@ -434,9 +448,9 @@ class InitramfsGenerator:
 
         if in_build_dir:
             if file_name.startswith('/'):
-                file_path = self.config_dict['out_dir'] / Path(file_name).relative_to('/')
+                file_path = self.config_dict['build_dir'] / Path(file_name).relative_to('/')
             else:
-                file_path = self.config_dict['out_dir'] / file_name
+                file_path = self.config_dict['build_dir'] / file_name
         else:
             file_path = Path(file_name)
 
@@ -467,9 +481,9 @@ class InitramfsGenerator:
 
         if in_build_dir:
             if dest.is_absolute():
-                dest_path = self.config_dict['out_dir'] / Path(dest).relative_to('/')
+                dest_path = self.config_dict['build_dir'] / Path(dest).relative_to('/')
             else:
-                dest_path = self.config_dict['out_dir'] / dest
+                dest_path = self.config_dict['build_dir'] / dest
         else:
             dest_path = Path(dest)
 
@@ -492,8 +506,8 @@ class InitramfsGenerator:
         cmd = run(args, capture_output=True)
         if cmd.returncode != 0:
             self.logger.error("Failed to run command: %s" % cmd.args)
-            self.logger.error("Command output: %s" % cmd.stdout.decode('utf-8'))
-            self.logger.error("Command error: %s" % cmd.stderr.decode('utf-8'))
+            self.logger.error("Command output: %s" % cmd.stdout.decode())
+            self.logger.error("Command error: %s" % cmd.stderr.decode())
             raise RuntimeError("Failed to run command: %s" % cmd.args)
 
         return cmd

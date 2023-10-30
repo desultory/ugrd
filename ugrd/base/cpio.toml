@@ -1,5 +1,13 @@
+cpio_filename = "ugrd.cpio"
+cpio_list_name = "cpio.list"
+gen_init_cpio_path = "/usr/src/linux/usr/gen_init_cpio"
+
 [imports.pack]
-"ugrd.base.cpio" = [ "make_cpio_list" ]
+"ugrd.base.cpio" = [ "make_cpio_list", "pack_cpio" ]
 
 [custom_parameters]
 mknod_cpio = "bool"  # When enabled, mknod is not used to create device nodes, they are just created in the cpio.
+cpio_filename = "str"  # The name of the cpio file to create.
+cpio_list_name = "str"  # The name of the CPIO packing list to create
+gen_init_cpio_path = "Path"  # Source for gen_init_cpio.
+

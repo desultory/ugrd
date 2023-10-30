@@ -2,6 +2,7 @@
 # It will attempt to mount the btrfs volume with label "rootfs" to /mnt/root
 # It will pull all current kernel modules from the active kernel version
 # The "ugrd.base.kmod_nvme" module will be used to load the nvme module if it's not detected in lsmod
+# The "ugrd.base.cpio" module will pack the initramfs into a cpio archive
 
 modules = [
   "ugrd.base.base",
@@ -9,14 +10,18 @@ modules = [
   "ugrd.base.kmod_nvme",
   "ugrd.crypto.cryptsetup",
   "ugrd.base.btrfs",
+  "ugrd.base.cpio",
 ]
 
-# Will use /tmp/initramfs if not specified
-out_dir = "/usr/src/initramfs"
+# The initramfs will be built in /tmp/initramfs if "build_dir" is not specified not specified
+out_dir = "/usr/src/initramfs"  # Output here instead of /tmp/initramfs_out
 
 # Optionally supply a kernel version, uses the current kernel version if not specified
 #kernel_version = "6.1.53-gentoo-dist"
 kmod_autodetect = true
+
+# Create device nodes only inside the CPIO
+mknod_cpio = true
 
 [root_mount.source]
 # The lable of the root filesystem, a uuid could be used instead

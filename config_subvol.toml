@@ -10,8 +10,6 @@ modules = [
   "ugrd.base.btrfs",
 ]
 
-out_dir = "/usr/src/initramfs"
-
 # Optionally supply a kernel version
 #kernel_version = "6.1.53-gentoo-dist"
 

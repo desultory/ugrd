@@ -1,18 +1,27 @@
-# Initramfs generator
+# µgRD
 
-This project is a framework which can be used to generate an initramfs.
+> Microgram Ramdisk is a framework used to generate ramrisks using TOML definitions and python functions
 
 Executing `./main.py` will read the config from `config.toml` and use that to generate an initramfs.
 
-The goal of the project was to design one that can be used to enter GPG keys for LUKS keyfiles over serial, to boot a btrfs raided filesystem.
+## Project goal
 
-There are example configurations which can be used for Yubikey based GPG keyfile handling for LUKS, as well as mounting a btrfs subvolume.
+ugrd is designed to generate very custom initramfs environments. The final environment will be left in `build_dir` where it can be explored or modified.
+
+The original goal of this project was to create an initramfs suitable for decrypting LUKS volumes, currently it supports the following:
+
+* OpenPGP Smartcards (YubiKey)
+* GPG encrypted LUKS keyfiles
+* LUKS with detatched headers
+* BTRFS subvolumes and RAID
+* Key entry over serial
+* Automatic CPIO generation
 
 ## Usage
 
 To use this script, configure `config.toml` to meet specifications and run `./main.py` as root.
 
-> Example configs are available in the repo
+> Debug mode can be enabled with `-d` or verbose debugging with `-dd`
 
 ### Passing a config file by name
 
@@ -20,15 +29,26 @@ Another config file can be used by passing it as an argument to `main.py`.
 
 The example config can be used with `./main.py example_config.toml`
 
+## Output
+
+Unless the `ugrd.base.cpio` module is included, an initramfs environment will be generated at `build_dir` which defaults to `/tmp/initramfs/`.
+
+This directory can be embedded into the Linux kernel using `CONFIG_INITRAMFS_SOURCE="/tmp/initramfs"`.
+`CONFIG_INITRAMFS_SOURCE` can also be pointed at a CPIO archive, but is easiest to use with a directory.
+
+If a CPIO file is generated, it can be passed to the bootloader. Embedding the initramfs into the kernel is preferred, as the entire kernel image can be signed.
+
 ## Configuration
 
-The main configuration file is `config.toml`
+At runtime, ugrd will try to read `config.toml` for configuration options unless another file is specified..
 
 ### Module config
 
 #### base.base
 
-`out_dir` (/tmp/initramfs) changes where the script writes the output files.
+`build_dir` (/tmp/initramfs) Defines where the build will take place
+
+`out_dir` (/tmp/initramfs_out) Defines where packed files will be placed.
 
 `clean` (true) forces the build dir to be cleaned on each run.
 
@@ -79,15 +99,12 @@ These are set at the global level and are not associated with an individual moun
 
 #### Device node creation
 
-Device nodes can be created by definign them in the `nodes` dict.
+Device nodes can be created by defining them in the `nodes` dict using the following keys:
 
-`mode` (0o600) the device node, in octal.
-
-`major` Major value.
-
-`minor` Minor value.
-
-`path` (/dev/node name) the path to create the node at.
+* `mode` (0o600) the device node, in octal.
+* `path` (/dev/node name) the path to create the node at.
+* `major` Major value.
+* `minor` Minor value.
 
 Example:
 
@@ -99,6 +116,8 @@ minor = 1
 ```
 
 Creates `/dev/console` with permissions `0o644`
+
+> Using `mknod_cpio` from `ugrd.base.cpio` will not create the device nodes in the build dir, but within the CPIO archive
 
 #### base.kmod
 
@@ -130,22 +149,46 @@ Some helper modules have been created to make importing required kernel modules 
 
 This module creates an agetty session. This is used by the `ugrd.crypto.gpg` module so the tty can be used for input and output.
 
-`console.{name}.type` (tty) specifies the console type, such as `tty` or `vt100`.
+Consoles are defined by name in the `console` dict using teh following keys:
 
-`console.{name}.baud` specifies the baud rate if using a serial device. Required for types other than `tty`.
+* `type` (tty) specifies the console type, such as `tty` or `vt100`.
+* `baud` Specified the baud rate for serial devices.
+* `local` (false) specifies whether or not the `-L` flag should be passed to agetty.
 
-`console.{name}.local` specifies whether or not the `-L` flag should be passed to agetty.
+ex:
 
-`primary_console` is used to set which console will be initialized with agetty on boot.
+```
+[console.tty0]
+type = "tty"
+```
 
+Defines the default `/dev/tty0` console.
+
+```
+[console.ttyS1]
+baud = 115_200
+type = "vt100"
+local = true
+```
+
+Defines /dev/ttyS1 as a local `vt100` terminal with a `115200` baud rate.
+
+##### General console options
+
+`primary_console` (tty0)  is used to set which console will be initialized with agetty on boot.
 
 #### base.cpio
 
 This module assists in creating a CPIO out of the initramfs `build_dir`.
 
-`mknod_cpio` (false) can be used to only create the device nodes within the CPIO file.
+> This module is run during the `pack` phase.
 
-This module is run during the `pack` phase.
+The following parameters can be set to alter CPIO functionality:
+
+* `mknod_cpio` (false) can be used to only create the device nodes within the CPIO file.
+* `cpio_filename` (ugrd.cpio) can be set to change the final CPIO filename in the `out_dir`.
+* `cpio_list_name` (cpio.list) can be used to change the filename of the CPIO list for `gen_init_cpio`.
+* `gen_init_cpio_path` (/usr/src/linux/usr/gen_init_cpio) the path of `gen_init_cpio` (included in the linux sources).
 
 #### base.btrfs
 

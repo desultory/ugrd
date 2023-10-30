@@ -1,9 +1,9 @@
 # This module generates an initramfs that uses a yubikey to decrypt a luks keyfile.
 # The sc_public_key must be specified.
 # Pull kmod aliases for reading nvme, fat formatted usb storage.
-# Wait 3seconds for storage to settle after modules are loaded.
+# Wait 3 seconds for storage to settle after modules are loaded.
 # GPG encrypted keyfiles are on /boot, protected with the yubikey.
-
+# Write a CPIO file to the default location (/tmp/initramfs_out/ugrd.cpio)
 
 modules = [
   "ugrd.base.base",
@@ -15,10 +15,10 @@ modules = [
   "ugrd.base.btrfs",
   "ugrd.base.console",
   "ugrd.crypto.gpg",
-  "ugrd.crypto.smartcard"
+  "ugrd.crypto.smartcard",
+  "ugrd.base.cpio"
 ]
 
-out_dir = "/usr/src/initramfs"
 sc_public_key = "/home/larry/yubikey_public.asc"
 
 # Wait a few seconds for storage to settle after modules are loaded
