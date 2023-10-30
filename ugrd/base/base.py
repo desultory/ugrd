@@ -71,9 +71,10 @@ def generate_nodes(self):
         try:
             mknod(node_path, mode=node_mode, device=makedev(config['major'], config['minor']))
             self.logger.info("Created device node %s at path: %s" % (node, node_path))
-        except PermissionError:
+        except PermissionError as e:
             self.logger.error("Unable to create device node %s at path: %s" % (node, node_path))
-            raise PermissionError("`mknod_cpio` in `ugrd.base.cpio` can be used to generate device nodes within the initramfs archive if they cannot be created on the host system.")
+            self.logger.info("`mknode` in `ugrd.base` can be used to generate device nodes within the initramfs archive if they cannot be created on the host system.")
+            raise e
 
 
 def switch_root(self):
