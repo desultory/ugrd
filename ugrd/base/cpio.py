@@ -12,6 +12,8 @@ def build_gen_init_cpio(self):
     if source_file.exists():
         self.logger.info("Building gen_init_cpio at: %s" % source_file)
         return self._run(['gcc', '-o', self.config_dict['gen_init_cpio_path'], source_file])
+    else:
+        self.logger.warning("gen_init_cpio source file not found at: %s" % source_file)
 
 
 def pack_cpio(self):
