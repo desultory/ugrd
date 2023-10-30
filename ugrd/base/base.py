@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '0.5.0'
+__version__ = '0.5.1'
 
 from pathlib import Path
 
@@ -44,7 +44,12 @@ def generate_nodes(self):
         node_path = self.config_dict['out_dir'] / node_path_abs.relative_to(node_path_abs.anchor)
         node_mode = S_IFCHR | config['mode']
 
-        mknod(node_path, mode=node_mode, device=makedev(config['major'], config['minor']))
+        if self.config_dict['fake_root']:
+            self.logger.debug("Using fake root to create device node: %s" % node_path)
+            self._run(['fakeroot', 'mknod', node_path, 'c', str(config['major']), str(config['minor'])])
+        else:
+            mknod(node_path, mode=node_mode, device=makedev(config['major'], config['minor']))
+
         self.logger.info("Created device node %s at path: %s" % (node, node_path))
 
 
