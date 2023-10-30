@@ -1,6 +1,6 @@
 
 __author__ = "desultory"
-__version__ = "0.7.0"
+__version__ = "0.7.1"
 
 from tomllib import load
 from pathlib import Path
@@ -209,7 +209,10 @@ class InitramfsConfigDict(dict):
         """
         self.logger.debug("Processing module: %s" % module)
 
-        with open(f"{module.replace('.', '/')}.toml", 'rb') as module_file:
+        module_path = Path(__file__).parent.parent / (module.replace('.', '/') + '.toml')
+        self.logger.debug("Module path: %s" % module_path)
+
+        with open(module_path, 'rb') as module_file:
             module_config = load(module_file)
             self.logger.debug("[%s] Loaded module config: %s" % (module, module_config))
 

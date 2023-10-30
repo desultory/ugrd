@@ -7,6 +7,9 @@ setup(
     version=version,
     description="A simple initramfs generator",
     author="desultory",
+    package_data={
+        "ugrd": ["*/*.toml"]
+    },
     entry_points={
         "console_scripts": [
             "ugrd = ugrd.main:main"
