@@ -6,7 +6,7 @@ from argparse import ArgumentParser
 import logging
 
 
-if __name__ == '__main__':
+def main():
     argparser = ArgumentParser(prog='custom-initramfs',
                                description='Initramfs generator')
 
@@ -41,3 +41,8 @@ if __name__ == '__main__':
         logger.error("\n\nError: %s\n\n" % e, exc_info=True)
         logger.info("Dumping config dict:\n")
         print(generator.config_dict)
+
+
+if __name__ == '__main__':
+    main()
+

@@ -1,8 +1,6 @@
 # µgRD
 
-> Microgram Ramdisk is a framework used to generate ramrisks using TOML definitions and python functions
-
-Executing `./main.py` will read the config from `config.toml` and use that to generate an initramfs.
+> Microgram Ramdisk is a framework used to generate ramdisks using TOML definitions and python functions
 
 ## Project goal
 
@@ -19,15 +17,13 @@ The original goal of this project was to create an initramfs suitable for decryp
 
 ## Usage
 
-To use this script, configure `config.toml` to meet specifications and run `./main.py` as root.
+To install `ugrd`, clone the repo and run `pip install .`, setting `--break-system-packages` may be required.
+
+Once installed, either set the config file in `/etc/ugrd/config.toml`, or pass it to the script:
+
+`ugrd example_config.toml`
 
 > Debug mode can be enabled with `-d` or verbose debugging with `-dd`
-
-### Passing a config file by name
-
-Another config file can be used by passing it as an argument to `main.py`.
-
-The example config can be used with `./main.py example_config.toml`
 
 ## Output
 

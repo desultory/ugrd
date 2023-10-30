@@ -4,3 +4,5 @@ initramfs/*
 __pycache__/*
 *.pyc
 config.toml
+build/*
+*.egg-info/
