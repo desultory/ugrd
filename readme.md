@@ -122,8 +122,9 @@ Modules can use `_kmod_depend` to add required modules. Simply using the `ugrd.c
 The following parameters can be used to change the kernel module pulling and initializing behavior:
 
 * `kernel_version` (uname -r) is used to specify the kernel version to pull modules for, should be a directory under `/lib/modules/<kernel_version>`.
-* `kmod_autodetect` (false) if set to `true`, will populate `kernel_modules` with modules listed in `lsmod`.
 * `kmod_init`  is used to specify kernel modules to load at boot. If set, ONLY these modules will be loaded with modprobe.
+* `kmod_autodetect_lspci` (false) if set to `true`, will populate `kernel_modules` with modules listed in `lspci -k`.
+* `kmod_autodetect_lsmod` (false) if set to `true`, will populate `kernel_modules` with modules listed in `lsmod`.
 * `kernel_modules` is used to define a list of kernel module names to pull into the initramfs. These modules will not be `modprobe`'d automatically if `kmod_init` is also set.
 * `kmod_ignore` is used to specify kernel modules to ignore. If a module depends on one of these, it will throw an error and drop it from being included.
 * `kmod_ignore_softdeps` (false) ignore softdeps when checking kernel module dependencies.
@@ -135,6 +136,8 @@ The following parameters can be used to change the kernel module pulling and ini
 Some helper modules have been created to make importing required kernel modules easier.
 
 `base.ugrd.kmod_nvme`, `kmod_usb`, and `kmod_fat` can be used to load modules for NVME's, USB storage, and the FAT file system respectively.
+
+Similarly `base.ugrd.kmod_novideo` and `kmod_nosound` exist to ignore video and sound devices that may appear when autodetecting modules.
 
 #### base.console
 

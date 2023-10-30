@@ -1,6 +1,6 @@
 __author__ = 'desultory'
 
-__version__ = '0.4.5'
+__version__ = '0.4.7'
 
 from pathlib import Path
 
@@ -153,7 +153,34 @@ def resolve_kmod(self, module_name):
         self.logger.warning("[%s] Kernel module has no dependencies." % module_name)
 
 
-def get_all_modules(self):
+def get_lspci_modules(self):
+    """
+    Gets the name of all kernel modules being used by hardware visible in lspci -k
+    """
+    try:
+        cmd = self._run(['lspci', '-k'])
+    except RuntimeError as e:
+        raise DependencyResolutionError("Failed to get list of kernel modules") from e
+
+    raw_modules = set()
+    # Iterate over all output lines
+    for line in cmd.stdout.decode('utf-8').split('\n'):
+        # If the line contains the string 'Kernel modules:' or 'Kernel driver in use:', it contains the name of a kernel module
+        if 'Kernel modules:' in line or 'Kernel driver in use:' in line:
+            module = line.split(':')[1]
+            if ',' in module:
+                # If there are multiple modules, split them and add them to the module set
+                for module in module.split(','):
+                    raw_modules.add(module.strip())
+            else:
+                # Add the single module to the module set
+                raw_modules.add(module.strip())
+
+    self.logger.debug("Kernel modules in use by hardware: %s" % raw_modules)
+    return list(raw_modules)
+
+
+def get_lsmod_modules(self):
     """
     Gets the name of all currently installed kernel modules
     """
@@ -215,10 +242,14 @@ def calculate_modules(self):
     Adds the contents of _kmod_depend if specified.
     If kernel_modules is empty, pulls all currently loaded kernel modules.
     """
-    if self.config_dict['kmod_autodetect']:
-        self.logger.info("Autodetecting kernel modules")
-        autodetected_modules = get_all_modules(self)
-        self.logger.info("Autodetected kernel modules: %s" % autodetected_modules)
+    if self.config_dict['kmod_autodetect_lsmod']:
+        autodetected_modules = get_lsmod_modules(self)
+        self.logger.info("Autodetected kernel modules from lsmod: %s" % autodetected_modules)
+        self.config_dict['kernel_modules'] = autodetected_modules
+
+    if self.config_dict['kmod_autodetect_lspci']:
+        autodetected_modules = get_lspci_modules(self)
+        self.logger.info("Autodetected kernel modules from lscpi -k: %s" % autodetected_modules)
         self.config_dict['kernel_modules'] = autodetected_modules
 
     if self.config_dict['_kmod_depend']:

@@ -1,6 +1,6 @@
 
 __author__ = "desultory"
-__version__ = "0.6.2"
+__version__ = "0.6.4"
 
 from tomllib import load
 from pathlib import Path
