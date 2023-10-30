@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '0.5.6'
+__version__ = '0.5.7'
 
 from pathlib import Path
 
@@ -68,8 +68,12 @@ def generate_nodes(self):
         node_path = self.config_dict['build_dir'] / node_path_abs.relative_to(node_path_abs.anchor)
         node_mode = S_IFCHR | config['mode']
 
-        mknod(node_path, mode=node_mode, device=makedev(config['major'], config['minor']))
-        self.logger.info("Created device node %s at path: %s" % (node, node_path))
+        try:
+            mknod(node_path, mode=node_mode, device=makedev(config['major'], config['minor']))
+            self.logger.info("Created device node %s at path: %s" % (node, node_path))
+        except PermissionError:
+            self.logger.error("Unable to create device node %s at path: %s" % (node, node_path))
+            raise PermissionError("`mknod_cpio` in `ugrd.base.cpio` can be used to generate device nodes within the initramfs archive if they cannot be created on the host system.")
 
 
 def switch_root(self):
