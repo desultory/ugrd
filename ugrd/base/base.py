@@ -73,7 +73,7 @@ def generate_nodes(self):
             self.logger.info("Created device node %s at path: %s" % (node, node_path))
         except PermissionError as e:
             self.logger.error("Unable to create device node %s at path: %s" % (node, node_path))
-            self.logger.info("`mknode` in `ugrd.base` can be used to generate device nodes within the initramfs archive if they cannot be created on the host system.")
+            self.logger.info("`mknod_cpio` in `ugrd.base` can be used to generate device nodes within the initramfs archive if they cannot be created on the host system.")
             raise e
 
 
