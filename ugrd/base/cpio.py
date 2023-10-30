@@ -1,7 +1,17 @@
 __author__ = "desultory"
-__version__ = "0.0.2"
+__version__ = "0.0.3"
 
 from subprocess import run
+
+
+def build_gen_init_cpio(self):
+    """
+    Builds the gen_init_cpio source file if it exists
+    """
+    source_file = self.config_dict['gen_init_cpio_path'] / ".c"
+    if source_file.exists():
+        self.logger.info("Building gen_init_cpio at: %s" % source_file)
+        return self._run(['gcc', '-o', self.config_dict['gen_init_cpio_path'], source_file])
 
 
 def pack_cpio(self):
@@ -9,7 +19,8 @@ def pack_cpio(self):
     Packs the CPIO file using gen_init_cpio
     """
     if not self.config_dict['gen_init_cpio_path'].exists():
-        raise FileNotFoundError("gen_init_cpio not found at: %s" % self.config_dict['gen_init_cpio_path'])
+        if not build_gen_init_cpio(self):
+            raise FileNotFoundError("gen_init_cpio not found at: %s" % self.config_dict['gen_init_cpio_path'])
     gen_init_cpio = str(self.config_dict['gen_init_cpio_path'])
 
     self.logger.debug("Using gen_init_cpio at: %s" % self.config_dict['gen_init_cpio_path'])
