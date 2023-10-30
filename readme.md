@@ -42,25 +42,30 @@ At runtime, ugrd will try to read `config.toml` for configuration options unless
 
 #### base.base
 
-`build_dir` (/tmp/initramfs) Defines where the build will take place
-
-`out_dir` (/tmp/initramfs_out) Defines where packed files will be placed.
-
-`clean` (true) forces the build dir to be cleaned on each run.
-
-`shebang` (#!/bin/bash) sets the shebang on the init script.
+* `build_dir` (/tmp/initramfs) Defines where the build will take place.
+* `out_dir` (/tmp/initramfs_out) Defines where packed files will be placed.
+* `clean` (true) forces the build dir to be cleaned on each run.
+* `shebang` (#!/bin/bash) sets the shebang on the init script.
 
 ##### Mounts
 
 `mounts`: A dictionary containing entries for mounts, with their associated config.
 
-`root_mount` a dict that acts similarly to user defined `mounts`. `destination` is hardcoded to `/mnt/root`.
+`root_mount` Is a dict that acts similarly to user defined `mounts`. `destination` is hardcoded to `/mnt/root`.
+
+Each mount has the following available parameters:
+
+* `type` (auto) the mount or filesystem type.
+* `destination` (/mount name) the mountpoint for the mount, if left unset will use /mount_name.
+* `source` The source string or a dict with a key containing the source type, where the value is the target.
+  - `uuid` Mount by the filesystem UUID.
+  - `partuuid` Mount by the partition UUID.
+  - `label` Mount by the device label.
+* `base_mount` (false) is used for builtin mounts such as `/dev`, `/sys`, and `/proc`. Setting this to mounts it with a mount command in `init_pre` instead of using `mount -a` in `init_main`.
+* `skip_unmount` (false) is used for the builtin `/dev` mount, since it will fail to unmount when in use. Like the name suggests, this skips running `umount` during `init_final`.
+* `remake_mountpoint` will recreate the mountpoint with mkdir before the `mount -a` is called. This is useful for `/dev/pty`.
 
 The most minimal mount entry that can be created must have a name, which will be used as the `destination`, and a `source`.
-If the source is a dict, options such as the `uuid`, `partuuid`, and `label` can be defined as targets, in that order.
-If the source is a string, that path will be used as the mount source.
-
-If `type` is not set, `auto` will be used for fstab entries, and for mount commands, the type will be left unspecified.
 
 The following configuration mounts the device with `uuid` `ABCD-1234` at `/boot`:
 
@@ -79,19 +84,12 @@ destination = "/mnt/extra"
 label = "extra"
 ```
 
-`base_mount` (false) is used for builtin mounts such as `/dev`, `/sys`, and `/proc`. Setting this to mounts it with a mount command in `init_pre` instead of waiting for `init_main`.
-
-`skip_unmount` (false) is used for the builtin `/dev` mount, since it will fail to unmount when in use. Like the name suggests, this skips running `umount`.
-
-`remake_mountpoint` will recreate the mountpoint with mkdir before the `mount -a` is called.
-
 ##### General mount options
 
-These are set at the global level and are not associated with an individual mount.
+These are set at the global level and are not associated with an individual mount:
 
-`mount_wait` (false) waits for user input before attenmpting to mount the generated fstab at runtime.
-
-`mount_timeout` timeout for `mount_wait` to automatically continue.
+* `mount_wait` (false) waits for user input before attenmpting to mount the generated fstab at `init_main`.
+* `mount_timeout` timeout for `mount_wait` to automatically continue.
 
 #### Device node creation
 
@@ -121,19 +119,16 @@ This module is used to embed kernel modules into the initramfs.
 
 Modules can use `_kmod_depend` to add required modules. Simply using the `ugrd.crypto.cryptsetup` module, for example, will try to add the `dm_crypt` kmod.
 
-`kernel_version` (uname -r) is used to specify the kernel version to pull modules for, should be a directory under `/lib/modules/<kernel_version>`.
+The following parameters can be used to change the kernel module pulling and initializing behavior:
 
-`kmod_autodetect` (false) if set to `true`, will populate `kernel_modules` with modules listed in `lsmod`.
+* `kernel_version` (uname -r) is used to specify the kernel version to pull modules for, should be a directory under `/lib/modules/<kernel_version>`.
+* `kmod_autodetect` (false) if set to `true`, will populate `kernel_modules` with modules listed in `lsmod`.
+* `kmod_init`  is used to specify kernel modules to load at boot. If set, ONLY these modules will be loaded with modprobe.
+* `kernel_modules` is used to define a list of kernel module names to pull into the initramfs. These modules will not be `modprobe`'d automatically if `kmod_init` is also set.
+* `kmod_ignore` is used to specify kernel modules to ignore. If a module depends on one of these, it will throw an error and drop it from being included.
+* `kmod_ignore_softdeps` (false) ignore softdeps when checking kernel module dependencies.
+* `_kmod_depend` is meant to be used within modules, specifies kernel modules which should be added to `kmod_init` when that `ugrd` module is imported.
 
-`kernel_modules` is used to define a list of kernel module names to pull into the initramfs. These modules will not be `modprobe`'d automatically.
-
-`kmod_ignore` is used to specify kernel modules to ignore. If a module depends on one of these, it will throw an error and drop it from being included.
-
-`kmod_init`  is used to specify kernel modules to load at boot. If set, ONLY these modules will be loaded with modprobe.
-
-`_kmod_depend` is meant to be used within modules, specifies kernel modules which should be added to `kmod_init`.
-
-`kmod_ignore_softdeps` (false) ignore softdeps for kernel modules.
 
 ##### Kernel module helpers
 
@@ -202,17 +197,20 @@ This configuration can be overriden in the specified user config if an actual se
 Depends on the `ugrd.crypto.gpg` submodule, meant to be used with a YubiKey.
 
 `sc_public_key` should point to the public key associated with the smarcard used to decrypt the GPG protected LUKS keyfile.
+This file is added as a dependency and pulled into the initramfs.
 
 #### crypto.cryptsetup
 
 This module is used to decrypt LUKS volumes in the initramfs.
 
-`cryptsetup` is a dictionary that contains the root devices to decrypt. `key_file` is optional within this dict, but `uuid` is required, ex:
+`cryptsetup` is a dictionary that contains the root devices to decrypt. `key_file` is optional within this dict, but `uuid` or `partuuid` is required, ex:
 
 ```
 [cryptsetup.root]
 uuid = "9e04e825-7f60-4171-815a-86e01ec4c4d3"
 ```
+
+> This UUID or PARTUUID is resolved to the device path at runtime, and drops to a recovery shell if this fails.
 
 `key_type` can be either `gpg` or `keyfile`. If it is not set, cryptsetup will prompt for a passphrase. If this is set globally, it applies to all `cryptsetup` definitions.
 
@@ -224,9 +222,7 @@ The following configuration options can exist in any module, or the base config
 
 #### binaries
 
-All entires specified in the `binaries` list will be imported into the initramfs.
-
-`lddtree` is used to find the required libraries.
+`binaries` is used to define programs which should be pulled into the initramfs. `lddtree` is used to resolve library dependencies for the binary.
 
 #### paths
 
@@ -236,17 +232,17 @@ They should not start with a leading `/`
 
 ### modules
 
-The modules config directive should contain a list with names specifying the path of which will be loaded, such as `base.base`, `base.console` or `crypto.crypsetup`.
+The modules config directive should contain a list with names specifying the path of which will be loaded, such as `ugrd.base.base`, `ugrd.base.console` or `ugrd.crypto.crypsetup`.
 
 Another directory for modules can be created, the naming scheme is similar to how python imports work.
 
-When a module is loaded, `initramfs_generator.py` will try to load a toml file for that module, parsing it in the same manner `config.yaml` is parsed.
+When a module is loaded, `initramfs_dict.py` will try to load the toml file for that module, parsing it in the same manner `config.yaml` is parsed.
 
 The order in which modules/directives are loaded is very important!
 
 If a module depends on another module, it can be added to the `mod_depends` list in the module config. A `ValueError` will be thrown if the module is not present.
 
-### imports
+#### imports
 
 The most powerful part of a module is the `imports` directive.
 
@@ -354,15 +350,15 @@ These hooks are defined under the `init_types` list in the `InitramfsGenerator` 
 
 When the init scripts are generated, functions under dicts in the config defined by the names in this list will be called to generate the init scripts.
 
-This list can be updated to add or disable portions.  The order is important, as most internal hooks use `init_pre` and `init_final` to wrap every other init category, in order.
-
 Init functions should return a string or list of strings that contain shell lines to be added to the `init` file.
 
-A general overview of the procedure used for generating the init is to write the chosen `shebang`, build in `init_pre`, then everything but `init_final`, then finally `init_final`.  These init portions are added to one file.
+The `InitramfsGenerator.generate_init_main()` function (often called from `self`) can be used to output all init hook levels but `init_pre` and `init_final`.
+
+A general overview of the procedure used for generating the init is to write the chosen `shebang`, then every init hook. The `custom_init` import can be used for more advanced confugrations, such as running another script in `agetty`.
 
 #### custom_init
 
-To entirely change how the init files are generated, `custom_init` can be used. 
+To change how everything but `init_pre` and `init_file` are handled at runtime, `custom_init` can be used.
 
 The `console` module uses the `custom_init` hook to change the init creation procedure.
 
