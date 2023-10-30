@@ -1,6 +1,9 @@
 __author__ = 'desultory'
 
-__version__ = '0.4.9'
+__version__ = '0.5.0'
+
+
+CRYPTSETUP_PARAMETERS = ['key_type', 'partuuid', 'uuid', 'key_file', 'header_file']
 
 
 def _process_cryptsetup(self, config_dict):
@@ -8,10 +11,16 @@ def _process_cryptsetup(self, config_dict):
     Processes the cryptsetup configuration
     """
     self.logger.debug("Processing cryptsetup configuration: %s" % config_dict)
-    for values in config_dict.values():
-        if values.get('key_type') == 'gpg':
+    for mapped_name, config in config_dict.items():
+        if config.get('key_type') == 'gpg':
             self.logger.info("Key type is GPG, adding gpg to mod_depends")
             self['mod_depends'] = 'ugrd.crypto.gpg'
+        if not config.get('partuuid') and not config.get('uuid'):
+            raise ValueError("Unable to determine source device for: %s" % mapped_name)
+
+        for parameter in config:
+            if parameter not in CRYPTSETUP_PARAMETERS:
+                raise ValueError("Invalid parameter: %s" % parameter)
 
     self['cryptsetup'].update(config_dict)
 
