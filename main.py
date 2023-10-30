@@ -33,10 +33,10 @@ if __name__ == '__main__':
         kwargs['config'] = config
 
     generator = InitramfsGenerator(**kwargs)
-
     try:
         generator.build_structure()
         generator.generate_init()
+        generator.pack()
     except Exception as e:
         logger.error("\n\nError: %s\n\n" % e, exc_info=True)
         logger.info("Dumping config dict:\n")

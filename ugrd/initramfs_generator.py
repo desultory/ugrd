@@ -1,6 +1,6 @@
 
 __author__ = "desultory"
-__version__ = "0.6.5"
+__version__ = "0.7.0"
 
 from tomllib import load
 from pathlib import Path
@@ -41,7 +41,7 @@ class InitramfsConfigDict(dict):
         This dict does not act like a normal dict, setitem is designed to append when the overrides are used
         Default parameters are defined in builtin_parameters
     """
-    __version__ = "0.6.5"
+    __version__ = "0.6.7"
 
     builtin_parameters = {'binaries': NoDupFlatList,  # Binaries which should be included in the initramfs, dependencies are automatically calculated
                           'dependencies': NoDupFlatList,  # Raw dependencies, files which should be included in the initramfs
@@ -148,7 +148,9 @@ class InitramfsConfigDict(dict):
             function_list = [getattr(import_module(f"{module_name}"), function_name) for function_name in function_names]
 
             if import_type not in self['imports']:
+                self.logger.debug("Creating import type: %s" % import_type)
                 self['imports'][import_type] = NoDupFlatList(log_bump=10, logger=self.logger, _log_init=False)
+
             self['imports'][import_type] += function_list
             self.logger.debug("Updated import '%s': %s" % (import_type, function_list))
 
@@ -210,12 +212,8 @@ class InitramfsConfigDict(dict):
             self['imports'] = module_config['imports']
             self.logger.debug("[%s] Registered imports: %s" % (module, self['imports']))
 
-        if 'mask' in module_config:
-            self['mask'] = module_config['mask']
-            self.logger.debug("[%s] Registered mask: %s" % (module, self['mask']))
-
         for name, value in module_config.items():
-            if name in ('custom_parameters', 'depends', 'imports'):
+            if name in ('custom_parameters', 'mod_depends', 'imports'):
                 self.logger.debug("[%s] Skipping '%s'" % (module, name))
                 continue
             self.logger.debug("[%s] Setting '%s' to: %s" % (module, name, value))
@@ -226,7 +224,7 @@ class InitramfsConfigDict(dict):
 
 @loggify
 class InitramfsGenerator:
-    __version__ = "0.4.8"
+    __version__ = "0.5.0"
 
     def __init__(self, config='config.toml', *args, **kwargs):
         self.config_filename = config
@@ -234,7 +232,8 @@ class InitramfsGenerator:
         self.build_tasks = [self.deploy_dependencies]
         self.config_dict = InitramfsConfigDict(logger=self.logger)
 
-        self.init_types = ['init_pre', 'init_main', 'init_late', 'init_mount', 'init_final']
+        # init_pre and init_final are run as part of generate_initramfs_main
+        self.init_types = ['init_main', 'init_late', 'init_mount']
 
         self.load_config()
         self.config_dict.verify_deps()
@@ -286,10 +285,10 @@ class InitramfsGenerator:
             task()
 
         # Run custom pre-build tasks imported from modules
-        if 'build_pre' in self.config_dict['imports']:
+        if build_pre := self.config_dict['imports'].get('build_pre'):
             self.logger.info("Running custom pre build tasks")
-            self.logger.debug(self.config_dict['imports']['build_pre'])
-            for task in self.config_dict['imports']['build_pre']:
+            self.logger.debug(build_pre)
+            for task in build_pre:
                 task(self)
 
         # Run all build tasks, by default just calls 'deploy_dependencies'
@@ -299,20 +298,21 @@ class InitramfsGenerator:
             task()
 
         # Run custom build tasks imported from modules
-        if 'build_tasks' in self.config_dict['imports']:
+        if build_tasks := self.config_dict['imports'].get('build_tasks'):
             self.logger.info("Running custom build tasks")
-            self.logger.debug(self.config_dict['imports']['build_tasks'])
-            for task in self.config_dict['imports']['build_tasks']:
+            self.logger.debug(build_tasks)
+            for task in build_tasks:
                 task(self)
 
     def generate_init_main(self):
         """
-        Generates the main init file, using everything but the pre portion
+        Generates the main init file.
         """
         out = list()
+
         for init_type in self.init_types:
-            if init_type != 'init_pre' and init_type != 'init_final':
-                out += self._run_hook(init_type)
+            out += self._run_hook(init_type)
+
         return out
 
     def _run_hook(self, level):
@@ -369,6 +369,18 @@ class InitramfsGenerator:
             target_dir = self.out_dir / subdir_relative_path
 
             self._mkdir(target_dir)
+
+    def pack(self):
+        """
+        Packs the initramfs based on self.config_dict['imports']['pack']
+        """
+        if pack_funcs := self.config_dict['imports'].get('pack'):
+            self.logger.info("Running custom pack functions")
+            self.logger.debug(pack_funcs)
+            for func in pack_funcs:
+                func(self)
+        else:
+            self.logger.info("No custom pack functions found, skipping")
 
     def _mkdir(self, path):
         """

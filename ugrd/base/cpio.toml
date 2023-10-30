@@ -1,0 +1,5 @@
+[imports.pack]
+"ugrd.base.cpio" = [ "make_cpio_list" ]
+
+[custom_parameters]
+mknod_cpio = "bool"  # When enabled, mknod is not used to create device nodes, they are just created in the cpio.

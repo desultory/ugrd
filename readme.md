@@ -77,6 +77,29 @@ These are set at the global level and are not associated with an individual moun
 
 `mount_timeout` timeout for `mount_wait` to automatically continue.
 
+#### Device node creation
+
+Device nodes can be created by definign them in the `nodes` dict.
+
+`mode` (0o600) the device node, in octal.
+
+`major` Major value.
+
+`minor` Minor value.
+
+`path` (/dev/node name) the path to create the node at.
+
+Example:
+
+```
+[nodes.console]
+mode = 0o644
+major = 5
+minor = 1
+```
+
+Creates `/dev/console` with permissions `0o644`
+
 #### base.kmod
 
 This module is used to embed kernel modules into the initramfs.
@@ -111,19 +134,22 @@ This module creates an agetty session. This is used by the `ugrd.crypto.gpg` mod
 
 `console.{name}.baud` specifies the baud rate if using a serial device. Required for types other than `tty`.
 
-`consle.{name}.local` specifies whether or not the `-L` flag should be passed to agetty.
+`console.{name}.local` specifies whether or not the `-L` flag should be passed to agetty.
 
 `primary_console` is used to set which console will be initialized with agetty on boot.
+
+
+#### base.cpio
+
+This module assists in creating a CPIO out of the initramfs `build_dir`.
+
+`mknod_cpio` (false) can be used to only create the device nodes within the CPIO file.
+
+This module is run during the `pack` phase.
 
 #### base.btrfs
 
 Importing this module will run `btrfs device scan` and pull btrfs modules. No config is required.
-
-#### base.zfs
-
-Importing this module imports zfs userspace utils and the zfs kernel modules. The `root_mount.source.label` must be set for this to function.
-
-This module masks the `urgd.base.base.mount_root` function from `init_mount`.
 
 #### crypto.gpg
 
@@ -256,7 +282,7 @@ This module is loaded in the imports section of the `base.yaml` file:
 
 ```
 [imports.config_processing]
-"base.base" = [ "_process_mounts_multi" ]
+"ugrd.base.base" = [ "_process_mounts_multi" ]
 ```
 
 #### build_tasks
@@ -267,7 +293,18 @@ The base module includes a build task for generating the fstab, which is activat
 
 ```
 [imports.build_tasks]
-"base.base" = [ "generate_fstab" ]
+"ugrd.base.base" = [ "generate_fstab" ]
+```
+
+#### Packing tasks
+
+Packing facts, such as CPIO generation can be defined in the `pack` import.
+
+The `cpio` module imports the `make_cpio_list` packing function with:
+
+```
+[imports.pack]
+"ugrd.base.cpio" = [ "make_cpio_list" ]
 ```
 
 #### init hooks
@@ -296,7 +333,7 @@ Finally, like the standard init build, the `init_final` is written to the main `
 
 ```
 [imports.custom_init]
-"base.console" = [ "custom_init" ]
+"ugrd.base.console" = [ "custom_init" ]
 ```
 
 The custom init works by creating an `init_main` file and returning a config line which will execute that file in a getty session.

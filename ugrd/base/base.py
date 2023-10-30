@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '0.5.1'
+__version__ = '0.5.5'
 
 from pathlib import Path
 
@@ -31,25 +31,44 @@ def remake_mountpoints(self):
     return [f"mkdir --parents {mount.destination}" for mount in self.config_dict['mounts'].values() if mount.remake_mountpoint]
 
 
+def _process_nodes_multi(self, node_name, node_config):
+    """
+    Process a device node
+    """
+    if 'major' not in node_config:
+        raise ValueError("[%s] No major specified" % node_name)
+    if 'minor' not in node_config:
+        raise ValueError("[%s] No minor specified" % node_name)
+
+    if 'path' not in node_config:
+        node_config['path'] = f"/dev/{node_name}"
+        self.logger.debug("[%s] No path specified, assuming: %s" % (node_name, node_config['path']))
+
+    if 'mode' not in node_config:
+        node_config['mode'] = 0o660
+        self.logger.debug("[%s] No mode specified, assuming: %s" % (node_name, node_config['mode']))
+
+    self['nodes'][node_name] = node_config
+
+
 def generate_nodes(self):
     """
     Generates specified device nodes
     """
+    if self.config_dict.get('mknod_cpio'):
+        self.logger.warning("Skipping mknod generation, as mknod_cpio is specified")
+        return
+
     from os import makedev, mknod
     from stat import S_IFCHR
 
-    for node, config in self.config_dict['dev_nodes'].items():
+    for node, config in self.config_dict['nodes'].items():
         node_path_abs = Path(config['path'])
 
         node_path = self.config_dict['out_dir'] / node_path_abs.relative_to(node_path_abs.anchor)
         node_mode = S_IFCHR | config['mode']
 
-        if self.config_dict['fake_root']:
-            self.logger.debug("Using fake root to create device node: %s" % node_path)
-            self._run(['fakeroot', 'mknod', node_path, 'c', str(config['major']), str(config['minor'])])
-        else:
-            mknod(node_path, mode=node_mode, device=makedev(config['major'], config['minor']))
-
+        mknod(node_path, mode=node_mode, device=makedev(config['major'], config['minor']))
         self.logger.info("Created device node %s at path: %s" % (node, node_path))
 
 
