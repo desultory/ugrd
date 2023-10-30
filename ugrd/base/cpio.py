@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "0.0.3"
+__version__ = "0.0.4"
 
 from subprocess import run
 
@@ -8,7 +8,7 @@ def build_gen_init_cpio(self):
     """
     Builds the gen_init_cpio source file if it exists
     """
-    source_file = self.config_dict['gen_init_cpio_path'] / ".c"
+    source_file = self.config_dict['gen_init_cpio_path'].with_suffix(".c")
     if source_file.exists():
         self.logger.info("Building gen_init_cpio at: %s" % source_file)
         return self._run(['gcc', '-o', self.config_dict['gen_init_cpio_path'], source_file])
