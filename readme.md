@@ -125,31 +125,6 @@ These are set at the global level and are not associated with an individual moun
 * `mount_wait` (false) waits for user input before attenmpting to mount the generated fstab at `init_main`.
 * `mount_timeout` timeout for `mount_wait` to automatically continue.
 
-#### base.kmod
-
-This module is used to embed kernel modules into the initramfs.
-
-Modules can use `_kmod_depend` to add required modules. Simply using the `ugrd.crypto.cryptsetup` module, for example, will try to add the `dm_crypt` kmod.
-
-The following parameters can be used to change the kernel module pulling and initializing behavior:
-
-* `kernel_version` (uname -r) is used to specify the kernel version to pull modules for, should be a directory under `/lib/modules/<kernel_version>`.
-* `kmod_init`  is used to specify kernel modules to load at boot. If set, ONLY these modules will be loaded with modprobe.
-* `kmod_autodetect_lspci` (false) if set to `true`, will populate `kernel_modules` with modules listed in `lspci -k`.
-* `kmod_autodetect_lsmod` (false) if set to `true`, will populate `kernel_modules` with modules listed in `lsmod`.
-* `kernel_modules` is used to define a list of kernel module names to pull into the initramfs. These modules will not be `modprobe`'d automatically if `kmod_init` is also set.
-* `kmod_ignore` is used to specify kernel modules to ignore. If a module depends on one of these, it will throw an error and drop it from being included.
-* `kmod_ignore_softdeps` (false) ignore softdeps when checking kernel module dependencies.
-* `_kmod_depend` is meant to be used within modules, specifies kernel modules which should be added to `kmod_init` when that `ugrd` module is imported.
-
-##### Kernel module helpers
-
-Some helper modules have been created to make importing required kernel modules easier.
-
-`base.ugrd.kmod_nvme`, `kmod_usb`, and `kmod_fat` can be used to load modules for NVME's, USB storage, and the FAT file system respectively.
-
-Similarly `base.ugrd.kmod_novideo` and `kmod_nosound` exist to ignore video and sound devices that may appear when autodetecting modules.
-
 #### base.console
 
 This module creates an agetty session. This is used by the `ugrd.crypto.gpg` module so the tty can be used for input and output.
@@ -195,7 +170,36 @@ The following parameters can be set to alter CPIO functionality:
 * `cpio_list_name` (cpio.list) can be used to change the filename of the CPIO list for `gen_init_cpio`.
 * `_gen_init_cpio_path` The path to this tool can be specified. If not, it is included and will be built at runtime if needed.
 
-#### base.btrfs
+### Kernel modules
+
+`ugrd.kmod.kmod` is the core of the kernel module loading..
+
+> Modules can use `_kmod_depend` to add required modules. Simply using the `ugrd.crypto.cryptsetup` module, for example, will try to add the `dm_crypt` kmod.
+
+#### ugrd.kmod.kmod confugration parameters
+
+The following parameters can be used to change the kernel module pulling and initializing behavior:
+
+* `kernel_version` (uname -r) is used to specify the kernel version to pull modules for, should be a directory under `/lib/modules/<kernel_version>`.
+* `kmod_init`  is used to specify kernel modules to load at boot. If set, ONLY these modules will be loaded with modprobe.
+* `kmod_autodetect_lspci` (false) if set to `true`, will populate `kernel_modules` with modules listed in `lspci -k`.
+* `kmod_autodetect_lsmod` (false) if set to `true`, will populate `kernel_modules` with modules listed in `lsmod`.
+* `kernel_modules` is used to define a list of kernel module names to pull into the initramfs. These modules will not be `modprobe`'d automatically if `kmod_init` is also set.
+* `kmod_ignore` is used to specify kernel modules to ignore. If a module depends on one of these, it will throw an error and drop it from being included.
+* `kmod_ignore_softdeps` (false) ignore softdeps when checking kernel module dependencies.
+* `_kmod_depend` is meant to be used within modules, specifies kernel modules which should be added to `kmod_init` when that `ugrd` module is imported.
+
+#### Kernel module helpers
+
+Some helper modules have been created to make importing required kernel modules easier.
+
+`base.ugrd.kmod_nvme`, `kmod_usb`, and `kmod_fat` can be used to load modules for NVME's, USB storage, and the FAT file system respectively.
+
+Similarly `base.ugrd.kmod_novideo` and `kmod_nosound` exist to ignore video and sound devices that may appear when autodetecting modules.
+
+### Filesystem modules
+
+#### fs.btrfs
 
 Importing this module will run `btrfs device scan` and pull btrfs modules. No config is required.
 

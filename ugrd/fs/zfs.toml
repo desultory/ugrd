@@ -7,4 +7,4 @@ _kmod_depend = ['zfs']
 init_mount = ['mount_root']
 
 [imports.init_mount]
-"ugrd.base.zfs" = [ 'mount_zfs_root']
+"ugrd.fs.zfs" = [ 'mount_zfs_root']

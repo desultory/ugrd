@@ -14,10 +14,10 @@ kmod_ignore = "NoDupFlatList"  # Kernel modules to ignore when loading
 _kmod_depend = "NoDupFlatList"  # Meant to be used internally, defines kernel modules to automatically load, typically within other module config
 
 [imports.config_processing]
-"ugrd.base.kmod" = [ "_process_kmod_init_multi" ]
+"ugrd.kmod.kmod" = [ "_process_kmod_init_multi" ]
 
 [imports.build_pre]
-"ugrd.base.kmod" = [ "calculate_modules" ]
+"ugrd.kmod.kmod" = [ "calculate_modules" ]
 
 [imports.init_pre]
-"ugrd.base.kmod" = [ "load_modules" ]
+"ugrd.kmod.kmod" = [ "load_modules" ]

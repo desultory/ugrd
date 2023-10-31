@@ -1,17 +1,15 @@
 # This config will decrypt the LUKS volume with uuid "fdf442da-0574-4531-98c7-55227a041f1d", mapping it to "/dev/mapper/root"
 # It will attempt to mount the btrfs volume with label "rootfs" to /mnt/root
 # It will pull all current kernel modules from lspci -k results
-# The "ugrd.base.kmod_nvme" module will be used to load the nvme module if it's not detected in lsmod
 # The "ugrd.base.cpio" module will pack the initramfs into a cpio archive
 
 modules = [
   "ugrd.base.base",
-  "ugrd.base.kmod",
-  "ugrd.base.kmod_nvme",
-  "ugrd.base.kmod_nosound",
-  "ugrd.base.kmod_novideo",
+  "ugrd.kmod.kmod",
+  "ugrd.kmod.nosound",
+  "ugrd.kmod.novideo",
   "ugrd.crypto.cryptsetup",
-  "ugrd.base.btrfs",
+  "ugrd.fs.btrfs",
   "ugrd.base.cpio",
 ]
 

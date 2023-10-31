@@ -9,7 +9,7 @@ modules = [
   "ugrd.base.console",
   "ugrd.crypto.gpg",
   "ugrd.crypto.cryptsetup",
-  "ugrd.base.btrfs"
+  "ugrd.fs.btrfs"
 ]
 
 # Set the key type for all cryptsetup keys

@@ -7,14 +7,11 @@
 
 modules = [
   "ugrd.base.base",
-  "ugrd.base.kmod",
-  "ugrd.base.kmod_usb",
-  "ugrd.base.kmod_nvme",
-  "ugrd.base.kmod_fat",
+  "ugrd.kmod.kmod",
+  "ugrd.kmod.usb",
+  "ugrd.kmod.nvme",
   "ugrd.crypto.cryptsetup",
-  "ugrd.base.btrfs",
-  "ugrd.base.console",
-  "ugrd.crypto.gpg",
+  "ugrd.fs.btrfs",
   "ugrd.crypto.smartcard",
   "ugrd.base.cpio"
 ]
