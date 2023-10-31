@@ -1,7 +1,7 @@
 """
 A collection of classes and decorators
 """
-__version__ = '3.0.1'
+__version__ = '3.1.0'
 __author__ = 'desultory'
 
 import logging
@@ -18,7 +18,7 @@ def pretty_print(input_data, indent=0, prefix="", print_out=False):
     out = ""
     if isinstance(input_data, dict):
         for key, value in input_data.items():
-            if not isinstance(value, str) and (hasattr(value, '__getitem__') or hasattr(value, '__iter__')):
+            if not isinstance(value, str) and (hasattr(value, '__getitem__') or hasattr(value, '__iter__')) and not isinstance(value, type):
                 out += " " * indent + "%s:\n" % key
                 out += pretty_print(value, indent + 2)
             else:
@@ -35,6 +35,8 @@ def pretty_print(input_data, indent=0, prefix="", print_out=False):
             out += " " * indent + f"{prefix}{input_data.name}: {input_data.value}\n"
         else:
             out += " " * indent + f"{prefix}{input_data.name}:\n{pretty_print(input_data.value, indent=indent + 2, prefix='= ')}"
+    elif isinstance(input_data, type):
+        out += " " * indent + f"{prefix}<{input_data.__name__}>\n"
     elif not isinstance(input_data, str) and (hasattr(input_data, '__getitem__') or hasattr(input_data, '__iter__')):
         for key in input_data:
             out += pretty_print(key, indent, prefix='+ ')

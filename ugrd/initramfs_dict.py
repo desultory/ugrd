@@ -1,11 +1,11 @@
 
 __author__ = "desultory"
-__version__ = "0.8.0"
+__version__ = "0.8.1"
 
 from tomllib import load
 from pathlib import Path
 
-from ugrd.zen_custom import loggify, handle_plural, NoDupFlatList
+from ugrd.zen_custom import loggify, handle_plural, NoDupFlatList, pretty_print
 
 
 @loggify
@@ -180,3 +180,5 @@ class InitramfsConfigDict(dict):
 
         self['modules'].append(module)
 
+    def __str__(self):
+        return pretty_print(self)

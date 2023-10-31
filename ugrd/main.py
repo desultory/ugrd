@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from ugrd.initramfs_generator import InitramfsGenerator
+from ugrd.zen_custom import pretty_print
 
 from argparse import ArgumentParser
 import logging
@@ -40,7 +41,7 @@ def main():
     except Exception as e:
         logger.error("\n\nError: %s\n\n" % e, exc_info=True)
         logger.info("Dumping config dict:\n")
-        print(generator.config_dict)
+        pretty_print(generator.config_dict)
 
 
 if __name__ == '__main__':

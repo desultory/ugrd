@@ -1,12 +1,12 @@
 
 __author__ = "desultory"
-__version__ = "0.7.0"
+__version__ = "0.7.1"
 
 from tomllib import load
 from pathlib import Path
 from subprocess import run
 
-from ugrd.zen_custom import loggify
+from ugrd.zen_custom import loggify, pretty_print
 from ugrd.initramfs_dict import InitramfsConfigDict
 
 
@@ -175,7 +175,7 @@ class InitramfsGenerator:
 
         self._write('init', init, 0o755)
 
-        self.logger.debug("Final config: %s" % self.config_dict)
+        self.logger.debug("Final config: %s" % pretty_print(self.config_dict))
 
     def generate_structure(self):
         """
