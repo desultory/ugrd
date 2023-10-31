@@ -8,7 +8,8 @@ setup(
     description="A simple initramfs generator",
     author="desultory",
     package_data={
-        "ugrd": ["*/*.toml"]
+        "ugrd": ["*/*.toml",
+                 "include/gen_init_cpio.c"]
     },
     entry_points={
         "console_scripts": [

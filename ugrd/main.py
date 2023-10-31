@@ -8,8 +8,8 @@ import logging
 
 
 def main():
-    argparser = ArgumentParser(prog='custom-initramfs',
-                               description='Initramfs generator')
+    argparser = ArgumentParser(prog='ugrd',
+                               description='MicrogRAM disk initramfs generator')
 
     argparser.add_argument('config_file',
                            action='store',

@@ -193,7 +193,7 @@ The following parameters can be set to alter CPIO functionality:
 * `mknod_cpio` (false) can be used to only create the device nodes within the CPIO file.
 * `cpio_filename` (ugrd.cpio) can be set to change the final CPIO filename in the `out_dir`.
 * `cpio_list_name` (cpio.list) can be used to change the filename of the CPIO list for `gen_init_cpio`.
-* `gen_init_cpio_path` (/usr/src/linux/usr/gen_init_cpio) the path of `gen_init_cpio` (included in the linux sources).
+* `_gen_init_cpio_path` The path to this tool can be specified. If not, it is included and will be built at runtime if needed.
 
 #### base.btrfs
 

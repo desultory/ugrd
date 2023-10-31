@@ -1,31 +1,37 @@
 __author__ = "desultory"
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 from subprocess import run
+from pathlib import Path
 
 
-def build_gen_init_cpio(self):
+def build_gen_init_cpio(self, cpio_path):
     """
     Builds the gen_init_cpio source file if it exists
     """
-    source_file = self.config_dict['gen_init_cpio_path'].with_suffix(".c")
+    if not str(cpio_path).endswith('.c'):
+        source_file = cpio_path.with_suffix('.c')
+    else:
+        source_file = cpio_path
+        cpio_path = cpio_path.with_suffix('')
+
     if source_file.exists():
         self.logger.info("Building gen_init_cpio at: %s" % source_file)
-        return self._run(['gcc', '-o', self.config_dict['gen_init_cpio_path'], source_file])
+        return self._run(['gcc', '-o', cpio_path, source_file])
     else:
-        self.logger.warning("gen_init_cpio source file not found at: %s" % source_file)
+        raise FileNotFoundError("gen_init_cpio source file not found at: %s" % source_file)
 
 
 def pack_cpio(self):
     """
     Packs the CPIO file using gen_init_cpio
     """
-    if not self.config_dict['gen_init_cpio_path'].exists():
-        if not build_gen_init_cpio(self):
-            raise FileNotFoundError("gen_init_cpio not found at: %s" % self.config_dict['gen_init_cpio_path'])
-    gen_init_cpio = str(self.config_dict['gen_init_cpio_path'])
+    cpio_path = self.config_dict.get('gen_init_cpio_path', Path(__file__).parent.parent / 'include' / 'gen_init_cpio')
 
-    self.logger.debug("Using gen_init_cpio at: %s" % self.config_dict['gen_init_cpio_path'])
+    if not cpio_path.exists():
+        build_gen_init_cpio(self, cpio_path)
+
+    self.logger.debug("Using gen_init_cpio at: %s" % cpio_path)
 
     packing_list = str(self.out_dir / self.config_dict['cpio_list_name'])
     self.logger.info("Creating CPIO file from packing list: %s" % packing_list)
@@ -33,7 +39,7 @@ def pack_cpio(self):
     out_cpio = self.out_dir / self.config_dict['cpio_filename']
 
     with open(out_cpio, 'wb') as cpio_file:
-        cmd = run([gen_init_cpio, packing_list], stdout=cpio_file)
+        cmd = run([str(cpio_path), packing_list], stdout=cpio_file)
         if cmd.returncode != 0:
             raise RuntimeError("gen_init_cpio failed with error: %s" % cmd.stderr.decode())
 
