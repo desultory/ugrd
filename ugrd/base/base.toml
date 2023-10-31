@@ -1,6 +1,6 @@
 shebang = "#!/bin/bash"
 
-modules = ["ugrd.base.core", "ugrd.base.mounts"]
+modules = ["ugrd.base.core", "ugrd.fs.mounts"]
 
 binaries = [ "bash", "ls", "cat", "switch_root" ]
 

@@ -81,50 +81,6 @@ Creates `/dev/console` with permissions `0o644`
 
 > Using `mknod_cpio` from `ugrd.base.cpio` will not create the device nodes in the build dir, but within the CPIO archive
 
-#### base.mounts
-
-`mounts`: A dictionary containing entries for mounts, with their associated config.
-
-`root_mount` Is a dict that acts similarly to user defined `mounts`. `destination` is hardcoded to `/mnt/root`.
-
-Each mount has the following available parameters:
-
-* `type` (auto) the mount or filesystem type. Setting the `type` to `vfat` includes the `vfat` kernel module automatically.
-* `destination` (/mount name) the mountpoint for the mount, if left unset will use /mount_name.
-* `source` The source string or a dict with a key containing the source type, where the value is the target.
-  - `uuid` Mount by the filesystem UUID.
-  - `partuuid` Mount by the partition UUID.
-  - `label` Mount by the device label.
-* `base_mount` (false) is used for builtin mounts such as `/dev`, `/sys`, and `/proc`. Setting this to mounts it with a mount command in `init_pre` instead of using `mount -a` in `init_main`.
-* `skip_unmount` (false) is used for the builtin `/dev` mount, since it will fail to unmount when in use. Like the name suggests, this skips running `umount` during `init_final`.
-* `remake_mountpoint` will recreate the mountpoint with mkdir before the `mount -a` is called. This is useful for `/dev/pty`.
-
-The most minimal mount entry that can be created must have a name, which will be used as the `destination`, and a `source`.
-
-The following configuration mounts the device with `uuid` `ABCD-1234` at `/boot`:
-
-```
-[mounts.boot.source]
-uuid = "ABCD-1234"
-```
-
-The following configuration mounts the device with `label` `extra` to `/mnt/extra`:
-
-```
-[mounts.extra]
-destination = "/mnt/extra"
-
-[mounts.extra.source]
-label = "extra"
-```
-
-##### General mount options
-
-These are set at the global level and are not associated with an individual mount:
-
-* `mount_wait` (false) waits for user input before attenmpting to mount the generated fstab at `init_main`.
-* `mount_timeout` timeout for `mount_wait` to automatically continue.
-
 #### base.console
 
 This module creates an agetty session. This is used by the `ugrd.crypto.gpg` module so the tty can be used for input and output.
@@ -199,7 +155,52 @@ Similarly `base.ugrd.kmod_novideo` and `kmod_nosound` exist to ignore video and 
 
 ### Filesystem modules
 
-#### fs.btrfs
+#### ugrd.fs.mounts
+
+`mounts`: A dictionary containing entries for mounts, with their associated config.
+
+`root_mount` Is a dict that acts similarly to user defined `mounts`. `destination` is hardcoded to `/mnt/root`.
+
+Each mount has the following available parameters:
+
+* `type` (auto) the mount or filesystem type. Setting the `type` to `vfat` includes the `vfat` kernel module automatically.
+* `destination` (/mount name) the mountpoint for the mount, if left unset will use /mount_name.
+* `source` The source string or a dict with a key containing the source type, where the value is the target.
+  - `uuid` Mount by the filesystem UUID.
+  - `partuuid` Mount by the partition UUID.
+  - `label` Mount by the device label.
+* `base_mount` (false) is used for builtin mounts such as `/dev`, `/sys`, and `/proc`. Setting this to mounts it with a mount command in `init_pre` instead of using `mount -a` in `init_main`.
+* `skip_unmount` (false) is used for the builtin `/dev` mount, since it will fail to unmount when in use. Like the name suggests, this skips running `umount` during `init_final`.
+* `remake_mountpoint` will recreate the mountpoint with mkdir before the `mount -a` is called. This is useful for `/dev/pty`.
+
+The most minimal mount entry that can be created must have a name, which will be used as the `destination`, and a `source`.
+
+The following configuration mounts the device with `uuid` `ABCD-1234` at `/boot`:
+
+```
+[mounts.boot.source]
+uuid = "ABCD-1234"
+```
+
+The following configuration mounts the device with `label` `extra` to `/mnt/extra`:
+
+```
+[mounts.extra]
+destination = "/mnt/extra"
+
+[mounts.extra.source]
+label = "extra"
+```
+
+##### General mount options
+
+These are set at the global level and are not associated with an individual mount:
+
+* `mount_wait` (false) waits for user input before attenmpting to mount the generated fstab at `init_main`.
+* `mount_timeout` timeout for `mount_wait` to automatically continue.
+
+
+#### ugrd.fs.btrfs
 
 Importing this module will run `btrfs device scan` and pull btrfs modules. No config is required.
 
@@ -207,21 +208,21 @@ Importing this module will run `btrfs device scan` and pull btrfs modules. No co
 
 Several cryptographic modules are provided, mostly to assist in mounting encrypted volumes and handling keyfiles.
 
-#### crypto.gpg
+#### ugrd.crypto.gpg
 
 This module is required to perform GPG decryption within the initramfs. It depends on the `ugrd.base.console` module for agetty, which is required for input.
 
 No configuration options are provided by this module, but it does set the `primary_console` to `tty0` and creates the console entry for it.
 This configuration can be overriden in the specified user config if an actual serial interface is used, this is demonstrated in `config_raid_crypt_serial.toml`
 
-#### crypto.smartcard
+#### ugrd.crypto.smartcard
 
 Depends on the `ugrd.crypto.gpg` submodule, meant to be used with a YubiKey.
 
 `sc_public_key` should point to the public key associated with the smarcard used to decrypt the GPG protected LUKS keyfile.
 This file is added as a dependency and pulled into the initramfs.
 
-#### crypto.cryptsetup
+#### ugrd.crypto.cryptsetup
 
 This module is used to decrypt LUKS volumes in the initramfs.
 
@@ -271,7 +272,7 @@ For example:
 
 ```
 [imports.build_tasks]
-"base.base" = [ "generate_fstab" ]
+"ugrd.fs.mounts" = [ "generate_fstab" ]
 ```
 
 Is used in the base module to make the initramfs generator generate a fstab durinf the `build_tasks` phase.
@@ -327,7 +328,7 @@ This module is loaded in the imports section of the `base.yaml` file:
 
 ```
 [imports.config_processing]
-"ugrd.base.base" = [ "_process_mounts_multi" ]
+"ugrd.fs.mounts" = [ "_process_mounts_multi" ]
 ```
 
 #### build_tasks
@@ -338,7 +339,7 @@ The base module includes a build task for generating the fstab, which is activat
 
 ```
 [imports.build_tasks]
-"ugrd.base.base" = [ "generate_fstab" ]
+"ugrd.fs.mounts" = [ "generate_fstab" ]
 ```
 
 #### Packing tasks
