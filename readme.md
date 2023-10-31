@@ -38,16 +38,50 @@ If a CPIO file is generated, it can be passed to the bootloader. Embedding the i
 
 At runtime, ugrd will try to read `config.toml` for configuration options unless another file is specified..
 
-### Module config
+### Base modules
+
+Several basic modules are provided for actions such as mounts, config processing, and other basic parameters.
+
+Modules write to a shared config dict that is accessible by other modules.
 
 #### base.base
+
+> The main module, mostly pulls basic binaries and pulls the `core` and `mounts` modules
+
+* `shebang` (#!/bin/bash) sets the shebang on the init script.
+
+#### base.core
 
 * `build_dir` (/tmp/initramfs) Defines where the build will take place.
 * `out_dir` (/tmp/initramfs_out) Defines where packed files will be placed.
 * `clean` (true) forces the build dir to be cleaned on each run.
-* `shebang` (#!/bin/bash) sets the shebang on the init script.
+* `file_owner` (portage) sets the owner for items pulled into the initramfs on the build system
+* `binaries` is a list used to define programs to be pulled into the initrams. `which` is used to find the path of added entries, and `lddtree` is used to resolve dependendies.
+* `paths` is a list of directores to create in the `build_dir`. They do not need a leading `/`.
 
-##### Mounts
+##### Device node creation
+
+Device nodes can be created by defining them in the `nodes` dict using the following keys:
+
+* `mode` (0o600) the device node, in octal.
+* `path` (/dev/node name) the path to create the node at.
+* `major` Major value.
+* `minor` Minor value.
+
+Example:
+
+```
+[nodes.console]
+mode = 0o644
+major = 5
+minor = 1
+```
+
+Creates `/dev/console` with permissions `0o644`
+
+> Using `mknod_cpio` from `ugrd.base.cpio` will not create the device nodes in the build dir, but within the CPIO archive
+
+#### base.mounts
 
 `mounts`: A dictionary containing entries for mounts, with their associated config.
 
@@ -91,28 +125,6 @@ These are set at the global level and are not associated with an individual moun
 * `mount_wait` (false) waits for user input before attenmpting to mount the generated fstab at `init_main`.
 * `mount_timeout` timeout for `mount_wait` to automatically continue.
 
-#### Device node creation
-
-Device nodes can be created by defining them in the `nodes` dict using the following keys:
-
-* `mode` (0o600) the device node, in octal.
-* `path` (/dev/node name) the path to create the node at.
-* `major` Major value.
-* `minor` Minor value.
-
-Example:
-
-```
-[nodes.console]
-mode = 0o644
-major = 5
-minor = 1
-```
-
-Creates `/dev/console` with permissions `0o644`
-
-> Using `mknod_cpio` from `ugrd.base.cpio` will not create the device nodes in the build dir, but within the CPIO archive
-
 #### base.kmod
 
 This module is used to embed kernel modules into the initramfs.
@@ -129,7 +141,6 @@ The following parameters can be used to change the kernel module pulling and ini
 * `kmod_ignore` is used to specify kernel modules to ignore. If a module depends on one of these, it will throw an error and drop it from being included.
 * `kmod_ignore_softdeps` (false) ignore softdeps when checking kernel module dependencies.
 * `_kmod_depend` is meant to be used within modules, specifies kernel modules which should be added to `kmod_init` when that `ugrd` module is imported.
-
 
 ##### Kernel module helpers
 
@@ -188,6 +199,10 @@ The following parameters can be set to alter CPIO functionality:
 
 Importing this module will run `btrfs device scan` and pull btrfs modules. No config is required.
 
+### Cryptographic modules
+
+Several cryptographic modules are provided, mostly to assist in mounting encrypted volumes and handling keyfiles.
+
 #### crypto.gpg
 
 This module is required to perform GPG decryption within the initramfs. It depends on the `ugrd.base.console` module for agetty, which is required for input.
@@ -219,21 +234,7 @@ uuid = "9e04e825-7f60-4171-815a-86e01ec4c4d3"
 
 If a key is being used, it can be specified with `key_file` under the cryptsetup entry. This WILL NOT be pulled as a dependency, and is indented to be on some `mount` which is properly mounted.
 
-### General config
-
-The following configuration options can exist in any module, or the base config
-
-#### binaries
-
-`binaries` is used to define programs which should be pulled into the initramfs. `lddtree` is used to resolve library dependencies for the binary.
-
-#### paths
-
-All entries in the `paths` list will be created as folders under the `./initramfs` directory.
-
-They should not start with a leading `/`
-
-### modules
+## Modules
 
 The modules config directive should contain a list with names specifying the path of which will be loaded, such as `ugrd.base.base`, `ugrd.base.console` or `ugrd.crypto.crypsetup`.
 
@@ -242,6 +243,8 @@ Another directory for modules can be created, the naming scheme is similar to ho
 When a module is loaded, `initramfs_dict.py` will try to load the toml file for that module, parsing it in the same manner `config.yaml` is parsed.
 
 The order in which modules/directives are loaded is very important!
+
+Modules can load other modules using the `modules` directive, be careful considering loading orders.
 
 If a module depends on another module, it can be added to the `mod_depends` list in the module config. A `ValueError` will be thrown if the module is not present.
 

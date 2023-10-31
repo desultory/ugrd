@@ -1,10 +1,8 @@
+modules = [ "ugrd.crypto.gpg" ]
+
 binaries = [ "/usr/libexec/scdaemon" ]
 
 _kmod_depend = "uhid"
-
-mod_depends = [ "ugrd.crypto.gpg" ]
-# This is also set in the gpg module but here for clarity
-primary_console = "tty0"
 
 [custom_parameters]
 sc_public_key = "str"  # The path to the public key to import

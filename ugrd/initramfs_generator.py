@@ -1,6 +1,6 @@
 
 __author__ = "desultory"
-__version__ = "0.6.4"
+__version__ = "0.7.0"
 
 from tomllib import load
 from pathlib import Path
@@ -15,7 +15,6 @@ class InitramfsGenerator:
     def __init__(self, config='/etc/ugrd/config.toml', *args, **kwargs):
         self.config_filename = config
         self.build_pre = [self.generate_structure]
-        self.build_tasks = [self.deploy_dependencies]
         self.config_dict = InitramfsConfigDict(logger=self.logger)
 
         # init_pre and init_final are run as part of generate_initramfs_main
@@ -27,7 +26,9 @@ class InitramfsGenerator:
 
     def load_config(self):
         """
-        Loads the config from the specified toml file
+        Loads the config from the specified toml file.
+        Populates self.config_dict with the config.
+        Ensures that the required parameters are present.
         """
         with open(self.config_filename, 'rb') as config_file:
             self.logger.info("Loading config file: %s" % config_file.name)
@@ -47,77 +48,108 @@ class InitramfsGenerator:
             else:
                 raise KeyError("Required parameter '%s' not found in config" % parameter)
 
+    def clean_build_dir(self):
+        """
+        Cleans the build directory
+        """
+        from shutil import rmtree
+
+        if not self.clean:
+            raise ValueError("Clean is not set, not cleaning build dir: %s" % self.build_dir)
+
+        if self.build_dir.is_dir():
+            self.logger.warning("Cleaning build dir: %s" % self.build_dir)
+            rmtree(self.build_dir)
+        else:
+            self.logger.info("Build dir is not present, not cleaning: %s" % self.build_dir)
+
     def build_structure(self):
         """
-        builds the initramfs structure
+        builds the initramfs structure.
+        Cleans the build dir first if clean is set
         """
         # If clean is set, clear the target build dir
         if self.clean:
-            from shutil import rmtree
-            from os.path import isdir
-            # If the build dir is present, clean it, otherwise log and continue
-            if isdir(self.build_dir):
-                self.logger.warning("Cleaning build dir: %s" % self.build_dir)
-                rmtree(self.build_dir)
-            else:
-                self.logger.info("Build dir is not present, not cleaning: %s" % self.build_dir)
+            self.clean_build_dir()
         else:
             self.logger.debug("Not cleaning build dir: %s" % self.build_dir)
 
-        # Run pre-build tasks, by default just calls 'generate_structure'
-        self.logger.info("Running pre build tasks")
-        self.logger.debug(self.build_pre)
-        for task in self.build_pre:
-            task()
+        self._run_hook('build_pre', return_output=False)
+        self._run_hook('build_tasks', return_output=False)
 
-        # Run custom pre-build tasks imported from modules
-        if build_pre := self.config_dict['imports'].get('build_pre'):
-            self.logger.info("Running custom pre build tasks")
-            self.logger.debug(build_pre)
-            for task in build_pre:
-                task(self)
+    def _run_func(self, function, external=False, return_output=True):
+        """
+        Runs a function, returning the output in a list
+        """
+        self.logger.debug("Running function: %s" % function.__name__)
+        if external:
+            function_output = function(self)
+        else:
+            function_output = function()
 
-        # Run all build tasks, by default just calls 'deploy_dependencies'
-        self.logger.info("Running build tasks")
-        self.logger.debug(self.build_tasks)
-        for task in self.build_tasks:
-            task()
+        if not return_output:
+            return []
 
-        # Run custom build tasks imported from modules
-        if build_tasks := self.config_dict['imports'].get('build_tasks'):
-            self.logger.info("Running custom build tasks")
-            self.logger.debug(build_tasks)
-            for task in build_tasks:
-                task(self)
+        if function_output is not None:
+            if isinstance(function_output, str):
+                self.logger.debug("[%s] Function returned string: %s" % (function.__name__, function_output))
+                return [function_output]
+            else:
+                self.logger.debug("[%s] Function returned output: %s" % (function.__name__, function_output))
+                return function_output
+        else:
+            self.logger.warning("[%s] Function returned no output" % function.__name__)
+            return []
+
+    def _run_funcs(self, functions, external=False, return_output=True):
+        """
+        Runs a list of functions
+        """
+        self.logger.debug("Running functions: %s" % functions)
+        out = []
+        for function in functions:
+            # Only append if returning the output
+            if return_output:
+                out += self._run_func(function, external=external, return_output=return_output)
+            else:
+                self._run_func(function, external=external, return_output=return_output)
+        return out
+
+    def _run_hook(self, hook, return_output=True):
+        """
+        Runs a hook for imported functions
+        """
+        out = []
+        self.logger.info("Running hook: %s" % hook)
+        if hasattr(self, hook):
+            self.logger.debug("Running internal functions for hook: %s" % hook)
+            out += self._run_funcs(getattr(self, hook), return_output=return_output)
+
+        if external_functions := self.config_dict['imports'].get(hook):
+            self.logger.debug("Running external functions for hook: %s" % hook)
+            function_output = self._run_funcs(external_functions, external=True, return_output=return_output)
+            out += function_output
+
+        if return_output:
+            self.logger.debug("[%s] Hook output: %s" % (hook, out))
+            return out
+
+    def _run_init_hook(self, level):
+        """
+        Runs the specified init hook, returning the output
+        """
+        out = ['\n\n# Begin %s' % level]
+        out += self._run_hook(level)
+        return out
 
     def generate_init_main(self):
         """
         Generates the main init file.
+        Just runs each hook  in self.init_types and returns the output
         """
-        out = list()
-
+        out = []
         for init_type in self.init_types:
-            out += self._run_hook(init_type)
-
-        return out
-
-    def _run_hook(self, level):
-        """
-        Runs an init hook
-        """
-        self.logger.info("Running init level: %s" % level)
-        out = ['\n\n# Begin %s' % level]
-        for func in self.config_dict['imports'].get(level):
-            self.logger.info("Running init generator function: %s" % func.__name__)
-            if function_output := func(self):
-                if isinstance(function_output, str):
-                    self.logger.debug("[%s] Function returned string: %s" % (func.__name__, function_output))
-                    out += [function_output]
-                else:
-                    self.logger.debug("[%s] Function returned output: %s" % (func.__name__, function_output))
-                    out.extend(function_output)
-            else:
-                self.logger.warning("Function returned no output: %s" % func.__name__)
+            out.extend(self._run_init_hook(init_type))
         return out
 
     def generate_init(self):
@@ -130,9 +162,14 @@ class InitramfsGenerator:
 
         init += ["# Generated by initramfs_generator.py v%s" % __version__]
 
-        init += self._run_hook('init_pre')
-        init += self._run_hook('custom_init') if self.config_dict['imports'].get('custom_init') else self.generate_init_main()
-        init += self._run_hook('init_final')
+        init.extend(self._run_init_hook('init_pre'))
+
+        if self.config_dict['imports'].get('custom_init'):
+            init.extend(self._run_hook('custom_init'))
+        else:
+            init.extend(self.generate_init_main())
+
+        init.extend(self._run_init_hook('init_final'))
 
         init += ["\n\n# END INIT"]
 
@@ -144,9 +181,7 @@ class InitramfsGenerator:
         """
         Generates the initramfs directory structure
         """
-        from os.path import isdir
-
-        if not isdir(self.build_dir):
+        if not self.build_dir.is_dir():
             self._mkdir(self.build_dir)
 
         for subdir in set(self.config_dict['paths']):
@@ -156,15 +191,12 @@ class InitramfsGenerator:
 
             self._mkdir(target_dir)
 
-    def pack(self):
+    def pack_build(self):
         """
         Packs the initramfs based on self.config_dict['imports']['pack']
         """
-        if pack_funcs := self.config_dict['imports'].get('pack'):
-            self.logger.info("Running custom pack functions")
-            self.logger.debug(pack_funcs)
-            for func in pack_funcs:
-                func(self)
+        if self.config_dict['imports'].get('pack'):
+            self._run_hook('pack', return_output=False)
         else:
             self.logger.warning("No pack functions specified, the final build is present in: %s" % self.build_dir)
 
@@ -219,10 +251,7 @@ class InitramfsGenerator:
         from os import chmod
 
         if in_build_dir:
-            if file_name.startswith('/'):
-                file_path = self.config_dict['build_dir'] / Path(file_name).relative_to('/')
-            else:
-                file_path = self.config_dict['build_dir'] / file_name
+            file_path = self._get_build_path(file_name)
         else:
             file_path = Path(file_name)
 
@@ -252,10 +281,7 @@ class InitramfsGenerator:
             dest = Path(dest)
 
         if in_build_dir:
-            if dest.is_absolute():
-                dest_path = self.config_dict['build_dir'] / Path(dest).relative_to('/')
-            else:
-                dest_path = self.config_dict['build_dir'] / dest
+            dest_path = self._get_build_path(dest)
         else:
             dest_path = Path(dest)
 
@@ -269,6 +295,37 @@ class InitramfsGenerator:
         copy2(source, dest_path)
 
         self._chown(dest_path)
+
+    def _get_build_path(self, path):
+        """
+        Returns the build path
+        """
+        if not isinstance(path, Path):
+            path = Path(path)
+
+        if path.is_absolute():
+            return self.build_dir / path.relative_to('/')
+        else:
+            return self.build_dir / path
+
+    def _symlink(self, source, target, in_build_dir=True):
+        """
+        Creates a symlink
+        """
+        from os import symlink
+
+        if not isinstance(source, Path):
+            source = Path(source)
+
+        if not isinstance(target, Path):
+            target = Path(target)
+
+        if in_build_dir:
+            source = self._get_build_path(source)
+            target = self._get_build_path(target)
+
+        self.logger.debug("Creating symlink: %s -> %s" % (source, target))
+        symlink(source, target)
 
     def _run(self, args):
         """
@@ -284,11 +341,3 @@ class InitramfsGenerator:
 
         return cmd
 
-    def deploy_dependencies(self):
-        """
-        Copies all required dependencies
-        should be used after generate_structure
-        """
-        for dependency in self.config_dict['dependencies']:
-            self.logger.debug("Deploying dependency: %s" % dependency)
-            self._copy(dependency)

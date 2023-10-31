@@ -1,13 +1,66 @@
 """
 A collection of classes and decorators
 """
-__version__ = '2.8.0'
+__version__ = '3.0.1'
 __author__ = 'desultory'
 
 import logging
+from collections.abc import KeysView
 from sys import modules
 from threading import Thread, Event
 from queue import Queue
+
+
+def pretty_print(input_data, indent=0, prefix="", print_out=False):
+    """
+    Formats a dictionary/list into a string
+    """
+    out = ""
+    if isinstance(input_data, dict):
+        for key, value in input_data.items():
+            if not isinstance(value, str) and (hasattr(value, '__getitem__') or hasattr(value, '__iter__')):
+                out += " " * indent + "%s:\n" % key
+                out += pretty_print(value, indent + 2)
+            else:
+                out += " " * indent + f"{prefix}{key}: {value}\n"
+    elif isinstance(input_data, list):
+        for item in input_data:
+            out += pretty_print(item, indent, prefix='- ')
+    elif isinstance(input_data, tuple):
+        for item in input_data:
+            out += pretty_print(item, indent, prefix='+ ')
+    elif hasattr(input_data, 'name') and hasattr(input_data, 'value'):
+        # If the value is not iterable, it is a single value
+        if not hasattr(input_data.value, '__getitem__') or isinstance(input_data.value, str):
+            out += " " * indent + f"{prefix}{input_data.name}: {input_data.value}\n"
+        else:
+            out += " " * indent + f"{prefix}{input_data.name}:\n{pretty_print(input_data.value, indent=indent + 2, prefix='= ')}"
+    elif not isinstance(input_data, str) and (hasattr(input_data, '__getitem__') or hasattr(input_data, '__iter__')):
+        for key in input_data:
+            out += pretty_print(key, indent, prefix='+ ')
+    else:
+        out = " " * indent + f"{prefix}{input_data}\n"
+
+    if print_out:
+        print(out)
+
+    return out
+
+
+def replace_file_line(file_path, old_line, new_line):
+    """
+    Replaces a line in a file
+    """
+    with open(file_path, 'r') as f:
+        lines = f.readlines()
+
+    if old_line not in lines:
+        raise ValueError("Old line not found: %s" % old_line)
+
+    lines[lines.index(old_line)] = new_line
+
+    with open(file_path, 'w') as f:
+        f.writelines(lines)
 
 
 def update_init(decorator):
@@ -41,14 +94,20 @@ def handle_plural(function):
             other_args = args[:-1]
 
         if isinstance(focus_arg, list) and not isinstance(focus_arg, str):
+            self.logger.debug("Expanding list: %s" % focus_arg)
             for item in focus_arg:
                 function(self, *(other_args + (item,)))
+        elif isinstance(focus_arg, KeysView):
+            self.logger.debug("Expanding dict keys: %s" % focus_arg)
+            for key in focus_arg:
+                function(self, *(other_args + (key,)))
         elif isinstance(focus_arg, dict):
+            self.logger.debug("Expanding dict: %s" % focus_arg)
             for key, value in focus_arg.items():
                 function(self, *(other_args + (key, value,)))
         else:
             self.logger.debug("Arguments were not expanded: %s" % args)
-            function(self, *args)
+            return function(self, *args)
     return wrapper
 
 
@@ -206,9 +265,9 @@ def loggify(cls):
                 raise ValueError("The logger is not defined")
 
             if isinstance(value, list) or isinstance(value, dict) or isinstance(value, str) and "\n" in value:
-                self.logger.log(5, "Set '%s' to:\n%s" % (name, value))
+                self.logger.log(5, "Setattr '%s' to:\n%s" % (name, value))
             else:
-                self.logger.log(5, "Set '%s' to: %s" % (name, value))
+                self.logger.log(5, "Setattr '%s' to: %s" % (name, value))
 
         def __setitem__(self, name, value):
             """
@@ -217,7 +276,7 @@ def loggify(cls):
             """
             if hasattr(super(), '__setitem__'):
                 super().__setitem__(name, value)
-                self.logger.log(5, "Set '%s' to: %s" % (name, value))
+                self.logger.log(5, "Setitem '%s' to: %s" % (name, value))
             else:
                 raise NotImplementedError("The parent class does not have __setitem__")
 

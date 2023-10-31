@@ -1,35 +1,11 @@
 
 __author__ = "desultory"
-__version__ = "0.7.1"
+__version__ = "0.8.0"
 
 from tomllib import load
 from pathlib import Path
-from subprocess import run
 
 from ugrd.zen_custom import loggify, handle_plural, NoDupFlatList
-
-
-def calculate_dependencies(binary):
-    from shutil import which
-
-    binary_path = which(binary)
-    if not binary_path:
-        raise RuntimeError("'%s' not found in PATH" % binary)
-
-    dependencies = run(['lddtree', '-l', binary_path], capture_output=True)
-    if dependencies.returncode != 0:
-        raise OSError(dependencies.stderr.decode('utf-8'))
-
-    dependency_paths = []
-    for dependency in dependencies.stdout.decode('utf-8').splitlines():
-        # Remove extra slash at the start if it exists
-        if dependency.startswith('//'):
-            dependency = dependency[1:]
-
-        dep_path = Path(dependency)
-        dependency_paths.append(dep_path)
-
-    return dependency_paths
 
 
 @loggify
@@ -41,12 +17,8 @@ class InitramfsConfigDict(dict):
         This dict does not act like a normal dict, setitem is designed to append when the overrides are used
         Default parameters are defined in builtin_parameters
     """
-    builtin_parameters = {'binaries': NoDupFlatList,  # Binaries which should be included in the initramfs, dependencies are automatically calculated
-                          'dependencies': NoDupFlatList,  # Raw dependencies, files which should be included in the initramfs
-                          'mod_depends': NoDupFlatList,  # Modules required by other modules, will be re-checked calling .verify_deps()
-                          'paths': NoDupFlatList,  # Paths which will be created in the initramfs
+    builtin_parameters = {'mod_depends': NoDupFlatList,  # Modules required by other modules, will be re-checked calling .verify_deps()
                           'modules': NoDupFlatList,  # A list of the names of modules which have been loaded, mostly used for dependency checking
-                          'mounts': dict,  # A dict of Mount objects
                           'imports': dict,  # A dict of functions to be imported into the initramfs, under their respective hooks
                           'mask': dict,  # A dict of imported functions to be masked
                           'custom_parameters': dict,  # Custom parameters loaded from imports
@@ -86,8 +58,7 @@ class InitramfsConfigDict(dict):
             else:
                 super().__setitem__(key, expected_type(value))
         else:  # Otherwise set it like a normal dict item
-            self.logger.error("Detected undefined parameter type '%s' with value: %s" % (key, value))
-            super().__setitem__(key, value)
+            raise ValueError("Detected undefined parameter type '%s' with value: %s" % (key, value))
 
     @handle_plural
     def update_dict(self, name: str, key: str, value: dict):
@@ -115,37 +86,6 @@ class InitramfsConfigDict(dict):
             super().__setitem__(parameter_name, eval(parameter_type)())
         elif parameter_type == "bool":
             super().__setitem__(parameter_name, False)
-
-    @handle_plural
-    def _process_dependencies(self, dependency):
-        """
-        Checks if a dependency exists before adding it to the list
-        """
-        if not isinstance(dependency, Path):
-            self.logger.debug("Converting dependency '%s' to Path" % dependency)
-            dependency = Path(dependency)
-
-        if not dependency.exists():
-            raise FileNotFoundError(dependency)
-
-        self['dependencies'].append(dependency)
-
-    @handle_plural
-    def _process_binaries(self, binary):
-        """
-        processes passed binary(ies) into the 'binaries' list
-        updates the dependencies using the passed binary name
-        """
-        self.logger.debug("Calculating dependencies for: %s" % binary)
-        try:
-            dependencies = calculate_dependencies(binary)
-            self.logger.debug("[%s] Dependencies: %s" % (binary, dependencies))
-        except OSError as e:
-            raise RuntimeError("Failed to calculate dependencies for '%s': %s" % (binary, e))
-
-        self['dependencies'] = dependencies
-        # Append, don't set or it will recursively call this function
-        self['binaries'].append(binary)
 
     @handle_plural
     def _process_imports(self, import_type: str, import_value: dict):
@@ -207,6 +147,10 @@ class InitramfsConfigDict(dict):
         processes a single module into the config
         takes list with decorator
         """
+        if module in self['modules']:
+            self.logger.warning("Module '%s' already loaded" % module)
+            return
+
         self.logger.debug("Processing module: %s" % module)
 
         module_path = Path(__file__).parent.parent / (module.replace('.', '/') + '.toml')

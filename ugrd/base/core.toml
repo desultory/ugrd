@@ -1,0 +1,34 @@
+file_owner = "portage"
+build_dir = "/tmp/initramfs"
+out_dir = "/tmp/initramfs_out"
+clean = true
+
+[nodes.console]
+mode = 0o644
+major = 5
+minor = 1
+
+[imports.config_processing]
+"ugrd.base.core" = [ "_process_binaries_multi",
+		     "_process_dependencies_multi", 
+		     "_process_symlinks_multi",
+		     "_process_file_owner",
+		     "_process_nodes_multi"
+		   ]
+
+[imports.build_tasks]
+"ugrd.base.core" = [ "deploy_dependencies", "deploy_symlinks", "deploy_nodes" ]
+
+[custom_parameters]
+binaries = "NoDupFlatList"  # Binaries which should be included in the intiramfs, dependencies resolved with lddtree
+dependencies = "NoDupFlatList"  # Add the dependencies property, used to define the dependencies of the initramfs
+symlinks = "dict"  # Add the symlinks property, used to define the symlinks to be made in the initramfs
+nodes = "dict"  # Add the nodes property, used to define the device nodes to be created
+paths = "NoDupFlatList"  # Paths to be copied to the initramfs
+build_dir = "Path"  # The directory where the initramfs is built
+out_dir = "Path"  # The directory where the initramfs is packed/output. If no packer is used, this is the final output directory.
+clean = "bool"  # Add the clean property, used to define if the mounts should be cleaned up after boot
+file_owner = "str"  # Add the file_owner property, used to define who should own the copied initramfs files
+_file_owner_uid = "int"  # Add the _file_owner_uid property, used to store the uid of the file owner
+_custom_init_file = "str"  # Add the _custom_init_file propety, used to set where the custom init file is located
+

@@ -1,0 +1,60 @@
+binaries = [
+  "lsblk",
+  "blkid",
+  "mount",
+  "mkdir",
+  "sleep",
+  "umount",
+]
+
+paths = [ "mnt/root" ]
+
+mount_wait = false
+
+[imports.config_processing]
+"ugrd.base.mounts" = [ "_process_mounts_multi" ]
+
+[imports.build_tasks]
+"ugrd.base.mounts" = [ "generate_fstab" ]
+
+[imports.init_pre]
+"ugrd.base.mounts" = [ "mount_base" ]
+
+[imports.init_main]
+"ugrd.base.mounts" = [ "remake_mountpoints", "mount_fstab" ]
+
+[imports.init_mount]
+"ugrd.base.mounts" = [ "mount_root" ]
+
+[imports.init_final]
+"ugrd.base.mounts" = [ "clean_mounts" ]
+
+[custom_parameters]
+mounts = "dict"  # Add the mounts property, used to define the mounts to be made in the fstab
+root_mount = "dict"  # Add the root_mount property, used to define the root mount
+mount_wait = "bool"  # Add the mount_wait property, if defined, user input will be required before attempting to mount entries
+mount_timeout = "int"  # Add the mount_timeout property, used to define the timeout for mount_wait
+mount_cmd = "str"  # The mount command called by mount_root, can be overridden
+
+# Define the default mounts
+# The format is mounts.mount where the mount is the name of the mount
+# Alternatively, the destination option can be used to define the mount point
+
+[mounts.proc]
+type = "proc"
+source = "proc"
+options = "nodev,noexec,nosuid"
+base_mount = true
+
+[mounts.sys]
+type = "sysfs"
+source = "sysfs"
+options = "nodev,noexec,nosuid"
+base_mount = true
+
+[mounts.dev]
+type = "devtmpfs"
+source = "devtmpfs"
+options = "nosuid,mode=0755"
+base_mount = true
+skip_unmount = true

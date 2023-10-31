@@ -1,15 +1,17 @@
-binaries = [ "ln", "gpg", "gpg-agent", "gpg-connect-agent", "pinentry-tty", "tty" ]
+modules = [ "ugrd.base.console" ]
+
+binaries = [ "gpg", "gpg-agent", "gpg-connect-agent", "pinentry-tty" ]
 paths = [ "usr/bin" ]
 
-# GPG works best under agetty for input
-mod_depends = [ "ugrd.base.console" ]
+# Define the primary console
 primary_console = "tty0"
 
 [console.tty0]
 type = "tty"
 
-[imports.init_pre]
-"ugrd.crypto.gpg" = [ "symlink_pinentry" ]
+[symlinks.pinentry]
+source = "/usr/bin/pinentry-tty"
+target = "/usr/bin/pinentry"
 
 [imports.init_main]
 "ugrd.crypto.gpg" = [ "start_agent" ]
