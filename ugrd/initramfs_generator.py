@@ -175,7 +175,7 @@ class InitramfsGenerator:
 
         self._write('init', init, 0o755)
 
-        self.logger.debug("Final config: %s" % pretty_print(self.config_dict))
+        self.logger.debug("Final config:\n%s" % pretty_print(self.config_dict))
 
     def generate_structure(self):
         """

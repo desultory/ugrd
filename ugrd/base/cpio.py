@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "0.0.4"
+__version__ = "0.1.0"
 
 from subprocess import run
 
@@ -108,10 +108,10 @@ def make_cpio_list(self):
             else:
                 self.logger.warning("Duplicate node entry: %s" % node)
 
-    self.logger.debug("CPIO directory list: %s" % directory_list)
-    self.logger.debug("CPIO file list: %s" % file_list)
-    self.logger.debug("CPIO symlink list: %s" % symlink_list)
-    self.logger.debug("CPIO node list: %s" % node_list)
+    self.logger.log(5, "CPIO directory list: %s" % directory_list)
+    self.logger.log(5, "CPIO file list: %s" % file_list)
+    self.logger.log(5, "CPIO symlink list: %s" % symlink_list)
+    self.logger.log(5, "CPIO node list: %s" % node_list)
 
     packing_list = directory_list + file_list + symlink_list + node_list
 
