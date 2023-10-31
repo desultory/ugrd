@@ -1,6 +1,6 @@
 
 __author__ = "desultory"
-__version__ = "0.8.1"
+__version__ = "0.8.2"
 
 from tomllib import load
 from pathlib import Path
@@ -58,7 +58,10 @@ class InitramfsConfigDict(dict):
             else:
                 super().__setitem__(key, expected_type(value))
         else:  # Otherwise set it like a normal dict item
-            raise ValueError("Detected undefined parameter type '%s' with value: %s" % (key, value))
+            if key.startswith('_'):
+                self.logger.warning("Setting unknown internal paramaters '%s' with value: %s" % (key, value))
+            else:
+                raise ValueError("Detected undefined parameter type '%s' with value: %s" % (key, value))
 
     @handle_plural
     def update_dict(self, name: str, key: str, value: dict):

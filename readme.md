@@ -89,7 +89,7 @@ Creates `/dev/console` with permissions `0o644`
 
 Each mount has the following available parameters:
 
-* `type` (auto) the mount or filesystem type.
+* `type` (auto) the mount or filesystem type. Setting the `type` to `vfat` includes the `vfat` kernel module automatically.
 * `destination` (/mount name) the mountpoint for the mount, if left unset will use /mount_name.
 * `source` The source string or a dict with a key containing the source type, where the value is the target.
   - `uuid` Mount by the filesystem UUID.

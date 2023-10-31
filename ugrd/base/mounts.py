@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.0.0'
+__version__ = '1.0.1'
 
 
 def generate_fstab(self):
@@ -85,6 +85,12 @@ def _process_mounts_multi(self, key, mount_config):
     """
     if 'destination' not in mount_config:
         mount_config['destination'] = f"/{key}"  # prepend a slash
+
+    if mount_type := mount_config.get('type'):
+        if mount_type == 'vfat':
+            self['_kmod_depend'] = 'vfat'
+        elif mount_type == 'btrfs':
+            self['_kmod_depend'] = 'btrfs'
 
     try:
         self['mounts'][key] = Mount(**mount_config)
