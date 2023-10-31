@@ -1,5 +1,5 @@
 binaries = [ "cryptsetup" ]
-paths = [ "usr/lib64", "run" ]
+paths = [ "run" ]
 
 _kmod_depend = [ "dm_crypt", "crc32c" ]
 
