@@ -15,8 +15,8 @@ _kmod_depend = [ "dm_crypt", "crc32c" ]
 [imports.init_late]
 "ugrd.crypto.cryptsetup" = [ "crypt_init" ]
 
-[imports.build_tasks]
-"ugrd.crypto.cryptsetup" = [ "copy_libgcc" ]
+[imports.build_pre]
+"ugrd.crypto.cryptsetup" = [ "find_libgcc" ]
 
 [custom_parameters]
 cryptsetup = "dict"  # Dict of cryptsetup volume to be unlocked, keyed by mapped device name

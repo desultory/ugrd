@@ -1,6 +1,6 @@
 
 __author__ = "desultory"
-__version__ = "0.7.3"
+__version__ = "0.7.4"
 
 from tomllib import load
 from pathlib import Path
@@ -291,6 +291,10 @@ class InitramfsGenerator:
 
         if dest_path.is_file():
             self.logger.warning("File already exists: %s" % dest_path)
+        elif dest_path.is_dir():
+            self.logger.debug("Destination is a directory, adding source filename: %s" % source.name)
+            dest_path = dest_path / source.name
+
         self.logger.info("Copying '%s' to '%s'" % (source, dest_path))
         copy2(source, dest_path)
 

@@ -59,6 +59,29 @@ Modules write to a shared config dict that is accessible by other modules.
 * `binaries` is a list used to define programs to be pulled into the initrams. `which` is used to find the path of added entries, and `lddtree` is used to resolve dependendies.
 * `paths` is a list of directores to create in the `build_dir`. They do not need a leading `/`.
 
+##### symlink creation
+
+Symlinks are defined in the `symlinks` dict. Each entry must have a name, `source` and `target`:
+
+```
+[symlinks.pinentry]
+source = "/usr/bin/pinentry-tty"
+target = "/usr/bin/pinentry"
+```
+
+
+##### Copying files to a different destination
+
+Using the `dependencies` list will pull files into the initramfs using the same path on the host system.
+
+To copy files to a different path:
+
+```
+[copies.my_key]
+source = "/home/larry/.gnupg/pubkey.gpg"
+destination = "/etc/ugrd/pub.gpg"
+```
+
 ##### Device node creation
 
 Device nodes can be created by defining them in the `nodes` dict using the following keys:

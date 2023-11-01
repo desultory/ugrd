@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.0.0'
+__version__ = '1.0.1'
 
 from pathlib import Path
 
@@ -36,6 +36,15 @@ def deploy_dependencies(self):
     for dependency in self.config_dict['dependencies']:
         self.logger.debug("Copying dependency: %s" % dependency)
         self._copy(dependency)
+
+
+def deploy_copies(self):
+    """
+    Copiues everything from self.config_dict['copies'] into the build directory
+    """
+    for copy_name, copy_parameters in self.config_dict['copies'].items():
+        self.logger.debug("[%s] Copying: %s" % (copy_name, copy_parameters))
+        self._copy(copy_parameters['source'], copy_parameters['destination'])
 
 
 def deploy_symlinks(self):
@@ -98,10 +107,24 @@ def _process_dependencies_multi(self, dependency):
     self['dependencies'].append(dependency)
 
 
+def _process_copies_multi(self, copy_name, copy_parameters):
+    """
+    Processes a copy from the copies parameter
+    Ensures the source and target are defined in the parameters.
+    """
+    self.logger.debug("[%s] Processing copy: %s" % (copy_name, copy_parameters))
+    if 'source' not in copy_parameters:
+        raise ValueError("[%s] No source specified" % copy_name)
+    if 'destination' not in copy_parameters:
+        raise ValueError("[%s] No target specified" % copy_name)
+
+    self['copies'][copy_name] = copy_parameters
+
+
 def _process_symlinks_multi(self, symlink_name, symlink_parameters):
     """
     Processes a symlink,
-    Ensuures the source and target are defined in the parameters.
+    Ensures the source and target are defined in the parameters.
     """
     self.logger.debug("[%s] Processing symlink: %s" % (symlink_name, symlink_parameters))
     if 'source' not in symlink_parameters:

@@ -1,6 +1,6 @@
 __author__ = 'desultory'
 
-__version__ = '0.5.0'
+__version__ = '0.5.2'
 
 
 CRYPTSETUP_PARAMETERS = ['key_type', 'partuuid', 'uuid', 'key_file', 'header_file']
@@ -83,9 +83,9 @@ def crypt_init(self):
     return out
 
 
-def copy_libgcc(self):
+def find_libgcc(self):
     """
-    Copies libgcc_s.so
+    Finds libgcc.so, adds a copies item for it.
     """
     from subprocess import run
     from pathlib import Path
@@ -95,5 +95,4 @@ def copy_libgcc(self):
     source_path = Path(libgcc.partition('=> ')[-1])
     self.logger.debug("Source path for libgcc_s: %s" % source_path)
 
-    self._copy(source_path, f"/lib64/{source_path.name}")
-
+    self.config_dict['copies']['libgcc_s'] = {'source': source_path, 'destination': Path('/lib64/')}
