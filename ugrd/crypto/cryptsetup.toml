@@ -1,4 +1,5 @@
-binaries = [ "cryptsetup", "mkfifo" ]
+binaries = [ "cryptsetup", "mkfifo", "rm" ]
+
 paths = [ "run" ]
 
 _kmod_depend = [ "dm_crypt", "crc32c" ]
