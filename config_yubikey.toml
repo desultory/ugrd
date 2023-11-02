@@ -10,7 +10,6 @@ modules = [
   "ugrd.kmod.kmod",
   "ugrd.kmod.usb",
   "ugrd.kmod.nvme",
-  "ugrd.crypto.cryptsetup",
   "ugrd.fs.btrfs",
   "ugrd.crypto.smartcard",
   "ugrd.base.cpio"

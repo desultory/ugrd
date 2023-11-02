@@ -8,7 +8,6 @@ modules = [
   "ugrd.base.base",
   "ugrd.base.console",
   "ugrd.crypto.gpg",
-  "ugrd.crypto.cryptsetup",
   "ugrd.fs.btrfs"
 ]
 

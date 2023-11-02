@@ -1,6 +1,6 @@
 __author__ = 'desultory'
 
-__version__ = '0.6.0'
+__version__ = '0.6.1'
 
 
 CRYPTSETUP_PARAMETERS = ['key_type', 'partuuid', 'uuid', 'key_file', 'header_file', 'retries', 'key_command']
@@ -104,7 +104,7 @@ def open_crypt_device(self, name, parameters):
     retries = parameters['retries']
 
     out = [f"echo 'Attempting to unlock device: {name}'"]
-    out += [f"for i in $(seq 1 {retries}); do"]
+    out += [f"for i in ((i = 1; i <= {retries}; i++)); do"]
 
     # When there is a key command, read from the named pipe and use that as the key
     if 'key_command' in parameters:
