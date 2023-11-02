@@ -16,6 +16,6 @@ type = "tty"
 source = "/usr/bin/pinentry-tty"
 target = "/usr/bin/pinentry"
 
-[imports.init_pre]
+[imports.init_early]
 "ugrd.crypto.gpg" = [ "start_agent" ]
 

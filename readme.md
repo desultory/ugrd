@@ -408,7 +408,7 @@ The `cpio` module imports the `make_cpio_list` packing function with:
 
 #### init hooks
 
-By default, the specified init hooks are: `'init_pre', 'init_main', 'init_late', 'init_mount', 'init_final'`
+By default, the specified init hooks are: `'init_pre', 'init_early', 'init_main', 'init_late', 'init_mount', 'init_final'`
 
 These hooks are defined under the `init_types` list in the `InitramfsGenerator` object.
 

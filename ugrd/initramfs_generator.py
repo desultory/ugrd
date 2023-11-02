@@ -1,6 +1,6 @@
 
 __author__ = "desultory"
-__version__ = "0.7.4"
+__version__ = "0.7.5"
 
 from tomllib import load
 from pathlib import Path
@@ -18,7 +18,7 @@ class InitramfsGenerator:
         self.config_dict = InitramfsConfigDict(logger=self.logger)
 
         # init_pre and init_final are run as part of generate_initramfs_main
-        self.init_types = ['init_main', 'init_late', 'init_mount']
+        self.init_types = ['init_early', 'init_main', 'init_late', 'init_mount']
 
         self.load_config()
         self.config_dict.verify_deps()
@@ -165,6 +165,7 @@ class InitramfsGenerator:
         init.extend(self._run_init_hook('init_pre'))
 
         if self.config_dict['imports'].get('custom_init'):
+            init += ["\n\n# !!custom_init"]
             init.extend(self._run_hook('custom_init'))
         else:
             init.extend(self.generate_init_main())
