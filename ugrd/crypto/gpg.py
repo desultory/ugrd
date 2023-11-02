@@ -1,6 +1,6 @@
 __author__ = 'desultory'
 
-__version__ = '0.3.1'
+__version__ = '0.3.3'
 
 
 def fetch_keys(self):

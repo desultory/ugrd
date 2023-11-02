@@ -233,7 +233,7 @@ Several cryptographic modules are provided, mostly to assist in mounting encrypt
 
 #### ugrd.crypto.gpg
 
-This module is required to perform GPG decryption within the initramfs. It depends on the `ugrd.base.console` module for agetty, which is required for input.
+This module is required to perform GPG decryption within the initramfs. It depends on the `ugrd.base.console` module for agetty, which is required for input. Additionally, it depends on the `ugrd.crypt.cryptsetup` module, so both do not need to be defind.
 
 No configuration options are provided by this module, but it does set the `primary_console` to `tty0` and creates the console entry for it.
 This configuration can be overriden in the specified user config if an actual serial interface is used, this is demonstrated in `config_raid_crypt_serial.toml`
@@ -261,6 +261,36 @@ uuid = "9e04e825-7f60-4171-815a-86e01ec4c4d3"
 `key_type` can be either `gpg` or `keyfile`. If it is not set, cryptsetup will prompt for a passphrase. If this is set globally, it applies to all `cryptsetup` definitions.
 
 If a key is being used, it can be specified with `key_file` under the cryptsetup entry. This WILL NOT be pulled as a dependency, and is indented to be on some `mount` which is properly mounted.
+
+#####
+
+Cryptsetup global config:
+
+* `cryptsetup_key_type` (keyfile) Used to determine how a key is unlocked, setting it globally changes the default for definitions
+* `cryptsetup_retries` (5) The number of times to try to unlock a device.
+
+##### Key type definitions
+
+New key types can defined using the `cryptsetup_key_types` dict. At least `key_command` must be specified. The name of the key pipe is added to the end of this command:
+
+```
+[cryptsetup_key_types.gpg]
+key_command = "gpg --decrypt {key_file} >"
+```
+
+Gets turned into:
+
+```
+gpg --decrypt /boot/luks.gpg > /run/key_pipe_root &
+```
+
+When used with:
+
+```
+[cryptsetup.root]
+key_type = "gpg"
+key_file = "/boot/luks.gpg"
+```
 
 ## Modules
 
