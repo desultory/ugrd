@@ -135,6 +135,7 @@ def crypt_init(self):
                     'if [$? -ne 0]; then',
                     f'    echo "Failed to open device using keys: {name}"']
             out += [f'    {bash_line}' for bash_line in open_crypt_device(self, name, parameters)]
+            out += ['fi']
     return out
 
 
