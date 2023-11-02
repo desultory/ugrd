@@ -182,7 +182,7 @@ Similarly `base.ugrd.kmod_novideo` and `kmod_nosound` exist to ignore video and 
 
 `mounts`: A dictionary containing entries for mounts, with their associated config.
 
-`root_mount` Is a dict that acts similarly to user defined `mounts`. `destination` is hardcoded to `/mnt/root`.
+`mounts.root` is predefined to have a destination of `/mnt/root` and defines the root filesystem mount, used by `switch_root`.
 
 Each mount has the following available parameters:
 

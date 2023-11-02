@@ -18,7 +18,7 @@ class InitramfsGenerator:
         self.config_dict = InitramfsConfigDict(logger=self.logger)
 
         # init_pre and init_final are run as part of generate_initramfs_main
-        self.init_types = ['init_early', 'init_main', 'init_late', 'init_mount']
+        self.init_types = ['init_early', 'init_main', 'init_late', 'init_mount', 'init_cleanup']
 
         self.load_config()
         self.config_dict.verify_deps()
@@ -256,7 +256,7 @@ class InitramfsGenerator:
         else:
             file_path = Path(file_name)
 
-        self.logger.debug("[%s] Writing contents: %s: " % (file_path, contents))
+        self.logger.debug("[%s] Writing contents:\n%s" % (file_path, pretty_print(contents)))
         with open(file_path, 'w') as file:
             file.writelines("\n".join(contents))
 
