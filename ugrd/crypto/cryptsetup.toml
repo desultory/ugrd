@@ -1,4 +1,4 @@
-binaries = [ "cryptsetup", "mkfifo", "rm" ]
+binaries = [ "cryptsetup", "rm" ]
 
 paths = [ "run" ]
 
@@ -14,7 +14,7 @@ cryptsetup_key_type = "keyfile"
 "ugrd.crypto.cryptsetup" = [ "configure_library_dir" ]
 
 [imports.init_early]
-"ugrd.crypto.cryptsetup" = [ "get_crypt_sources", "make_key_pipes" ]
+"ugrd.crypto.cryptsetup" = [ "get_crypt_sources" ]
 
 [imports.init_late]
 "ugrd.crypto.cryptsetup" = [ "crypt_init" ]

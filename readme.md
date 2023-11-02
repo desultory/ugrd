@@ -273,7 +273,7 @@ Cryptsetup global config:
 
 ##### Key type definitions
 
-New key types can defined using the `cryptsetup_key_types` dict. At least `key_command` must be specified. The name of the key pipe is added to the end of this command:
+New key types can defined using the `cryptsetup_key_types` dict. At least `key_command` must be specified. The name of the key file is added to the end of this command:
 
 ```
 [cryptsetup_key_types.gpg]
@@ -283,7 +283,7 @@ key_command = "gpg --decrypt {key_file} >"
 Gets turned into:
 
 ```
-gpg --decrypt /boot/luks.gpg > /run/key_pipe_root &
+gpg --decrypt /boot/luks.gpg > /run/key_root &
 ```
 
 When used with:

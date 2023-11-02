@@ -1,6 +1,6 @@
 __author__ = 'desultory'
 
-__version__ = '0.6.2'
+__version__ = '0.6.3'
 
 
 CRYPTSETUP_PARAMETERS = ['key_type', 'partuuid', 'uuid', 'key_file', 'header_file', 'retries', 'key_command', 'try_nokey']
@@ -71,29 +71,16 @@ def get_crypt_sources(self):
     return out
 
 
-def make_key_pipes(self):
-    """
-    Make key pipes for all cryptsetup devices which will use them
-    """
-    out = []
-    for name, parameters in self.config_dict['cryptsetup'].items():
-        if 'key_command' in parameters:
-            self.logger.debug("Making key pipe for %s" % name)
-            out += [f"echo 'Attempting to make key pipe for {name}'"]
-            out += [f"mkfifo /run/key_pipe_{name}"]
-    return out
-
-
 def open_crypt_key(self, name, parameters):
     """
-    Returns bash lines to open a luks key and output it to a named pipe
+    Returns bash lines to open a luks key and output it to specified key file
     """
-    pipe_name = f"/run/key_pipe_{name}"
+    key_name = f"/run/key_{name}"
 
     out = [f"    echo 'Attempting to open luks key for {name}'"]
-    out += [f"    {parameters['key_command']} {pipe_name} &"]
+    out += [f"    {parameters['key_command']} {key_name} &"]
 
-    return out, pipe_name
+    return out, key_name
 
 
 def open_crypt_device(self, name, parameters):
@@ -109,9 +96,9 @@ def open_crypt_device(self, name, parameters):
     # When there is a key command, read from the named pipe and use that as the key
     if 'key_command' in parameters:
         self.logger.debug("[%s] Using key command: %s" % (name, parameters['key_command']))
-        out_line, pipe_name = open_crypt_key(self, name, parameters)
+        out_line, key_name = open_crypt_key(self, name, parameters)
         out += out_line
-        cryptsetup_command = f'    cryptsetup open --key-file {pipe_name}'
+        cryptsetup_command = f'    cryptsetup open --key-file {key_name}'
     elif 'key_file' in parameters:
         self.logger.debug("[%s] Using key file: %s" % (name, parameters['key_file']))
         cryptsetup_command = f'    cryptsetup open --key-file {parameters["key_file"]}'
@@ -128,16 +115,8 @@ def open_crypt_device(self, name, parameters):
     out += [cryptsetup_command]
 
     # Check if the device was successfully opened
-    out += ['    if [ $? -eq 0 ]; then',
-            f'        echo "Successfully opened device: {name}"',
-            '        break',
-            '    else',
-            f'        echo "Failed to open device: {name} ($i / {retries})"',
-            f'        echo "Recreating key pipe for {name}"',
-            f'        rm -f /run/key_pipe_{name}',
-            f'        mkfifo /run/key_pipe_{name}',
-            '    fi',
-            'done']
+    out += [f'    if [ $? -eq 0 ]; then echo "Successfully opened device: {name}"; break; else; echo "Failed to open device: {name} ($i / {retries})"; fi']
+    out += ['done']
 
     return out
 
