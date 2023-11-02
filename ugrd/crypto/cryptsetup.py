@@ -104,7 +104,7 @@ def open_crypt_device(self, name, parameters):
     retries = parameters['retries']
 
     out = [f"echo 'Attempting to unlock device: {name}'"]
-    out += [f"for i in ((i = 1; i <= {retries}; i++)); do"]
+    out += [f"for ((i = 1; i <= {retries}; i++)); do"]
 
     # When there is a key command, read from the named pipe and use that as the key
     if 'key_command' in parameters:
