@@ -132,7 +132,7 @@ def crypt_init(self):
             parameters.pop('key_file')
             parameters.pop('key_command')
             out += [f'\ncryptsetup status {name}',
-                    'if [$? -ne 0]; then',
+                    'if [ $? -ne 0 ]; then',
                     f'    echo "Failed to open device using keys: {name}"']
             out += [f'    {bash_line}' for bash_line in open_crypt_device(self, name, parameters)]
             out += ['fi']
