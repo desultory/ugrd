@@ -1,4 +1,4 @@
-binaries = [ "cryptsetup", "rm" ]
+binaries = [ "cryptsetup" ]
 
 paths = [ "run" ]
 
