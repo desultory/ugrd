@@ -1,5 +1,5 @@
 binaries = [ "btrfs" ]
 _kmod_depend = [ "btrfs" ]
 
-[imports.init_late]
+[imports.init_premount]
 "ugrd.fs.btrfs" = [ "btrfs_scan" ]

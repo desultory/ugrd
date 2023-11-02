@@ -1,5 +1,6 @@
 cpio_filename = "ugrd.cpio"
 cpio_list_name = "cpio.list"
+mknod_cpio = true
 
 [imports.pack]
 "ugrd.base.cpio" = [ "make_cpio_list", "pack_cpio" ]

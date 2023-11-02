@@ -20,8 +20,11 @@ mount_wait = false
 [imports.init_pre]
 "ugrd.fs.mounts" = [ "mount_base" ]
 
+[imports.init_early]
+"ugrd.fs.mounts" = [ "mount_fstab" ]
+
 [imports.init_main]
-"ugrd.fs.mounts" = [ "remake_mountpoints", "mount_fstab" ]
+"ugrd.fs.mounts" = [ "remake_mountpoints" ]
 
 [imports.init_mount]
 "ugrd.fs.mounts" = [ "mount_root" ]
@@ -40,6 +43,7 @@ mount_cmd = "str"  # The mount command called by mount_root, can be overridden
 [mounts.root]
 skip_unmount = true
 destination = "/mnt/root"
+options = ['ro', 'noauto']
 
 # Define the default mounts
 # The format is mounts.mount where the mount is the name of the mount
@@ -48,18 +52,18 @@ destination = "/mnt/root"
 [mounts.proc]
 type = "proc"
 source = "proc"
-options = "nodev,noexec,nosuid"
+options = ['nodev', 'noexec' ,'nosuid']
 base_mount = true
 
 [mounts.sys]
 type = "sysfs"
 source = "sysfs"
-options = "nodev,noexec,nosuid"
+options = ['nodev', 'noexec' ,'nosuid']
 base_mount = true
 
 [mounts.dev]
 type = "devtmpfs"
 source = "devtmpfs"
-options = "nosuid,mode=0755"
+options = ['nosuid', 'mode=0755']
 base_mount = true
 skip_unmount = true

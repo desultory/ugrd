@@ -8,7 +8,6 @@ modules = [
   "ugrd.base.base",
   "ugrd.base.console",
   "ugrd.crypto.gpg",
-  "ugrd.fs.btrfs"
 ]
 
 # Set the key type for all cryptsetup keys
@@ -19,7 +18,10 @@ key_type = "gpg"
 primary_console = "ttyS1"
 
 # Define the root label
-[root_mount.source]
+[mounts.root]
+type = "btrfs"
+
+[mounts.root.source]
 label = "rootfs"
 
 # Define console information

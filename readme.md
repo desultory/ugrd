@@ -144,7 +144,7 @@ This module assists in creating a CPIO out of the initramfs `build_dir`.
 
 The following parameters can be set to alter CPIO functionality:
 
-* `mknod_cpio` (false) can be used to only create the device nodes within the CPIO file.
+* `mknod_cpio` (true) Only create the device nodes within the CPIO file.
 * `cpio_filename` (ugrd.cpio) can be set to change the final CPIO filename in the `out_dir`.
 * `cpio_list_name` (cpio.list) can be used to change the filename of the CPIO list for `gen_init_cpio`.
 * `_gen_init_cpio_path` The path to this tool can be specified. If not, it is included and will be built at runtime if needed.
@@ -186,12 +186,15 @@ Similarly `base.ugrd.kmod_novideo` and `kmod_nosound` exist to ignore video and 
 
 Each mount has the following available parameters:
 
-* `type` (auto) the mount or filesystem type. Setting the `type` to `vfat` includes the `vfat` kernel module automatically.
+* `type` (auto) the mount or filesystem type.
+  - Setting the `type` to `vfat` includes the `vfat` kernel module automatically.
+  - Setting the `type` to `btrfs` imports the `ugrd.fs.btrfs` module automatically.
 * `destination` (/mount name) the mountpoint for the mount, if left unset will use /mount_name.
 * `source` The source string or a dict with a key containing the source type, where the value is the target.
   - `uuid` Mount by the filesystem UUID.
   - `partuuid` Mount by the partition UUID.
   - `label` Mount by the device label.
+* `options` A list of options to add to the mount.
 * `base_mount` (false) is used for builtin mounts such as `/dev`, `/sys`, and `/proc`. Setting this to mounts it with a mount command in `init_pre` instead of using `mount -a` in `init_main`.
 * `skip_unmount` (false) is used for the builtin `/dev` mount, since it will fail to unmount when in use. Like the name suggests, this skips running `umount` during `init_final`.
 * `remake_mountpoint` will recreate the mountpoint with mkdir before the `mount -a` is called. This is useful for `/dev/pty`.
@@ -410,9 +413,17 @@ The `cpio` module imports the `make_cpio_list` packing function with:
 
 #### init hooks
 
-By default, the specified init hooks are: `'init_pre', 'init_early', 'init_main', 'init_late', 'init_mount', 'init_final'`
+By default, the specified init hooks are:
+* `init_pre` - Where the base initramfs environment is set up, such as creating a devtmpfs.
+* `init_early` - Where early actions such as checking for device paths, mounting the fstab take place.
+* `init_main` - Most important initramfs activities should take place here.
+* `init_late` - Space for additional checks, stuff that should run later in the init process.
+* `init_prenount` - Where filesystem related commands such as `btrfs device scan` can run.
+* `init_mount` - Where the root filesystem mount takes place
+* `init_cleanup` - Where filesystems are unmounted and the system is prepared to `exec switch_root`
+* `init_final` - Where `switch_root` is executed.
 
-These hooks are defined under the `init_types` list in the `InitramfsGenerator` object.
+> These hooks are defined under the `init_types` list in the `InitramfsGenerator` object.
 
 When the init scripts are generated, functions under dicts in the config defined by the names in this list will be called to generate the init scripts.
 

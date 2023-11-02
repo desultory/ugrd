@@ -16,7 +16,7 @@ cryptsetup_key_type = "keyfile"
 [imports.init_early]
 "ugrd.crypto.cryptsetup" = [ "get_crypt_sources" ]
 
-[imports.init_late]
+[imports.init_main]
 "ugrd.crypto.cryptsetup" = [ "crypt_init" ]
 
 [imports.build_pre]

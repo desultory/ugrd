@@ -107,7 +107,7 @@ def make_cpio_list(self):
                 file_entry = f"file /{file_dest} {file_source} {file_perms} 0 0"
                 file_list.append(file_entry)
 
-    if self.config_dict['mknod_cpio'] or True:
+    if self.config_dict['mknod_cpio']:
         for node in generate_cpio_mknods(self):
             if node not in node_list:
                 node_list.append(node)

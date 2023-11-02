@@ -10,12 +10,11 @@ modules = [
   "ugrd.kmod.kmod",
   "ugrd.kmod.usb",
   "ugrd.kmod.nvme",
-  "ugrd.fs.btrfs",
   "ugrd.crypto.smartcard",
   "ugrd.base.cpio"
 ]
 
-sc_public_key = "/home/larry/yubikey_public.asc"
+sc_public_key = "/etc/ugrd/pubkey.gpg"
 
 # Wait a few seconds for storage to settle after modules are loaded
 mount_wait = true
@@ -30,7 +29,10 @@ type = "vfat"
   uuid = "4886-A631"
 
 # The label of the volume under the LUKS partition, a UUID could be used
-[root_mount]
+[mounts.root]
+type = "btrfs"
+
+[mounts.root.source]
 label = "rootfs"
 
 # Information about the LUKS volume

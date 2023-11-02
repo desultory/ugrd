@@ -8,13 +8,15 @@ modules = [
   "ugrd.kmod.kmod",
   "ugrd.kmod.vm",
   "ugrd.crypto.cryptsetup",
-  "ugrd.base.btrfs"
 ]
 
 # Optionally supply a kernel version
 kernel_version = "6.1.57-gentoo-custom"
 
-[root_mount.source]
+[mounts.root]
+type = "btrfs"
+
+[mounts.root.source]
 label = "rootfs"
 
 # The UUID of the encrypted volume, mounted at /dev/mapper/root

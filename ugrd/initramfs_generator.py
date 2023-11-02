@@ -18,7 +18,7 @@ class InitramfsGenerator:
         self.config_dict = InitramfsConfigDict(logger=self.logger)
 
         # init_pre and init_final are run as part of generate_initramfs_main
-        self.init_types = ['init_early', 'init_main', 'init_late', 'init_mount', 'init_cleanup']
+        self.init_types = ['init_early', 'init_main', 'init_late', 'init_premount', 'init_mount', 'init_cleanup']
 
         self.load_config()
         self.config_dict.verify_deps()
@@ -149,7 +149,12 @@ class InitramfsGenerator:
         """
         out = []
         for init_type in self.init_types:
-            out.extend(self._run_init_hook(init_type))
+            hook = self._run_init_hook(init_type)
+            # The hook will always contian a header, so check if it has any other output
+            if len(hook) > 1:
+                out.extend(hook)
+            else:
+                self.logger.warning("No output from init hook: %s" % init_type)
         return out
 
     def generate_init(self):
@@ -255,6 +260,10 @@ class InitramfsGenerator:
             file_path = self._get_build_path(file_name)
         else:
             file_path = Path(file_name)
+
+        if not file_path.parent.is_dir():
+            self.logger.debug("Parent directory for '%s' does not exist: %s" % (file_path.name, file_path))
+            self._mkdir(file_path.parent)
 
         self.logger.debug("[%s] Writing contents:\n%s" % (file_path, pretty_print(contents)))
         with open(file_path, 'w') as file:

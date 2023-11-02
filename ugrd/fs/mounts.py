@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.1.0'
+__version__ = '1.1.1'
 
 from pathlib import Path
 
@@ -15,6 +15,10 @@ def _process_mounts_multi(self, mount_name, mount_config):
     if mount_name in self['mounts']:
         self.logger.info("Updating mount: %s" % mount_name)
         self.logger.debug("[%s] Updating mount with: %s" % (mount_name, mount_config))
+        if 'options' in self['mounts'][mount_name] and 'options' in mount_config:
+            self.logger.debug("Mergeing options: %s" % mount_config['options'])
+            self['mounts'][mount_name]['options'] = self['mounts'][mount_name]['options'] | set(mount_config['options'])
+            mount_config.pop('options')
         mount_config = dict(self['mounts'][mount_name], **mount_config)
 
     for parameter in mount_config:
@@ -23,12 +27,15 @@ def _process_mounts_multi(self, mount_name, mount_config):
 
     mount_config['destination'] = Path(mount_config.get('destination', mount_name))
     mount_config['base_mount'] = mount_config.get('base_mount', False)
+    mount_config['options'] = set(mount_config.get('options', ''))
 
     if mount_type := mount_config.get('type'):
         if mount_type == 'vfat':
             self['_kmod_depend'] = 'vfat'
         elif mount_type == 'btrfs':
-            self['_kmod_depend'] = 'btrfs'
+            if 'ugrd.fs.btrfs' not in self['modules']:
+                self.logger.info("Auto-enabling btrfs module")
+                self['modules'] = 'ugrd.fs.btrfs'
 
     self['mounts'][mount_name] = mount_config
 
@@ -73,7 +80,7 @@ def _to_mount_cmd(self, mount):
     out_str = f"mount {_get_mount_source(self, mount)} {mount['destination']}"
 
     if options := mount.get('options'):
-        out_str += f" --options {options}"
+        out_str += f" --options {','.join(options)}"
 
     if mount_type := mount.get('type'):
         out_str += f" --types {mount_type}"
@@ -95,7 +102,7 @@ def _to_fstab_entry(self, mount):
     out_str += fs_type.ljust(16, ' ')
 
     if options := mount.get('options'):
-        out_str += options
+        out_str += ','.join(options)
     return out_str
 
 
@@ -150,14 +157,9 @@ def mount_root(self):
     """
     Mounts the root partition
     """
-    mount_info = self.config_dict['mounts']['root']
+    root_path = self.config_dict['mounts']['root']['destination']
 
-    if 'options' not in mount_info:
-        mount_info['options'] = 'ro'
-    elif 'ro' not in mount_info['options'].split(','):
-        mount_info['options'] += ',ro'
-
-    return [f"{_to_mount_cmd(self, mount_info)} || (echo 'Failed to mount root partition' && bash)"]
+    return [f"mount {root_path} || (echo 'Failed to mount root partition' && bash)"]
 
 
 def clean_mounts(self):
