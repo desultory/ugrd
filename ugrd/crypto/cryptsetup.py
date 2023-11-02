@@ -1,6 +1,6 @@
 __author__ = 'desultory'
 
-__version__ = '0.6.3'
+__version__ = '0.6.4'
 
 
 CRYPTSETUP_PARAMETERS = ['key_type', 'partuuid', 'uuid', 'key_file', 'header_file', 'retries', 'key_command', 'try_nokey']
@@ -78,7 +78,7 @@ def open_crypt_key(self, name, parameters):
     key_name = f"/run/key_{name}"
 
     out = [f"    echo 'Attempting to open luks key for {name}'"]
-    out += [f"    {parameters['key_command']} {key_name} &"]
+    out += [f"    {parameters['key_command']} {key_name}"]
 
     return out, key_name
 
