@@ -16,7 +16,7 @@ def _process_mounts_multi(self, mount_name, mount_config):
         self.logger.info("Updating mount: %s" % mount_name)
         self.logger.debug("[%s] Updating mount with: %s" % (mount_name, mount_config))
         if 'options' in self['mounts'][mount_name] and 'options' in mount_config:
-            self.logger.debug("Mergeing options: %s" % mount_config['options'])
+            self.logger.debug("Merging options: %s" % mount_config['options'])
             self['mounts'][mount_name]['options'] = self['mounts'][mount_name]['options'] | set(mount_config['options'])
             mount_config.pop('options')
         mount_config = dict(self['mounts'][mount_name], **mount_config)

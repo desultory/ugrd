@@ -254,27 +254,45 @@ This file is added as a dependency and pulled into the initramfs.
 
 This module is used to decrypt LUKS volumes in the initramfs.
 
-`cryptsetup` is a dictionary that contains the root devices to decrypt. `key_file` is optional within this dict, but `uuid` or `partuuid` are required, ex:
+> Modules such as the GPG and smartcard modules pull this automatically
+
+Cryptsetup mounts can be configured with the following options:
+* `key_type` - The type of key being used, if one is being used.
+* `key_file` - The path of a key file.
+* `key_command` - The command used to unlock or use the key.
+* `reset_command` - The command to be used between unlock attempts.
+* `header_file` - The path of the luks header file.
+* `partuuid` - The partition UUID of the LUKS volume.
+* `uuid` - The UUID fo the LUKS filesystem.
+* `retries` (5) - The number of times to attempt to unlock a key or cryptsetup volume.
+* `try_nokey` - (false) - Whether or not to attempt unlocking with a passphrase if key usage fails
+
+`cryptsetup` is a dictionary that contains LUKS volumes to be decrypted.
+
+A minimal defintion to decrypt a volume protected by a passphrase:
 
 ```
 [cryptsetup.root]
 uuid = "9e04e825-7f60-4171-815a-86e01ec4c4d3"
 ```
 
-`try_nokey` can be specified for a `cryptsetup` entry which uses a key. If enabled, passkey entry will be attempted if key usages is unsuccessful.
+A cryptsetup mount which retries only 3 times, uses the key file `/boot/luks.gpg` with header file `/boot/luks_headers.img`:
 
-> This UUID or PARTUUID is resolved to the device path at runtime, and drops to a recovery shell if this fails.
-
-`key_type` can be either `gpg` or `keyfile`. If it is not set, cryptsetup will prompt for a passphrase. If this is set globally, it applies to all `cryptsetup` definitions.
-
-If a key is being used, it can be specified with `key_file` under the cryptsetup entry. This WILL NOT be pulled as a dependency, and is indented to be on some `mount` which is properly mounted.
+```
+[crytpsetup.root]
+retries = 3
+partuuid = "9e04e825-7f60-4171-815a-86e01ec4c4d3"
+header = "/boot/luks_headers.img"
+key_file = "/boot/luks.gpg"
+key_type = "gpg"
+```
 
 #####
 
 Cryptsetup global config:
 
 * `cryptsetup_key_type` (keyfile) Used to determine how a key is unlocked, setting it globally changes the default for definitions
-* `cryptsetup_retries` (5) The number of times to try to unlock a device.
+* `cryptsetup_retries` (5) The default number of times to try to unlock a device.
 
 ##### Key type definitions
 
@@ -288,7 +306,7 @@ key_command = "gpg --decrypt {key_file} >"
 Gets turned into:
 
 ```
-gpg --decrypt /boot/luks.gpg > /run/key_root &
+gpg --decrypt /boot/luks.gpg > /run/key_root
 ```
 
 When used with:

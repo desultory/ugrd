@@ -1,9 +1,9 @@
 __author__ = 'desultory'
 
-__version__ = '0.6.5'
+__version__ = '0.7.0'
 
 
-CRYPTSETUP_PARAMETERS = ['key_type', 'partuuid', 'uuid', 'key_file', 'header_file', 'retries', 'key_command', 'try_nokey']
+CRYPTSETUP_PARAMETERS = ['key_type', 'partuuid', 'uuid', 'key_file', 'header_file', 'retries', 'key_command', 'reset_command', 'try_nokey']
 
 
 def _process_cryptsetup_key_types_multi(self, key_type, config_dict):
