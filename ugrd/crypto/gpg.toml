@@ -1,6 +1,6 @@
 modules = [ "ugrd.base.console", "ugrd.crypto.cryptsetup" ]
 
-binaries = [ "gpg", "gpg-agent", "gpg-connect-agent", "pinentry-tty" ]
+binaries = [ "gpg", "gpg-agent", "gpgconf", "gpg-connect-agent", "pinentry-tty" ]
 paths = [ "usr/bin" ]
 
 # Define the primary console
@@ -18,4 +18,7 @@ target = "/usr/bin/pinentry"
 
 [imports.init_early]
 "ugrd.crypto.gpg" = [ "start_agent" ]
+
+[custom_parameters]
+gpg_agent_args = "NoDupFlatList"  # Arguments to be passed to the gpg-agent
 

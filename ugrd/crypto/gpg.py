@@ -1,6 +1,6 @@
 __author__ = 'desultory'
 
-__version__ = '0.3.3'
+__version__ = '0.3.5'
 
 
 def fetch_keys(self):
@@ -27,4 +27,5 @@ def start_agent(self):
     """
     Start the GPG agent
     """
-    return "gpg-agent"
+    args = " ".join(self.config_dict['gpg_agent_args']) if self.config_dict['gpg_agent_args'] else ""
+    return f"gpg-agent {args}"

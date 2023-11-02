@@ -1,8 +1,10 @@
 modules = [ "ugrd.crypto.gpg" ]
 
-binaries = [ "/usr/libexec/scdaemon" ]
+binaries = [ "pcscd" ]
 
 _kmod_depend = "uhid"
+
+gpg_agent_args = ["--scdaemon-program", "pcscd"]
 
 [cryptsetup_key_types.gpg]
 reset_command = "gpg --card-status"

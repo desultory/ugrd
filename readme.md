@@ -240,7 +240,9 @@ Several cryptographic modules are provided, mostly to assist in mounting encrypt
 
 This module is required to perform GPG decryption within the initramfs. It depends on the `ugrd.base.console` module for agetty, which is required for input. Additionally, it depends on the `ugrd.crypt.cryptsetup` module, so both do not need to be defind.
 
-No configuration options are provided by this module, but it does set the `primary_console` to `tty0` and creates the console entry for it.
+`gpg_agent_args` is an append-only list which defines arguments passed to `gpg-agent`.
+
+This module sets the `primary_console` to `tty0` and creates the console entry for it.
 This configuration can be overriden in the specified user config if an actual serial interface is used, this is demonstrated in `config_raid_crypt_serial.toml`
 
 #### ugrd.crypto.smartcard
