@@ -132,7 +132,7 @@ def crypt_init(self):
             out += [f'cryptsetup status {name}',
                     'if [ $? -ne 0 ]; then',
                     f'    echo "Failed to open {name} with a key, attempting a passkey"',
-                    f'    cryptsetup open $CRYPTSETUP_SOURCE_{name} --retries {parameters["retries"]} {name}',
+                    f'    cryptsetup open $CRYPTSETUP_SOURCE_{name} --tries {parameters["retries"]} {name}',
                     'fi']
     return out
 
