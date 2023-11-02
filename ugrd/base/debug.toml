@@ -1,1 +1,7 @@
 binaries = ['cp', 'mv', 'rm', 'nano', 'find', 'grep', 'dmesg', 'chmod', 'touch']
+
+[imports.init_debug]
+"ugrd.base.debug" = [ "start_shell" ]
+
+[custom_parameters]
+start_shell = "bool"  # Start a shell during init_early

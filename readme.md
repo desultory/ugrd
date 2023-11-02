@@ -149,6 +149,12 @@ The following parameters can be set to alter CPIO functionality:
 * `cpio_list_name` (cpio.list) can be used to change the filename of the CPIO list for `gen_init_cpio`.
 * `_gen_init_cpio_path` The path to this tool can be specified. If not, it is included and will be built at runtime if needed.
 
+#### base.debug
+
+This module contains debug programs such as `cp`, `mv`, `rm`, `grep`, `dmesg`, `find`, and `nano`,
+
+Setting `start_shell` to `true` will start a bash shell in `init_debug`.
+
 ### Kernel modules
 
 `ugrd.kmod.kmod` is the core of the kernel module loading..
@@ -437,6 +443,7 @@ The `cpio` module imports the `make_cpio_list` packing function with:
 
 By default, the specified init hooks are:
 * `init_pre` - Where the base initramfs environment is set up, such as creating a devtmpfs.
+* `init_debug` - Where a shell is started if `start_shell` is enabled in the debug module.
 * `init_early` - Where early actions such as checking for device paths, mounting the fstab take place.
 * `init_main` - Most important initramfs activities should take place here.
 * `init_late` - Space for additional checks, stuff that should run later in the init process.
