@@ -1,6 +1,6 @@
 __author__ = 'desultory'
 
-__version__ = '0.6.4'
+__version__ = '0.6.5'
 
 
 CRYPTSETUP_PARAMETERS = ['key_type', 'partuuid', 'uuid', 'key_file', 'header_file', 'retries', 'key_command', 'try_nokey']
@@ -103,7 +103,7 @@ def open_crypt_device(self, name, parameters):
         self.logger.debug("[%s] Using key file: %s" % (name, parameters['key_file']))
         cryptsetup_command = f'    cryptsetup open --key-file {parameters["key_file"]}'
     else:
-        cryptsetup_command = '    cryptsetup open '
+        cryptsetup_command = '    cryptsetup open'
 
     # Add the header file if it exists
     if header_file := parameters.get('header_file'):
@@ -129,11 +129,12 @@ def crypt_init(self):
     for name, parameters in self.config_dict['cryptsetup'].items():
         out += open_crypt_device(self, name, parameters)
         if 'try_nokey' in parameters and parameters.get('key_file'):
-            out += [f'cryptsetup status {name}',
-                    'if [ $? -ne 0 ]; then',
-                    f'    echo "Failed to open {name} with a key, attempting a passkey"',
-                    f'    cryptsetup open $CRYPTSETUP_SOURCE_{name} --tries {parameters["retries"]} {name}',
-                    'fi']
+            parameters.pop('key_file')
+            parameters.pop('key_command')
+            out += [f'\ncryptsetup status {name}',
+                    'if [$? -ne 0]; then',
+                    f'    echo "Failed to open device using keys: {name}"']
+            out += [f'    {bash_line}' for bash_line in open_crypt_device(self, name, parameters)]
     return out
 
 
