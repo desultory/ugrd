@@ -115,7 +115,7 @@ def open_crypt_device(self, name, parameters):
     out += [cryptsetup_command]
 
     # Check if the device was successfully opened
-    out += [f'    if [ $? -eq 0 ]; then echo "Successfully opened device: {name}"; break; else; echo "Failed to open device: {name} ($i / {retries})"; fi']
+    out += [f'    if [ $? -eq 0 ]; then echo "Successfully opened device: {name}"; break; else echo "Failed to open device: {name} ($i / {retries})"; fi']
     out += ['done']
 
     return out
