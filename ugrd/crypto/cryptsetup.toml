@@ -6,9 +6,6 @@ _kmod_depend = [ "dm_crypt", "crc32c" ]
 cryptsetup_retries = 5
 cryptsetup_key_type = "keyfile"
 
-[cryptsetup_key_types.keyfile]
-key_command = "cat {key_file} >"
-
 [imports.config_processing]
 "ugrd.crypto.cryptsetup" = [ "_process_cryptsetup_multi", "_process_cryptsetup_key_types_multi" ]
 
@@ -23,6 +20,9 @@ key_command = "cat {key_file} >"
 
 [imports.build_pre]
 "ugrd.crypto.cryptsetup" = [ "find_libgcc" ]
+
+[cryptsetup_key_types.keyfile]
+key_command = "cat {key_file} >"
 
 [custom_parameters]
 cryptsetup = "dict"  # Dict of cryptsetup volume to be unlocked, keyed by mapped device name

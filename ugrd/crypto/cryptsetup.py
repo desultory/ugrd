@@ -128,8 +128,16 @@ def open_crypt_device(self, name, parameters):
     out += [cryptsetup_command]
 
     # Check if the device was successfully opened
-    out += [f'    if [ $? -eq 0 ]; then echo "Successfully opened device: {name}"; break; else echo "Failed to open device: {name} ($i / {retries})"; fi']
-    out += ["done"]
+    out += ['    if [ $? -eq 0 ]; then',
+            f'        echo "Successfully opened device: {name}"',
+            '        break',
+            '    else',
+            f'         echo "Failed to open device: {name} ($i / {retries})"',
+            f'         echo "Recreating key pipe for {name}"',
+            f'         rm -f /run/key_pipe_{name}',
+            f'         mkfifo /run/key_pipe_{name}',
+            '    fi',
+            'done']
 
     return out
 
