@@ -34,18 +34,20 @@ def _process_cryptsetup_multi(self, mapped_name, config):
         if parameter not in CRYPTSETUP_PARAMETERS:
             raise ValueError("Invalid parameter: %s" % parameter)
 
+    if not config.get('partuuid') and not config.get('uuid'):
+        raise ValueError("Unable to determine source device for: %s" % mapped_name)
+
+    # Check if the key type is defined in the configuration, otherwise use the default, check if it's valud
     if key_type := config.get('key_type', self.get('key_type')):
         if key_type not in self['cryptsetup_key_types']:
             raise ValueError("Unknown key type: %s" % key_type)
         config['key_type'] = key_type
 
-        key_command = self['cryptsetup_key_types'][key_type]['key_command']
-        key_command = key_command.format(**config)
-
-        config['key_command'] = key_command
-
-    if not config.get('partuuid') and not config.get('uuid'):
-        raise ValueError("Unable to determine source device for: %s" % mapped_name)
+        # Inherit from the key type configuration
+        for parameter in ['key_command', 'reset_command']:
+            value = self['cryptsetup_key_types'][key_type].get(parameter)
+            if parameter:
+                config[parameter] = value.format(**config)
 
     if not config.get('retries'):
         self.logger.info("No retries specified, using default: %s" % self['cryptsetup_retries'])
@@ -123,15 +125,14 @@ def open_crypt_device(self, name, parameters):
     cryptsetup_command += f' $CRYPTSETUP_SOURCE_{name} {name}'
     out += [cryptsetup_command]
 
-    reset_command = parameters.get('reset_command', self.config_dict['cryptsetup_key_types'][parameters['key_type']].get('reset_command'))
-
     # Check if the device was successfully opened
     out += ['    if [ $? -eq 0 ]; then',
             f'        echo "Successfully opened device: {name}"',
             '       break',
             '    else',
             f'        echo "Failed to open device: {name} ($i / {retries})"']
-    if reset_command:
+    # Add the reset command if it exists
+    if reset_command := parameters.get('reset_command'):
         out += ['        echo "Running key reset command"',
                 f'        {reset_command}']
     out += ['    fi']
@@ -148,12 +149,16 @@ def crypt_init(self):
     for name, parameters in self.config_dict['cryptsetup'].items():
         out += open_crypt_device(self, name, parameters)
         if 'try_nokey' in parameters and parameters.get('key_file'):
-            parameters.pop('key_file')
-            parameters.pop('key_command')
+            new_params = parameters.copy()
+            for parameter in ['key_file', 'key_command', 'reset_command']:
+                try:
+                    new_params.pop(parameter)
+                except KeyError:
+                    pass
             out += [f'\ncryptsetup status {name}',
                     'if [ $? -ne 0 ]; then',
                     f'    echo "Failed to open device using keys: {name}"']
-            out += [f'    {bash_line}' for bash_line in open_crypt_device(self, name, parameters)]
+            out += [f'    {bash_line}' for bash_line in open_crypt_device(self, name, new_params)]
             out += ['fi']
     return out
 
