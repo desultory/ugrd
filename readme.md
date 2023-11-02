@@ -208,10 +208,12 @@ The following configuration mounts the device with `uuid` `ABCD-1234` at `/boot`
 uuid = "ABCD-1234"
 ```
 
-The following configuration mounts the device with `label` `extra` to `/mnt/extra`:
+The following configuration mounts the `btrfs` subvolume `stuff`  with `label` `extra` to `/mnt/extra`:
 
 ```
 [mounts.extra]
+options = [ "subvol=stuff" ]
+type = "btrfs"
 destination = "/mnt/extra"
 
 [mounts.extra.source]
