@@ -1,6 +1,6 @@
 __author__ = 'desultory'
 
-__version__ = '0.7.0'
+__version__ = '0.7.1'
 
 
 CRYPTSETUP_PARAMETERS = ['key_type', 'partuuid', 'uuid', 'key_file', 'header_file', 'retries', 'key_command', 'reset_command', 'try_nokey']
@@ -8,19 +8,32 @@ CRYPTSETUP_PARAMETERS = ['key_type', 'partuuid', 'uuid', 'key_file', 'header_fil
 
 def _process_cryptsetup_key_types_multi(self, key_type, config_dict):
     """
-    Processes the cryptsetup key types
+    Processes the cryptsetup key types.
+    Updates the key type configuration if it already exists, otherwise creates a new key type.
     """
-    if 'key_command' not in config_dict:
-        raise ValueError("Missing key_command for key type: %s" % config_dict)
+    self.logger.debug("[%s] Processing cryptsetup key type configuration: %s" % (key_type, config_dict))
+    for parameter in config_dict:
+        if parameter not in CRYPTSETUP_PARAMETERS:
+            raise ValueError("Invalid parameter: %s" % parameter)
 
-    self['cryptsetup_key_types'][key_type] = config_dict
+    if key_type in self['cryptsetup_key_types']:
+        self.logger.debug("[%s] Updating key type configuration: %s" % (key_type, config_dict))
+        self['cryptsetup_key_types'][key_type].update(config_dict)
+    else:
+        if 'key_command' not in config_dict:
+            raise ValueError("Missing key_command for key type: %s" % config_dict)
+        self['cryptsetup_key_types'][key_type] = config_dict
 
 
 def _process_cryptsetup_multi(self, mapped_name, config):
     """
     Processes the cryptsetup configuration
     """
-    self.logger.debug("Processing cryptsetup configuration: %s" % config)
+    self.logger.debug("[%s] Processing cryptsetup configuration: %s" % (mapped_name, config))
+    for parameter in config:
+        if parameter not in CRYPTSETUP_PARAMETERS:
+            raise ValueError("Invalid parameter: %s" % parameter)
+
     if key_type := config.get('key_type', self.get('key_type')):
         if key_type not in self['cryptsetup_key_types']:
             raise ValueError("Unknown key type: %s" % key_type)
@@ -37,10 +50,6 @@ def _process_cryptsetup_multi(self, mapped_name, config):
     if not config.get('retries'):
         self.logger.info("No retries specified, using default: %s" % self['cryptsetup_retries'])
         config['retries'] = self['cryptsetup_retries']
-
-    for parameter in config:
-        if parameter not in CRYPTSETUP_PARAMETERS:
-            raise ValueError("Invalid parameter: %s" % parameter)
 
     self['cryptsetup'][mapped_name] = config
 
@@ -87,7 +96,7 @@ def open_crypt_device(self, name, parameters):
     """
     Returns a bash script to open a cryptsetup device
     """
-    self.logger.debug("Processing cryptsetup volume: %s" % name)
+    self.logger.debug("[%s] Processing cryptsetup volume: %s" % (name, parameters))
     retries = parameters['retries']
 
     out = [f"echo 'Attempting to unlock device: {name}'"]
@@ -114,8 +123,18 @@ def open_crypt_device(self, name, parameters):
     cryptsetup_command += f' $CRYPTSETUP_SOURCE_{name} {name}'
     out += [cryptsetup_command]
 
+    reset_command = parameters.get('reset_command', self.config_dict['cryptsetup_key_types'][parameters['key_type']].get('reset_command'))
+
     # Check if the device was successfully opened
-    out += [f'    if [ $? -eq 0 ]; then echo "Successfully opened device: {name}"; break; else echo "Failed to open device: {name} ($i / {retries})"; fi']
+    out += ['    if [ $? -eq 0 ]; then',
+            f'        echo "Successfully opened device: {name}"',
+            '       break',
+            '    else',
+            f'        echo "Failed to open device: {name} ($i / {retries})"']
+    if reset_command:
+        out += ['        echo "Running key reset command"',
+                f'        {reset_command}']
+    out += ['    fi']
     out += ['done']
 
     return out
