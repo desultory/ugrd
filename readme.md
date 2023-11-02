@@ -249,12 +249,14 @@ This file is added as a dependency and pulled into the initramfs.
 
 This module is used to decrypt LUKS volumes in the initramfs.
 
-`cryptsetup` is a dictionary that contains the root devices to decrypt. `key_file` is optional within this dict, but `uuid` or `partuuid` is required, ex:
+`cryptsetup` is a dictionary that contains the root devices to decrypt. `key_file` is optional within this dict, but `uuid` or `partuuid` are required, ex:
 
 ```
 [cryptsetup.root]
 uuid = "9e04e825-7f60-4171-815a-86e01ec4c4d3"
 ```
+
+`try_nokey` can be specified for a `cryptsetup` entry which uses a key. If enabled, passkey entry will be attempted if key usages is unsuccessful.
 
 > This UUID or PARTUUID is resolved to the device path at runtime, and drops to a recovery shell if this fails.
 

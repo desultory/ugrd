@@ -1,9 +1,9 @@
 __author__ = 'desultory'
 
-__version__ = '0.6.1'
+__version__ = '0.6.2'
 
 
-CRYPTSETUP_PARAMETERS = ['key_type', 'partuuid', 'uuid', 'key_file', 'header_file', 'retries', 'key_command']
+CRYPTSETUP_PARAMETERS = ['key_type', 'partuuid', 'uuid', 'key_file', 'header_file', 'retries', 'key_command', 'try_nokey']
 
 
 def _process_cryptsetup_key_types_multi(self, key_type, config_dict):
@@ -59,9 +59,9 @@ def get_crypt_sources(self):
     out = []
     for name, parameters in self.config_dict['cryptsetup'].items():
         if 'partuuid' in parameters:
-            blkid_command = f"CRYPTSETUP_SOURCE_{name}=$(blkid --match-token PARTUUID='{parameters['partuuid']}' --match-tag PARTUUID --output device)"
+            blkid_command = f"export CRYPTSETUP_SOURCE_{name}=$(blkid --match-token PARTUUID='{parameters['partuuid']}' --match-tag PARTUUID --output device)"
         elif 'uuid' in parameters:
-            blkid_command = f"CRYPTSETUP_SOURCE_{name}=$(blkid --match-token UUID='{parameters['uuid']}' --match-tag PARTUUID --output device)"
+            blkid_command = f"export CRYPTSETUP_SOURCE_{name}=$(blkid --match-token UUID='{parameters['uuid']}' --match-tag PARTUUID --output device)"
         else:
             raise ValueError("Unable to determine source device for %s" % name)
 
@@ -132,10 +132,10 @@ def open_crypt_device(self, name, parameters):
             f'        echo "Successfully opened device: {name}"',
             '        break',
             '    else',
-            f'         echo "Failed to open device: {name} ($i / {retries})"',
-            f'         echo "Recreating key pipe for {name}"',
-            f'         rm -f /run/key_pipe_{name}',
-            f'         mkfifo /run/key_pipe_{name}',
+            f'        echo "Failed to open device: {name} ($i / {retries})"',
+            f'        echo "Recreating key pipe for {name}"',
+            f'        rm -f /run/key_pipe_{name}',
+            f'        mkfifo /run/key_pipe_{name}',
             '    fi',
             'done']
 
@@ -149,6 +149,12 @@ def crypt_init(self):
     out = [r'echo -e "\n\n\nPress enter to start drive decryption.\n\n\n"', "read -sr"]
     for name, parameters in self.config_dict['cryptsetup'].items():
         out += open_crypt_device(self, name, parameters)
+        if 'try_nokey' in parameters and parameters.get('key_file'):
+            out += [f'cryptsetup status {name}',
+                    'if [ $? -ne 0 ]; then',
+                    f'    echo "Failed to open {name} with a key, attempting a passkey"',
+                    f'    cryptsetup open $CRYPTSETUP_SOURCE_{name} --retries {parameters["retries"]} {name}',
+                    'fi']
     return out
 
 
