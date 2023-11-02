@@ -1,6 +1,6 @@
 __author__ = 'desultory'
 
-__version__ = '0.7.1'
+__version__ = '0.7.2'
 
 
 CRYPTSETUP_PARAMETERS = ['key_type', 'partuuid', 'uuid', 'key_file', 'header_file', 'retries', 'key_command', 'reset_command', 'try_nokey']
@@ -114,7 +114,8 @@ def open_crypt_device(self, name, parameters):
         self.logger.debug("[%s] Using key file: %s" % (name, parameters['key_file']))
         cryptsetup_command = f'    cryptsetup open --key-file {parameters["key_file"]}'
     else:
-        cryptsetup_command = '    cryptsetup open'
+        # Set tries to 1 since it runs in the loop
+        cryptsetup_command = '    cryptsetup open --tries 1'
 
     # Add the header file if it exists
     if header_file := parameters.get('header_file'):
