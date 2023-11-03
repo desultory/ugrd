@@ -129,7 +129,7 @@ def open_crypt_device(self, name, parameters):
     # Check if the device was successfully opened
     out += ['    if [ $? -eq 0 ]; then',
             f'        echo "Successfully opened device: {name}"',
-            '       break',
+            '        break',
             '    else',
             f'        echo "Failed to open device: {name} ($i / {retries})"']
     # Halt if the autoretry is disabled
