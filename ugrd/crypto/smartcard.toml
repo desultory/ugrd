@@ -1,6 +1,6 @@
 modules = [ "ugrd.crypto.gpg" ]
 
-binaries = [ "/usr/libexec/scdaemon" ]
+binaries = [ "/usr/libexec/scdaemon", "pcscd" ]
 
 _kmod_depend = "uhid"
 cryptsetup_autoretry = false
@@ -14,6 +14,9 @@ sc_public_key = "str"  # The path to the public key to import
 
 [imports.build_pre]
 "ugrd.crypto.smartcard" = [ "fetch_keys" ]
+
+[imports.build_tasks]
+"ugrd.crypto.smartcard" = [ "write_scdaemon_conf" ]
 
 [imports.init_early]
 "ugrd.crypto.smartcard" = [ "import_keys" ]

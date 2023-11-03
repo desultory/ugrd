@@ -1,6 +1,6 @@
 __author__ = 'desultory'
 
-__version__ = '0.1.3'
+__version__ = '0.2.0'
 
 
 def fetch_keys(self):
@@ -28,4 +28,12 @@ def import_keys(self):
     """
     if 'sc_public_key' in self.config_dict:
         return f"gpg --import {self.config_dict['sc_public_key']}"
+
+
+def write_scdaemon_conf(self):
+    """
+    Write the scdaemon.conf file.
+    Tell it to disable the internal CCID driver, so pcscd will be used.
+    """
+    self._write("/etc/scdaemon.conf", ["disable-ccid"])
 
