@@ -1,6 +1,6 @@
 __author__ = 'desultory'
 
-__version__ = '0.7.2'
+__version__ = '0.8.0'
 
 
 CRYPTSETUP_PARAMETERS = ['key_type', 'partuuid', 'uuid', 'key_file', 'header_file', 'retries', 'key_command', 'reset_command', 'try_nokey']

@@ -12,6 +12,9 @@ The original goal of this project was to create an initramfs suitable for decryp
 * GPG encrypted LUKS keyfiles
 * LUKS with detatched headers
 * BTRFS subvolumes and RAID
+* Cryptsetup re-attempts and alternative unlock methods
+  - Allows for late insertion of a smartcard
+  - Can fail back to plain password entry
 * Key entry over serial
 * Automatic CPIO generation
 
@@ -24,6 +27,14 @@ Once installed, either set the config file in `/etc/ugrd/config.toml`, or pass i
 `ugrd example_config.toml`
 
 > Debug mode can be enabled with `-d` or verbose debugging with `-dd`
+
+## Runtime usage
+
+`ugrd` runs the `init` script generated in the build dir. In cases where `agetty` is needed, most of the work is done in `init_main.sh`.
+
+If some portion of the script fails, it will generally drop to a bash shell, where you are expected to perform whatever tasks failed, then exit.
+
+The script will resume after the `bash` statement you got shell access with, and if you performed the required action, the script will cotinue as normal.
 
 ## Output
 
