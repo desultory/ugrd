@@ -461,7 +461,7 @@ By default, the specified init hooks are:
 * `init_early` - Where early actions such as checking for device paths, mounting the fstab take place.
 * `init_main` - Most important initramfs activities should take place here.
 * `init_late` - Space for additional checks, stuff that should run later in the init process.
-* `init_prenount` - Where filesystem related commands such as `btrfs device scan` can run.
+* `init_premount` - Where filesystem related commands such as `btrfs device scan` can run.
 * `init_mount` - Where the root filesystem mount takes place
 * `init_cleanup` - Where filesystems are unmounted and the system is prepared to `exec switch_root`
 * `init_final` - Where `switch_root` is executed.
