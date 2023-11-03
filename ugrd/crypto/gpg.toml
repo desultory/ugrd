@@ -1,6 +1,6 @@
 modules = [ "ugrd.base.console", "ugrd.crypto.cryptsetup" ]
 
-binaries = [ "gpg", "gpg-agent", "gpgconf", "gpg-connect-agent", "pinentry-tty" ]
+binaries = [ "gpg", "gpg-agent", "gpgconf", "pinentry-tty" ]
 paths = [ "usr/bin" ]
 
 # Define the primary console
