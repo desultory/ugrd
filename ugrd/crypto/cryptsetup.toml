@@ -5,6 +5,7 @@ paths = [ "run" ]
 _kmod_depend = [ "dm_crypt", "crc32c" ]
 
 cryptsetup_retries = 5
+cryptsetup_autoretry = true
 cryptsetup_key_type = "keyfile"
 
 [imports.config_processing]
@@ -30,3 +31,4 @@ cryptsetup = "dict"  # Dict of cryptsetup volume to be unlocked, keyed by mapped
 cryptsetup_key_type = "str"  # The default key type to use for unlocking devices
 cryptsetup_key_types = "dict"  # Dict containing key types and their associated mount commands
 cryptsetup_retries = "int"  # Number of times to retry unlocking a device
+cryptsetup_autoretry = "bool"  # Whether to automatically retry unlocking devices

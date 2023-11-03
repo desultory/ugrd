@@ -132,6 +132,9 @@ def open_crypt_device(self, name, parameters):
             '       break',
             '    else',
             f'        echo "Failed to open device: {name} ($i / {retries})"']
+    # Halt if the autoretry is disabled
+    if not self.config_dict['cryptsetup_autoretry']:
+        out += ['        read -sr -p "Press enter to retry"']
     # Add the reset command if it exists
     if reset_command := parameters.get('reset_command'):
         out += ['        echo "Running key reset command"',

@@ -255,6 +255,8 @@ This configuration can be overriden in the specified user config if an actual se
 
 Depends on the `ugrd.crypto.gpg` submodule, meant to be used with a YubiKey.
 
+> Sets `cryptsetup_autoretry` to false
+
 `sc_public_key` should point to the public key associated with the smarcard used to decrypt the GPG protected LUKS keyfile.
 This file is added as a dependency and pulled into the initramfs.
 
@@ -301,6 +303,7 @@ Cryptsetup global config:
 
 * `cryptsetup_key_type` (keyfile) Used to determine how a key is unlocked, setting it globally changes the default for definitions
 * `cryptsetup_retries` (5) The default number of times to try to unlock a device.
+* `cryptsetup_autoretry` (false) Whether or not to automatically retry mount attempts.
 
 ##### Key type definitions
 
