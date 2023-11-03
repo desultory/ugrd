@@ -5,7 +5,7 @@ binaries = [ "/usr/libexec/scdaemon" ]
 _kmod_depend = "uhid"
 
 [cryptsetup_key_types.gpg]
-reset_command = "gpgconf --reload scdaemon"
+reset_command = "gpgconf --reload scdaemon && gpg --card-status"
 
 [custom_parameters]
 sc_public_key = "str"  # The path to the public key to import
