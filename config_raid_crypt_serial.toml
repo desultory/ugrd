@@ -11,7 +11,7 @@ modules = [
 ]
 
 # Set the key type for all cryptsetup keys
-key_type = "gpg"
+cryptsetup_key_type = "gpg"
 
 # Set the primary_console to ttyS1
 # The gpg module uses agetty on tty so this must be overridden

@@ -123,7 +123,6 @@ Consoles are defined by name in the `console` dict using teh following keys:
 
 * `type` (tty) specifies the console type, such as `tty` or `vt100`.
 * `baud` Specified the baud rate for serial devices.
-* `local` (false) specifies whether or not the `-L` flag should be passed to agetty.
 
 ex:
 
@@ -138,10 +137,9 @@ Defines the default `/dev/tty0` console.
 [console.ttyS1]
 baud = 115_200
 type = "vt100"
-local = true
 ```
 
-Defines /dev/ttyS1 as a local `vt100` terminal with a `115200` baud rate.
+Defines /dev/ttyS1 as a `vt100` terminal with a `115200` baud rate.
 
 ##### General console options
 

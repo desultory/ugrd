@@ -1,6 +1,6 @@
 __author__ = 'desultory'
 
-__version__ = '0.8.0'
+__version__ = '0.8.1'
 
 
 CRYPTSETUP_PARAMETERS = ['key_type', 'partuuid', 'uuid', 'key_file', 'header_file', 'retries', 'key_command', 'reset_command', 'try_nokey']
@@ -37,16 +37,16 @@ def _process_cryptsetup_multi(self, mapped_name, config):
     if not config.get('partuuid') and not config.get('uuid'):
         raise ValueError("Unable to determine source device for: %s" % mapped_name)
 
-    # Check if the key type is defined in the configuration, otherwise use the default, check if it's valud
-    if key_type := config.get('key_type', self.get('key_type')):
+    # Check if the key type is defined in the configuration, otherwise use the default, check if it's valid
+    if key_type := config.get('key_type', self.get('cryptsetup_key_type')):
+        self.logger.debug("[%s] Using key type: %s" % (mapped_name, key_type))
         if key_type not in self['cryptsetup_key_types']:
             raise ValueError("Unknown key type: %s" % key_type)
         config['key_type'] = key_type
 
         # Inherit from the key type configuration
         for parameter in ['key_command', 'reset_command']:
-            value = self['cryptsetup_key_types'][key_type].get(parameter)
-            if parameter:
+            if value := self['cryptsetup_key_types'][key_type].get(parameter):
                 config[parameter] = value.format(**config)
 
     if not config.get('retries'):
