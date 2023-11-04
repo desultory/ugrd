@@ -27,15 +27,13 @@ def console_init(self):
 
     out_str = f"agetty --autologin root --login-program {self.config_dict['_custom_init_file']}"
 
-    out_str += f" {name}"
-
     console_type = console.get('type', 'tty')
 
     if console_type != 'tty':
         # This differs from usage in the man page but seems to work?
         out_str += f" --local-line {console['baud']}"
 
-    out_str += f" {console_type}"
+    out_str += f" {name} {console_type}"
 
     return out_str
 
