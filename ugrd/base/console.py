@@ -32,7 +32,8 @@ def console_init(self):
     console_type = console.get('type', 'tty')
 
     if console_type != 'tty':
-        out_str += f"--local-line {console['baud']}"
+        # This differs from usage in the man page but seems to work?
+        out_str += f" --local-line {console['baud']}"
 
     out_str += f" {console_type}"
 
