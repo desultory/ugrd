@@ -1,6 +1,6 @@
 
 __author__ = "desultory"
-__version__ = "0.7.7"
+__version__ = "0.7.8"
 
 from tomllib import load
 from pathlib import Path
@@ -335,7 +335,6 @@ class InitramfsGenerator:
             target = Path(target)
 
         if in_build_dir:
-            source = self._get_build_path(source)
             target = self._get_build_path(target)
 
         self.logger.debug("Creating symlink: %s -> %s" % (source, target))
