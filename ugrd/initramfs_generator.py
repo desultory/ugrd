@@ -1,6 +1,6 @@
 
 __author__ = "desultory"
-__version__ = "0.7.8"
+__version__ = "0.8.0"
 
 from tomllib import load
 from pathlib import Path
@@ -23,6 +23,7 @@ class InitramfsGenerator:
         self.load_config()
         self.config_dict.verify_deps()
         self.config_dict.verify_mask()
+        self.config_dict.import_args(kwargs)
 
     def load_config(self):
         """

@@ -1,5 +1,6 @@
-__author__ = "desultory"
-__version__ = "0.1.1"
+__author__ = 'desultory'
+__version__ = '1.1.0'
+
 
 from subprocess import run
 from pathlib import Path
@@ -26,7 +27,7 @@ def pack_cpio(self):
     """
     Packs the CPIO file using gen_init_cpio
     """
-    cpio_path = self.config_dict.get('gen_init_cpio_path', Path(__file__).parent.parent / 'include' / 'gen_init_cpio')
+    cpio_path = Path(__file__).parent.parent / 'include' / 'gen_init_cpio'
 
     if not cpio_path.exists():
         build_gen_init_cpio(self, cpio_path)
@@ -36,7 +37,7 @@ def pack_cpio(self):
     packing_list = str(self.out_dir / self.config_dict['cpio_list_name'])
     self.logger.info("Creating CPIO file from packing list: %s" % packing_list)
 
-    out_cpio = self.out_dir / self.config_dict['cpio_filename']
+    out_cpio = self.out_dir / self.config_dict['out_file']
 
     with open(out_cpio, 'wb') as cpio_file:
         cmd = run([str(cpio_path), packing_list], stdout=cpio_file)
@@ -44,7 +45,11 @@ def pack_cpio(self):
             raise RuntimeError("gen_init_cpio failed with error: %s" % cmd.stderr.decode())
 
     self.logger.info("CPIO file created at: %s" % out_cpio)
-    self._chown(out_cpio)
+
+    try:
+        self._chown(out_cpio)
+    except PermissionError:
+        self.logger.warning("Unable to change the owner of the CPIO file: %s" % out_cpio)
 
 
 def generate_cpio_mknods(self):
@@ -94,7 +99,7 @@ def make_cpio_list(self):
             file_dest = relative_dir / file
             file_source = current_dir / file
             if file_source.is_symlink():
-                symlink_list.append(f"slink /{file_dest} /{file_source.resolve().relative_to(self.build_dir)} 777 0 0")
+                symlink_list.append(f"slink /{file_dest} {file_source.resolve()} 777 0 0")
             elif file_source.is_char_device():
                 node_major = major(file_source.stat().st_rdev)
                 node_minor = minor(file_source.stat().st_rdev)
@@ -122,4 +127,3 @@ def make_cpio_list(self):
     packing_list = directory_list + file_list + symlink_list + node_list
 
     self._write(self.out_dir / self.config_dict['cpio_list_name'], packing_list, in_build_dir=False)
-

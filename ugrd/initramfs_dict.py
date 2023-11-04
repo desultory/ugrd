@@ -32,6 +32,14 @@ class InitramfsConfigDict(dict):
             else:
                 super().__setitem__(parameter, default_type())
 
+    def import_args(self, args: dict):
+        """
+        Imports data from an argument dict
+        """
+        for arg, value in args.items():
+            self.logger.warning("Importing argument '%s' with value: %s" % (arg, value))
+            self[arg] = value
+
     def __setitem__(self, key, value):
         # If the type is registered, use the appropriate update function
         if expected_type := self.builtin_parameters.get(key, self['custom_parameters'].get(key)):

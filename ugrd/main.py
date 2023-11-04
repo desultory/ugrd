@@ -11,13 +11,19 @@ def main():
     argparser = ArgumentParser(prog='ugrd',
                                description='MicrogRAM disk initramfs generator')
 
-    argparser.add_argument('config_file',
-                           action='store',
-                           nargs='?',
-                           help='Config file location')
-
     argparser.add_argument('-d', '--debug', action='store_true', help='Debug mode')
     argparser.add_argument('-dd', '--verbose-debug', action='store_true', help='Verbose debug mode')
+
+    # Add arguments for dracut compatibility
+    argparser.add_argument('-c', '--config', action='store', help='Config file location')
+    argparser.add_argument('--kver', action='store', help='Kernel version')
+
+    # Add and ignore arguments for dracut compatibility
+    argparser.add_argument('--force', action='store_true', help='Not used, for dracut compatibility')
+    argparser.add_argument('--kernel-image', action='store', help='Kernel image')
+
+    # Add the argument for the output file
+    argparser.add_argument('output_file', action='store', help='Output file location', nargs='?')
 
     args = argparser.parse_args()
 
@@ -30,8 +36,14 @@ def main():
         logger.setLevel(20)
 
     kwargs = {'logger': logger}
-    if config := args.config_file:
+    if config := args.config:
         kwargs['config'] = config
+
+    if config := args.kver:
+        kwargs['kernel_version'] = config
+
+    if config := args.output_file:
+        kwargs['out_file'] = config
 
     generator = InitramfsGenerator(**kwargs)
     try:

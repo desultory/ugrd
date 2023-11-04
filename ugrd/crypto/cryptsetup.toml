@@ -6,7 +6,6 @@ _kmod_depend = [ "dm_crypt", "crc32c" ]
 
 cryptsetup_retries = 5
 cryptsetup_autoretry = true
-cryptsetup_key_type = "keyfile"
 
 [imports.config_processing]
 "ugrd.crypto.cryptsetup" = [ "_process_cryptsetup_multi", "_process_cryptsetup_key_types_multi" ]

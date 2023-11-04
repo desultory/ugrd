@@ -24,9 +24,13 @@ To install `ugrd`, clone the repo and run `pip install .`, setting `--break-syst
 
 Once installed, either set the config file in `/etc/ugrd/config.toml`, or pass it to the script:
 
-`ugrd example_config.toml`
+`ugrd -c example_config.toml`
 
 > Debug mode can be enabled with `-d` or verbose debugging with `-dd`
+
+The last argument is the output file, which can be a path:
+
+`ugrd /boot/ugrd.cpio`
 
 ## Runtime usage
 
@@ -57,7 +61,7 @@ Modules write to a shared config dict that is accessible by other modules.
 
 #### base.base
 
-> The main module, mostly pulls basic binaries and pulls the `core` and `mounts` modules
+> The main module, mostly pulls basic binaries and pulls the `core`, `mounts`, and `cpio` module.
 
 * `shebang` (#!/bin/bash) sets the shebang on the init script.
 
@@ -70,6 +74,14 @@ Modules write to a shared config dict that is accessible by other modules.
 * `binaries` is a list used to define programs to be pulled into the initrams. `which` is used to find the path of added entries, and `lddtree` is used to resolve dependendies.
 * `paths` is a list of directores to create in the `build_dir`. They do not need a leading `/`.
 
+#### base.cpio
+
+This module handles CPIO creation.
+
+* `out_file` (ugrd.cpio) Sets the name of the output file, under `out_dir` unless a path is defined.
+* `cpio_list_name` (cpio.list) Sets the name of the cpio list file for `gen_init_cpio`
+* `mknod_cpio` (true) Only create devicne nodes within the CPIO.
+
 ##### symlink creation
 
 Symlinks are defined in the `symlinks` dict. Each entry must have a name, `source` and `target`:
@@ -79,7 +91,6 @@ Symlinks are defined in the `symlinks` dict. Each entry must have a name, `sourc
 source = "/usr/bin/pinentry-tty"
 target = "/usr/bin/pinentry"
 ```
-
 
 ##### Copying files to a different destination
 
@@ -144,19 +155,6 @@ Defines /dev/ttyS1 as a `vt100` terminal with a `115200` baud rate.
 ##### General console options
 
 `primary_console` (tty0)  is used to set which console will be initialized with agetty on boot.
-
-#### base.cpio
-
-This module assists in creating a CPIO out of the initramfs `build_dir`.
-
-> This module is run during the `pack` phase.
-
-The following parameters can be set to alter CPIO functionality:
-
-* `mknod_cpio` (true) Only create the device nodes within the CPIO file.
-* `cpio_filename` (ugrd.cpio) can be set to change the final CPIO filename in the `out_dir`.
-* `cpio_list_name` (cpio.list) can be used to change the filename of the CPIO list for `gen_init_cpio`.
-* `_gen_init_cpio_path` The path to this tool can be specified. If not, it is included and will be built at runtime if needed.
 
 #### base.debug
 
@@ -310,7 +308,7 @@ key_type = "gpg"
 
 Cryptsetup global config:
 
-* `cryptsetup_key_type` (keyfile) Used to determine how a key is unlocked, setting it globally changes the default for definitions
+* `cryptsetup_key_type` - Sets the default `key_type` for all cryptsetup entries. 
 * `cryptsetup_retries` (5) The default number of times to try to unlock a device.
 * `cryptsetup_autoretry` (false) Whether or not to automatically retry mount attempts.
 
@@ -448,7 +446,7 @@ The `cpio` module imports the `make_cpio_list` packing function with:
 
 ```
 [imports.pack]
-"ugrd.base.cpio" = [ "make_cpio_list" ]
+"ugrd.base.base" = [ "make_cpio_list" ]
 ```
 
 #### init hooks

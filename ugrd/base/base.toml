@@ -1,14 +1,13 @@
-shebang = "#!/bin/bash"
-
-modules = ["ugrd.base.core", "ugrd.fs.mounts"]
+modules = ["ugrd.base.core", "ugrd.fs.mounts", "ugrd.base.cpio"]
 
 binaries = [ "bash", "ls", "cat", "switch_root" ]
 
 paths = [ "root" ]
+
+shebang = "#!/bin/bash"
 
 [imports.init_final]
 "ugrd.base.base" = [ "switch_root" ]
 
 [custom_parameters]
 shebang = "str"  # Add the shebang property, used because this is a bash script
-
