@@ -118,7 +118,7 @@ def _process_binaries_multi(self, binary):
             self.logger.debug("Skipping adding library path for first dependency: %s" % dependency)
             first_dep = False
             continue
-        if dependency.parent not in self['library_paths']:
+        if str(dependency.parent) not in self['library_paths']:
             self.logger.info("Adding library path: %s" % dependency.parent)
             # Make it a string so NoDupFlatList can handle it
             # It being derived from a path should ensure it's a proper path
