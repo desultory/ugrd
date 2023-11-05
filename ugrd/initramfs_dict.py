@@ -1,6 +1,6 @@
 
 __author__ = "desultory"
-__version__ = "0.8.2"
+__version__ = "0.8.3"
 
 from tomllib import load
 from pathlib import Path
@@ -43,6 +43,7 @@ class InitramfsConfigDict(dict):
     def __setitem__(self, key, value):
         # If the type is registered, use the appropriate update function
         if expected_type := self.builtin_parameters.get(key, self['custom_parameters'].get(key)):
+            self.logger.log(5, "[%s] Expected type: %s" % (key, expected_type))
             if hasattr(self, f"_process_{key}"):
                 self.logger.debug("Using builtin setitem for: %s" % key)
                 getattr(self, f"_process_{key}")(value)
@@ -66,6 +67,8 @@ class InitramfsConfigDict(dict):
             else:
                 super().__setitem__(key, expected_type(value))
         else:  # Otherwise set it like a normal dict item
+            self.logger.debug("[%s] Unable to determine expected type, valid builtin types: %s" % (key, self.builtin_parameters.keys()))
+            self.logger.debug("[%s] Custom types: %s" % (key, self['custom_parameters'].keys()))
             if key.startswith('_'):
                 self.logger.warning("Setting unknown internal paramaters '%s' with value: %s" % (key, value))
             else:
@@ -97,6 +100,8 @@ class InitramfsConfigDict(dict):
             super().__setitem__(parameter_name, eval(parameter_type)())
         elif parameter_type == "bool":
             super().__setitem__(parameter_name, False)
+        elif parameter_type == "int":
+            super().__setitem__(parameter_name, 0)
 
     @handle_plural
     def _process_imports(self, import_type: str, import_value: dict):

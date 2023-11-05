@@ -1,6 +1,6 @@
 
 __author__ = "desultory"
-__version__ = "0.8.0"
+__version__ = "0.8.1"
 
 from tomllib import load
 from pathlib import Path
@@ -42,7 +42,7 @@ class InitramfsGenerator:
 
         self.logger.debug("Loaded config: %s" % self.config_dict)
 
-        for parameter in ['build_dir', 'out_dir', 'clean']:
+        for parameter in ['build_dir', 'out_dir', 'clean', 'old_count']:
             dict_value = self.config_dict[parameter]
             if dict_value is not None:
                 setattr(self, parameter, dict_value)
@@ -192,8 +192,7 @@ class InitramfsGenerator:
             self._mkdir(self.build_dir)
 
         for subdir in set(self.config_dict['paths']):
-            subdir_path = Path(subdir)
-            subdir_relative_path = subdir_path.relative_to(subdir_path.anchor)
+            subdir_relative_path = subdir.relative_to(subdir.anchor)
             target_dir = self.build_dir / subdir_relative_path
 
             self._mkdir(target_dir)
@@ -266,6 +265,12 @@ class InitramfsGenerator:
             self.logger.debug("Parent directory for '%s' does not exist: %s" % (file_path.name, file_path))
             self._mkdir(file_path.parent)
 
+        if file_path.is_file():
+            self.logger.warning("File already exists: %s" % file_path)
+            if self.clean:
+                self.logger.info("Deleting file: %s" % file_path)
+                file_path.unlink()
+
         self.logger.debug("[%s] Writing contents:\n%s" % (file_path, pretty_print(contents)))
         with open(file_path, 'w') as file:
             file.writelines("\n".join(contents))
@@ -310,6 +315,51 @@ class InitramfsGenerator:
         copy2(source, dest_path)
 
         self._chown(dest_path)
+
+    def _rotate_old(self, file_name: Path, sequence=0):
+        """
+        Copies a file to file_name.old then file_nane.old.n, where n is the next number in the sequence
+        """
+        # Nothing to do if the file doesn't exist
+        if not file_name.is_file():
+            self.logger.debug("File does not exist: %s" % file_name)
+            return
+
+        # If the cycle count is not set, attempt to clean
+        if not self.old_count:
+            if self.clean:
+                self.logger.info("Deleting file: %s" % file_name)
+                file_name.unlink()
+                return
+            else:
+                # Fail if the cycle count is not set and clean is disabled
+                raise RuntimeError("Unable to cycle file, as cycle count is not set and clean is disabled: %s" % file_name)
+
+        self.logger.debug("[%d] Cycling file: %s" % (sequence, file_name))
+
+        # If the sequence is 0, we're cycling the file for the first time, just rename it to .old
+        suffix = '.old' if sequence == 0 else '.old.%d' % sequence
+        target_file = file_name.with_suffix(suffix)
+
+        self.logger.debug("[%d] Target file: %s" % (sequence, target_file))
+        # If the target file exists, cycle again
+        if target_file.is_file():
+            # First check if we've reached the cycle limit
+            if sequence >= self.old_count:
+                # Clean the last file in the sequence if clean is enabled
+                if self.clean:
+                    self.logger.info("Deleting old file: %s" % target_file)
+                    target_file.unlink()
+                else:
+                    self.logger.debug("Cycle limit reached")
+                    return
+            else:
+                self.logger.debug("[%d] Target file exists, cycling again" % sequence)
+                self._rotate_old(target_file, sequence + 1)
+
+        # Finally, rename the file
+        self.logger.info("[%d] Cycling file: %s -> %s" % (sequence, file_name, target_file))
+        file_name.rename(target_file)
 
     def _get_build_path(self, path):
         """

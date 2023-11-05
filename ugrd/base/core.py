@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.0.1'
+__version__ = '1.1.0'
 
 from pathlib import Path
 
@@ -82,6 +82,27 @@ def deploy_nodes(self):
             raise e
 
 
+def configure_library_paths(self):
+    """
+    Sets the export LD_LIBRARY_PATH variable to the library paths
+    """
+    library_paths = ":".join(self.config_dict['library_paths'])
+    self.logger.debug("Setting LD_LIBRARY_PATH to: %s" % library_paths)
+    return "export LD_LIBRARY_PATH=%s" % library_paths
+
+
+def _process_paths_multi(self, path):
+    """
+    Converts the input to a Path if it is not one
+    """
+    self.logger.log(5, "Processing path: %s" % path)
+    if not isinstance(path, Path):
+        path = Path(path)
+
+    self.logger.debug("Adding path: %s" % path)
+    self['paths'].append(path)
+
+
 def _process_binaries_multi(self, binary):
     """
     Processes binaries into the binaries list, adding dependencies along the way.
@@ -89,8 +110,21 @@ def _process_binaries_multi(self, binary):
     self.logger.debug("Processing binary: %s" % binary)
 
     dependencies = calculate_dependencies(self, binary)
-    self['dependencies'] = dependencies
+    # The first dependency will be the path of the binary itself, don't add this to the library paths
+    first_dep = True
+    for dependency in dependencies:
+        self['dependencies'] = dependency
+        if first_dep:
+            self.logger.debug("Skipping adding library path for first dependency: %s" % dependency)
+            first_dep = False
+            continue
+        if dependency.parent not in self['library_paths']:
+            self.logger.info("Adding library path: %s" % dependency.parent)
+            # Make it a string so NoDupFlatList can handle it
+            # It being derived from a path should ensure it's a proper path
+            self['library_paths'] = str(dependency.parent)
 
+    self.logger.debug("Adding binary: %s" % binary)
     self['binaries'].append(binary)
 
 
@@ -104,6 +138,7 @@ def _process_dependencies_multi(self, dependency):
     if not dependency.exists():
         raise FileNotFoundError("Dependency does not exist: %s" % dependency)
 
+    self.logger.debug("Adding dependency: %s" % dependency)
     self['dependencies'].append(dependency)
 
 
@@ -112,12 +147,13 @@ def _process_copies_multi(self, copy_name, copy_parameters):
     Processes a copy from the copies parameter
     Ensures the source and target are defined in the parameters.
     """
-    self.logger.debug("[%s] Processing copy: %s" % (copy_name, copy_parameters))
+    self.logger.log(5, "[%s] Processing copies: %s" % (copy_name, copy_parameters))
     if 'source' not in copy_parameters:
         raise ValueError("[%s] No source specified" % copy_name)
     if 'destination' not in copy_parameters:
         raise ValueError("[%s] No target specified" % copy_name)
 
+    self.logger.debug("[%s] Adding copies: %s" % (copy_name, copy_parameters))
     self['copies'][copy_name] = copy_parameters
 
 
@@ -126,12 +162,13 @@ def _process_symlinks_multi(self, symlink_name, symlink_parameters):
     Processes a symlink,
     Ensures the source and target are defined in the parameters.
     """
-    self.logger.debug("[%s] Processing symlink: %s" % (symlink_name, symlink_parameters))
+    self.logger.log(5, "[%s] Processing symlink: %s" % (symlink_name, symlink_parameters))
     if 'source' not in symlink_parameters:
         raise ValueError("[%s] No source specified" % symlink_name)
     if 'target' not in symlink_parameters:
         raise ValueError("[%s] No target specified" % symlink_name)
 
+    self.logger.debug("[%s] Adding symlink: %s -> %s" % (symlink_name, symlink_parameters['source'], symlink_parameters['target']))
     self['symlinks'][symlink_name] = symlink_parameters
 
 
@@ -152,6 +189,7 @@ def _process_nodes_multi(self, node_name, node_config):
         node_config['mode'] = 0o660
         self.logger.debug("[%s] No mode specified, assuming: %s" % (node_name, node_config['mode']))
 
+    self.logger.debug("[%s] Adding node: %s" % (node_name, node_config))
     self['nodes'][node_name] = node_config
 
 

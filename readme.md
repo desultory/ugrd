@@ -70,6 +70,7 @@ Modules write to a shared config dict that is accessible by other modules.
 * `build_dir` (/tmp/initramfs) Defines where the build will take place.
 * `out_dir` (/tmp/initramfs_out) Defines where packed files will be placed.
 * `clean` (true) forces the build dir to be cleaned on each run.
+* `old_count` (1) Sets the number of old file to keep when running the `_rotate_old` function.
 * `file_owner` (portage) sets the owner for items pulled into the initramfs on the build system
 * `binaries` is a list used to define programs to be pulled into the initrams. `which` is used to find the path of added entries, and `lddtree` is used to resolve dependendies.
 * `paths` is a list of directores to create in the `build_dir`. They do not need a leading `/`.

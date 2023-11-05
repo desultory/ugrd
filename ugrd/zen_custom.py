@@ -1,7 +1,7 @@
 """
 A collection of classes and decorators
 """
-__version__ = '3.1.0'
+__version__ = '3.1.1'
 __author__ = 'desultory'
 
 import logging
@@ -108,7 +108,7 @@ def handle_plural(function):
             for key, value in focus_arg.items():
                 function(self, *(other_args + (key, value,)))
         else:
-            self.logger.debug("Arguments were not expanded: %s" % args)
+            self.logger.log(5, "Arguments were not expanded: %s" % args)
             return function(self, *args)
     return wrapper
 

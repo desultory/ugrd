@@ -38,6 +38,8 @@ def pack_cpio(self):
     self.logger.info("Creating CPIO file from packing list: %s" % packing_list)
 
     out_cpio = self.out_dir / self.config_dict['out_file']
+    if out_cpio.exists():
+        self._rotate_old(out_cpio)
 
     with open(out_cpio, 'wb') as cpio_file:
         cmd = run([str(cpio_path), packing_list], stdout=cpio_file)

@@ -10,17 +10,11 @@ cryptsetup_autoretry = true
 [imports.config_processing]
 "ugrd.crypto.cryptsetup" = [ "_process_cryptsetup_multi", "_process_cryptsetup_key_types_multi" ]
 
-[imports.init_pre]
-"ugrd.crypto.cryptsetup" = [ "configure_library_dir" ]
-
 [imports.init_early]
 "ugrd.crypto.cryptsetup" = [ "get_crypt_sources" ]
 
 [imports.init_main]
 "ugrd.crypto.cryptsetup" = [ "crypt_init" ]
-
-[imports.build_pre]
-"ugrd.crypto.cryptsetup" = [ "find_libgcc" ]
 
 [cryptsetup_key_types.keyfile]
 key_command = "cat {key_file} >"

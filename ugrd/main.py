@@ -17,9 +17,9 @@ def main():
     # Add arguments for dracut compatibility
     argparser.add_argument('-c', '--config', action='store', help='Config file location')
     argparser.add_argument('--kver', action='store', help='Kernel version')
+    argparser.add_argument('--force', action='store_true', help='Enable build cleaning', default=True)
 
     # Add and ignore arguments for dracut compatibility
-    argparser.add_argument('--force', action='store_true', help='Not used, for dracut compatibility')
     argparser.add_argument('--kernel-image', action='store', help='Kernel image')
 
     # Add the argument for the output file
@@ -36,14 +36,10 @@ def main():
         logger.setLevel(20)
 
     kwargs = {'logger': logger}
-    if config := args.config:
-        kwargs['config'] = config
 
-    if config := args.kver:
-        kwargs['kernel_version'] = config
-
-    if config := args.output_file:
-        kwargs['out_file'] = config
+    for config, arg in {'clean': 'force', 'kernel_version': 'kver', 'config': 'config', 'out_file': 'output_file'}.items():
+        if arg := getattr(args, arg):
+            kwargs[config] = arg
 
     generator = InitramfsGenerator(**kwargs)
     try:

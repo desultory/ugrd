@@ -1,6 +1,6 @@
 __author__ = 'desultory'
 
-__version__ = '0.8.1'
+__version__ = '0.8.2'
 
 
 CRYPTSETUP_PARAMETERS = ['key_type', 'partuuid', 'uuid', 'key_file', 'header_file', 'retries', 'key_command', 'reset_command', 'try_nokey']
@@ -54,13 +54,6 @@ def _process_cryptsetup_multi(self, mapped_name, config):
         config['retries'] = self['cryptsetup_retries']
 
     self['cryptsetup'][mapped_name] = config
-
-
-def configure_library_dir(self):
-    """
-    exports the libtary path for cryptsetup
-    """
-    return 'export LD_LIBRARY_PATH=/lib64'
 
 
 def get_crypt_sources(self):
@@ -166,14 +159,3 @@ def crypt_init(self):
             out += ['fi']
     return out
 
-
-def find_libgcc(self):
-    """
-    Finds libgcc.so, adds a copies item for it.
-    """
-    ldconfig = self._run(['ldconfig', '-p']).stdout.decode().split("\n")
-    libgcc = [lib for lib in ldconfig if 'libgcc_s' in lib and 'libc6,x86-64' in lib][0]
-    source_path = libgcc.partition('=> ')[-1]
-    self.logger.debug("Source path for libgcc_s: %s" % source_path)
-
-    self.config_dict['copies']['libgcc_s'] = {'source': source_path, 'destination': '/lib64/'}
