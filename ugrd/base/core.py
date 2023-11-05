@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.1.0'
+__version__ = '1.1.1'
 
 from pathlib import Path
 
@@ -12,7 +12,11 @@ def calculate_dependencies(self, binary):
     if not binary_path:
         raise RuntimeError("'%s' not found in PATH" % binary)
 
-    dependencies = run(['lddtree', '-l', binary_path], capture_output=True)
+    binary_path = Path(binary_path)
+
+    self.logger.debug("Calculating dependencies for: %s" % binary_path)
+    dependencies = run(['lddtree', '-l', str(binary_path)], capture_output=True)
+
     if dependencies.returncode != 0:
         self.logger.warning("Unable to calculate dependencies for: %s" % binary)
         raise RuntimeError("Unable to resolve dependencies, error: %s" % dependencies.stderr.decode('utf-8'))
@@ -23,8 +27,7 @@ def calculate_dependencies(self, binary):
         if dependency.startswith('//'):
             dependency = dependency[1:]
 
-        dep_path = Path(dependency)
-        dependency_paths.append(dep_path)
+        dependency_paths.append(Path(dependency))
 
     return dependency_paths
 
@@ -34,6 +37,13 @@ def deploy_dependencies(self):
     Copies all dependencies to the build directory
     """
     for dependency in self.config_dict['dependencies']:
+        if dependency.is_symlink():
+            if self.config_dict['symlinks'].get(f'_auto_{dependency.name}'):
+                self.logger.debug("Dependency is a symlink, skipping: %s" % dependency)
+                continue
+            else:
+                raise ValueError("Dependency is a symlink and not in the symlinks list: %s" % dependency)
+
         self.logger.debug("Copying dependency: %s" % dependency)
         self._copy(dependency)
 
@@ -137,6 +147,15 @@ def _process_dependencies_multi(self, dependency):
 
     if not dependency.exists():
         raise FileNotFoundError("Dependency does not exist: %s" % dependency)
+
+    if dependency.is_symlink():
+        if self['symlinks'].get(f'_auto_{dependency.name}'):
+            self.logger.debug("Dependency is a symlink which is alreadty in the symlinks list, skipping: %s" % dependency)
+        else:
+            resolved_path = dependency.resolve()
+            self.logger.info("Dependency is a symlink, adding to symlinks: %s -> %s" % (dependency, resolved_path))
+            self['symlinks'][f'_auto_{dependency.name}'] = {'source': resolved_path, 'target': dependency}
+            dependency = resolved_path
 
     self.logger.debug("Adding dependency: %s" % dependency)
     self['dependencies'].append(dependency)
