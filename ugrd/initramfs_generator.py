@@ -40,7 +40,7 @@ class InitramfsGenerator:
             self.logger.debug("Processing config key: %s" % config)
             self.config_dict[config] = value
 
-        self.logger.debug("Loaded config: %s" % self.config_dict)
+        self.logger.debug("Loaded config:\n%s" % self.config_dict)
 
         for parameter in ['build_dir', 'out_dir', 'clean', 'old_count']:
             dict_value = self.config_dict[parameter]

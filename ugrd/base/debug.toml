@@ -1,11 +1,13 @@
 binaries = ['cp', 'mv', 'rm', 'nano', 'find', 'grep', 'dmesg', 'chmod', 'touch', 'valgrind', 'gdb', 'python']
 
-[imports.build_pre]
-"ugrd.base.debug" = [ "pull_valgrind_parts" ]
+python_version = "3.11"
 
+[imports.build_pre]
+"ugrd.base.debug" = [ "pull_python_parts", "pull_valgrind_parts" ]
 
 [imports.init_debug]
 "ugrd.base.debug" = [ "start_shell" ]
 
 [custom_parameters]
 start_shell = "bool"  # Start a shell during init_early
+python_version = "str"  # Python version to use

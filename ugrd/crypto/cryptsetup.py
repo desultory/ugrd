@@ -1,6 +1,6 @@
 __author__ = 'desultory'
 
-__version__ = '0.8.2'
+__version__ = '0.9.0'
 
 
 CRYPTSETUP_PARAMETERS = ['key_type', 'partuuid', 'uuid', 'key_file', 'header_file', 'retries', 'key_command', 'reset_command', 'try_nokey']
@@ -159,3 +159,18 @@ def crypt_init(self):
             out += ['fi']
     return out
 
+
+def find_libgcc(self):
+    """
+    Finds libgcc.so, adds a 'dependencies' item for it.
+    Adds the parend directory to 'library_paths'
+    """
+    from pathlib import Path
+
+    ldconfig = self._run(['ldconfig', '-p']).stdout.decode().split("\n")
+    libgcc = [lib for lib in ldconfig if 'libgcc_s' in lib and 'libc6,x86-64' in lib][0]
+    source_path = Path(libgcc.partition('=> ')[-1])
+    self.logger.debug("Source path for libgcc_s: %s" % source_path)
+
+    self.config_dict['dependencies'] = source_path
+    self.config_dict['library_paths'] = str(source_path.parent)
