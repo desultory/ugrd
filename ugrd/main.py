@@ -57,9 +57,9 @@ def main():
         generator.generate_init()
         generator.pack_build()
     except Exception as e:
-        logger.error("\n\nError: %s\n\n" % e, exc_info=True)
         logger.info("Dumping config dict:\n")
-        pretty_print(generator.config_dict)
+        print(generator.config_dict)
+        logger.error(e, exc_info=True)
 
 
 if __name__ == '__main__':
