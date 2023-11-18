@@ -150,10 +150,10 @@ def _process_dependencies_multi(self, dependency):
 
     if dependency.is_symlink():
         if self['symlinks'].get(f'_auto_{dependency.name}'):
-            self.logger.debug("Dependency is a symlink which is alreadty in the symlinks list, skipping: %s" % dependency)
+            self.logger.log(5, "Dependency is a symlink which is alreadty in the symlinks list, skipping: %s" % dependency)
         else:
             resolved_path = dependency.resolve()
-            self.logger.info("Dependency is a symlink, adding to symlinks: %s -> %s" % (dependency, resolved_path))
+            self.logger.debug("Dependency is a symlink, adding to symlinks: %s -> %s" % (dependency, resolved_path))
             self['symlinks'][f'_auto_{dependency.name}'] = {'source': resolved_path, 'target': dependency}
             dependency = resolved_path
 
@@ -222,7 +222,7 @@ def _process_file_owner(self, owner):
         try:
             self.logger.debug("Processing file owner: %s" % owner)
             self['_file_owner_uid'] = getpwnam(owner).pw_uid
-            self.logger.info("Detected file owner uid: %s" % self['_file_owner_uid'])
+            self.logger.info("Using uid: %s" % self['_file_owner_uid'])
         except KeyError as e:
             self.logger.error("Unable to process file owner: %s" % owner)
             self.logger.error(e)

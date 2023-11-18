@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from ugrd.initramfs_generator import InitramfsGenerator
-from ugrd.zen_custom import pretty_print
+from ugrd.zen_custom import pretty_print, ColorLognameFormatter
 
 from argparse import ArgumentParser
 import logging
@@ -27,14 +27,24 @@ def main():
 
     args = argparser.parse_args()
 
+    # Set the initial logger debug level based on the args, set the format string based on the debug level
     logger = logging.getLogger()
     if args.verbose_debug:
         logger.setLevel(5)
+        formatter = ColorLognameFormatter('%(time)s | %(levelname)s | %(name)-42s | %(message)s')
     elif args.debug:
         logger.setLevel(10)
+        formatter = ColorLognameFormatter('%(levelname)s | %(name)-42s | %(message)s')
     else:
         logger.setLevel(20)
+        formatter = ColorLognameFormatter()
 
+    # Add the handler to the logger
+    handler = logging.StreamHandler()
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+
+    # Pass the logger to the generator
     kwargs = {'logger': logger}
 
     for config, arg in {'clean': 'force', 'kernel_version': 'kver', 'config': 'config', 'out_file': 'output_file'}.items():

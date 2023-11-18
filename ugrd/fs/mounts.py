@@ -153,10 +153,53 @@ def mount_fstab(self):
     return out
 
 
+def _get_mounts_source(self, mount):
+    """
+    Returns the source device of a mountpoint on /proc/mounts
+    """
+    self.logger.debug("Getting mount source for: %s" % mount)
+    # Add space padding to the mount name
+    mount = mount if mount.startswith(' ') else ' ' + mount
+    mount = mount if mount.endswith(' ') else mount + ' '
+
+    with open('/proc/mounts', 'r') as mounts:
+        for line in mounts:
+            if mount in line:
+                # If the mount is found, return the source
+                # Resolve the path as it may be a symlink
+                mount_source = Path(line.split()[0]).resolve()
+                self.logger.debug("Found mount source: %s" % mount_source)
+                return mount_source
+    self.logger.warning("Unable to find mount source for: %s" % mount)
+
+
+def _get_lsblk_info(self, mount, output_fields="NAME,UUID,PARTUUID,LABEL"):
+    """
+    Gets the lsblk info for a mountpoint
+    """
+    from json import loads, JSONDecodeError
+
+    self.logger.debug("Getting lsblk info for: %s" % mount)
+
+    mount_info = self._run(['lsblk', '--json', '--output', output_fields, str(mount)])
+    try:
+        mount_info = loads(mount_info.stdout)
+    except JSONDecodeError:
+        self.logger.warning("Unable to parse lsblk info for: %s" % mount)
+        return None
+
+    self.logger.debug("Found lsblk info: %s" % mount_info)
+    return mount_info
+
 def mount_root(self):
     """
-    Mounts the root partition
+    Mounts the root partition.
+    Warns if the root partition isn't found on the current system.
     """
+#    root_source = self.config_dict['mounts']['root']['source']
+    host_root_dev = _get_mounts_source(self, '/')
+    lsblk_info = _get_lsblk_info(self, host_root_dev)
+
     root_path = self.config_dict['mounts']['root']['destination']
 
     return [f"mount {root_path} || (echo 'Failed to mount root partition' && bash)"]

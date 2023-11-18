@@ -1,6 +1,8 @@
 __author__ = 'desultory'
 
-__version__ = '0.9.0'
+__version__ = '0.9.1'
+
+__module_name__ = 'ugrd.crypto.cryptsetup'
 
 
 CRYPTSETUP_PARAMETERS = ['key_type', 'partuuid', 'uuid', 'key_file', 'header_file', 'retries', 'key_command', 'reset_command', 'try_nokey']
@@ -50,7 +52,7 @@ def _process_cryptsetup_multi(self, mapped_name, config):
                 config[parameter] = value.format(**config)
 
     if not config.get('retries'):
-        self.logger.info("No retries specified, using default: %s" % self['cryptsetup_retries'])
+        self.logger.info("[%s] No retries specified, using default: %s" % (__module_name__, self['cryptsetup_retries']))
         config['retries'] = self['cryptsetup_retries']
 
     self['cryptsetup'][mapped_name] = config
