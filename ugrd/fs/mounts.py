@@ -1,10 +1,11 @@
 __author__ = 'desultory'
-__version__ = '1.1.1'
+__version__ = '1.1.2'
 
 from pathlib import Path
 
 
 MOUNT_PARAMETERS = ['destination', 'source', 'type', 'options', 'base_mount', 'skip_unmount', 'remake_mountpoint']
+SOURCE_TYPES = ['uuid', 'partuuid', 'label']
 
 
 def _process_mounts_multi(self, mount_name, mount_config):
@@ -12,6 +13,7 @@ def _process_mounts_multi(self, mount_name, mount_config):
     Processes the passed mounts into fstab mount objects
     under 'mounts'
     """
+    # If the mount already exists, merge the options and update it
     if mount_name in self['mounts']:
         self.logger.info("Updating mount: %s" % mount_name)
         self.logger.debug("[%s] Updating mount with: %s" % (mount_name, mount_config))
@@ -21,14 +23,36 @@ def _process_mounts_multi(self, mount_name, mount_config):
             mount_config.pop('options')
         mount_config = dict(self['mounts'][mount_name], **mount_config)
 
-    for parameter in mount_config:
-        if parameter not in MOUNT_PARAMETERS:
+    # Validate the mount config
+    for parameter, value in mount_config.items():
+        if parameter == 'source' and isinstance(value, dict):
+            for source_type in SOURCE_TYPES:
+                if source_type in value:
+                    break
+            else:
+                self.logger.info("Valid source types: %s" % SOURCE_TYPES)
+                raise ValueError("Invalid source type in mount: %s" % value)
+        elif parameter not in MOUNT_PARAMETERS:
             raise ValueError("Invalid parameter in mount: %s" % parameter)
 
+    # Set defaults
     mount_config['destination'] = Path(mount_config.get('destination', mount_name))
     mount_config['base_mount'] = mount_config.get('base_mount', False)
     mount_config['options'] = set(mount_config.get('options', ''))
 
+    # Check if the mount exists on the host if it's not a base mount
+    if not mount_config['base_mount']:
+        # Only check the root mount after the source has been defined
+        if mount_name == 'root':
+            if 'source' in mount_config:
+                _validate_host_mount(self, mount_config, '/')
+        # The source must be defined for non-root mounts
+        elif 'source' not in mount_config:
+            raise ValueError("[%s] No source specified in mount: %s" % (mount_name, mount_config))
+        else:
+            _validate_host_mount(self, mount_config)
+
+    # Add imports based on the mount type
     if mount_type := mount_config.get('type'):
         if mount_type == 'vfat':
             self['_kmod_depend'] = 'vfat'
@@ -54,14 +78,11 @@ def _get_mount_source(self, mount, pad=False):
 
     out_str = ''
     if isinstance(source, dict):
-        if 'uuid' in source:
-            out_str = f"UUID={source['uuid']}"
-        elif 'partuuid' in source:
-            out_str = f"PARTUUID={source['partuuid']}"
-        elif 'label' in source:
-            out_str = f"LABEL={source['label']}"
-        else:
-            raise ValueError("Unable to process source entry: %s" % repr(source))
+        # Create the source string from the dict
+        for source_type in SOURCE_TYPES:
+            if source_type in source:
+                out_str = f"{source_type.upper()}={source[source_type]}"
+                break
     else:
         out_str = source
 
@@ -157,6 +178,11 @@ def _get_mounts_source(self, mount):
     """
     Returns the source device of a mountpoint on /proc/mounts
     """
+    # Make the mount a string and ensure it starts with a /
+    mount = str(mount)
+    if not mount.startswith('/') and not mount.startswith(' /'):
+        mount = '/' + mount
+
     self.logger.debug("Getting mount source for: %s" % mount)
     # Add space padding to the mount name
     mount = mount if mount.startswith(' ') else ' ' + mount
@@ -177,9 +203,16 @@ def _get_blkid_info(self, device):
     """
     Gets the blkid info for a device
     """
+    from subprocess import run
     self.logger.debug("Getting blkid info for: %s" % device)
 
-    mount_info = self._run(['blkid', str(device)]).stdout.decode().strip()
+    cmd = run(['blkid', str(device)], capture_output=True)
+    if cmd.returncode != 0:
+        self.logger.warning("Unable to find blkid info for: %s" % device)
+        return None
+
+    mount_info = cmd.stdout.decode().strip()
+
     if not mount_info:
         self.logger.warning("Unable to find blkid info for: %s" % device)
         return None
@@ -188,33 +221,50 @@ def _get_blkid_info(self, device):
     return mount_info
 
 
+def _validate_host_mount(self, mount, destination_path=None):
+    """
+    Checks if a defined mount exists on the host
+    """
+    if not self['hostonly']:
+        self.logger.debug("Skipping host mount check as hostonly is not set")
+        return
+
+    source = mount['source']
+    destination_path = mount['destination'] if destination_path is None else destination_path
+
+    host_source_dev = _get_mounts_source(self, destination_path)
+    if not host_source_dev:
+        self.logger.error("Unable to find mount on host system: %s" % destination_path)
+        return
+    else:
+        self.logger.debug("Checking host volume: %s" % host_source_dev)
+
+    if isinstance(source, str):
+        if source != host_source_dev:
+            self.logger.warning("Host device mismatch. Expected: %s, Found: %s" % (source, host_source_dev))
+    elif isinstance(source, dict):
+        # If the source is a dict, check that the uuid, partuuid, or label matches the host mount
+        if blkid_info := _get_blkid_info(self, host_source_dev):
+            # Unholy for-else, breaks if the uuid, partuuid, or label matches, otherwise warns
+            for key, value in source.items():
+                search_str = f'{key.upper()}="{value}"'
+                if value in blkid_info:
+                    self.logger.debug("Fount host device match: %s" % search_str)
+                    return True
+            else:
+                self.logger.error("Mount device not found on host system. Expected: %s" % source)
+                self.logger.error("Host device info: %s" % blkid_info)
+        else:
+            self.logger.warning("Unable to find blkid info for: %s" % host_source_dev)
+
+    raise ValueError("Unable to validate host mount: %s" % mount)
+
+
 def mount_root(self):
     """
     Mounts the root partition.
     Warns if the root partition isn't found on the current system.
     """
-    root_source = self.config_dict['mounts']['root']['source']
-    host_root_dev = _get_mounts_source(self, '/')
-
-    # If the root device is a string, check that it's the same path as the host root mount
-    if isinstance(root_source, str):
-        if root_source != host_root_dev:
-            self.logger.warning("Root device mismatch. Expected: %s, Found: %s" % (root_source, host_root_dev))
-    elif isinstance(root_source, dict):
-        # If the root device is a dict, check that the uuid, partuuid, or label matches the host root mount
-        if blkid_info := _get_blkid_info(self, host_root_dev):
-            # Unholy for-else, breaks if the uuid, partuuid, or label matches, otherwise warns
-            for key, value in root_source.items():
-                search_str = f"{key.upper()}=\"{value}\""
-                if value in blkid_info:
-                    self.logger.debug("Found root device match: %s" % search_str)
-                    break
-            else:
-                self.logger.warning("Configuration root device not found on host system. Expected: %s" % root_source)
-                self.logger.warning("Host system root device info: %s" % blkid_info)
-        else:
-            self.logger.warning("Unable to find blkid info for: %s" % root_source)
-
     root_path = self.config_dict['mounts']['root']['destination']
 
     return [f"mount {root_path} || (echo 'Failed to mount root partition' && bash)"]

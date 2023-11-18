@@ -7,8 +7,6 @@ binaries = [
   "umount",
 ]
 
-paths = [ "mnt/root" ]
-
 mount_wait = false
 
 [imports.config_processing]
