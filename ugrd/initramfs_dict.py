@@ -1,6 +1,6 @@
 
 __author__ = "desultory"
-__version__ = "0.8.3"
+__version__ = "0.8.5"
 
 from tomllib import load
 from pathlib import Path
@@ -45,19 +45,18 @@ class InitramfsConfigDict(dict):
         if expected_type := self.builtin_parameters.get(key, self['custom_parameters'].get(key)):
             self.logger.log(5, "[%s] Expected type: %s" % (key, expected_type))
             if hasattr(self, f"_process_{key}"):
-                self.logger.debug("Using builtin setitem for: %s" % key)
+                self.logger.debug("[%s] Using builtin setitem: %s" % (key, f"_process_{key}"))
                 getattr(self, f"_process_{key}")(value)
             elif func := self['custom_processing'].get(f"_process_{key}"):
-                self.logger.debug("Using custom setitem for: %s" % key)
+                self.logger.debug("[%s] Using custom setitem: %s" % (key, func.__name__))
                 func(self, value)
             elif func := self['custom_processing'].get(f"_process_{key}_multi"):
-                self.logger.debug("Using custom plural setitem for: %s" % key)
+                self.logger.debug("[%s] Using custom plural setitem: %s" % (key, func.__name__))
                 handle_plural(func)(self, value)
             elif expected_type in (list, NoDupFlatList):
-                self.logger.debug("Using list setitem for: %s" % key)
+                self.logger.log(5, "Using list setitem for: %s" % key)
                 self[key].append(value)
             elif expected_type == dict:
-                self.logger.debug("Using dict setitem for: %s" % key)
                 if key not in self:
                     self.logger.debug("Setting dict '%s' to: %s" % (key, value))
                     super().__setitem__(key, value)
@@ -75,21 +74,10 @@ class InitramfsConfigDict(dict):
                 raise ValueError("Detected undefined parameter type '%s' with value: %s" % (key, value))
 
     @handle_plural
-    def update_dict(self, name: str, key: str, value: dict):
-        """
-        Updates a dict in the internal dictionary
-        """
-        if key not in self[name]:
-            self[name][key] = value
-            self.logger.info("Set %s[%s] to: %s" % (name, key, value))
-        else:
-            self[name][key] = value
-            self.logger.warning("%s[%s] already set" % (name, key))
-
-    @handle_plural
     def _process_custom_parameters(self, parameter_name, parameter_type):
         """
-        Updates the custom_parameters attribute
+        Updates the custom_parameters attribute.
+        Sets the initial value of the parameter based on the type.
         """
         self['custom_parameters'][parameter_name] = eval(parameter_type)
         self.logger.debug("Registered custom parameter '%s' with type: %s" % (parameter_name, parameter_type))
@@ -108,19 +96,26 @@ class InitramfsConfigDict(dict):
         """
         Processes imports in a module, importing the functions and adding them to the appropriate list
         """
+        from importlib import import_module
+
         self.logger.debug("Processing imports of type: %s" % import_type)
 
-        from importlib import import_module
         for module_name, function_names in import_value.items():
             self.logger.debug("Importing module: %s" % module_name)
-            function_list = [getattr(import_module(f"{module_name}"), function_name) for function_name in function_names]
+
+            module = import_module(module_name)
+            self.logger.debug("[%s] Imported module contents: %s" % (module_name, dir(module)))
+            if '_module_name' in dir(module) and module._module_name != module_name:
+                self.logger.warning("Module name mismatch: %s != %s" % (module._module_name, module_name))
+
+            function_list = [getattr(module, function_name) for function_name in function_names]
 
             if import_type not in self['imports']:
-                self.logger.debug("Creating import type: %s" % import_type)
+                self.logger.log(5, "Creating import type: %s" % import_type)
                 self['imports'][import_type] = NoDupFlatList(log_bump=10, logger=self.logger, _log_init=False)
 
             self['imports'][import_type] += function_list
-            self.logger.debug("Updated import '%s': %s" % (import_type, function_list))
+            self.logger.debug("[%s] Updated import functions: %s" % (import_type, function_list))
 
             if import_type == 'config_processing':
                 for function in function_list:
@@ -137,25 +132,6 @@ class InitramfsConfigDict(dict):
             self.logger.warning("Module depenncy added, but required dependency is not loaded: %s" % module)
 
         self['mod_depends'].append(module)
-
-    def verify_deps(self):
-        """ Verifies that all module dependencies are met """
-        for module in self['mod_depends']:
-            if module not in self['modules']:
-                raise KeyError(f"Required module '{module}' not found in config")
-
-        self.logger.info("Verified module depndencies: %s" % self['mod_depends'])
-
-    def verify_mask(self):
-        """
-        Processes masked imports
-        """
-        for mask_hook, mask_items in self['mask'].items():
-            if self['imports'].get(mask_hook):
-                for function in self['imports'][mask_hook]:
-                    if function.__name__ in mask_items:
-                        self.logger.warning("Masking import: %s" % function.__name__)
-                        self['imports'][mask_hook].remove(function)
 
     @handle_plural
     def _process_modules(self, module):
@@ -195,6 +171,25 @@ class InitramfsConfigDict(dict):
             self[name] = value
 
         self['modules'].append(module)
+
+    def verify_deps(self):
+        """ Verifies that all module dependencies are met """
+        for module in self['mod_depends']:
+            if module not in self['modules']:
+                raise KeyError(f"Required module '{module}' not found in config")
+
+        self.logger.info("Verified module depndencies: %s" % self['mod_depends'])
+
+    def verify_mask(self):
+        """
+        Processes masked imports
+        """
+        for mask_hook, mask_items in self['mask'].items():
+            if self['imports'].get(mask_hook):
+                for function in self['imports'][mask_hook]:
+                    if function.__name__ in mask_items:
+                        self.logger.warning("Masking import: %s" % function.__name__)
+                        self['imports'][mask_hook].remove(function)
 
     def __str__(self):
         return pretty_print(self)

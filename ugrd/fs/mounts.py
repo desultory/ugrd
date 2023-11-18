@@ -41,7 +41,7 @@ def _process_mounts_multi(self, mount_name, mount_config):
 
     self.logger.debug("[%s] Added mount: %s" % (mount_name, mount_config))
 
-    self['paths'].append(mount_config['destination'])
+    self['paths'] = mount_config['destination']
 
 
 def _get_mount_source(self, mount, pad=False):

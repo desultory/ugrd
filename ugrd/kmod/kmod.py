@@ -1,6 +1,8 @@
 __author__ = 'desultory'
 
-__version__ = '0.4.7'
+__version__ = '0.5.0'
+
+__module_name__ = 'ugrd.kmod.kmod'
 
 from pathlib import Path
 
@@ -53,7 +55,7 @@ def resolve_kmod_path(self, module_name):
     if module_path == '(builtin)':
         raise BuiltinKernelModule(module_name)
 
-    self.logger.debug(f'Kernel module {module_name} is located at {module_path}')
+    self.logger.debug("[%s] Kernel module is located at: %s" % (module_name, module_path))
 
     return Path(module_path)
 
@@ -99,7 +101,7 @@ def resolve_kmod_harddeps(self, module_name):
     dependencies = cmd.stdout.decode().strip().split(',')
 
     if dependencies[0]:
-        self.logger.debug("Kernel module '%s' has hard dependencies: %s" % (module_name, dependencies))
+        self.logger.debug("[%s] Kernel module has hard dependencies: %s" % (module_name, dependencies))
         return dependencies
 
 
@@ -137,20 +139,20 @@ def resolve_kmod(self, module_name):
                 dependency_paths.append(resolve_kmod_path(self, dependency))
                 self.config_dict['kernel_modules'] = dependency
             except BuiltinKernelModule:
-                self.logger.warning("[%s] Kernel module dependency is built-in: %s" % (module_name, dependency))
+                self.logger.debug("[%s] Kernel module dependency is built-in: %s" % (module_name, dependency))
                 self.config_dict['kmod_ignore'] = module_name
 
     try:
         dependency_paths.append(resolve_kmod_path(self, module_name))
         self.logger.debug("[%s] Calculated kernel module dependencies: %s" % (module_name, dependency_paths))
     except BuiltinKernelModule:
-        self.logger.warning("[%s] Kernel module is built-in." % module_name)
+        self.logger.debug("[%s] Kernel module is built-in." % module_name)
         self.config_dict['kmod_ignore'] = module_name
 
     if dependency_paths:
         return dependency_paths
     else:
-        self.logger.warning("[%s] Kernel module has no dependencies." % module_name)
+        self.logger.debug("[%s] Kernel module has no dependencies." % module_name)
 
 
 def get_lspci_modules(self):
@@ -263,7 +265,11 @@ def calculate_modules(self):
                 self.config_dict['dependencies'] = module_paths
                 self.logger.debug("Resolved dependency paths for kernel module '%s': %s" % (module, module_paths))
             else:
-                self.logger.warning("Failed to resolve dependency paths for kernel module '%s'" % module)
+                # Make internal dependencies quieter
+                if module in self.config_dict['_kmod_depend']:
+                    self.logger.debug("Failed to resolve dependency paths for internal dependency: %s" % module)
+                else:
+                    self.logger.warning("Failed to resolve dependency paths for kernel module: %s" % module)
         except IgnoredKernelModule:
             self.logger.warning("Ignoring kernel module: %s" % module)
             self.config_dict['kernel_modules'].remove(module)

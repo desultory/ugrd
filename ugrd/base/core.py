@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.1.1'
+__version__ = '1.1.2'
 
 from pathlib import Path
 
@@ -108,6 +108,11 @@ def _process_paths_multi(self, path):
     self.logger.log(5, "Processing path: %s" % path)
     if not isinstance(path, Path):
         path = Path(path)
+
+    # Make sure the path is relative
+    if path.is_absolute():
+        path = path.relative_to(path.anchor)
+        self.logger.debug("Path was absolute, converted to relative: %s" % path)
 
     self.logger.debug("Adding path: %s" % path)
     self['paths'].append(path)

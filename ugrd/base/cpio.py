@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.1.0'
+__version__ = '1.1.1'
 
 
 from subprocess import run
@@ -128,4 +128,8 @@ def make_cpio_list(self):
 
     packing_list = directory_list + file_list + symlink_list + node_list
 
-    self._write(self.out_dir / self.config_dict['cpio_list_name'], packing_list, in_build_dir=False)
+    cpio_list_path = self.out_dir / self.config_dict['cpio_list_name']
+    if cpio_list_path.exists():
+        self._rotate_old(cpio_list_path)
+
+    self._write(cpio_list_path, packing_list, in_build_dir=False)
