@@ -1,5 +1,5 @@
 # This config will decrypt the colume fdf442da-0574-4531-98c7-55227a041f1d, mapping it to "/dev/mapper/root"
-# It will attempt to mount the btrfs subvolume "gento" from the devive with label "rootfs" to /root
+# It will attempt to mount the btrfs subvolume "gentoo" from the device with label "rootfs" to /root
 # It will pull all current kernel modules from the active kernel version
 # The kmod.novideo and kmod.nosound modules are pulled to help minmize pulled modules
 
