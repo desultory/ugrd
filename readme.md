@@ -16,7 +16,7 @@ The original goal of this project was to create an initramfs suitable for decryp
   - Allows for late insertion of a smartcard
   - Can fail back to plain password entry
 * Key entry over serial
-* Automatic CPIO generation
+* Automatic CPIO generation (gen_init_cpio)
 
 ## Usage
 
@@ -349,6 +349,8 @@ The order in which modules/directives are loaded is very important!
 Modules can load other modules using the `modules` directive, be careful considering loading orders.
 
 If a module depends on another module, it can be added to the `mod_depends` list in the module config. A `ValueError` will be thrown if the module is not present.
+
+`_module_name` can be set within a module for logging purposes, it is verified to be accurate when imported but optional.
 
 #### imports
 

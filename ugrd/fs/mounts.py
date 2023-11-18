@@ -173,32 +173,47 @@ def _get_mounts_source(self, mount):
     self.logger.warning("Unable to find mount source for: %s" % mount)
 
 
-def _get_lsblk_info(self, mount, output_fields="NAME,UUID,PARTUUID,LABEL"):
+def _get_blkid_info(self, device):
     """
-    Gets the lsblk info for a mountpoint
+    Gets the blkid info for a device
     """
-    from json import loads, JSONDecodeError
+    self.logger.debug("Getting blkid info for: %s" % device)
 
-    self.logger.debug("Getting lsblk info for: %s" % mount)
-
-    mount_info = self._run(['lsblk', '--json', '--output', output_fields, str(mount)])
-    try:
-        mount_info = loads(mount_info.stdout)
-    except JSONDecodeError:
-        self.logger.warning("Unable to parse lsblk info for: %s" % mount)
+    mount_info = self._run(['blkid', str(device)]).stdout.decode().strip()
+    if not mount_info:
+        self.logger.warning("Unable to find blkid info for: %s" % device)
         return None
 
-    self.logger.debug("Found lsblk info: %s" % mount_info)
+    self.logger.debug("Found blkid info: %s" % mount_info)
     return mount_info
+
 
 def mount_root(self):
     """
     Mounts the root partition.
     Warns if the root partition isn't found on the current system.
     """
-#    root_source = self.config_dict['mounts']['root']['source']
+    root_source = self.config_dict['mounts']['root']['source']
     host_root_dev = _get_mounts_source(self, '/')
-    lsblk_info = _get_lsblk_info(self, host_root_dev)
+
+    # If the root device is a string, check that it's the same path as the host root mount
+    if isinstance(root_source, str):
+        if root_source != host_root_dev:
+            self.logger.warning("Root device mismatch. Expected: %s, Found: %s" % (root_source, host_root_dev))
+    elif isinstance(root_source, dict):
+        # If the root device is a dict, check that the uuid, partuuid, or label matches the host root mount
+        if blkid_info := _get_blkid_info(self, host_root_dev):
+            # Unholy for-else, breaks if the uuid, partuuid, or label matches, otherwise warns
+            for key, value in root_source.items():
+                search_str = f"{key.upper()}=\"{value}\""
+                if value in blkid_info:
+                    self.logger.debug("Found root device match: %s" % search_str)
+                    break
+            else:
+                self.logger.warning("Configuration root device not found on host system. Expected: %s" % root_source)
+                self.logger.warning("Host system root device info: %s" % blkid_info)
+        else:
+            self.logger.warning("Unable to find blkid info for: %s" % root_source)
 
     root_path = self.config_dict['mounts']['root']['destination']
 

@@ -96,7 +96,7 @@ class InitramfsGenerator:
                 self.logger.debug("[%s] Function returned string: %s" % (function.__name__, function_output))
                 return [function_output]
             else:
-                self.logger.debug("[%s] Function returned output: %s" % (function.__name__, function_output))
+                self.logger.debug("[%s] Function returned output: %s" % (function.__name__, pretty_print(function_output)))
                 return function_output
         else:
             self.logger.debug("[%s] Function returned no output" % function.__name__)
@@ -268,7 +268,7 @@ class InitramfsGenerator:
                 self.logger.info("Deleting file: %s" % file_path)
                 file_path.unlink()
 
-        self.logger.debug("[%s] Writing contents:\n%s" % (file_path, pretty_print(contents)))
+        self.logger.debug("[%s] Writing contents:\n%s" % (file_path, contents))
         with open(file_path, 'w') as file:
             file.writelines("\n".join(contents))
 
@@ -325,7 +325,7 @@ class InitramfsGenerator:
         # If the cycle count is not set, attempt to clean
         if not self.old_count:
             if self.clean:
-                self.logger.info("Deleting file: %s" % file_name)
+                self.logger.warning("Deleting file: %s" % file_name)
                 file_name.unlink()
                 return
             else:
@@ -345,7 +345,7 @@ class InitramfsGenerator:
             if sequence >= self.old_count:
                 # Clean the last file in the sequence if clean is enabled
                 if self.clean:
-                    self.logger.info("Deleting old file: %s" % target_file)
+                    self.logger.warning("Deleting old file: %s" % target_file)
                     target_file.unlink()
                 else:
                     self.logger.debug("Cycle limit reached")
@@ -392,7 +392,7 @@ class InitramfsGenerator:
         """
         Runs a command, returns the object
         """
-        self.logger.debug("Running command: %s" % args)
+        self.logger.debug("Running command: %s" % ' '.join(args))
         cmd = run(args, capture_output=True)
         if cmd.returncode != 0:
             self.logger.error("Failed to run command: %s" % cmd.args)
