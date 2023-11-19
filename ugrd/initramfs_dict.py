@@ -32,7 +32,7 @@ class InitramfsConfigDict(dict):
             else:
                 super().__setitem__(parameter, default_type())
 
-    def import_args(self, args: dict):
+    def import_args(self, args: dict) -> None:
         """
         Imports data from an argument dict
         """
@@ -40,7 +40,7 @@ class InitramfsConfigDict(dict):
             self.logger.warning("Importing argument '%s' with value: %s" % (arg, value))
             self[arg] = value
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: str, value) -> None:
         # If the type is registered, use the appropriate update function
         if expected_type := self.builtin_parameters.get(key, self['custom_parameters'].get(key)):
             self.logger.log(5, "[%s] Expected type: %s" % (key, expected_type))
@@ -74,7 +74,7 @@ class InitramfsConfigDict(dict):
                 raise ValueError("Detected undefined parameter type '%s' with value: %s" % (key, value))
 
     @handle_plural
-    def _process_custom_parameters(self, parameter_name, parameter_type):
+    def _process_custom_parameters(self, parameter_name: str, parameter_type: type) -> None:
         """
         Updates the custom_parameters attribute.
         Sets the initial value of the parameter based on the type.
@@ -92,7 +92,7 @@ class InitramfsConfigDict(dict):
             super().__setitem__(parameter_name, 0)
 
     @handle_plural
-    def _process_imports(self, import_type: str, import_value: dict):
+    def _process_imports(self, import_type: str, import_value: dict) -> None:
         """
         Processes imports in a module, importing the functions and adding them to the appropriate list
         """
@@ -123,7 +123,7 @@ class InitramfsConfigDict(dict):
                     self.logger.debug("Registered config processing function: %s" % function.__name__)
 
     @handle_plural
-    def _process_mod_depends(self, module):
+    def _process_mod_depends(self, module: str) -> None:
         """
         Processes module dependencies
         """
@@ -134,7 +134,7 @@ class InitramfsConfigDict(dict):
         self['mod_depends'].append(module)
 
     @handle_plural
-    def _process_modules(self, module):
+    def _process_modules(self, module: str) -> None:
         """
         processes a single module into the config
         takes list with decorator
@@ -174,7 +174,7 @@ class InitramfsConfigDict(dict):
 
         self['modules'].append(module)
 
-    def verify_deps(self):
+    def verify_deps(self) -> None:
         """ Verifies that all module dependencies are met """
         for module in self['mod_depends']:
             if module not in self['modules']:
@@ -182,7 +182,7 @@ class InitramfsConfigDict(dict):
 
         self.logger.info("Verified module depndencies: %s" % self['mod_depends'])
 
-    def verify_mask(self):
+    def verify_mask(self) -> None:
         """
         Processes masked imports
         """
@@ -193,5 +193,5 @@ class InitramfsConfigDict(dict):
                         self.logger.warning("Masking import: %s" % function.__name__)
                         self['imports'][mask_hook].remove(function)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return pretty_print(self)

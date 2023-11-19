@@ -1,10 +1,11 @@
 
 __author__ = "desultory"
-__version__ = "0.9.0"
+__version__ = "0.9.1"
 
 from tomllib import load
+from typing import Union
 from pathlib import Path
-from subprocess import run
+from subprocess import run, CompletedProcess
 
 from ugrd.zen_custom import loggify, pretty_print
 from ugrd.initramfs_dict import InitramfsConfigDict
@@ -25,7 +26,7 @@ class InitramfsGenerator:
         self.config_dict.verify_mask()
         self.config_dict.import_args(kwargs)
 
-    def load_config(self):
+    def load_config(self) -> None:
         """
         Loads the config from the specified toml file.
         Populates self.config_dict with the config.
@@ -49,7 +50,7 @@ class InitramfsGenerator:
             else:
                 raise KeyError("Required parameter '%s' not found in config" % parameter)
 
-    def clean_build_dir(self):
+    def clean_build_dir(self) -> None:
         """
         Cleans the build directory
         """
@@ -66,7 +67,7 @@ class InitramfsGenerator:
         else:
             self.logger.info("Build dir is not present, not cleaning: %s" % self.build_dir)
 
-    def build_structure(self):
+    def build_structure(self) -> None:
         """
         builds the initramfs structure.
         Cleans the build dir first if clean is set
@@ -78,7 +79,7 @@ class InitramfsGenerator:
         self._run_hook('build_pre', return_output=False)
         self._run_hook('build_tasks', return_output=False)
 
-    def _run_func(self, function, external=False, return_output=True):
+    def _run_func(self, function: str, external=False, return_output=True) -> list[str]:
         """
         Runs a function, returning the output in a list
         """
@@ -102,9 +103,10 @@ class InitramfsGenerator:
             self.logger.debug("[%s] Function returned no output" % function.__name__)
             return []
 
-    def _run_funcs(self, functions, external=False, return_output=True):
+    def _run_funcs(self, functions: list[str], external=False, return_output=True) -> list[str]:
         """
         Runs a list of functions
+        Returns the output if return_output is set
         """
         self.logger.debug("Running functions: %s" % functions)
         out = []
@@ -116,7 +118,7 @@ class InitramfsGenerator:
                 self._run_func(function, external=external, return_output=return_output)
         return out
 
-    def _run_hook(self, hook, return_output=True):
+    def _run_hook(self, hook: str, return_output=True) -> list[str]:
         """
         Runs a hook for imported functions
         """
@@ -135,7 +137,7 @@ class InitramfsGenerator:
             self.logger.debug("[%s] Hook output: %s" % (hook, out))
             return out
 
-    def _run_init_hook(self, level):
+    def _run_init_hook(self, level: str) -> list[str]:
         """
         Runs the specified init hook, returning the output
         """
@@ -143,7 +145,7 @@ class InitramfsGenerator:
         out += self._run_hook(level)
         return out
 
-    def generate_init_main(self):
+    def generate_init_main(self) -> list[str]:
         """
         Generates the main init file.
         Just runs each hook  in self.init_types and returns the output
@@ -158,7 +160,7 @@ class InitramfsGenerator:
                 self.logger.debug("No output from init hook: %s" % init_type)
         return out
 
-    def generate_init(self):
+    def generate_init(self) -> None:
         """
         Generates the init file
         """
@@ -181,7 +183,7 @@ class InitramfsGenerator:
         self._write('init', init, 0o755)
         self.logger.debug("Final config:\n%s" % pretty_print(self.config_dict))
 
-    def generate_structure(self):
+    def generate_structure(self) -> None:
         """
         Generates the initramfs directory structure
         """
@@ -195,7 +197,7 @@ class InitramfsGenerator:
 
             self._mkdir(target_dir)
 
-    def pack_build(self):
+    def pack_build(self) -> None:
         """
         Packs the initramfs based on self.config_dict['imports']['pack']
         """
@@ -204,7 +206,7 @@ class InitramfsGenerator:
         else:
             self.logger.warning("No pack functions specified, the final build is present in: %s" % self.build_dir)
 
-    def _mkdir(self, path):
+    def _mkdir(self, path: Path) -> None:
         """
         Creates a directory, chowns it as self.config_dict['_file_owner_uid']
         """
@@ -230,7 +232,7 @@ class InitramfsGenerator:
 
         self._chown(path_dir)
 
-    def _chown(self, path):
+    def _chown(self, path: Path) -> None:
         """
         Chowns a file or directory as self.config_dict['_file_owner_uid']
         """
@@ -246,7 +248,7 @@ class InitramfsGenerator:
         else:
             self.logger.debug("[%s] Set file owner: %s" % (path, self.config_dict['_file_owner_uid']))
 
-    def _write(self, file_name, contents, chmod_mask=0o644, in_build_dir=True):
+    def _write(self, file_name: Union[Path, str], contents: list[str], chmod_mask=0o644, in_build_dir=True) -> None:
         """
         Writes a file and owns it as self.config_dict['_file_owner_uid']
         Sets the passed chmod
@@ -278,7 +280,7 @@ class InitramfsGenerator:
 
         self._chown(file_path)
 
-    def _copy(self, source, dest=None, in_build_dir=True):
+    def _copy(self, source: Union[Path, str], dest=None, in_build_dir=True) -> None:
         """
         Copies a file, chowns it as self.config_dict['_file_owner_uid']
         """
@@ -314,7 +316,7 @@ class InitramfsGenerator:
 
         self._chown(dest_path)
 
-    def _rotate_old(self, file_name: Path, sequence=0):
+    def _rotate_old(self, file_name: Path, sequence=0) -> None:
         """
         Copies a file to file_name.old then file_nane.old.n, where n is the next number in the sequence
         """
@@ -359,7 +361,7 @@ class InitramfsGenerator:
         self.logger.info("[%d] Cycling file: %s -> %s" % (sequence, file_name, target_file))
         file_name.rename(target_file)
 
-    def _get_build_path(self, path):
+    def _get_build_path(self, path: Union[Path, str]) -> Path:
         """
         Returns the build path
         """
@@ -371,7 +373,7 @@ class InitramfsGenerator:
         else:
             return self.build_dir / path
 
-    def _symlink(self, source, target, in_build_dir=True):
+    def _symlink(self, source: Union[Path, str], target: Union[Path, str], in_build_dir=True) -> None:
         """
         Creates a symlink
         """
@@ -393,7 +395,7 @@ class InitramfsGenerator:
         self.logger.debug("Creating symlink: %s -> %s" % (source, target))
         symlink(source, target)
 
-    def _run(self, args):
+    def _run(self, args: list[str]) -> CompletedProcess:
         """
         Runs a command, returns the object
         """
