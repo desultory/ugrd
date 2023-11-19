@@ -30,6 +30,19 @@ def _process_kmod_ignore(self, module: str) -> None:
             self[key].remove(module)
 
 
+def _process_kernel_modules_multi(self, module: str) -> None:
+    """
+    Adds the passed kernel module to self['kernel_modules']
+    Checks if the module is ignored
+    """
+    if module in self['kmod_ignore']:
+        self.logger.warning("Not adding ignored kernel module to kernel_modules: %s" % module)
+        return
+
+    self.logger.debug("Adding kernel module to kernel_modules: %s", module)
+    self['kernel_modules'].append(module)
+
+
 def _process_kmod_init_multi(self, module: str) -> None:
     """
     Adds init modules to self['kernel_modules'].
@@ -113,7 +126,7 @@ def process_kmod(self, module: str):
 
     if firmware := modinfo.get('firmware'):
         if self.config_dict.get('kmod_pull_firmware'):
-            self.logger.info("Adding firmware to dependencies: %s" % firmware)
+            self.logger.info("[%s] Adding firmware to dependencies: %s" % (module, firmware))
             for file in firmware:
                 try:
                     self.config_dict['dependencies'] = Path('/lib/firmware/') / file
@@ -149,7 +162,7 @@ def get_lspci_modules(self) -> list[str]:
     except RuntimeError as e:
         raise DependencyResolutionError("Failed to get list of kernel modules") from e
 
-    raw_modules = set()
+    modules = set()
     # Iterate over all output lines
     for line in cmd.stdout.decode('utf-8').split('\n'):
         # If the line contains the string 'Kernel modules:' or 'Kernel driver in use:', it contains the name of a kernel module
@@ -158,13 +171,13 @@ def get_lspci_modules(self) -> list[str]:
             if ',' in module:
                 # If there are multiple modules, split them and add them to the module set
                 for module in module.split(','):
-                    raw_modules.add(module.strip())
+                    modules.add(module.strip())
             else:
                 # Add the single module to the module set
-                raw_modules.add(module.strip())
+                modules.add(module.strip())
 
-    self.logger.debug("Kernel modules in use by hardware: %s" % raw_modules)
-    return list(raw_modules)
+    self.logger.debug("Kernel modules in use by hardware: %s" % modules)
+    return list(modules)
 
 
 def get_lsmod_modules(self) -> list[str]:
@@ -184,7 +197,7 @@ def get_lsmod_modules(self) -> list[str]:
         raise DependencyResolutionError('Failed to get list of kernel modules') from e
 
     raw_modules = cmd.stdout.decode('utf-8').split('\n')[1:]
-    modules = []
+    modules = set
     # Remove empty lines, header, and ignored modules
     for module in raw_modules:
         if not module:
@@ -193,10 +206,10 @@ def get_lsmod_modules(self) -> list[str]:
             self.logger.log(5, "Dropping header line")
         else:
             self.logger.debug("Adding kernel module: %s", module.split()[0])
-            modules.append(module.split()[0])
+            modules.add(module.split()[0])
 
     self.logger.debug(f'Found {len(modules)} active kernel modules')
-    return modules
+    return list(modules)
 
 
 def process_module_metadata(self) -> None:

@@ -223,9 +223,9 @@ The following parameters can be used to change the kernel module pulling and ini
 
 Some helper modules have been created to make importing required kernel modules easier.
 
-`base.ugrd.kmod_nvme`, `kmod_usb`, and `kmod_fat` can be used to load modules for NVME's, USB storage, and the FAT file system respectively.
+`ugrd.kmod.nvme`, `usb`, and `fat` can be used to load modules for NVME's, USB storage, and the FAT file system respectively.
 
-Similarly `base.ugrd.kmod_novideo` and `kmod_nosound` exist to ignore video and sound devices that may appear when autodetecting modules.
+Similarly `ugrd.kmod.novideo` `nonetwork`, and `nosound` exist to ignore video, network, and sound devices that may appear when autodetecting modules.
 
 ### Filesystem modules
 
