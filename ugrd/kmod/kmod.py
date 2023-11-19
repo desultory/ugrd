@@ -1,6 +1,6 @@
 __author__ = 'desultory'
 
-__version__ = '0.5.0'
+__version__ = '0.5.1'
 
 __module_name__ = 'ugrd.kmod.kmod'
 
@@ -23,7 +23,7 @@ class DependencyResolutionError(Exception):
     pass
 
 
-def _process_kmod_init_multi(self, module):
+def _process_kmod_init_multi(self, module: str) -> None:
     """
     Adds init modules to self['kernel_modules'].
     """
@@ -35,7 +35,7 @@ def _process_kmod_init_multi(self, module):
     self['kmod_init'].append(module)
 
 
-def resolve_kmod_path(self, module_name):
+def resolve_kmod_path(self, module_name: str) -> Path:
     """
     Gets the file path of a kernel module
     """
@@ -60,7 +60,7 @@ def resolve_kmod_path(self, module_name):
     return Path(module_path)
 
 
-def resolve_kmod_softdeps(self, module_name):
+def resolve_kmod_softdeps(self, module_name: str) -> list[str]:
     """
     Gets all kernel module soft dependencies.
     """
@@ -82,7 +82,7 @@ def resolve_kmod_softdeps(self, module_name):
         return softdeps
 
 
-def resolve_kmod_harddeps(self, module_name):
+def resolve_kmod_harddeps(self, module_name: str) -> list[str]:
     """
     Gets all kernel module dependencies.
     """
@@ -105,7 +105,7 @@ def resolve_kmod_harddeps(self, module_name):
         return dependencies
 
 
-def resolve_kmod(self, module_name):
+def resolve_kmod(self, module_name: str) -> list[Path]:
     """
     Gets the file path of a single kernel module.
     Gets the file path of all dependencies if they exist
@@ -155,7 +155,7 @@ def resolve_kmod(self, module_name):
         self.logger.debug("[%s] Kernel module has no dependencies." % module_name)
 
 
-def get_lspci_modules(self):
+def get_lspci_modules(self) -> list[str]:
     """
     Gets the name of all kernel modules being used by hardware visible in lspci -k
     """
@@ -185,7 +185,7 @@ def get_lspci_modules(self):
     return list(raw_modules)
 
 
-def get_lsmod_modules(self):
+def get_lsmod_modules(self) -> list[str]:
     """
     Gets the name of all currently installed kernel modules
     """
@@ -217,7 +217,7 @@ def get_lsmod_modules(self):
     return modules
 
 
-def get_module_metadata(self):
+def process_module_metadata(self) -> None:
     """
     Gets all module metadata for the specified kernel version.
     Adds kernel module metadata files to dependencies.
@@ -243,7 +243,7 @@ def get_module_metadata(self):
         self.config_dict['dependencies'] = meta_file_path
 
 
-def calculate_modules(self):
+def calculate_modules(self) -> None:
     """
     Populates the kernel_modules list with all required kernel modules.
     Adds the contents of _kmod_depend if specified.
@@ -281,10 +281,10 @@ def calculate_modules(self):
 
     self.logger.info("Included kernel modules: %s" % self.config_dict['kernel_modules'])
 
-    get_module_metadata(self)
+    process_module_metadata(self)
 
 
-def load_modules(self):
+def load_modules(self) -> None:
     """
     Loads all kernel modules
     """
@@ -308,7 +308,7 @@ def load_modules(self):
     self.logger.info("Init kernel modules: %s" % kmod_init)
 
     if kmod_init != kmods:
-        self.logger.warning("Ignoring kernel modules: %s" % (set(kmods) - set(kmod_init)))
+        self.logger.warning("Ignored kernel modules: %s" % (set(kmods) - set(kmod_init)))
 
     module_str = ' '.join(kmod_init)
     return f"modprobe -av {module_str}"
