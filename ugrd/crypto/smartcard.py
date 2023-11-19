@@ -1,9 +1,8 @@
 __author__ = 'desultory'
+__version__ = '0.2.1'
 
-__version__ = '0.2.0'
 
-
-def fetch_keys(self):
+def fetch_keys(self) -> None:
     """
     Pulls the GPG keys into the initramfs.
     """
@@ -15,14 +14,14 @@ def fetch_keys(self):
         self.logger.debug("No GPG public key specified, skipping")
 
 
-def check_card(self):
+def check_card(self) -> str:
     """
     Check if a smartcard is present.
     """
     return "gpg --card-status"
 
 
-def import_keys(self):
+def import_keys(self) -> str:
     """
     Import GPG public keys.
     """
@@ -30,7 +29,7 @@ def import_keys(self):
         return f"gpg --import {self.config_dict['sc_public_key']}"
 
 
-def write_scdaemon_conf(self):
+def write_scdaemon_conf(self) -> None:
     """
     Write the scdaemon.conf file.
     Tell it to disable the internal CCID driver, so pcscd will be used.

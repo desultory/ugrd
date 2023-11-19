@@ -1,9 +1,8 @@
 __author__ = 'desultory'
+__version__ = '0.3.6'
 
-__version__ = '0.3.5'
 
-
-def fetch_keys(self):
+def fetch_keys(self) -> None:
     """
     Pulls the GPG keys into the initramfs
     """
@@ -15,7 +14,7 @@ def fetch_keys(self):
         self.logger.debug("No GPG public key specified, skipping")
 
 
-def import_keys(self):
+def import_keys(self) -> str:
     """
     Import GPG public keys
     """
@@ -23,7 +22,7 @@ def import_keys(self):
         return f"gpg --import {self.config_dict['gpg_public_key']}"
 
 
-def start_agent(self):
+def start_agent(self) -> str:
     """
     Start the GPG agent
     """
