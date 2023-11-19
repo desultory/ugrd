@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.1.2'
+__version__ = '1.2.0'
 
 from pathlib import Path
 
@@ -8,10 +8,11 @@ MOUNT_PARAMETERS = ['destination', 'source', 'type', 'options', 'base_mount', 's
 SOURCE_TYPES = ['uuid', 'partuuid', 'label']
 
 
-def _process_mounts_multi(self, mount_name, mount_config):
+def _process_mounts_multi(self, mount_name: str, mount_config) -> None:
     """
-    Processes the passed mounts into fstab mount objects
-    under 'mounts'
+    Processes the passed mount config.
+    Updates the mount if it already exists.
+    Validates the source when hostonly mode is active.
     """
     # If the mount already exists, merge the options and update it
     if mount_name in self['mounts']:
@@ -26,6 +27,7 @@ def _process_mounts_multi(self, mount_name, mount_config):
     # Validate the mount config
     for parameter, value in mount_config.items():
         if parameter == 'source' and isinstance(value, dict):
+            # Break if the source type is valid
             for source_type in SOURCE_TYPES:
                 if source_type in value:
                     break
@@ -62,13 +64,12 @@ def _process_mounts_multi(self, mount_name, mount_config):
                 self['modules'] = 'ugrd.fs.btrfs'
 
     self['mounts'][mount_name] = mount_config
-
     self.logger.debug("[%s] Added mount: %s" % (mount_name, mount_config))
 
     self['paths'] = mount_config['destination']
 
 
-def _get_mount_source(self, mount, pad=False):
+def _get_mount_source(self, mount: dict, pad=False) -> str:
     """
     returns the mount source string based on the config
     uses NAME= format so it works in both the fstab and mount command
@@ -94,7 +95,7 @@ def _get_mount_source(self, mount, pad=False):
     return out_str
 
 
-def _to_mount_cmd(self, mount):
+def _to_mount_cmd(self, mount: dict) -> str:
     """
     Prints the object as a mount command
     """
@@ -109,7 +110,7 @@ def _to_mount_cmd(self, mount):
     return out_str
 
 
-def _to_fstab_entry(self, mount):
+def _to_fstab_entry(self, mount: dict) -> str:
     """
     Prints the object as a fstab entry
     The type must be specified
@@ -127,7 +128,7 @@ def _to_fstab_entry(self, mount):
     return out_str
 
 
-def generate_fstab(self):
+def generate_fstab(self) -> None:
     """
     Generates the fstab from the mounts
     """
@@ -141,21 +142,21 @@ def generate_fstab(self):
     self._write('/etc/fstab/', fstab_info)
 
 
-def mount_base(self):
+def mount_base(self) -> list[str]:
     """
     Generates mount commands for the base mounts
     """
     return [_to_mount_cmd(self, mount) for mount in self.config_dict['mounts'].values() if mount.get('base_mount')]
 
 
-def remake_mountpoints(self):
+def remake_mountpoints(self) -> list[str]:
     """
     Remakes mountpoints, especially useful when mounting over something like /dev
     """
     return [f"mkdir --parents {mount['destination']}" for mount in self.config_dict['mounts'].values() if mount.get('remake_mountpoint')]
 
 
-def mount_fstab(self):
+def mount_fstab(self) -> list[str]:
     """
     Generates the init line for mounting the fstab
     """
@@ -174,32 +175,32 @@ def mount_fstab(self):
     return out
 
 
-def _get_mounts_source(self, mount):
+def _get_mounts_source_device(self, mountpoint: str) -> Path:
     """
     Returns the source device of a mountpoint on /proc/mounts
     """
     # Make the mount a string and ensure it starts with a /
-    mount = str(mount)
-    if not mount.startswith('/') and not mount.startswith(' /'):
-        mount = '/' + mount
+    mountpoint = str(mountpoint)
+    if not mountpoint.startswith('/') and not mountpoint.startswith(' /'):
+        mountpoint = '/' + mountpoint
 
-    self.logger.debug("Getting mount source for: %s" % mount)
-    # Add space padding to the mount name
-    mount = mount if mount.startswith(' ') else ' ' + mount
-    mount = mount if mount.endswith(' ') else mount + ' '
+    self.logger.debug("Getting source device path for: %s" % mountpoint)
+    # Add space padding to the mountpoint
+    mountpoint = mountpoint if mountpoint.startswith(' ') else ' ' + mountpoint
+    mountpoint = mountpoint if mountpoint.endswith(' ') else mountpoint + ' '
 
     with open('/proc/mounts', 'r') as mounts:
         for line in mounts:
-            if mount in line:
-                # If the mount is found, return the source
+            if mountpoint in line:
+                # If the mountpoint is found, return the source
                 # Resolve the path as it may be a symlink
                 mount_source = Path(line.split()[0]).resolve()
                 self.logger.debug("Found mount source: %s" % mount_source)
                 return mount_source
-    self.logger.warning("Unable to find mount source for: %s" % mount)
+    raise FileNotFoundError("Unable to find mount source device for: %s" % mountpoint)
 
 
-def _get_blkid_info(self, device):
+def _get_blkid_info(self, device: Path) -> str:
     """
     Gets the blkid info for a device
     """
@@ -221,23 +222,19 @@ def _get_blkid_info(self, device):
     return mount_info
 
 
-def _validate_host_mount(self, mount, destination_path=None):
+def _validate_host_mount(self, mount, destination_path=None) -> bool:
     """
     Checks if a defined mount exists on the host
     """
     if not self['hostonly']:
         self.logger.debug("Skipping host mount check as hostonly is not set")
-        return
+        return True
 
     source = mount['source']
+    # If a destination path is passed, like for /, use that instead of the mount's destination
     destination_path = mount['destination'] if destination_path is None else destination_path
 
-    host_source_dev = _get_mounts_source(self, destination_path)
-    if not host_source_dev:
-        self.logger.error("Unable to find mount on host system: %s" % destination_path)
-        return
-    else:
-        self.logger.debug("Checking host volume: %s" % host_source_dev)
+    host_source_dev = _get_mounts_source_device(self, destination_path)
 
     if isinstance(source, str):
         if source != host_source_dev:
@@ -260,17 +257,17 @@ def _validate_host_mount(self, mount, destination_path=None):
     raise ValueError("Unable to validate host mount: %s" % mount)
 
 
-def mount_root(self):
+def mount_root(self) -> str:
     """
     Mounts the root partition.
     Warns if the root partition isn't found on the current system.
     """
     root_path = self.config_dict['mounts']['root']['destination']
 
-    return [f"mount {root_path} || (echo 'Failed to mount root partition' && bash)"]
+    return f"mount {root_path} || (echo 'Failed to mount root partition' && bash)"
 
 
-def clean_mounts(self):
+def clean_mounts(self) -> list[str]:
     """
     Generates init lines to unmount all mounts
     """

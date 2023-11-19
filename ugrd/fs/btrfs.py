@@ -1,4 +1,8 @@
-def btrfs_scan(self):
+__version__ = '0.1.0'
+__author__ = 'desultory'
+
+
+def btrfs_scan(self) -> str:
     """
     sccans for new mounts
     """
