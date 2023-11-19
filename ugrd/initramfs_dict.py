@@ -1,8 +1,8 @@
 
 __author__ = "desultory"
-__version__ = "0.8.5"
+__version__ = "0.9.0"
 
-from tomllib import load
+from tomllib import load, TOMLDecodeError
 from pathlib import Path
 
 from ugrd.zen_custom import loggify, handle_plural, NoDupFlatList, pretty_print
@@ -45,23 +45,23 @@ class InitramfsConfigDict(dict):
         if expected_type := self.builtin_parameters.get(key, self['custom_parameters'].get(key)):
             self.logger.log(5, "[%s] Expected type: %s" % (key, expected_type))
             if hasattr(self, f"_process_{key}"):
-                self.logger.debug("[%s] Using builtin setitem: %s" % (key, f"_process_{key}"))
+                self.logger.log(5, "[%s] Using builtin setitem: %s" % (key, f"_process_{key}"))
                 getattr(self, f"_process_{key}")(value)
             elif func := self['custom_processing'].get(f"_process_{key}"):
-                self.logger.debug("[%s] Using custom setitem: %s" % (key, func.__name__))
+                self.logger.log(5, "[%s] Using custom setitem: %s" % (key, func.__name__))
                 func(self, value)
             elif func := self['custom_processing'].get(f"_process_{key}_multi"):
-                self.logger.debug("[%s] Using custom plural setitem: %s" % (key, func.__name__))
+                self.logger.log(5, "[%s] Using custom plural setitem: %s" % (key, func.__name__))
                 handle_plural(func)(self, value)
             elif expected_type in (list, NoDupFlatList):
                 self.logger.log(5, "Using list setitem for: %s" % key)
                 self[key].append(value)
             elif expected_type == dict:
                 if key not in self:
-                    self.logger.debug("Setting dict '%s' to: %s" % (key, value))
+                    self.logger.log(5, "Setting dict '%s' to: %s" % (key, value))
                     super().__setitem__(key, value)
                 else:
-                    self.logger.debug("Updating dict '%s' with: %s" % (key, value))
+                    self.logger.log(5, "Updating dict '%s' with: %s" % (key, value))
                     self[key].update(value)
             else:
                 super().__setitem__(key, expected_type(value))
@@ -104,7 +104,7 @@ class InitramfsConfigDict(dict):
             self.logger.debug("Importing module: %s" % module_name)
 
             module = import_module(module_name)
-            self.logger.debug("[%s] Imported module contents: %s" % (module_name, dir(module)))
+            self.logger.log(5, "[%s] Imported module contents: %s" % (module_name, dir(module)))
             if '_module_name' in dir(module) and module._module_name != module_name:
                 self.logger.warning("Module name mismatch: %s != %s" % (module._module_name, module_name))
 
@@ -149,8 +149,10 @@ class InitramfsConfigDict(dict):
         self.logger.debug("Module path: %s" % module_path)
 
         with open(module_path, 'rb') as module_file:
-            module_config = load(module_file)
-            self.logger.debug("[%s] Loaded module config: %s" % (module, module_config))
+            try:
+                module_config = load(module_file)
+            except TOMLDecodeError as e:
+                raise TOMLDecodeError("Unable to load module config: %s" % module) from e
 
         if 'mod_depends' in module_config:
             self['mod_depends'] = module_config['mod_depends']

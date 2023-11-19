@@ -210,6 +210,7 @@ Setting `start_shell` to `true` will start a bash shell in `init_debug`.
 The following parameters can be used to change the kernel module pulling and initializing behavior:
 
 * `kernel_version` (uname -r) is used to specify the kernel version to pull modules for, should be a directory under `/lib/modules/<kernel_version>`.
+* `kmod_pull_firmware` (true) Adds kernel module firmware to dependencies
 * `kmod_init`  is used to specify kernel modules to load at boot. If set, ONLY these modules will be loaded with modprobe.
 * `kmod_autodetect_lspci` (false) if set to `true`, will populate `kernel_modules` with modules listed in `lspci -k`.
 * `kmod_autodetect_lsmod` (false) if set to `true`, will populate `kernel_modules` with modules listed in `lsmod`.

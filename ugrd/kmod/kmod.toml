@@ -3,9 +3,12 @@ binaries = [ "modprobe", "lsmod" ]
 # Ignore this because it's only builtin
 kmod_ignore = ['pcieport', 'piix4_smbus']
 
+kmod_pull_firmware = true
+
 [custom_parameters]
 kernel_modules = "NoDupFlatList"  # Kernel modules to pull into the initramfs
 kernel_version = "str"  # Kernel version to use for the initramfs
+kmod_pull_firmware = "bool"  # Whether or not to pull firmware for kernel modules
 kmod_ignore_softdeps = "bool"  # Whether or not softdeps are ignored
 kmod_init = "NoDupFlatList"  # Kernel modules to load at initramfs startup
 kmod_autodetect_lsmod = "bool"  # Whether or not to automatically pull currently loaded kernel modules

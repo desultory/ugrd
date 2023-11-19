@@ -288,13 +288,14 @@ class InitramfsGenerator:
             source = Path(source)
 
         if not dest:
-            self.logger.debug("No destination specified, using source: %s" % source)
+            self.logger.log(5, "No destination specified, using source: %s" % source)
             dest = source
         elif not isinstance(dest, Path):
             dest = Path(dest)
 
         if in_build_dir:
             dest_path = self._get_build_path(dest)
+            self.logger.log(5, "Destination in build dir: %s" % dest_path)
         else:
             dest_path = Path(dest)
 
@@ -384,6 +385,10 @@ class InitramfsGenerator:
 
         if in_build_dir:
             target = self._get_build_path(target)
+
+        if not target.parent.is_dir():
+            self.logger.debug("Parent directory for '%s' does not exist: %s" % (target.name, target.parent))
+            self._mkdir(target.parent)
 
         self.logger.debug("Creating symlink: %s -> %s" % (source, target))
         symlink(source, target)

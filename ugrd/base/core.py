@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.2.0'
+__version__ = '1.2.1'
 
 from pathlib import Path
 from typing import Union
@@ -49,7 +49,6 @@ def deploy_dependencies(self) -> None:
             else:
                 raise ValueError("Dependency is a symlink and not in the symlinks list: %s" % dependency)
 
-        self.logger.debug("Copying dependency: %s" % dependency)
         self._copy(dependency)
 
 
