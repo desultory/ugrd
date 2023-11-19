@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '0.6.0'
+__version__ = '0.7.0'
 
 from pathlib import Path
 
@@ -11,10 +11,6 @@ class IgnoredKernelModule(Exception):
     pass
 
 
-class BuiltinKernelModule(Exception):
-    pass
-
-
 class DependencyResolutionError(Exception):
     pass
 
@@ -23,8 +19,15 @@ def _process_kmod_ignore(self, module: str) -> None:
     """
     Adds ignored modules to self['kmod_ignore'].
     """
-    self.logger.debug("Adding kmod_ignore module to ignore list: %s", module)
+    self.logger.debug("Adding module to kmod_ignore: %s", module)
     self['kmod_ignore'].append(module)
+
+    other_keys = ['kmod_init', 'kernel_modules', '_kmod_depend']
+
+    for key in other_keys:
+        if module in self[key]:
+            self.logger.debug("Removing ignored module from %s: %s", key, module)
+            self[key].remove(module)
 
 
 def _process_kmod_init_multi(self, module: str) -> None:
@@ -39,10 +42,13 @@ def _process_kmod_init_multi(self, module: str) -> None:
     self['kmod_init'].append(module)
 
 
-def _get_kmod_info(self, module: str) -> list[str]:
+def _get_kmod_info(self, module: str):
     """
-    Runs modinfo on a kernel module and returns the output.
+    Runs modinfo on a kernel module, parses the output and stored the results in self.config_dict['_kmod_modinfo']
     """
+    if module in self.config_dict['kmod_ignore']:
+        raise IgnoredKernelModule("Kernel module is in ignore list: %s" % module)
+
     self.logger.debug("Getting modinfo for: %s" % module)
     args = ['modinfo', module]
 
@@ -61,39 +67,32 @@ def _get_kmod_info(self, module: str) -> list[str]:
         if line.startswith('filename:'):
             module_info['filename'] = line.split()[1]
         elif line.startswith('depends:'):
-            module_info['depends'] = line.split()[1:]
+            module_info['depends'] = line.split(',')[1:]
         elif line.startswith('softdep:'):
-            module_info['softdep'] = line.split()[1::2]
+            module_info['softdep'] = line.split()[2::2]
 
-    self.logger.debug("Module info: %s" % module_info)
+    self.logger.debug("[%s] Module info: %s" % (module, module_info))
+    self.config_dict['_kmod_modinfo'][module] = module_info
 
-    return module_info
 
-
-def validate_kmod_path(self, name: str, path: str) -> Path:
+def process_kmod(self, module: str):
     """
-    Returns a BuiltInKernelModule exception if the module is built-in.
+    Processes a kernel module.
+    Resolves dependency info if necessary.
+    Adds kernel module file paths to self['dependencies'].
     """
-    self.logger.debug("[%s] Validating kernel module path: %s" % (name, path))
-    if path == '(builtin)':
-        self.logger.debug("[%s] Kernel module is built-in." % name)
-        self.config_dict['kmod_ignore'] = name
-        return
-    return Path(path)
+    if module not in self.config_dict['_kmod_modinfo']:
+        try:
+            _get_kmod_info(self, module)
+        except IgnoredKernelModule:
+            self.logger.debug("Kernel module is in ignore list: %s" % module)
+            return
 
+    self.logger.debug("Processing kernel module: %s" % module)
 
-def resolve_kmod(self, module_name: str) -> list[Path]:
-    """
-    Gets the file path of a single kernel module.
-    Gets the file path of all dependencies if they exist
-    """
-    self.logger.debug("Resolving kernel module dependencies and path: %s" % module_name)
-    if module_name in self.config_dict['kmod_ignore']:
-        raise IgnoredKernelModule("Kernel module is in ignore list: %s" % module_name)
+    modinfo = self.config_dict['_kmod_modinfo'][module]
 
     dependencies = []
-
-    modinfo = _get_kmod_info(self, module_name)
 
     if harddeps := modinfo.get('depends'):
         dependencies += harddeps
@@ -104,28 +103,19 @@ def resolve_kmod(self, module_name: str) -> list[Path]:
         else:
             dependencies += sofdeps
 
-    dependency_paths = []
-    # First resolve dependencies, filtering out ignored modules first
-    if dependencies:
-        for ignored_kmod in self.config_dict['kmod_ignore']:
-            if ignored_kmod in dependencies:
-                self.logger.error("Kernel module dependency is in ignore list: %s" % ignored_kmod)
-                self.config_dict['kmod_ignore'] = module_name
-                raise IgnoredKernelModule("[%s] Kernel module dependency is in ignore list: %s" % (module_name, ignored_kmod))
+    for dependency in dependencies:
+        if dependency in self.config_dict['kmod_ignore']:
+            self.logger.error("Kernel module dependency is in ignore list: %s" % dependency)
+            self.config_dict['kmod_ignore'] = module
+        self.logger.debug("[%s] Processing dependency: %s" % (module, dependency))
+        process_kmod(self, dependency)
 
-        self.logger.debug("Resolving dependencies: %s" % dependencies)
-        for dependency in dependencies:
-            if dependency_path := validate_kmod_path(self, module_name, modinfo['filename']):
-                dependency_paths.append(dependency_path)
-    # Finally resolve the module itself
-    if module_path := validate_kmod_path(self, module_name, modinfo['filename']):
-        dependency_paths.append(module_path)
-
-    # If any dependencies were found, return them
-    if dependency_paths:
-        return dependency_paths
+    if modinfo['filename'] == '(builtin)':
+        self.logger.debug("[%s] Kernel module is built-in." % module)
+        self.config_dict['kmod_ignore'] = module
     else:
-        self.logger.debug("[%s] Kernel module has no dependencies." % module_name)
+        self.logger.debug("[%s] Adding kernel module path to dependencies: %s" % (module, modinfo['filename']))
+        self.config_dict['dependencies'].append(Path(modinfo['filename']))
 
 
 def get_lspci_modules(self) -> list[str]:
@@ -219,8 +209,10 @@ def process_module_metadata(self) -> None:
 def calculate_modules(self) -> None:
     """
     Populates the kernel_modules list with all required kernel modules.
+    If kmod_autodetect_lsmod is set, adds the contents of lsmod if specified.
+    If kmod_autodetect_lspci is set, adds the contents of lspci -k if specified.
     Adds the contents of _kmod_depend if specified.
-    If kernel_modules is empty, pulls all currently loaded kernel modules.
+    Performs dependency resolution on all kernel modules.
     """
     if self.config_dict['kmod_autodetect_lsmod']:
         autodetected_modules = get_lsmod_modules(self)
@@ -236,21 +228,9 @@ def calculate_modules(self) -> None:
         self.logger.info("Adding internal dependencies to kernel modules: %s" % self.config_dict['_kmod_depend'])
         self.config_dict['kernel_modules'] = self.config_dict['_kmod_depend']
 
-    for module in self.config_dict['kernel_modules']:
-        self.logger.debug("Processing kernel module: %s" % module)
-        try:
-            if module_paths := resolve_kmod(self, module):
-                self.config_dict['dependencies'] = module_paths
-                self.logger.debug("Resolved dependency paths for kernel module '%s': %s" % (module, module_paths))
-            else:
-                # Make internal dependencies quieter
-                if module in self.config_dict['_kmod_depend']:
-                    self.logger.debug("Failed to resolve dependency paths for internal dependency: %s" % module)
-                else:
-                    self.logger.warning("Failed to resolve dependency paths for kernel module: %s" % module)
-        except IgnoredKernelModule:
-            self.logger.warning("Ignoring kernel module: %s" % module)
-            self.config_dict['kernel_modules'].remove(module)
+    # The dict may change size during iteration, so we copy it
+    for module in self.config_dict['kernel_modules'].copy():
+        process_kmod(self, module)
 
     self.logger.info("Included kernel modules: %s" % self.config_dict['kernel_modules'])
 
@@ -259,7 +239,7 @@ def calculate_modules(self) -> None:
 
 def load_modules(self) -> None:
     """
-    Loads all kernel modules
+    Creates a bash script which loads all kernel modules in kmod_init
     """
     # Start by using the kmod_init variable
     kmods = self.config_dict['kmod_init']

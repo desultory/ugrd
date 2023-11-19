@@ -55,6 +55,12 @@ The last argument is the output file, which can be a path:
 
 > If no path information is supplied, the filename provided will be crreated under `build_dir`
 
+### Hostonly mode
+
+UGRD hostonly mode attempts to verify that the generated initramfs will work on the system creating it. This is enabled by default.
+
+It can be forced at runtime with `--hostonly` and disabled with `--nohostonly`.
+
 ## Runtime usage
 
 `ugrd` runs the `init` script generated in the build dir. In cases where `agetty` is needed, all but basic initialization and the final switch_root are performed in `init_main.sh`.

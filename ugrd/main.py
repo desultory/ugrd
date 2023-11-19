@@ -18,6 +18,8 @@ def main():
     argparser.add_argument('-c', '--config', action='store', help='Config file location')
     argparser.add_argument('--kver', action='store', help='Kernel version')
     argparser.add_argument('--force', action='store_true', help='Enable build cleaning', default=True)
+    argparser.add_argument('--hostonly', action='store_true', help='Enable hostonly mode')
+    argparser.add_argument('--nohostonly', action='store_true', help='Disable hostonly mode')
 
     # Add and ignore arguments for dracut compatibility
     argparser.add_argument('--kernel-image', action='store', help='Kernel image')
@@ -47,9 +49,19 @@ def main():
     # Pass the logger to the generator
     kwargs = {'logger': logger}
 
-    for config, arg in {'clean': 'force', 'kernel_version': 'kver', 'config': 'config', 'out_file': 'output_file'}.items():
+    if args.nohostonly:
+        kwargs['hostonly'] = False
+    elif args.hostonly:
+        kwargs['hostonly'] = True
+
+    for config, arg in {'clean': 'force',
+                        'kernel_version': 'kver',
+                        'config': 'config',
+                        'out_file': 'output_file'}.items():
         if arg := getattr(args, arg):
             kwargs[config] = arg
+
+    logger.debug(f"Using the following kwargs: {kwargs}")
 
     generator = InitramfsGenerator(**kwargs)
     try:

@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.0.0'
+__version__ = '1.0.1'
 
 _module_name = 'ugrd.crypto.cryptsetup'
 
@@ -61,14 +61,6 @@ def _process_cryptsetup_multi(self, mapped_name: str, config: dict) -> None:
     elif not config.get('partuuid') and not config.get('uuid'):
         raise ValueError("Either a uuid or partuuid must be specified with cryptsetup mounts: %s" % mapped_name)
 
-    # If using hostonly mode, check that the mount source exists
-    if self['hostonly']:
-        # Set it to _host_device_path just to appear in the configuration, it is not used
-        if config.get('partuuid'):
-            config['_host_device_path'] = _get_device_path_from_token(self, ('PARTUUID', config['partuuid']))
-        elif config.get('uuid'):
-            config['_host_device_path'] = _get_device_path_from_token(self, ('UUID', config['uuid']))
-
     # Check if the key type is defined in the configuration, otherwise use the default, check if it's valid
     if key_type := config.get('key_type', self.get('cryptsetup_key_type')):
         self.logger.debug("[%s] Using key type: %s" % (mapped_name, key_type))
@@ -95,8 +87,17 @@ def get_crypt_sources(self) -> list[str]:
     Exports the command as an environment variable in the format:
         CRYPTSETUP_SOURCE_{name}=`device`
     """
+
     out = []
     for name, parameters in self.config_dict['cryptsetup'].items():
+        # If using hostonly mode, check that the mount source exists
+        if self.config_dict['hostonly']:
+            # Set it to _host_device_path just to appear in the configuration, it is not used
+            if parameters.get('partuuid'):
+                parameters['_host_device_path'] = _get_device_path_from_token(self, ('PARTUUID', parameters['partuuid']))
+            elif parameters.get('uuid'):
+                parameters['_host_device_path'] = _get_device_path_from_token(self, ('UUID', parameters['uuid']))
+        # Add a blkid command to get the source device in the initramfs
         if 'partuuid' in parameters:
             blkid_command = f"export CRYPTSETUP_SOURCE_{name}=$(blkid --match-token PARTUUID='{parameters['partuuid']}' --match-tag PARTUUID --output device)"
         elif 'uuid' in parameters:

@@ -42,17 +42,9 @@ def _process_mounts_multi(self, mount_name: str, mount_config) -> None:
     mount_config['base_mount'] = mount_config.get('base_mount', False)
     mount_config['options'] = set(mount_config.get('options', ''))
 
-    # Check if the mount exists on the host if it's not a base mount
-    if not mount_config['base_mount']:
-        # Only check the root mount after the source has been defined
-        if mount_name == 'root':
-            if 'source' in mount_config:
-                _validate_host_mount(self, mount_config, '/')
-        # The source must be defined for non-root mounts
-        elif 'source' not in mount_config:
-            raise ValueError("[%s] No source specified in mount: %s" % (mount_name, mount_config))
-        else:
-            _validate_host_mount(self, mount_config)
+    # Check if the mount exists on the host if it's not a base mount or the root mount
+    if not mount_config['base_mount'] and 'source' not in mount_config and mount_name != 'root':
+        raise ValueError("[%s] No source specified in mount: %s" % (mount_name, mount_config))
 
     # Add imports based on the mount type
     if mount_type := mount_config.get('type'):
@@ -135,7 +127,7 @@ def generate_fstab(self) -> None:
     fstab_info = [f"# UGRD Filesystem module v{__version__}"]
 
     for mount_name, mount_info in self.config_dict['mounts'].items():
-        if not mount_info.get('base_mount'):
+        if not mount_info.get('base_mount') or mount_name == 'root' and _validate_host_mount(self, mount_info):
             self.logger.debug("Adding fstab entry for: %s" % mount_name)
             fstab_info.append(_to_fstab_entry(self, mount_info))
 
@@ -226,7 +218,7 @@ def _validate_host_mount(self, mount, destination_path=None) -> bool:
     """
     Checks if a defined mount exists on the host
     """
-    if not self['hostonly']:
+    if not self.config_dict['hostonly']:
         self.logger.debug("Skipping host mount check as hostonly is not set")
         return True
 
@@ -263,6 +255,8 @@ def mount_root(self) -> str:
     Warns if the root partition isn't found on the current system.
     """
     root_path = self.config_dict['mounts']['root']['destination']
+    if not _validate_host_mount(self, self.config_dict['mounts']['root'], '/'):
+        self.logger.error("Unable to validate root mount. Please ensure the root partition is mounted on the host system or disable hostonly mode.")
 
     return f"mount {root_path} || (echo 'Failed to mount root partition' && bash)"
 
