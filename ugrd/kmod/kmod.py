@@ -1,11 +1,7 @@
 __author__ = 'desultory'
-
-__version__ = '0.5.1'
-
-__module_name__ = 'ugrd.kmod.kmod'
+__version__ = '0.6.0'
 
 from pathlib import Path
-
 
 MODULE_METADATA_FILES = ['modules.alias', 'modules.alias.bin', 'modules.builtin', 'modules.builtin.alias.bin', 'modules.builtin.bin', 'modules.builtin.modinfo',
                          'modules.dep', 'modules.dep.bin', 'modules.devname', 'modules.order', 'modules.softdep', 'modules.symbols', 'modules.symbols.bin']
@@ -23,6 +19,14 @@ class DependencyResolutionError(Exception):
     pass
 
 
+def _process_kmod_ignore(self, module: str) -> None:
+    """
+    Adds ignored modules to self['kmod_ignore'].
+    """
+    self.logger.debug("Adding kmod_ignore module to ignore list: %s", module)
+    self['kmod_ignore'].append(module)
+
+
 def _process_kmod_init_multi(self, module: str) -> None:
     """
     Adds init modules to self['kernel_modules'].
@@ -35,74 +39,47 @@ def _process_kmod_init_multi(self, module: str) -> None:
     self['kmod_init'].append(module)
 
 
-def resolve_kmod_path(self, module_name: str) -> Path:
+def _get_kmod_info(self, module: str) -> list[str]:
     """
-    Gets the file path of a kernel module
+    Runs modinfo on a kernel module and returns the output.
     """
-    self.logger.debug("Resolving path for: %s" % module_name)
-    args = ['modinfo', '--field', 'filename', module_name]
+    self.logger.debug("Getting modinfo for: %s" % module)
+    args = ['modinfo', module]
 
+    # Set kernel version if it exists, otherwise use the running kernel
     if self.config_dict.get('kernel_version'):
         args += ['--set-version', self.config_dict['kernel_version']]
 
     try:
         cmd = self._run(args)
     except RuntimeError as e:
-        raise DependencyResolutionError("Failed to get kernel module path for: %s" % module_name) from e
+        raise DependencyResolutionError("Failed to get modinfo for: %s" % module) from e
 
-    module_path = cmd.stdout.decode('utf-8').strip()
+    module_info = dict()
 
-    if module_path == '(builtin)':
-        raise BuiltinKernelModule(module_name)
+    for line in cmd.stdout.decode().strip().split('\n'):
+        if line.startswith('filename:'):
+            module_info['filename'] = line.split()[1]
+        elif line.startswith('depends:'):
+            module_info['depends'] = line.split()[1:]
+        elif line.startswith('softdep:'):
+            module_info['softdep'] = line.split()[1::2]
 
-    self.logger.debug("[%s] Kernel module is located at: %s" % (module_name, module_path))
+    self.logger.debug("Module info: %s" % module_info)
 
-    return Path(module_path)
+    return module_info
 
 
-def resolve_kmod_softdeps(self, module_name: str) -> list[str]:
+def validate_kmod_path(self, name: str, path: str) -> Path:
     """
-    Gets all kernel module soft dependencies.
+    Returns a BuiltInKernelModule exception if the module is built-in.
     """
-    self.logger.debug("Resolving kernel module soft dependencies for: %s" % module_name)
-    args = ['modinfo', '--field', 'softdep', module_name]
-
-    if self.config_dict.get('kernel_version'):
-        args += ['--set-version', self.config_dict['kernel_version']]
-
-    try:
-        cmd = self._run(args)
-    except RuntimeError as e:
-        raise DependencyResolutionError("Failed to get kernel module soft dependencies for: %s" % module_name) from e
-
-    softdeps = cmd.stdout.decode().strip().split()
-    if softdeps:
-        softdeps = softdeps[1::2]
-        self.logger.debug("Kernel module '%s' has soft dependencies: %s" % (module_name, softdeps))
-        return softdeps
-
-
-def resolve_kmod_harddeps(self, module_name: str) -> list[str]:
-    """
-    Gets all kernel module dependencies.
-    """
-
-    self.logger.debug("Resolving kernel module dependencies for: %s" % module_name)
-    args = ['modinfo', '--field', 'depends', module_name]
-
-    if self.config_dict.get('kernel_version'):
-        args += ['--set-version', self.config_dict['kernel_version']]
-
-    try:
-        cmd = self._run(args)
-    except RuntimeError as e:
-        raise DependencyResolutionError("Failed to get kernel module dependencies for: %s" % module_name) from e
-
-    dependencies = cmd.stdout.decode().strip().split(',')
-
-    if dependencies[0]:
-        self.logger.debug("[%s] Kernel module has hard dependencies: %s" % (module_name, dependencies))
-        return dependencies
+    self.logger.debug("[%s] Validating kernel module path: %s" % (name, path))
+    if path == '(builtin)':
+        self.logger.debug("[%s] Kernel module is built-in." % name)
+        self.config_dict['kmod_ignore'] = name
+        return
+    return Path(path)
 
 
 def resolve_kmod(self, module_name: str) -> list[Path]:
@@ -116,16 +93,19 @@ def resolve_kmod(self, module_name: str) -> list[Path]:
 
     dependencies = []
 
-    if harddeps := resolve_kmod_harddeps(self, module_name):
+    modinfo = _get_kmod_info(self, module_name)
+
+    if harddeps := modinfo.get('depends'):
         dependencies += harddeps
 
-    if sofdeps := resolve_kmod_softdeps(self, module_name):
+    if sofdeps := modinfo.get('softdep'):
         if self.config_dict.get('kmod_ignore_softdeps', False):
             self.logger.warning("Soft dependencies were detected, but are being ignored: %s" % sofdeps)
         else:
             dependencies += sofdeps
 
     dependency_paths = []
+    # First resolve dependencies, filtering out ignored modules first
     if dependencies:
         for ignored_kmod in self.config_dict['kmod_ignore']:
             if ignored_kmod in dependencies:
@@ -135,20 +115,13 @@ def resolve_kmod(self, module_name: str) -> list[Path]:
 
         self.logger.debug("Resolving dependencies: %s" % dependencies)
         for dependency in dependencies:
-            try:
-                dependency_paths.append(resolve_kmod_path(self, dependency))
-                self.config_dict['kernel_modules'] = dependency
-            except BuiltinKernelModule:
-                self.logger.debug("[%s] Kernel module dependency is built-in: %s" % (module_name, dependency))
-                self.config_dict['kmod_ignore'] = module_name
+            if dependency_path := validate_kmod_path(self, module_name, modinfo['filename']):
+                dependency_paths.append(dependency_path)
+    # Finally resolve the module itself
+    if module_path := validate_kmod_path(self, module_name, modinfo['filename']):
+        dependency_paths.append(module_path)
 
-    try:
-        dependency_paths.append(resolve_kmod_path(self, module_name))
-        self.logger.debug("[%s] Calculated kernel module dependencies: %s" % (module_name, dependency_paths))
-    except BuiltinKernelModule:
-        self.logger.debug("[%s] Kernel module is built-in." % module_name)
-        self.config_dict['kmod_ignore'] = module_name
-
+    # If any dependencies were found, return them
     if dependency_paths:
         return dependency_paths
     else:
