@@ -1,10 +1,15 @@
 __author__ = 'desultory'
-__version__ = '1.1.2'
+__version__ = '1.2.0'
 
 from pathlib import Path
+from typing import Union
 
 
-def calculate_dependencies(self, binary):
+def calculate_dependencies(self, binary: str) -> list[Path]:
+    """
+    Calculates the dependencies of a binary using lddtree
+    :param binary: The binary to calculate dependencies for
+    """
     from shutil import which
     from subprocess import run
 
@@ -32,7 +37,7 @@ def calculate_dependencies(self, binary):
     return dependency_paths
 
 
-def deploy_dependencies(self):
+def deploy_dependencies(self) -> None:
     """
     Copies all dependencies to the build directory
     """
@@ -48,7 +53,7 @@ def deploy_dependencies(self):
         self._copy(dependency)
 
 
-def deploy_copies(self):
+def deploy_copies(self) -> None:
     """
     Copiues everything from self.config_dict['copies'] into the build directory
     """
@@ -57,7 +62,7 @@ def deploy_copies(self):
         self._copy(copy_parameters['source'], copy_parameters['destination'])
 
 
-def deploy_symlinks(self):
+def deploy_symlinks(self) -> None:
     """
     Creates symlinks for all symlinks in self.config_dict['symlinks']
     """
@@ -66,7 +71,7 @@ def deploy_symlinks(self):
         self._symlink(symlink_parameters['source'], symlink_parameters['target'])
 
 
-def deploy_nodes(self):
+def deploy_nodes(self) -> None:
     """
     Generates specified device nodes
     """
@@ -92,7 +97,7 @@ def deploy_nodes(self):
             raise e
 
 
-def configure_library_paths(self):
+def configure_library_paths(self) -> None:
     """
     Sets the export LD_LIBRARY_PATH variable to the library paths
     """
@@ -101,9 +106,10 @@ def configure_library_paths(self):
     return "export LD_LIBRARY_PATH=%s" % library_paths
 
 
-def _process_paths_multi(self, path):
+def _process_paths_multi(self, path: Union[Path, str]) -> None:
     """
-    Converts the input to a Path if it is not one
+    Converts the input to a Path if it is not one.
+    Checks if the path is absolute, and if so, converts it to a relative path.
     """
     self.logger.log(5, "Processing path: %s" % path)
     if not isinstance(path, Path):
@@ -118,7 +124,7 @@ def _process_paths_multi(self, path):
     self['paths'].append(path)
 
 
-def _process_binaries_multi(self, binary):
+def _process_binaries_multi(self, binary: str) -> None:
     """
     Processes binaries into the binaries list, adding dependencies along the way.
     """
@@ -143,9 +149,10 @@ def _process_binaries_multi(self, binary):
     self['binaries'].append(binary)
 
 
-def _process_dependencies_multi(self, dependency):
+def _process_dependencies_multi(self, dependency: Union[Path, str]) -> None:
     """
-    Converts the input to a Path if it is not one, checks if it exists
+    Converts the input to a Path if it is not one, checks if it exists.
+    If the dependency is a symlink, resolve it and add it to the symlinks list.
     """
     if not isinstance(dependency, Path):
         dependency = Path(dependency)
@@ -166,60 +173,63 @@ def _process_dependencies_multi(self, dependency):
     self['dependencies'].append(dependency)
 
 
-def _process_copies_multi(self, copy_name, copy_parameters):
+def _process_copies_multi(self, name: str, parameters: dict) -> None:
     """
     Processes a copy from the copies parameter
     Ensures the source and target are defined in the parameters.
     """
-    self.logger.log(5, "[%s] Processing copies: %s" % (copy_name, copy_parameters))
-    if 'source' not in copy_parameters:
-        raise ValueError("[%s] No source specified" % copy_name)
-    if 'destination' not in copy_parameters:
-        raise ValueError("[%s] No target specified" % copy_name)
+    self.logger.log(5, "[%s] Processing copies: %s" % (name, parameters))
+    if 'source' not in parameters:
+        raise ValueError("[%s] No source specified" % name)
+    if 'destination' not in parameters:
+        raise ValueError("[%s] No target specified" % name)
 
-    self.logger.debug("[%s] Adding copies: %s" % (copy_name, copy_parameters))
-    self['copies'][copy_name] = copy_parameters
+    self.logger.debug("[%s] Adding copies: %s" % (name, parameters))
+    self['copies'][name] = parameters
 
 
-def _process_symlinks_multi(self, symlink_name, symlink_parameters):
+def _process_symlinks_multi(self, name: str, parameters: dict) -> None:
     """
     Processes a symlink,
     Ensures the source and target are defined in the parameters.
     """
-    self.logger.log(5, "[%s] Processing symlink: %s" % (symlink_name, symlink_parameters))
-    if 'source' not in symlink_parameters:
-        raise ValueError("[%s] No source specified" % symlink_name)
-    if 'target' not in symlink_parameters:
-        raise ValueError("[%s] No target specified" % symlink_name)
+    self.logger.log(5, "[%s] Processing symlink: %s" % (name, parameters))
+    if 'source' not in parameters:
+        raise ValueError("[%s] No source specified" % name)
+    if 'target' not in parameters:
+        raise ValueError("[%s] No target specified" % name)
 
-    self.logger.debug("[%s] Adding symlink: %s -> %s" % (symlink_name, symlink_parameters['source'], symlink_parameters['target']))
-    self['symlinks'][symlink_name] = symlink_parameters
+    self.logger.debug("[%s] Adding symlink: %s -> %s" % (name, parameters['source'], parameters['target']))
+    self['symlinks'][name] = parameters
 
 
-def _process_nodes_multi(self, node_name, node_config):
+def _process_nodes_multi(self, name: str, config: dict) -> None:
     """
-    Process a device node
+    Process a device node.
+    Validates the major and minor are defined in the parameters.
     """
-    if 'major' not in node_config:
-        raise ValueError("[%s] No major specified" % node_name)
-    if 'minor' not in node_config:
-        raise ValueError("[%s] No minor specified" % node_name)
+    if 'major' not in config:
+        raise ValueError("[%s] No major specified" % name)
+    if 'minor' not in config:
+        raise ValueError("[%s] No minor specified" % name)
 
-    if 'path' not in node_config:
-        node_config['path'] = f"/dev/{node_name}"
-        self.logger.debug("[%s] No path specified, assuming: %s" % (node_name, node_config['path']))
+    if 'path' not in config:
+        config['path'] = f"/dev/{name}"
+        self.logger.debug("[%s] No path specified, assuming: %s" % (name, config['path']))
 
-    if 'mode' not in node_config:
-        node_config['mode'] = 0o660
-        self.logger.debug("[%s] No mode specified, assuming: %s" % (node_name, node_config['mode']))
+    if 'mode' not in config:
+        config['mode'] = 0o660
+        self.logger.debug("[%s] No mode specified, assuming: %s" % (name, config['mode']))
 
-    self.logger.debug("[%s] Adding node: %s" % (node_name, node_config))
-    self['nodes'][node_name] = node_config
+    self.logger.debug("[%s] Adding node: %s" % (name, config))
+    self['nodes'][name] = config
 
 
-def _process_file_owner(self, owner):
+def _process_file_owner(self, owner: Union[str, int]) -> None:
     """
-    Processes the passed file owner into a uid
+    Processes the passed file owner into a uid.
+    If the owner is a string, it is assumed to be a username and the uid is looked up.
+    If the owner is an int, it is assumed to be a uid and is used directly.
     """
     from pwd import getpwnam
 
@@ -229,8 +239,7 @@ def _process_file_owner(self, owner):
             self['_file_owner_uid'] = getpwnam(owner).pw_uid
             self.logger.info("Using uid: %s" % self['_file_owner_uid'])
         except KeyError as e:
-            self.logger.error("Unable to process file owner: %s" % owner)
-            self.logger.error(e)
+            raise KeyError("Unable to find uid for user: %s" % owner) from e
     elif isinstance(owner, int):
         self['_file_owner_uid'] = owner
         self.logger.info("Set file owner uid: %s" % self['_file_owner_uid'])

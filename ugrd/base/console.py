@@ -1,8 +1,8 @@
 __author__ = "desultory"
-__version__ = "0.4.1"
+__version__ = "0.4.2"
 
 
-def custom_init(self):
+def custom_init(self) -> str:
     """
     init override for the console module.
     Write the main init runlevels to the self.config_dict['_custom_init_file'] file.
@@ -16,7 +16,7 @@ def custom_init(self):
     return console_init(self)
 
 
-def console_init(self):
+def console_init(self) -> str:
     """
     Start agetty on the primary console.
     Tell it to execute teh _custom_init_file

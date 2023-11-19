@@ -1,8 +1,8 @@
 __author__ = 'desultory'
-__version__ = '1.1.0'
+__version__ = '1.1.1'
 
 
-def switch_root(self):
+def switch_root(self) -> str:
     """
     Should be the final statement, switches root
     """

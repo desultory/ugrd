@@ -1,12 +1,12 @@
 __author__ = 'desultory'
-__version__ = '1.1.1'
+__version__ = '1.2.0'
 
 
-from subprocess import run
+from subprocess import run, CompletedProcess
 from pathlib import Path
 
 
-def build_gen_init_cpio(self, cpio_path):
+def build_gen_init_cpio(self, cpio_path: Path) -> CompletedProcess:
     """
     Builds the gen_init_cpio source file if it exists
     """
@@ -23,7 +23,7 @@ def build_gen_init_cpio(self, cpio_path):
         raise FileNotFoundError("gen_init_cpio source file not found at: %s" % source_file)
 
 
-def pack_cpio(self):
+def pack_cpio(self) -> None:
     """
     Packs the CPIO file using gen_init_cpio
     """
@@ -54,7 +54,7 @@ def pack_cpio(self):
         self.logger.warning("Unable to change the owner of the CPIO file: %s" % out_cpio)
 
 
-def generate_cpio_mknods(self):
+def generate_cpio_mknods(self) -> list:
     """
     Generate all of the node entries for the CPIO from self.config_dict['nodes']
     """
@@ -68,7 +68,7 @@ def generate_cpio_mknods(self):
     return node_list
 
 
-def make_cpio_list(self):
+def make_cpio_list(self) -> None:
     """
     Generates a CPIO list file for gen_init_cpio.
 
