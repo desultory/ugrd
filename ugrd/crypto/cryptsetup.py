@@ -1,31 +1,52 @@
 __author__ = 'desultory'
-__version__ = '0.9.1'
+__version__ = '1.0.0'
 
 _module_name = 'ugrd.crypto.cryptsetup'
 
 CRYPTSETUP_PARAMETERS = ['key_type', 'partuuid', 'uuid', 'key_file', 'header_file', 'retries', 'key_command', 'reset_command', 'try_nokey']
 
 
-def _process_cryptsetup_key_types_multi(self, key_type, config_dict):
+def _process_cryptsetup_key_types_multi(self, key_type: str, config: dict) -> None:
     """
     Processes the cryptsetup key types.
     Updates the key type configuration if it already exists, otherwise creates a new key type.
     """
-    self.logger.debug("[%s] Processing cryptsetup key type configuration: %s" % (key_type, config_dict))
-    for parameter in config_dict:
+    self.logger.debug("[%s] Processing cryptsetup key type configuration: %s" % (key_type, config))
+    for parameter in config:
         if parameter not in CRYPTSETUP_PARAMETERS:
             raise ValueError("Invalid parameter: %s" % parameter)
 
+    # Update the key if it already exists, otherwise create a new key type
     if key_type in self['cryptsetup_key_types']:
-        self.logger.debug("[%s] Updating key type configuration: %s" % (key_type, config_dict))
-        self['cryptsetup_key_types'][key_type].update(config_dict)
+        self.logger.debug("[%s] Updating key type configuration: %s" % (key_type, config))
+        self['cryptsetup_key_types'][key_type].update(config)
     else:
-        if 'key_command' not in config_dict:
-            raise ValueError("Missing key_command for key type: %s" % config_dict)
-        self['cryptsetup_key_types'][key_type] = config_dict
+        # Make sure the key type has a key command
+        if 'key_command' not in config:
+            raise ValueError("Missing key_command for key type: %s" % key_type)
+        self['cryptsetup_key_types'][key_type] = config
 
 
-def _process_cryptsetup_multi(self, mapped_name, config):
+def _get_device_path_from_token(self, token: tuple[str, str]) -> str:
+    """
+    Returns the device path for a given a token, using the blkid command
+    """
+    from subprocess import run
+
+    token_str = f"{token[0]}={token[1]}"
+    self.logger.debug("Attempting to resolve device path using token: %s" % token_str)
+
+    cmd = run(['blkid', '--match-token', token_str, '--output', 'device'], capture_output=True)
+    if cmd.returncode != 0:
+        self.logger.warning("If building for another system, hostonly mode must be disabled.")
+        raise ValueError("Unable to resolve device path using token: %s" % token_str)
+
+    device_path = cmd.stdout.decode().strip()
+    self.logger.debug("Resolved device path: %s" % device_path)
+    return device_path
+
+
+def _process_cryptsetup_multi(self, mapped_name: str, config: dict) -> None:
     """
     Processes the cryptsetup configuration
     """
@@ -34,8 +55,19 @@ def _process_cryptsetup_multi(self, mapped_name, config):
         if parameter not in CRYPTSETUP_PARAMETERS:
             raise ValueError("Invalid parameter: %s" % parameter)
 
-    if not config.get('partuuid') and not config.get('uuid'):
-        raise ValueError("Unable to determine source device for: %s" % mapped_name)
+    # The partuuid must be specified if using a detached header
+    if config.get('header_file') and not config.get('partuuid'):
+        raise ValueError("A partuuid must be specified when using detached headers: %s" % mapped_name)
+    elif not config.get('partuuid') and not config.get('uuid'):
+        raise ValueError("Either a uuid or partuuid must be specified with cryptsetup mounts: %s" % mapped_name)
+
+    # If using hostonly mode, check that the mount source exists
+    if self['hostonly']:
+        # Set it to _host_device_path just to appear in the configuration, it is not used
+        if config.get('partuuid'):
+            config['_host_device_path'] = _get_device_path_from_token(self, ('PARTUUID', config['partuuid']))
+        elif config.get('uuid'):
+            config['_host_device_path'] = _get_device_path_from_token(self, ('UUID', config['uuid']))
 
     # Check if the key type is defined in the configuration, otherwise use the default, check if it's valid
     if key_type := config.get('key_type', self.get('cryptsetup_key_type')):
@@ -56,9 +88,12 @@ def _process_cryptsetup_multi(self, mapped_name, config):
     self['cryptsetup'][mapped_name] = config
 
 
-def get_crypt_sources(self):
+def get_crypt_sources(self) -> list[str]:
     """
-    Goes through each cryptsetup device, sets $CRYPTSETUP_SOURCE_NAME to the source device
+    Goes through each cryptsetup device
+    Creates a bash command to get the source device
+    Exports the command as an environment variable in the format:
+        CRYPTSETUP_SOURCE_{name}=`device`
     """
     out = []
     for name, parameters in self.config_dict['cryptsetup'].items():
@@ -75,19 +110,20 @@ def get_crypt_sources(self):
     return out
 
 
-def open_crypt_key(self, name, parameters):
+def open_crypt_key(self, name: str, parameters: dict) -> tuple[list[str], str]:
     """
+    Returns a tuple of bash lines and the path to the key file
     Returns bash lines to open a luks key and output it to specified key file
     """
-    key_name = f"/run/key_{name}"
+    key_path = f"/run/key_{name}"
 
     out = [f"    echo 'Attempting to open luks key for {name}'"]
-    out += [f"    {parameters['key_command']} {key_name}"]
+    out += [f"    {parameters['key_command']} {key_path}"]
 
-    return out, key_name
+    return out, key_path
 
 
-def open_crypt_device(self, name, parameters):
+def open_crypt_device(self, name: str, parameters: dict) -> list[str]:
     """
     Returns a bash script to open a cryptsetup device
     """
@@ -138,7 +174,7 @@ def open_crypt_device(self, name, parameters):
     return out
 
 
-def crypt_init(self):
+def crypt_init(self) -> list[str]:
     """
     Generates the bash script portion to prompt for keys
     """
@@ -160,7 +196,7 @@ def crypt_init(self):
     return out
 
 
-def find_libgcc(self):
+def find_libgcc(self) -> None:
     """
     Finds libgcc.so, adds a 'dependencies' item for it.
     Adds the parend directory to 'library_paths'

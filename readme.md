@@ -288,6 +288,8 @@ Cryptsetup mounts can be configured with the following options:
 
 `cryptsetup` is a dictionary that contains LUKS volumes to be decrypted.
 
+> If `hostonly` mode is set, additional checks will be used to verify specified LUKS volumes
+
 A minimal defintion to decrypt a volume protected by a passphrase:
 
 ```
