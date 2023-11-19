@@ -249,20 +249,13 @@ def load_modules(self) -> None:
         self.logger.info("Adding internal dependencies to kmod_init: %s" % depends)
         kmods += depends
 
-    if self.config_dict['kmod_ignore']:
-        kmod_init = [kmod for kmod in kmods if kmod not in self.config_dict['kmod_ignore']]
-    else:
-        kmod_init = kmods
-
-    if not kmod_init:
+    if not kmods:
         self.logger.error("No kernel modules to load")
         return
 
-    self.logger.info("Init kernel modules: %s" % kmod_init)
+    self.logger.info("Init kernel modules: %s" % kmods)
+    self.logger.warning("Ignored kernel modules: %s" % self.config_dict['kmod_ignore'])
 
-    if kmod_init != kmods:
-        self.logger.warning("Ignored kernel modules: %s" % (set(kmods) - set(kmod_init)))
-
-    module_str = ' '.join(kmod_init)
+    module_str = ' '.join(kmods)
     return f"modprobe -av {module_str}"
 
