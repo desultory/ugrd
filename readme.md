@@ -4,7 +4,7 @@
 
 ## Project goal
 
-ugrd is designed to generate very custom initramfs environments. The final environment will be left in `build_dir` where it can be explored or modified.
+ugrd is designed to generate custom initramfs environments. The final environment will be left in `build_dir` where it can be explored or modified.
 
 The original goal of this project was to create an initramfs suitable for decrypting LUKS volumes, currently it supports the following:
 
@@ -17,28 +17,57 @@ The original goal of this project was to create an initramfs suitable for decryp
   - Can fail back to plain password entry
 * Key entry over serial
 * Automatic CPIO generation (gen_init_cpio)
+* Basic configuration validation in `hostonly` mode
+* Similar usage/arguments as Dracut
+
+## Installation
+
+To install `ugrd`, clone the repo and run `pip install .`.
+
+> Setting `--break-system-packages` may be necessary
+
+
+### Gentoo
+
+`ugrd` is in the GURU repos. It can be installed with:
+
+```
+eselect repository enable guru
+emerge --sync
+emerge sys-kernel/ugrd
+```
 
 ## Usage
 
-To install `ugrd`, clone the repo and run `pip install .`, setting `--break-system-packages` may be required.
+Once installed, `ugrd` can be executed as root to create an initramfs based on the definition in `/etc/ugrd/config.toml`.
 
-Once installed, either set the config file in `/etc/ugrd/config.toml`, or pass it to the script:
+### Supplying configuration
+
+Alternate configuration can be supplied with:
 
 `ugrd -c example_config.toml`
 
-> Debug mode can be enabled with `-d` or verbose debugging with `-dd`
+### Overriding the output location
 
 The last argument is the output file, which can be a path:
 
 `ugrd /boot/ugrd.cpio`
 
+> If no path information is supplied, the filename provided will be crreated under `build_dir`
+
 ## Runtime usage
 
-`ugrd` runs the `init` script generated in the build dir. In cases where `agetty` is needed, most of the work is done in `init_main.sh`.
+`ugrd` runs the `init` script generated in the build dir. In cases where `agetty` is needed, all but basic initialization and the final switch_root are performed in `init_main.sh`.
 
-If some portion of the script fails, it will generally drop to a bash shell, where you are expected to perform whatever tasks failed, then exit.
+UGRD should prompt for relevant input or warn if devices are missing at runtime.
 
-The script will resume after the `bash` statement you got shell access with, and if you performed the required action, the script will cotinue as normal.
+### Failure recovery
+
+If a failure is detected, a `bash` shell may be spawned where the step could be re-attempted manually. Once completed, `exit` must be used to close this shell and continue the init process.
+
+> `switch_root` must be executed as pid 1.
+
+The recovery environment is designed to correct minor issues. UGRD images are simple, and a failure is often a result of missing kernel modules or libraries.
 
 ## Output
 
