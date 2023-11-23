@@ -215,7 +215,8 @@ class InitramfsGenerator:
 
         if self.config_dict['imports'].get('custom_init'):
             init += ["\n\n# !!custom_init"]
-            init.extend(self._run_hook('custom_init'))
+            init_line, custom_init = self.config_dict['imports']['custom_init'](self)
+            init.append(init_line)
         else:
             init.extend(self.generate_init_main())
 
@@ -226,6 +227,12 @@ class InitramfsGenerator:
             init_funcs = self.generate_init_funcs()
             self._write('init_funcs.sh', init_funcs, 0o755)
             init.insert(2, "source /init_funcs.sh")
+            if custom_init:
+                custom_init.insert(2, "source /init_funcs.sh")
+
+        if custom_init:
+            self._write('_custom_init_file', custom_init, 0o755)
+            init += custom_init
 
         self._write('init', init, 0o755)
         self.logger.debug("Final config:\n%s" % pretty_print(self.config_dict))

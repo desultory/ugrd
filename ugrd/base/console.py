@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "0.4.2"
+__version__ = "0.5.0"
 
 
 def custom_init(self) -> str:
@@ -12,8 +12,7 @@ def custom_init(self) -> str:
                             f"# Console module version v{__version__}"]
     custom_init_contents += self.generate_init_main()
 
-    self._write(self.config_dict['_custom_init_file'], custom_init_contents, 0o755)
-    return console_init(self)
+    return console_init(self), custom_init_contents
 
 
 def console_init(self) -> str:

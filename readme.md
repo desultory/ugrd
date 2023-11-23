@@ -540,47 +540,42 @@ Finally, like the standard init build, the `init_final` is written to the main `
 "ugrd.base.console" = [ "custom_init" ]
 ```
 
-The custom init works by creating an `init_main` file and returning a config line which will execute that file in a getty session.
-This `init_main` file contains everything that would be in the standard init file, but without the `init_pre` and `init_final` portions. 
+The `custom_init` function should return a tuple with the line used to call the custom init file, and the contents of it.
 
 
 ```
-
-def custom_init(self):
+def custom_init(self) -> str:
     """
-    init override
+    init override for the console module.
+    Write the main init runlevels to the self.config_dict['_custom_init_file'] file.
+    Returns the output of console_init which is the command to start agetty.
     """
     custom_init_contents = [self.config_dict['shebang'],
                             f"# Console module version v{__version__}"]
     custom_init_contents += self.generate_init_main()
 
-    self._write("init_main.sh", custom_init_contents, 0o755)
-
-    return console_init(self)
+    return console_init(self), custom_init_contents
 
 
-def console_init(self):
+def console_init(self) -> str:
     """
-    start agetty
+    Start agetty on the primary console.
+    Tell it to execute teh _custom_init_file
+    If the console is a serial port, set the baud rate.
     """
     name = self.config_dict['primary_console']
-    out_str = f"agetty --autologin root --login-program /init_main.sh {name}"
-
     console = self.config_dict['console'][name]
 
-    if console.get('local'):
-        out_str += " -L"
+    out_str = f"agetty --autologin root --login-program {self.config_dict['_custom_init_file']}"
 
     console_type = console.get('type', 'tty')
 
     if console_type != 'tty':
-        baud_rate = console['baud']
-        out_str += f" {console_type} {baud_rate}"
-    else:
-        out_str += f" {console_type}"
+        # This differs from usage in the man page but seems to work?
+        out_str += f" --local-line {console['baud']}"
+
+    out_str += f" {name} {console_type}"
 
     return out_str
 ```
 
-
-`self._write(file_name, contents, chmod)` should be used instead of manually writing to a file.

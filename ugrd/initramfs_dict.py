@@ -115,6 +115,19 @@ class InitramfsConfigDict(dict):
                 self.logger.log(5, "Creating import type: %s" % import_type)
                 self['imports'][import_type] = NoDupFlatList(log_bump=10, logger=self.logger, _log_init=False)
 
+            if import_type == 'custom_init':
+                if self['imports']['custom_init']:
+                    raise ValueError("Custom init function already defined: %s" % self['imports']['custom_init'])
+                else:
+                    self['imports']['custom_init'] = function_list[0]
+                    self.logger.info("Registered custom init function: %s" % function_list[0].__name__)
+                    continue
+
+            if import_type == 'funcs':
+                for function in function_list:
+                    if function.__name__ in self['imports']['funcs']:
+                        raise ValueError("Function '%s' already registered" % function.__name__)
+
             self['imports'][import_type] += function_list
             self.logger.debug("[%s] Updated import functions: %s" % (import_type, function_list))
 
@@ -122,11 +135,6 @@ class InitramfsConfigDict(dict):
                 for function in function_list:
                     self['custom_processing'][function.__name__] = function
                     self.logger.debug("Registered config processing function: %s" % function.__name__)
-
-            if import_type == 'funcs':
-                for function in function_list:
-                    if function.__name__ in self['imports']['funcs']:
-                        raise ValueError("Function '%s' already registered" % function.__name__)
 
     @handle_plural
     def _process_mod_depends(self, module: str) -> None:
