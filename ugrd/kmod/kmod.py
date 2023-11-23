@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '0.7.0'
+__version__ = '0.7.1'
 
 from pathlib import Path
 
@@ -77,10 +77,14 @@ def _get_kmod_info(self, module: str):
     module_info = {}
 
     for line in cmd.stdout.decode().strip().split('\n'):
+        line = line.strip()
         if line.startswith('filename:'):
             module_info['filename'] = line.split()[1]
-        elif line.startswith('depends:'):
-            module_info['depends'] = line.split(',')[1:]
+        elif line.startswith('depends:') and line != 'depends:':
+            if ',' in line:
+                module_info['depends'] = line.split(',')[1:]
+            else:
+                module_info['depends'] = [line.split()[1]]
         elif line.startswith('softdep:'):
             module_info['softdep'] = line.split()[2::2]
         elif line.startswith('firmware:'):
