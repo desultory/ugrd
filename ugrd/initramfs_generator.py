@@ -303,7 +303,7 @@ class InitramfsGenerator:
 
         self._chown(file_path)
 
-    def _copy(self, source: Union[Path, str], dest=None, in_build_dir=True) -> None:
+    def _copy(self, source: Union[Path, str], dest=None) -> None:
         """
         Copies a file, chowns it as self.config_dict['_file_owner_uid']
         """
@@ -315,14 +315,8 @@ class InitramfsGenerator:
         if not dest:
             self.logger.log(5, "No destination specified, using source: %s" % source)
             dest = source
-        elif not isinstance(dest, Path):
-            dest = Path(dest)
 
-        if in_build_dir:
-            dest_path = self._get_build_path(dest)
-            self.logger.log(5, "Destination in build dir: %s" % dest_path)
-        else:
-            dest_path = Path(dest)
+        dest_path = self._get_build_path(dest)
 
         if not dest_path.parent.is_dir():
             self.logger.debug("Parent directory for '%s' does not exist: %s" % (dest_path.name, dest.parent))
@@ -396,7 +390,7 @@ class InitramfsGenerator:
         else:
             return self.build_dir / path
 
-    def _symlink(self, source: Union[Path, str], target: Union[Path, str], in_build_dir=True) -> None:
+    def _symlink(self, source: Union[Path, str], target: Union[Path, str]) -> None:
         """
         Creates a symlink
         """
@@ -405,11 +399,7 @@ class InitramfsGenerator:
         if not isinstance(source, Path):
             source = Path(source)
 
-        if not isinstance(target, Path):
-            target = Path(target)
-
-        if in_build_dir:
-            target = self._get_build_path(target)
+        target = self._get_build_path(target)
 
         if not target.parent.is_dir():
             self.logger.debug("Parent directory for '%s' does not exist: %s" % (target.name, target.parent))
