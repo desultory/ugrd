@@ -90,23 +90,17 @@ def get_crypt_sources(self) -> list[str]:
 
     out = []
     for name, parameters in self.config_dict['cryptsetup'].items():
+        token = ('PARTUUID', parameters['partuuid']) if parameters.get('partuuid') else ('UUID', parameters['uuid'])
+        self.logger.debug("[%s] Created block device identifier token: %s" % (name, token))
         # If using hostonly mode, check that the mount source exists
         if self.config_dict['hostonly']:
-            # Set it to _host_device_path just to appear in the configuration, it is not used
-            if parameters.get('partuuid'):
-                parameters['_host_device_path'] = _get_device_path_from_token(self, ('PARTUUID', parameters['partuuid']))
-            elif parameters.get('uuid'):
-                parameters['_host_device_path'] = _get_device_path_from_token(self, ('UUID', parameters['uuid']))
-        # Add a blkid command to get the source device in the initramfs
-        if 'partuuid' in parameters:
-            blkid_command = f"export CRYPTSETUP_SOURCE_{name}=$(blkid --match-token PARTUUID='{parameters['partuuid']}' --match-tag PARTUUID --output device)"
-        elif 'uuid' in parameters:
-            blkid_command = f"export CRYPTSETUP_SOURCE_{name}=$(blkid --match-token UUID='{parameters['uuid']}' --match-tag PARTUUID --output device)"
-        else:
-            raise ValueError("Unable to determine source device for %s" % name)
+            parameters['_host_device_path'] = _get_device_path_from_token(self, token)
+        # Add a blkid command to get the source device in the initramfs, only match if the device has a partuuid
+        out.append(f"export SOURCE_TOKEN_{name}='{token[0]}={token[1]}'")
+        out.append(f'export CRYPTSETUP_SOURCE_{name}=$(blkid --match-token "$SOURCE_TOKEN_{name}" --match-tag PARTUUID --output device)')
 
-        check_command = f'if [ -z "$CRYPTSETUP_SOURCE_{name}" ]; then echo "Unable to resolve device source for {name}"; bash; else echo "Resolved device source: $CRYPTSETUP_SOURCE_{name}"; fi'
-        out += [f"\necho 'Attempting to get device path for {name}'", blkid_command, check_command]
+        check_command = f'if [ -z "$CRYPTSETUP_SOURCE_{name}" ]; then echo "Unable to resolve device source for {name}"; bash; else echo "Resolved device source: $CRYPTSETUP_SOURCE_{name}"; fi\n'
+        out += [f"echo 'Attempting to get device path for {name}'", check_command]
 
     return out
 
@@ -170,7 +164,7 @@ def open_crypt_device(self, name: str, parameters: dict) -> list[str]:
         out += ['        echo "Running key reset command"',
                 f'        {reset_command}']
     out += ['    fi']
-    out += ['done']
+    out += ['done\n']
 
     return out
 
@@ -189,7 +183,7 @@ def crypt_init(self) -> list[str]:
                     new_params.pop(parameter)
                 except KeyError:
                     pass
-            out += [f'\ncryptsetup status {name}',
+            out += [f'cryptsetup status {name}',
                     'if [ $? -ne 0 ]; then',
                     f'    echo "Failed to open device using keys: {name}"']
             out += [f'    {bash_line}' for bash_line in open_crypt_device(self, name, new_params)]

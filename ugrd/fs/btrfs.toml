@@ -1,5 +1,15 @@
 binaries = [ "btrfs" ]
 _kmod_depend = [ "btrfs" ]
 
+subvol_selector = false
+
+[imports.config_processing]
+"ugrd.fs.btrfs" = [ "_process_root_subvol" ]
+
 [imports.init_premount]
-"ugrd.fs.btrfs" = [ "btrfs_scan" ]
+"ugrd.fs.btrfs" = [ "btrfs_scan", "select_subvol" ]
+
+# Custom parameters
+[custom_parameters]
+subvol_selector = "bool"  # Select a btrfs subvolume for the root partition at runtime
+root_subvol = "str"  # Set the default btrfs subvolume for the root filesystem

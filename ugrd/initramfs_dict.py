@@ -168,7 +168,7 @@ class InitramfsConfigDict(dict):
 
         for name, value in module_config.items():
             if name in ('custom_parameters', 'mod_depends', 'imports'):
-                self.logger.debug("[%s] Skipping '%s'" % (module, name))
+                self.logger.log(5, "[%s] Skipping '%s'" % (module, name))
                 continue
             self.logger.debug("[%s] Setting '%s' to: %s" % (module, name, value))
             self[name] = value
