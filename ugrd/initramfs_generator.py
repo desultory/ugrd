@@ -1,6 +1,6 @@
 
 __author__ = "desultory"
-__version__ = "0.9.3"
+__version__ = "0.9.4"
 
 from tomllib import load
 from typing import Union
@@ -81,14 +81,13 @@ class InitramfsGenerator:
         if self.clean:
             self.clean_build_dir()
 
-        self._run_hook('build_pre', return_output=False)
-        self._run_hook('build_tasks', return_output=False)
+        self._run_hook('build_pre')
+        self._run_hook('build_tasks')
 
-    def _run_func(self, function, external=False, return_output=True, force_include=False) -> list[str]:
+    def _run_func(self, function, external=False, force_include=False) -> list[str]:
         """
         Runs a function.
         External ones must have self passed as the first argument.
-        Returns the output if return_output is set.
         If force_include is set, forces the function to be included in the bash source file.
         """
         self.logger.debug("Running function: %s" % function.__name__)
@@ -96,10 +95,6 @@ class InitramfsGenerator:
             function_output = function(self)
         else:
             function_output = function()
-
-        if not return_output:
-            self.logger.debug("[%s] Function output not requested, returning." % function.__name__)
-            return
 
         if function_output:
             if isinstance(function_output, list) and len(function_output) == 1:
@@ -109,36 +104,30 @@ class InitramfsGenerator:
             if function.__name__ in self.included_functions:
                 raise ValueError("Function '%s' has already been included in the bash source file" % function.__name__)
 
-            if isinstance(function_output, str):
+            if isinstance(function_output, str) and not force_include:
                 self.logger.debug("[%s] Function returned string: %s" % (function.__name__, function_output))
-                if force_include:
-                    self.logger.debug("[%s] Function output is being forced into bash source file" % function.__name__)
-                    self.included_functions[function.__name__] = function_output
                 return function_output
-            else:
-                self.logger.debug("[%s] Function returned output: %s" % (function.__name__, pretty_print(function_output)))
-                self.included_functions[function.__name__] = function_output
-                return function.__name__
+
+            self.logger.debug("[%s] Function returned output: %s" % (function.__name__, pretty_print(function_output)))
+            self.included_functions[function.__name__] = function_output
+            self.logger.info("Created function alias: %s" % function.__name__)
+            return function.__name__
         else:
             self.logger.debug("[%s] Function returned no output" % function.__name__)
 
-    def _run_funcs(self, functions: list[str], *args, return_output=True, **kwargs) -> list[str]:
+    def _run_funcs(self, functions: list[str], *args, **kwargs) -> list[str]:
         """
         Runs a list of functions
-        Returns the output if return_output is set
         """
         self.logger.debug("Running functions: %s" % functions)
         out = []
         for function in functions:
             # Only append if returning the output
-            if return_output:
-                if function_output := self._run_func(function, *args, **kwargs):
-                    out.append(function_output)
-            else:
-                self._run_func(function, *args, **kwargs)
+            if function_output := self._run_func(function, *args, **kwargs):
+                out.append(function_output)
         return out
 
-    def _run_hook(self, hook: str, *args, return_output=True, **kwargs) -> list[str]:
+    def _run_hook(self, hook: str, *args, **kwargs) -> list[str]:
         """
         Runs a hook for imported functions
         """
@@ -146,14 +135,14 @@ class InitramfsGenerator:
         self.logger.info("Running hook: %s" % hook)
         if hasattr(self, hook):
             self.logger.debug("Running internal functions for hook: %s" % hook)
-            out += self._run_funcs(getattr(self, hook), return_output=return_output, *args, **kwargs)
+            out += self._run_funcs(getattr(self, hook), *args, **kwargs)
 
         if external_functions := self.config_dict['imports'].get(hook):
             self.logger.debug("Running external functions for hook: %s" % hook)
-            function_output = self._run_funcs(external_functions, external=True, return_output=return_output, *args, **kwargs)
+            function_output = self._run_funcs(external_functions, external=True, *args, **kwargs)
             out += function_output
 
-        if return_output:
+        if out:
             self.logger.debug("[%s] Hook output: %s" % (hook, out))
             return out
 
@@ -161,9 +150,12 @@ class InitramfsGenerator:
         """
         Runs the specified init hook, returning the output
         """
-        out = ['\n\n# Begin %s' % level]
-        out += self._run_hook(level)
-        return out
+        if runlevel := self._run_hook(level):
+            out = ['\n\n# Begin %s' % level]
+            out += runlevel
+            return out
+        else:
+            self.logger.debug("No output for init level: %s" % level)
 
     def generate_init_funcs(self) -> None:
         """
@@ -191,10 +183,8 @@ class InitramfsGenerator:
         """
         out = []
         for init_type in self.init_types:
-            hook = self._run_init_hook(init_type)
-            # The hook will always contian a header, so check if it has any other output
-            if len(hook) > 1:
-                out.extend(hook)
+            if runlevel := self._run_init_hook(init_type):
+                out += runlevel
             else:
                 self.logger.debug("No output from init hook: %s" % init_type)
         return out
@@ -256,7 +246,7 @@ class InitramfsGenerator:
         Packs the initramfs based on self.config_dict['imports']['pack']
         """
         if self.config_dict['imports'].get('pack'):
-            self._run_hook('pack', return_output=False)
+            self._run_hook('pack')
         else:
             self.logger.warning("No pack functions specified, the final build is present in: %s" % self.build_dir)
 
