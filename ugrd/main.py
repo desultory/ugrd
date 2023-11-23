@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from ugrd.initramfs_generator import InitramfsGenerator
-from ugrd.zen_custom import ColorLognameFormatter
+from zenlib.logging import ColorLognameFormatter
 
 from argparse import ArgumentParser
 import logging

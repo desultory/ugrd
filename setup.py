@@ -11,6 +11,7 @@ setup(
         "ugrd": ["*/*.toml",
                  "include/gen_init_cpio.c"]
     },
+    install_requires=['zenlib>=1.0.0'],
     entry_points={
         "console_scripts": [
             "ugrd = ugrd.main:main"

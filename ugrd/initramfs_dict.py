@@ -5,7 +5,8 @@ __version__ = "0.9.0"
 from tomllib import load, TOMLDecodeError
 from pathlib import Path
 
-from ugrd.zen_custom import loggify, handle_plural, NoDupFlatList, pretty_print
+from zenlib.logging import loggify
+from zenlib.util import handle_plural, pretty_print, NoDupFlatList
 
 
 @loggify
