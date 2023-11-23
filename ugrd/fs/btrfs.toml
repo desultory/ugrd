@@ -3,6 +3,9 @@ _kmod_depend = [ "btrfs" ]
 
 subvol_selector = false
 
+[imports.functions]
+"ugrd.fs.btrfs" = [ "get_btrfs_devices" ]
+
 [imports.config_processing]
 "ugrd.fs.btrfs" = [ "_process_root_subvol" ]
 

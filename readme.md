@@ -469,7 +469,14 @@ This module is loaded in the imports section of the `base.yaml` file:
 "ugrd.fs.mounts" = [ "_process_mounts_multi" ]
 ```
 
-#### build_tasks
+#### Imports
+
+UGRD allows functions to be imported from modules using the `imports` dict.
+
+This is primarily used to run additional functions at build time, add init functions, and add library functions.
+
+
+##### build_tasks
 
 Build tasks are functions which will be executed after the directory structure has been generated using the specified `paths`.
 
@@ -480,7 +487,7 @@ The base module includes a build task for generating the fstab, which is activat
 "ugrd.fs.mounts" = [ "generate_fstab" ]
 ```
 
-#### Packing tasks
+##### pack
 
 Packing facts, such as CPIO generation can be defined in the `pack` import.
 
@@ -491,7 +498,11 @@ The `cpio` module imports the `make_cpio_list` packing function with:
 "ugrd.base.base" = [ "make_cpio_list" ]
 ```
 
-#### init hooks
+##### funcs
+
+Functions can be added to `imports.funcs` to force the output to be added to `init_funcs.sh`.
+
+##### init hooks
 
 By default, the specified init hooks are:
 * `init_pre` - Where the base initramfs environment is set up, such as creating a devtmpfs.
@@ -514,7 +525,7 @@ The `InitramfsGenerator.generate_init_main()` function (often called from `self`
 
 A general overview of the procedure used for generating the init is to write the chosen `shebang`, then every init hook. The `custom_init` import can be used for more advanced confugrations, such as running another script in `agetty`.
 
-#### custom_init
+##### custom_init
 
 To change how everything but `init_pre` and `init_file` are handled at runtime, `custom_init` can be used.
 

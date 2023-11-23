@@ -1,4 +1,4 @@
-__version__ = '0.1.0'
+__version__ = '0.2.0'
 __author__ = 'desultory'
 
 
@@ -23,23 +23,18 @@ def btrfs_scan(self) -> str:
     return "btrfs device scan"
 
 
-def _get_devices(self) -> str:
+def get_btrfs_devices(self) -> str:
     """
     Returns a bash function which uses blkid to get all btrfs devices
     """
-    return """
-    function get_btrfs_devices() {{
-        blkid -t TYPE=btrfs -o device
-    }}
-    """
+    return "blkid -t TYPE=btrfs -o device"
 
 
 def select_subvol(self) -> str:
     """
     selects a subvolume
     """
-    out = [_get_devices(self)]
-
+    out = []
     if root_subvol := self.config_dict.get("root_subvol"):
         out.append(f"btrfs subvolume set-default {root_subvol}")
 

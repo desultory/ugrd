@@ -1,6 +1,6 @@
 
 __author__ = "desultory"
-__version__ = "0.9.0"
+__version__ = "0.10.0"
 
 from tomllib import load, TOMLDecodeError
 from pathlib import Path
@@ -122,6 +122,11 @@ class InitramfsConfigDict(dict):
                 for function in function_list:
                     self['custom_processing'][function.__name__] = function
                     self.logger.debug("Registered config processing function: %s" % function.__name__)
+
+            if import_type == 'funcs':
+                for function in function_list:
+                    if function.__name__ in self['imports']['funcs']:
+                        raise ValueError("Function '%s' already registered" % function.__name__)
 
     @handle_plural
     def _process_mod_depends(self, module: str) -> None:

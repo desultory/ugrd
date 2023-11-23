@@ -20,8 +20,8 @@ class InitramfsGenerator:
         self.build_pre = [self.generate_structure]
         self.config_dict = InitramfsConfigDict(logger=self.logger)
 
-        # This will be filled with function definitions for imported functions
-        self._init_funcs = {}
+        # Used for functions that are added to the bash source file
+        self.included_functions = {}
 
         # init_pre and init_final are run as part of generate_initramfs_main
         self.init_types = ['init_debug', 'init_early', 'init_main', 'init_late', 'init_premount', 'init_mount', 'init_cleanup']
@@ -84,9 +84,12 @@ class InitramfsGenerator:
         self._run_hook('build_pre', return_output=False)
         self._run_hook('build_tasks', return_output=False)
 
-    def _run_func(self, function, external=False, return_output=True) -> list[str]:
+    def _run_func(self, function, external=False, return_output=True, force_include=False) -> list[str]:
         """
-        Runs a function, returning the output in a list
+        Runs a function.
+        External ones must have self passed as the first argument.
+        Returns the output if return_output is set.
+        If force_include is set, forces the function to be included in the bash source file.
         """
         self.logger.debug("Running function: %s" % function.__name__)
         if external:
@@ -99,17 +102,27 @@ class InitramfsGenerator:
             return
 
         if function_output:
+            if isinstance(function_output, list) and len(function_output) == 1:
+                self.logger.debug("[%s] Function returned list with one element: %s" % (function.__name__, function_output[0]))
+                function_output = function_output[0]
+
+            if function.__name__ in self.included_functions:
+                raise ValueError("Function '%s' has already been included in the bash source file" % function.__name__)
+
             if isinstance(function_output, str):
                 self.logger.debug("[%s] Function returned string: %s" % (function.__name__, function_output))
+                if force_include:
+                    self.logger.debug("[%s] Function output is being forced into bash source file" % function.__name__)
+                    self.included_functions[function.__name__] = function_output
                 return function_output
             else:
                 self.logger.debug("[%s] Function returned output: %s" % (function.__name__, pretty_print(function_output)))
-                self._init_funcs[function.__name__] = function_output
+                self.included_functions[function.__name__] = function_output
                 return function.__name__
         else:
             self.logger.debug("[%s] Function returned no output" % function.__name__)
 
-    def _run_funcs(self, functions: list[str], external=False, return_output=True) -> list[str]:
+    def _run_funcs(self, functions: list[str], *args, return_output=True, **kwargs) -> list[str]:
         """
         Runs a list of functions
         Returns the output if return_output is set
@@ -119,13 +132,13 @@ class InitramfsGenerator:
         for function in functions:
             # Only append if returning the output
             if return_output:
-                if function_output := self._run_func(function, external=external, return_output=return_output):
+                if function_output := self._run_func(function, *args, **kwargs):
                     out.append(function_output)
             else:
-                self._run_func(function, external=external, return_output=return_output)
+                self._run_func(function, *args, **kwargs)
         return out
 
-    def _run_hook(self, hook: str, return_output=True) -> list[str]:
+    def _run_hook(self, hook: str, *args, return_output=True, **kwargs) -> list[str]:
         """
         Runs a hook for imported functions
         """
@@ -133,11 +146,11 @@ class InitramfsGenerator:
         self.logger.info("Running hook: %s" % hook)
         if hasattr(self, hook):
             self.logger.debug("Running internal functions for hook: %s" % hook)
-            out += self._run_funcs(getattr(self, hook), return_output=return_output)
+            out += self._run_funcs(getattr(self, hook), return_output=return_output, *args, **kwargs)
 
         if external_functions := self.config_dict['imports'].get(hook):
             self.logger.debug("Running external functions for hook: %s" % hook)
-            function_output = self._run_funcs(external_functions, external=True, return_output=return_output)
+            function_output = self._run_funcs(external_functions, external=True, return_output=return_output, *args, **kwargs)
             out += function_output
 
         if return_output:
@@ -154,18 +167,19 @@ class InitramfsGenerator:
 
     def generate_init_funcs(self) -> None:
         """
-        Generates the init functions file based on self._init_funcs
+        Generates the init functions file based on self.included_functions
         """
-        if not self._init_funcs:
-            self.logger.warning("No init functions to generate")
-            return
-
         out = [f"# Generated by UGRD v{__version__}"]
 
-        for func_name, func_content in self._init_funcs.items():
+        for func_name, func_content in self.included_functions.items():
             out.append("\n\n" + func_name + "() {")
-            for line in func_content:
-                out.append(f"    {line}")
+            if isinstance(func_content, str):
+                out.append(f"    {func_content}")
+            elif isinstance(func_content, list):
+                for line in func_content:
+                    out.append(f"    {line}")
+            else:
+                raise TypeError("Function content is not a string or list: %s" % func_content)
             out.append("}")
 
         return out
@@ -194,6 +208,9 @@ class InitramfsGenerator:
         init = [self.config_dict['shebang']]
         init += ["# Generated by UGRD v%s" % __version__]
 
+        # Run all included functions, so they get included
+        self._run_hook('functions', force_include=True)
+
         init.extend(self._run_init_hook('init_pre'))
 
         if self.config_dict['imports'].get('custom_init'):
@@ -205,7 +222,7 @@ class InitramfsGenerator:
         init.extend(self._run_init_hook('init_final'))
         init += ["\n\n# END INIT"]
 
-        if self._init_funcs:
+        if self.included_functions:
             init_funcs = self.generate_init_funcs()
             self._write('init_funcs.sh', init_funcs, 0o755)
             init.insert(2, "source /init_funcs.sh")

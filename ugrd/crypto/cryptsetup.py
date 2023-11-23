@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.0.1'
+__version__ = '1.1.0'
 
 _module_name = 'ugrd.crypto.cryptsetup'
 
@@ -97,10 +97,15 @@ def get_crypt_sources(self) -> list[str]:
             parameters['_host_device_path'] = _get_device_path_from_token(self, token)
         # Add a blkid command to get the source device in the initramfs, only match if the device has a partuuid
         out.append(f"export SOURCE_TOKEN_{name}='{token[0]}={token[1]}'")
-        out.append(f'export CRYPTSETUP_SOURCE_{name}=$(blkid --match-token "$SOURCE_TOKEN_{name}" --match-tag PARTUUID --output device)')
+        source_cmd = f'export CRYPTSETUP_SOURCE_{name}=$(blkid --match-token "$SOURCE_TOKEN_{name}" --match-tag PARTUUID --output device)'
 
-        check_command = f'if [ -z "$CRYPTSETUP_SOURCE_{name}" ]; then echo "Unable to resolve device source for {name}"; bash; else echo "Resolved device source: $CRYPTSETUP_SOURCE_{name}"; fi\n'
-        out += [f"echo 'Attempting to get device path for {name}'", check_command]
+        check_command = [f'if [ -z "$CRYPTSETUP_SOURCE_{name}" ]; then',
+                         f'    echo "Unable to resolve device source for {name}"',
+                         '    bash',
+                         'else',
+                         f'    echo "Resolved device source: $CRYPTSETUP_SOURCE_{name}"',
+                         'fi']
+        out += [f"echo 'Attempting to get device path for {name}'", source_cmd, *check_command]
 
     return out
 
