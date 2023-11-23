@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.2.0'
+__version__ = '1.2.1'
 
 
 from subprocess import run, CompletedProcess
@@ -18,7 +18,7 @@ def build_gen_init_cpio(self, cpio_path: Path) -> CompletedProcess:
 
     if source_file.exists():
         self.logger.info("Building gen_init_cpio at: %s" % source_file)
-        return self._run(['gcc', '-o', cpio_path, source_file])
+        return self._run(['gcc', '-o', str(cpio_path), str(source_file)])
     else:
         raise FileNotFoundError("gen_init_cpio source file not found at: %s" % source_file)
 
