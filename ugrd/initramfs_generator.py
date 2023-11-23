@@ -1,6 +1,6 @@
 
 __author__ = "desultory"
-__version__ = "0.9.1"
+__version__ = "0.9.3"
 
 from tomllib import load
 from typing import Union
@@ -231,7 +231,7 @@ class InitramfsGenerator:
                 custom_init.insert(2, "source /init_funcs.sh")
 
         if custom_init:
-            self._write('_custom_init_file', custom_init, 0o755)
+            self._write(self.config_dict['_custom_init_file'], custom_init, 0o755)
             init += custom_init
 
         self._write('init', init, 0o755)
