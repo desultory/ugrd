@@ -55,32 +55,11 @@ class InitramfsGenerator:
             else:
                 raise KeyError("Required parameter '%s' not found in config" % parameter)
 
-    def clean_build_dir(self) -> None:
-        """
-        Cleans the build directory
-        """
-        from shutil import rmtree
-
-        # Disallow cleaning unless clean is set
-        if not self.clean:
-            raise ValueError("Clean is not set, not cleaning build dir: %s" % self.build_dir)
-
-        # Clean if the directory exists
-        if self.build_dir.is_dir():
-            self.logger.warning("Cleaning build dir: %s" % self.build_dir)
-            rmtree(self.build_dir)
-        else:
-            self.logger.info("Build dir is not present, not cleaning: %s" % self.build_dir)
-
     def build_structure(self) -> None:
         """
         builds the initramfs structure.
         Cleans the build dir first if clean is set
         """
-        # If clean is set, clear the target build dir
-        if self.clean:
-            self.clean_build_dir()
-
         self._run_hook('build_pre')
         self._run_hook('build_tasks')
 

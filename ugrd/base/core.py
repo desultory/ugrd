@@ -5,6 +5,23 @@ from pathlib import Path
 from typing import Union
 
 
+def clean_build_dir(self) -> None:
+    """
+    Cleans the build directory
+    """
+    from shutil import rmtree
+
+    if not self.config_dict['clean']:
+        self.logger.info("Skipping cleaning build directory")
+        return
+
+    if self.config_dict['build_dir'].is_dir():
+        self.logger.warning("Cleaning build directory: %s" % self.config_dict['build_dir'])
+        rmtree(self.config_dict['build_dir'])
+    else:
+        self.logger.info("Build directory does not exist, skipping cleaningi: %s" % self.config_dict['build_dir'])
+
+
 def calculate_dependencies(self, binary: str) -> list[Path]:
     """
     Calculates the dependencies of a binary using lddtree
