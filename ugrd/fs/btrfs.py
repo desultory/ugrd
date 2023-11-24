@@ -13,6 +13,16 @@ def _process_root_subvol(self, root_subvol: str) -> None:
     self.logger.debug("Set root_subvol to: %s", root_subvol)
 
 
+def _process_subvol_selector(self, subvol_selector: bool) -> None:
+    """
+    processes the subvol selector
+    """
+    if subvol_selector:
+        self.update({'subvol_selector': subvol_selector})
+        self.logger.debug("Set subvol_selector to: %s", subvol_selector)
+        self['paths'] = self['base_mount_path']
+
+
 def btrfs_scan(self) -> str:
     """
     sccans for new mounts
@@ -71,7 +81,8 @@ def set_root_subvol(self) -> str:
     if root_subvol := self.config_dict.get("root_subvol"):
         return f"export root_subvol={root_subvol}"
     elif self.config_dict.get('subvol_selector'):
-        self.logger.info("Subvolume selector set, changing root_mount path to /mnt/root_base")
+        base_mount_path = self.config_dict['base_mount_path']
+        self.logger.info("Subvolume selector set, changing root_mount path to: %s", base_mount_path)
         self.config_dict['switch_root_target'] = self.config_dict['mounts']['root']['destination']
-        self.config_dict['mounts'] = {'root': {'destination': "/mnt/root_base"}}
+        self.config_dict['mounts'] = {'root': {'destination': base_mount_path}}
 
