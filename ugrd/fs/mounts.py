@@ -264,7 +264,7 @@ def mount_root(self) -> str:
     if not _validate_host_mount(self, self.config_dict['mounts']['root'], '/'):
         self.logger.error("Unable to validate root mount. Please ensure the root partition is mounted on the host system or disable hostonly mode.")
 
-    return f"mount {root_path} || (echo 'Failed to mount root partition' && bash)"
+    return f"mount {root_path}"
 
 
 def clean_mounts(self) -> list[str]:
