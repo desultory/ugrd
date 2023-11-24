@@ -41,7 +41,7 @@ def main():
     logger = logging.getLogger()
     if args.verbose:
         logger.setLevel(5)
-        formatter = ColorLognameFormatter('%(time)s | %(levelname)s | %(name)-42s | %(message)s')
+        formatter = ColorLognameFormatter('%(levelname)s | %(name)-42s | %(message)s')
     elif args.debug:
         logger.setLevel(10)
         formatter = ColorLognameFormatter('%(levelname)s | %(name)-42s | %(message)s')
