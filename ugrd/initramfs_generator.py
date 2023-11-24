@@ -201,7 +201,7 @@ class InitramfsGenerator:
             self._write('init_funcs.sh', init_funcs, 0o755)
             init.insert(2, "source init_funcs.sh")
             if custom_init:
-                custom_init.insert(2, "source init_funcs.sh")
+                custom_init.insert(2, "source /init_funcs.sh")
 
         if custom_init:
             self._write(self.config_dict['_custom_init_file'], custom_init, 0o755)
