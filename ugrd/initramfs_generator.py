@@ -1,6 +1,6 @@
 
 __author__ = "desultory"
-__version__ = "0.10.5"
+__version__ = "0.11.0"
 
 from tomllib import load
 from typing import Union
@@ -199,6 +199,7 @@ class InitramfsGenerator:
             self._write('init_funcs.sh', init_funcs, 0o755)
             init.insert(3, "source init_funcs.sh")
             if custom_init:
+                custom_init.insert(2, f"echo 'Starting custom init, UGRD v{__version__}'")
                 custom_init.insert(2, "source /init_funcs.sh")
 
         if custom_init:
