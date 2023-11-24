@@ -17,11 +17,12 @@ from ugrd.initramfs_dict import InitramfsConfigDict
 class InitramfsGenerator:
     def __init__(self, config='/etc/ugrd/config.toml', *args, **kwargs):
         self.config_filename = config
-        self.build_pre = [self.generate_structure]
         self.config_dict = InitramfsConfigDict(logger=self.logger)
 
         # Used for functions that are added to the bash source file
         self.included_functions = {}
+
+        self.build_tasks = ['build_pre', 'build_tasks']
 
         # init_pre and init_final are run as part of generate_initramfs_main
         self.init_types = ['init_debug', 'init_early', 'init_main', 'init_late', 'init_premount', 'init_mount', 'init_cleanup']
@@ -58,24 +59,18 @@ class InitramfsGenerator:
     def build_structure(self) -> None:
         """
         builds the initramfs structure.
-        Cleans the build dir first if clean is set
         """
-        self._run_hook('build_pre')
-        self._run_hook('build_tasks')
+        for hook in self.build_tasks:
+            self._run_hook(hook)
 
-    def _run_func(self, function, external=False, force_include=False) -> list[str]:
+    def _run_func(self, function, force_include=False) -> list[str]:
         """
         Runs a function.
-        External ones must have self passed as the first argument.
         If force_include is set, forces the function to be included in the bash source file.
         """
         self.logger.debug("Running function: %s" % function.__name__)
-        if external:
-            function_output = function(self)
-        else:
-            function_output = function()
 
-        if function_output:
+        if function_output := function(self):
             if isinstance(function_output, list) and len(function_output) == 1:
                 self.logger.debug("[%s] Function returned list with one element: %s" % (function.__name__, function_output[0]))
                 function_output = function_output[0]
@@ -115,19 +110,11 @@ class InitramfsGenerator:
         Runs a hook for imported functions
         """
         out = []
-        self.logger.info("Running hook: %s" % hook)
-        if hasattr(self, hook):
-            self.logger.debug("Running internal functions for hook: %s" % hook)
-            out += self._run_funcs(getattr(self, hook), *args, **kwargs)
-
-        if external_functions := self.config_dict['imports'].get(hook):
-            self.logger.debug("Running external functions for hook: %s" % hook)
-            function_output = self._run_funcs(external_functions, external=True, *args, **kwargs)
-            out += function_output
-
-        if out:
-            self.logger.debug("[%s] Hook output: %s" % (hook, out))
-            return out
+        for function in self.config_dict['imports'].get(hook, []):
+            self.logger.debug("Running function: %s" % function)
+            if function_output := self._run_func(function, *args, **kwargs):
+                out.append(function_output)
+        return out
 
     def _run_init_hook(self, level: str) -> list[str]:
         """
@@ -210,20 +197,6 @@ class InitramfsGenerator:
         self._write('init', init, 0o755)
         self.logger.debug("Final config:\n%s" % pretty_print(self.config_dict))
 
-    def generate_structure(self) -> None:
-        """
-        Generates the initramfs directory structure
-        """
-        if not self.build_dir.is_dir():
-            self._mkdir(self.build_dir)
-
-        for subdir in set(self.config_dict['paths']):
-            # Get the relative path of each path, create the directory in the build dir
-            subdir_relative_path = subdir.relative_to(subdir.anchor)
-            target_dir = self.build_dir / subdir_relative_path
-
-            self._mkdir(target_dir)
-
     def pack_build(self) -> None:
         """
         Packs the initramfs based on self.config_dict['imports']['pack']
@@ -232,6 +205,18 @@ class InitramfsGenerator:
             self._run_hook('pack')
         else:
             self.logger.warning("No pack functions specified, the final build is present in: %s" % self.build_dir)
+
+    def _get_build_path(self, path: Union[Path, str]) -> Path:
+        """
+        Returns the build path
+        """
+        if not isinstance(path, Path):
+            path = Path(path)
+
+        if path.is_absolute():
+            return self.build_dir / path.relative_to('/')
+        else:
+            return self.build_dir / path
 
     def _mkdir(self, path: Path) -> None:
         """
@@ -337,6 +322,38 @@ class InitramfsGenerator:
 
         self._chown(dest_path)
 
+    def _symlink(self, source: Union[Path, str], target: Union[Path, str]) -> None:
+        """
+        Creates a symlink
+        """
+        from os import symlink
+
+        if not isinstance(source, Path):
+            source = Path(source)
+
+        target = self._get_build_path(target)
+
+        if not target.parent.is_dir():
+            self.logger.debug("Parent directory for '%s' does not exist: %s" % (target.name, target.parent))
+            self._mkdir(target.parent)
+
+        self.logger.debug("Creating symlink: %s -> %s" % (source, target))
+        symlink(source, target)
+
+    def _run(self, args: list[str]) -> CompletedProcess:
+        """
+        Runs a command, returns the object
+        """
+        self.logger.debug("Running command: %s" % ' '.join(args))
+        cmd = run(args, capture_output=True)
+        if cmd.returncode != 0:
+            self.logger.error("Failed to run command: %s" % cmd.args)
+            self.logger.error("Command output: %s" % cmd.stdout.decode())
+            self.logger.error("Command error: %s" % cmd.stderr.decode())
+            raise RuntimeError("Failed to run command: %s" % cmd.args)
+
+        return cmd
+
     def _rotate_old(self, file_name: Path, sequence=0) -> None:
         """
         Copies a file to file_name.old then file_nane.old.n, where n is the next number in the sequence
@@ -381,48 +398,3 @@ class InitramfsGenerator:
         # Finally, rename the file
         self.logger.info("[%d] Cycling file: %s -> %s" % (sequence, file_name, target_file))
         file_name.rename(target_file)
-
-    def _get_build_path(self, path: Union[Path, str]) -> Path:
-        """
-        Returns the build path
-        """
-        if not isinstance(path, Path):
-            path = Path(path)
-
-        if path.is_absolute():
-            return self.build_dir / path.relative_to('/')
-        else:
-            return self.build_dir / path
-
-    def _symlink(self, source: Union[Path, str], target: Union[Path, str]) -> None:
-        """
-        Creates a symlink
-        """
-        from os import symlink
-
-        if not isinstance(source, Path):
-            source = Path(source)
-
-        target = self._get_build_path(target)
-
-        if not target.parent.is_dir():
-            self.logger.debug("Parent directory for '%s' does not exist: %s" % (target.name, target.parent))
-            self._mkdir(target.parent)
-
-        self.logger.debug("Creating symlink: %s -> %s" % (source, target))
-        symlink(source, target)
-
-    def _run(self, args: list[str]) -> CompletedProcess:
-        """
-        Runs a command, returns the object
-        """
-        self.logger.debug("Running command: %s" % ' '.join(args))
-        cmd = run(args, capture_output=True)
-        if cmd.returncode != 0:
-            self.logger.error("Failed to run command: %s" % cmd.args)
-            self.logger.error("Command output: %s" % cmd.stdout.decode())
-            self.logger.error("Command error: %s" % cmd.stderr.decode())
-            raise RuntimeError("Failed to run command: %s" % cmd.args)
-
-        return cmd
-

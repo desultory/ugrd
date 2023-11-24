@@ -27,7 +27,7 @@ minor = 1
 "ugrd.base.core" = [ "clean_build_dir" ]
 
 [imports.build_tasks]
-"ugrd.base.core" = [ "deploy_dependencies", "deploy_copies", "deploy_nodes", "deploy_symlinks" ]
+"ugrd.base.core" = [ "generate_structure", "deploy_dependencies", "deploy_copies", "deploy_nodes", "deploy_symlinks" ]
 
 [imports.init_pre]
 "ugrd.base.core" = [ "configure_library_paths" ]

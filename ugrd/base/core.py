@@ -22,6 +22,21 @@ def clean_build_dir(self) -> None:
         self.logger.info("Build directory does not exist, skipping cleaningi: %s" % self.config_dict['build_dir'])
 
 
+def generate_structure(self) -> None:
+    """
+    Generates the initramfs directory structure
+    """
+    if not self.build_dir.is_dir():
+        self._mkdir(self.build_dir)
+
+    for subdir in set(self.config_dict['paths']):
+        # Get the relative path of each path, create the directory in the build dir
+        subdir_relative_path = subdir.relative_to(subdir.anchor)
+        target_dir = self.build_dir / subdir_relative_path
+
+        self._mkdir(target_dir)
+
+
 def calculate_dependencies(self, binary: str) -> list[Path]:
     """
     Calculates the dependencies of a binary using lddtree
