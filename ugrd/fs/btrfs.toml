@@ -10,7 +10,7 @@ subvol_selector = false
 "ugrd.fs.btrfs" = [ "_process_root_subvol" ]
 
 [imports.init_premount]
-"ugrd.fs.btrfs" = [ "btrfs_scan", "select_subvol" ]
+"ugrd.fs.btrfs" = [ "btrfs_scan", "set_default_subvol" ]
 
 # Custom parameters
 [custom_parameters]

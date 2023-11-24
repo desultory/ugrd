@@ -477,17 +477,17 @@ UGRD allows functions to be imported from modules using the `imports` dict.
 
 This is primarily used to run additional functions at build time, add init functions, and add library functions.
 
+##### build_pre
+
+`build_pre` contains build tasks which are run at the very start of the build, such as build directory cleaning and additional config processing.
 
 ##### build_tasks
 
-Build tasks are functions which will be executed after the directory structure has been generated using the specified `paths`.
+`build_tasks` are functions which will be executed after `build_pre`, such as dependency pulling.
 
-The base module includes a build task for generating the fstab, which is activated with:
+##### build_late
 
-```
-[imports.build_tasks]
-"ugrd.fs.mounts" = [ "generate_fstab" ]
-```
+`build_late` functions are executed after the init has been generated.
 
 ##### pack
 

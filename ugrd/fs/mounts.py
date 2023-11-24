@@ -26,6 +26,7 @@ def _process_mounts_multi(self, mount_name: str, mount_config) -> None:
 
     # Validate the mount config
     for parameter, value in mount_config.items():
+        self.logger.debug("[%s] Validating parameter: %s" % (mount_name, parameter))
         if parameter == 'source' and isinstance(value, dict):
             # Break if the source type is valid
             for source_type in SOURCE_TYPES:
@@ -34,6 +35,13 @@ def _process_mounts_multi(self, mount_name: str, mount_config) -> None:
             else:
                 self.logger.info("Valid source types: %s" % SOURCE_TYPES)
                 raise ValueError("Invalid source type in mount: %s" % value)
+        elif parameter == 'options':
+            for option in value:
+                if 'subvol=' in option:
+                    if mount_name == 'root':
+                        raise ValueError("Please use the root_subvol parameter instead of setting the option manually in the root mount.")
+                    elif mount_config['type'] != 'btrfs':
+                        raise ValueError("subvol option can only be used with btrfs mounts.")
         elif parameter not in MOUNT_PARAMETERS:
             raise ValueError("Invalid parameter in mount: %s" % parameter)
 

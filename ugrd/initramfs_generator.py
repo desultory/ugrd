@@ -1,6 +1,6 @@
 
 __author__ = "desultory"
-__version__ = "0.10.1"
+__version__ = "0.10.5"
 
 from tomllib import load
 from typing import Union
@@ -22,6 +22,7 @@ class InitramfsGenerator:
         # Used for functions that are added to the bash source file
         self.included_functions = {}
 
+        # Used for functions that are run as part of the build process, build_final is run after init generation
         self.build_tasks = ['build_pre', 'build_tasks']
 
         # init_pre and init_final are run as part of generate_initramfs_main
@@ -55,6 +56,16 @@ class InitramfsGenerator:
                 setattr(self, parameter, dict_value)
             else:
                 raise KeyError("Required parameter '%s' not found in config" % parameter)
+
+    def build(self) -> None:
+        """
+        Builds the initramfs.
+        """
+        self.logger.info("Building initramfs")
+        self.build_structure()
+        self.generate_init()
+        self._run_hook('build_final')
+        self.pack_build()
 
     def build_structure(self) -> None:
         """
@@ -111,7 +122,6 @@ class InitramfsGenerator:
         """
         out = []
         for function in self.config_dict['imports'].get(hook, []):
-            self.logger.debug("Running function: %s" % function)
             if function_output := self._run_func(function, *args, **kwargs):
                 out.append(function_output)
         return out

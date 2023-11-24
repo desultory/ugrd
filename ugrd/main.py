@@ -80,9 +80,7 @@ def main():
 
     generator = InitramfsGenerator(**kwargs)
     try:
-        generator.build_structure()
-        generator.generate_init()
-        generator.pack_build()
+        generator.build()
     except Exception as e:
         logger.info("Dumping config dict:\n")
         print(generator.config_dict)

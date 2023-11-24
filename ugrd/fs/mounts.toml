@@ -12,7 +12,7 @@ mount_wait = false
 [imports.config_processing]
 "ugrd.fs.mounts" = [ "_process_mounts_multi" ]
 
-[imports.build_tasks]
+[imports.build_final]
 "ugrd.fs.mounts" = [ "generate_fstab" ]
 
 [imports.init_pre]
