@@ -18,7 +18,7 @@ _kmod_depend = "NoDupFlatList"  # Meant to be used internally, defines kernel mo
 _kmod_modinfo = "dict" # Used internally, caches modinfo output for kernel modules
 
 [imports.config_processing]
-"ugrd.kmod.kmod" = [ "_process_kmod_init_multi", "_process_kernel_modules_multi", "_process_kmod_ignore" ]
+"ugrd.kmod.kmod" = [ "_process_kmod_init_multi", "_process_kernel_modules_multi", "_process_kmod_ignore_multi" ]
 
 [imports.build_pre]
 "ugrd.kmod.kmod" = [ "calculate_modules" ]

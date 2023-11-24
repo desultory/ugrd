@@ -1,7 +1,9 @@
 __author__ = 'desultory'
-__version__ = '0.7.1'
+__version__ = '0.8.0'
 
 from pathlib import Path
+from subprocess import run
+
 
 MODULE_METADATA_FILES = ['modules.alias', 'modules.alias.bin', 'modules.builtin', 'modules.builtin.alias.bin', 'modules.builtin.bin', 'modules.builtin.modinfo',
                          'modules.dep', 'modules.dep.bin', 'modules.devname', 'modules.order', 'modules.softdep', 'modules.symbols', 'modules.symbols.bin']
@@ -15,9 +17,11 @@ class DependencyResolutionError(Exception):
     pass
 
 
-def _process_kmod_ignore(self, module: str) -> None:
+def _process_kmod_ignore_multi(self, module: str) -> None:
     """
     Adds ignored modules to self['kmod_ignore'].
+    Removes ignored modules from self['kmod_init'], self['kernel_modules'], and self['_kmod_depend'].
+    Removes any firmware dependencies added by the ignored module.
     """
     self.logger.debug("Adding module to kmod_ignore: %s", module)
     self['kmod_ignore'].append(module)
@@ -39,38 +43,76 @@ def _process_kernel_modules_multi(self, module: str) -> None:
         self.logger.warning("Not adding ignored kernel module to kernel_modules: %s" % module)
         return
 
-    self.logger.debug("Adding kernel module to kernel_modules: %s", module)
-    self['kernel_modules'].append(module)
+    _get_kmod_info(self, module)
+
+    self.logger.debug("Processing kernel module: %s" % module)
+    modinfo = self['_kmod_modinfo'][module]
+
+    # Add dependencies of the module
+    dependencies = []
+    if harddeps := modinfo.get('depends'):
+        dependencies += harddeps
+
+    if sofdeps := modinfo.get('softdep'):
+        if self.get('kmod_ignore_softdeps', False):
+            self.logger.warning("Soft dependencies were detected, but are being ignored: %s" % sofdeps)
+        else:
+            dependencies += sofdeps
+
+    if firmware := modinfo.get('firmware'):
+        if self.get('kmod_pull_firmware'):
+            self.logger.info("[%s] Adding firmware to dependencies: %s" % (module, firmware))
+            for file in firmware:
+                try:
+                    self['dependencies'] = Path('/lib/firmware/') / file
+                except FileNotFoundError:
+                    self.logger.warning("[%s] Unable to find referenced firmware file: %s" % (module, file))
+        else:
+            self.logger.warning("Firmware was detected, but is being ignored: %s" % firmware)
+
+    for dependency in dependencies:
+        if dependency in self['kmod_ignore']:
+            self.logger.error("Kernel module dependency is in ignore list: %s" % dependency)
+            self['kmod_ignore'] = module
+        self.logger.debug("[%s] Processing dependency: %s" % (module, dependency))
+        self['kernel_modules'] = dependency
+
+    if modinfo['filename'] == '(builtin)':
+        self.logger.debug("[%s] Kernel module is built-in." % module)
+        self['kmod_ignore'] = module
+    else:
+        self.logger.debug("Adding kernel module to kernel_modules: %s", module)
+        self['kernel_modules'].append(module)
 
 
 def _process_kmod_init_multi(self, module: str) -> None:
     """
     Adds init modules to self['kernel_modules'].
     """
-    if module in self['kmod_ignore']:
-        raise IgnoredKernelModule("Kernel module is in ignore list: %s" % module)
-
-    self.logger.debug("Adding kmod_init module to kernel_modules: %s", module)
-    self['kernel_modules'] = module
+    # First append it to kmod_init
     self['kmod_init'].append(module)
+    self.logger.debug("Adding kmod_init module to kernel_modules: %s", module)
+    # If it's an ignored module, kernel_modules processing will resolve that issue
+    self['kernel_modules'] = module
 
 
 def _get_kmod_info(self, module: str):
     """
     Runs modinfo on a kernel module, parses the output and stored the results in self.config_dict['_kmod_modinfo']
     """
-    if module in self.config_dict['kmod_ignore']:
-        raise IgnoredKernelModule("Kernel module is in ignore list: %s" % module)
+    if module in self['_kmod_modinfo']:
+        self.logger.debug("Module info already exists for: %s" % module)
+        return
 
     self.logger.debug("Getting modinfo for: %s" % module)
     args = ['modinfo', module]
 
     # Set kernel version if it exists, otherwise use the running kernel
-    if self.config_dict.get('kernel_version'):
-        args += ['--set-version', self.config_dict['kernel_version']]
+    if self.get('kernel_version'):
+        args += ['--set-version', self['kernel_version']]
 
     try:
-        cmd = self._run(args)
+        cmd = run(args, capture_output=True)
     except RuntimeError as e:
         raise DependencyResolutionError("Failed to get modinfo for: %s" % module) from e
 
@@ -94,64 +136,7 @@ def _get_kmod_info(self, module: str):
             module_info['firmware'] += line.split()[1:]
 
     self.logger.debug("[%s] Module info: %s" % (module, module_info))
-    self.config_dict['_kmod_modinfo'][module] = module_info
-
-
-def process_kmod(self, module: str):
-    """
-    Processes a kernel module.
-    Resolves dependency info if necessary.
-    Adds kernel module file paths to self['dependencies'].
-    """
-    if module in self.config_dict['_kmod_modinfo']:
-        self.logger.info("Kernel module has already been processed: %s" % module)
-        return
-
-    try:
-        _get_kmod_info(self, module)
-    except IgnoredKernelModule:
-        self.logger.debug("Kernel module is in ignore list: %s" % module)
-        return
-
-    self.logger.debug("Processing kernel module: %s" % module)
-
-    modinfo = self.config_dict['_kmod_modinfo'][module]
-
-    dependencies = []
-
-    if harddeps := modinfo.get('depends'):
-        dependencies += harddeps
-
-    if sofdeps := modinfo.get('softdep'):
-        if self.config_dict.get('kmod_ignore_softdeps', False):
-            self.logger.warning("Soft dependencies were detected, but are being ignored: %s" % sofdeps)
-        else:
-            dependencies += sofdeps
-
-    if firmware := modinfo.get('firmware'):
-        if self.config_dict.get('kmod_pull_firmware'):
-            self.logger.info("[%s] Adding firmware to dependencies: %s" % (module, firmware))
-            for file in firmware:
-                try:
-                    self.config_dict['dependencies'] = Path('/lib/firmware/') / file
-                except FileNotFoundError:
-                    self.logger.warning("[%s] Unable to find referenced firwmare file: %s" % (module, file))
-        else:
-            self.logger.warning("Firmware was detected, but is being ignored: %s" % firmware)
-
-    for dependency in dependencies:
-        if dependency in self.config_dict['kmod_ignore']:
-            self.logger.error("Kernel module dependency is in ignore list: %s" % dependency)
-            self.config_dict['kmod_ignore'] = module
-        self.logger.debug("[%s] Processing dependency: %s" % (module, dependency))
-        process_kmod(self, dependency)
-
-    if modinfo['filename'] == '(builtin)':
-        self.logger.debug("[%s] Kernel module is built-in." % module)
-        self.config_dict['kmod_ignore'] = module
-    else:
-        self.logger.debug("[%s] Adding kernel module path to dependencies: %s" % (module, modinfo['filename']))
-        self.config_dict['dependencies'] = Path(modinfo['filename'])
+    self['_kmod_modinfo'][module] = module_info
 
 
 def get_lspci_modules(self) -> list[str]:
@@ -261,15 +246,10 @@ def calculate_modules(self) -> None:
         self.config_dict['kernel_modules'] = autodetected_modules
 
     if self.config_dict['_kmod_depend']:
-        self.logger.info("Adding internal dependencies to kernel modules: %s" % self.config_dict['_kmod_depend'])
-        self.config_dict['kernel_modules'] = self.config_dict['_kmod_depend']
-
-    # The dict may change size during iteration, so we copy it
-    for module in self.config_dict['kernel_modules'].copy():
-        process_kmod(self, module)
+        self.logger.info("Adding internal dependencies to kmod_init: %s" % self.config_dict['_kmod_depend'])
+        self.config_dict['kmod_init'] = self.config_dict['_kmod_depend']
 
     self.logger.info("Included kernel modules: %s" % self.config_dict['kernel_modules'])
-
     process_module_metadata(self)
 
 
@@ -279,11 +259,6 @@ def load_modules(self) -> None:
     """
     # Start by using the kmod_init variable
     kmods = self.config_dict['kmod_init']
-
-    # Finally, add the internal dependencies from _kmod_depend
-    if depends := self.config_dict['_kmod_depend']:
-        self.logger.info("Adding internal dependencies to kmod_init: %s" % depends)
-        kmods += depends
 
     if not kmods:
         self.logger.error("No kernel modules to load")
