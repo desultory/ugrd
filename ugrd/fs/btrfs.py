@@ -1,4 +1,4 @@
-__version__ = '0.2.0'
+__version__ = '0.3.0'
 __author__ = 'desultory'
 
 from ugrd.fs.mounts import _get_mount_source
@@ -56,11 +56,7 @@ def mount_subvol(self) -> str:
     """
     mounts a subvolume
     """
-    if not self.config_dict.get('subvol_selector'):
-        self.logger.log(5, "subvol_selector not set, skipping")
-        return
-    elif not self.config_dict.get('root_subvol'):
-        self.logger.log(5, "root_subvol not set, skipping")
+    if not self.config_dict.get('subvol_selector') and not self.config_dict.get('root_subvol'):
         return
 
     source = _get_mount_source(self, self.config_dict['mounts']['root'])
