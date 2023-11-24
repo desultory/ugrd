@@ -1,6 +1,6 @@
 
 __author__ = "desultory"
-__version__ = "0.10.0"
+__version__ = "0.10.1"
 
 from tomllib import load, TOMLDecodeError
 from pathlib import Path
@@ -127,6 +127,8 @@ class InitramfsConfigDict(dict):
                 for function in function_list:
                     if function.__name__ in self['imports']['funcs']:
                         raise ValueError("Function '%s' already registered" % function.__name__)
+                    if function.__name__ in self['binaries']:
+                        raise ValueError("Function collides with defined binary: %s'" % function.__name__)
 
             self['imports'][import_type] += function_list
             self.logger.debug("[%s] Updated import functions: %s" % (import_type, function_list))
