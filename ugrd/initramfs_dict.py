@@ -18,6 +18,9 @@ class InitramfsConfigDict(dict):
     IMPORTANT:
         This dict does not act like a normal dict, setitem is designed to append when the overrides are used
         Default parameters are defined in builtin_parameters
+
+    If a new parameter is added, and it's not a known type, an exception will be raised.
+    If that paramter name starts with an underscore, it will be added to a queue for later processing.
     """
     builtin_parameters = {'mod_depends': NoDupFlatList,  # Modules required by other modules, will be re-checked calling .verify_deps()
                           'modules': NoDupFlatList,  # A list of the names of modules which have been loaded, mostly used for dependency checking
@@ -68,7 +71,7 @@ class InitramfsConfigDict(dict):
                     self[key].update(value)
             else:
                 super().__setitem__(key, expected_type(value))
-        else:  # Otherwise set it like a normal dict item
+        else:
             self.logger.debug("[%s] Unable to determine expected type, valid builtin types: %s" % (key, self.builtin_parameters.keys()))
             self.logger.debug("[%s] Custom types: %s" % (key, self['custom_parameters'].keys()))
             # If the key starts with an underscore, it's an internal parameter
@@ -100,7 +103,7 @@ class InitramfsConfigDict(dict):
             super().__setitem__(parameter_name, 0)
 
         if parameter_name in self['_processing']:
-            self.logger.debug("Processing queued values for '%s'" % parameter_name)
+            self.logger.info("Processing queued values for '%s'" % parameter_name)
             while not self['_processing'][parameter_name].empty():
                 value = self['_processing'][parameter_name].get()
                 self.logger.debug("Processing queued value for '%s': %s" % (parameter_name, value))
@@ -160,7 +163,7 @@ class InitramfsConfigDict(dict):
         """
         self.logger.debug("Processing module dependency: %s" % module)
         if module not in self['modules']:
-            self.logger.warning("Module depenncy added, but required dependency is not loaded: %s" % module)
+            self.logger.warning("Module dependency added, but required dependency is not loaded: %s" % module)
 
         self['mod_depends'].append(module)
 
@@ -209,6 +212,8 @@ class InitramfsConfigDict(dict):
                 raise KeyError(f"Required module '{module}' not found in config")
 
         self.logger.info("Verified module depndencies: %s" % self['mod_depends'])
+        if self['_processing']:
+            self.logger.warning("Unprocessed config values: %s" % self['_processing'])
 
     def verify_mask(self) -> None:
         """
