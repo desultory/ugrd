@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.2.1'
+__version__ = '1.2.2'
 
 from pathlib import Path
 from typing import Union
@@ -159,6 +159,11 @@ def _process_binaries_multi(self, binary: str) -> None:
     """
     Processes binaries into the binaries list, adding dependencies along the way.
     """
+    # Check if there is an import function that collides with the name of the binary
+    if funcs := self['imports'].get('functions'):
+        if binary in funcs:
+            raise ValueError("Binary name collides with import function name: %s" % binary)
+
     self.logger.debug("Processing binary: %s" % binary)
 
     dependencies = calculate_dependencies(self, binary)
