@@ -21,7 +21,7 @@ _kmod_modinfo = "dict" # Used internally, caches modinfo output for kernel modul
 "ugrd.kmod.kmod" = [ "_process_kmod_init_multi", "_process_kernel_modules_multi", "_process_kmod_ignore_multi" ]
 
 [imports.build_pre]
-"ugrd.kmod.kmod" = [ "calculate_modules", "process_modules" ]
+"ugrd.kmod.kmod" = [ "calculate_modules", "process_module_metadata", "process_modules" ]
 
 [imports.init_pre]
 "ugrd.kmod.kmod" = [ "load_modules" ]

@@ -1,6 +1,6 @@
 
 __author__ = "desultory"
-__version__ = "0.10.0"
+__version__ = "0.10.1"
 
 from tomllib import load
 from typing import Union

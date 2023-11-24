@@ -9,10 +9,6 @@ MODULE_METADATA_FILES = ['modules.alias', 'modules.alias.bin', 'modules.builtin'
                          'modules.dep', 'modules.dep.bin', 'modules.devname', 'modules.order', 'modules.softdep', 'modules.symbols', 'modules.symbols.bin']
 
 
-class IgnoredKernelModule(Exception):
-    pass
-
-
 class DependencyResolutionError(Exception):
     pass
 
@@ -188,6 +184,31 @@ def get_lsmod_modules(self) -> list[str]:
     return list(modules)
 
 
+def calculate_modules(self) -> None:
+    """
+    Populates the kernel_modules list with all required kernel modules.
+    If kmod_autodetect_lsmod is set, adds the contents of lsmod if specified.
+    If kmod_autodetect_lspci is set, adds the contents of lspci -k if specified.
+    Adds the contents of _kmod_depend if specified.
+    Performs dependency resolution on all kernel modules.
+    """
+    if self.config_dict['kmod_autodetect_lsmod']:
+        autodetected_modules = get_lsmod_modules(self)
+        self.logger.info("Autodetected kernel modules from lsmod: %s" % autodetected_modules)
+        self.config_dict['kernel_modules'] = autodetected_modules
+
+    if self.config_dict['kmod_autodetect_lspci']:
+        autodetected_modules = get_lspci_modules(self)
+        self.logger.info("Autodetected kernel modules from lscpi -k: %s" % autodetected_modules)
+        self.config_dict['kernel_modules'] = autodetected_modules
+
+    if self.config_dict['_kmod_depend']:
+        self.logger.info("Adding internal dependencies to kmod_init: %s" % self.config_dict['_kmod_depend'])
+        self.config_dict['kmod_init'] = self.config_dict['_kmod_depend'].copy()  # Copy because _kmood_depend may shrink during iteration
+
+    self.logger.info("Included kernel modules: %s" % self.config_dict['kernel_modules'])
+
+
 def process_module_metadata(self) -> None:
     """
     Gets all module metadata for the specified kernel version.
@@ -212,32 +233,6 @@ def process_module_metadata(self) -> None:
 
         self.logger.debug("Adding kernel module metadata files to dependencies: %s", meta_file_path)
         self.config_dict['dependencies'] = meta_file_path
-
-
-def calculate_modules(self) -> None:
-    """
-    Populates the kernel_modules list with all required kernel modules.
-    If kmod_autodetect_lsmod is set, adds the contents of lsmod if specified.
-    If kmod_autodetect_lspci is set, adds the contents of lspci -k if specified.
-    Adds the contents of _kmod_depend if specified.
-    Performs dependency resolution on all kernel modules.
-    """
-    if self.config_dict['kmod_autodetect_lsmod']:
-        autodetected_modules = get_lsmod_modules(self)
-        self.logger.info("Autodetected kernel modules from lsmod: %s" % autodetected_modules)
-        self.config_dict['kernel_modules'] = autodetected_modules
-
-    if self.config_dict['kmod_autodetect_lspci']:
-        autodetected_modules = get_lspci_modules(self)
-        self.logger.info("Autodetected kernel modules from lscpi -k: %s" % autodetected_modules)
-        self.config_dict['kernel_modules'] = autodetected_modules
-
-    if self.config_dict['_kmod_depend']:
-        self.logger.info("Adding internal dependencies to kmod_init: %s" % self.config_dict['_kmod_depend'])
-        self.config_dict['kmod_init'] = self.config_dict['_kmod_depend'].copy()  # Copy because _kmood_depend may shrink during iteration
-
-    self.logger.info("Included kernel modules: %s" % self.config_dict['kernel_modules'])
-    process_module_metadata(self)
 
 
 def process_modules(self) -> None:
