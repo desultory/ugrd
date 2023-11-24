@@ -61,7 +61,6 @@ def mount_subvol(self) -> str:
 
     source = _get_mount_source(self, self.config_dict['mounts']['root'])
     destination = self.config_dict['mounts']['root']['destination']
-    self.config_dict['switch_root_target'] = destination
 
     return f"mount -o subvol=$root_subvol {source} {destination}"
 
@@ -74,5 +73,6 @@ def set_root_subvol(self) -> str:
         return f"export root_subvol={root_subvol}"
     elif self.config_dict.get('subvol_selector'):
         self.logger.info("Subvolume selector set, changing root_mount path to /mnt/root_base")
+        self.config_dict['switch_root_target'] = self.config_dict['mounts']['root']['destination']
         self.config_dict['mounts'] = {'root': {'destination': "/mnt/root_base"}}
 
