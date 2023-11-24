@@ -6,6 +6,8 @@ hostonly = true
 library_paths = [ "/lib64" ]
 old_count = 1
 
+binaries = [ "bash" ]
+
 [nodes.console]
 mode = 0o644
 major = 5

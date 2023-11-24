@@ -83,6 +83,10 @@ class InitramfsGenerator:
             if function.__name__ in self.included_functions:
                 raise ValueError("Function '%s' has already been included in the bash source file" % function.__name__)
 
+            if function.__name__ in self.config_dict['binaries']:
+                raise ValueError("Function name collides with defined binary: %s" % (function.__name__))
+                return function_output
+
             if isinstance(function_output, str) and not force_include:
                 self.logger.debug("[%s] Function returned string: %s" % (function.__name__, function_output))
                 return function_output
@@ -201,7 +205,6 @@ class InitramfsGenerator:
 
         if custom_init:
             self._write(self.config_dict['_custom_init_file'], custom_init, 0o755)
-            init += custom_init
 
         self._write('init', init, 0o755)
         self.logger.debug("Final config:\n%s" % pretty_print(self.config_dict))
