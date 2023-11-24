@@ -99,6 +99,7 @@ Modules write to a shared config dict that is accessible by other modules.
 > The main module, mostly pulls basic binaries and pulls the `core`, `mounts`, and `cpio` module.
 
 * `shebang` (#!/bin/bash) sets the shebang on the init script.
+* `switch_root_target` Sets the `switch_root` target, if different from the root mount destination.
 
 #### base.core
 

@@ -172,7 +172,7 @@ def mount_fstab(self) -> list[str]:
         else:
             out += ["read -sr"]
 
-    out += ["mount -a || (echo 'Failed to mount fstab. Please ensure mounts are made and then exit.' && bash)"]
+    out += ["mount -a || (echo 'Failed to mount fstab' ; echo 'Loaded modules:' ; lsmod ; echo 'Block devices:' ; blkid ; mount_fstab)"]
     return out
 
 

@@ -11,3 +11,4 @@ shebang = "#!/bin/bash"
 
 [custom_parameters]
 shebang = "str"  # Add the shebang property, used because this is a bash script
+switch_root_target = "str"  # Add the switch_root_target property, used to specify the target directory for switch_root overriding the root mount destination

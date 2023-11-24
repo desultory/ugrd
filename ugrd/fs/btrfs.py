@@ -59,19 +59,23 @@ def mount_subvol(self) -> str:
     if not self.config_dict.get('subvol_selector'):
         self.logger.log(5, "subvol_selector not set, skipping")
         return
+    elif not self.config_dict.get('root_subvol'):
+        self.logger.log(5, "root_subvol not set, skipping")
+        return
 
     source = _get_mount_source(self, self.config_dict['mounts']['root'])
     destination = self.config_dict['mounts']['root']['destination']
+    self.config_dict['switch_root_target'] = destination
 
     return f"mount -o subvol=$root_subvol {source} {destination}"
 
 
-def set_default_subvol(self) -> str:
+def set_root_subvol(self) -> str:
     """
-    selects a subvolume
+    sets $root_subvol
     """
     if root_subvol := self.config_dict.get("root_subvol"):
-        return f"btrfs subvolume set-default {root_subvol}"
+        return f"export root_subvol={root_subvol}"
     elif self.config_dict.get('subvol_selector'):
         self.logger.info("Subvolume selector set, changing root_mount path to /mnt/root_base")
         self.config_dict['mounts'] = {'root': {'destination': "/mnt/root_base"}}
