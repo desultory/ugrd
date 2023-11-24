@@ -206,7 +206,7 @@ def find_libgcc(self) -> None:
     ldconfig = self._run(['ldconfig', '-p']).stdout.decode().split("\n")
     libgcc = [lib for lib in ldconfig if 'libgcc_s' in lib and 'libc6,x86-64' in lib][0]
     source_path = Path(libgcc.partition('=> ')[-1])
-    self.logger.debug("Source path for libgcc_s: %s" % source_path)
+    self.logger.info("Source path for libgcc_s: %s" % source_path)
 
     self.config_dict['dependencies'] = source_path
     self.config_dict['library_paths'] = str(source_path.parent)

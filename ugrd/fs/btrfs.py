@@ -1,6 +1,8 @@
 __version__ = '0.2.0'
 __author__ = 'desultory'
 
+from ugrd.fs.mounts import _get_mount_source
+
 
 def _process_root_subvol(self, root_subvol: str) -> None:
     """
@@ -18,11 +20,50 @@ def btrfs_scan(self) -> str:
     return "btrfs device scan"
 
 
-def get_btrfs_devices(self) -> str:
+def select_subvol(self) -> str:
     """
-    Returns a bash function which uses blkid to get all btrfs devices
+    Returns a bash script to list subvolumes on the root volume
     """
-    return "blkid -t TYPE=btrfs -o device"
+    if not self.config_dict.get('subvol_selector'):
+        self.logger.log(5, "subvol_selector not set, skipping")
+        return
+
+    out = [f"btrfs subvolume list -o {self.config_dict['mounts']['root']['destination']}",
+           "if [[ $? -ne 0 ]]; then",
+           f"    echo 'Failed to list btrfs subvolumes for root volume: {self.config_dict['mounts']['root']['destination']}'",
+           "    bash",
+           "else",
+           "    echo 'Select a subvolume to use as root'",
+           "    PS3='Subvolume: '",
+           f"    select subvol in $(btrfs subvolume list -o {self.config_dict['mounts']['root']['destination']} " + "| awk '{print $9}'); do",
+           "        case $subvol in",
+           "            *)",
+           "                if [[ -z $subvol ]]; then",
+           "                    echo 'Invalid selection'",
+           "                else",
+           '                    echo "Selected subvolume: $subvol"',
+           "                    export root_subvol=$subvol",
+           "                    break",
+           "                fi",
+           "                ;;",
+           "        esac",
+           "    done",
+           "fi"]
+    return out
+
+
+def mount_subvol(self) -> str:
+    """
+    mounts a subvolume
+    """
+    if not self.config_dict.get('subvol_selector'):
+        self.logger.log(5, "subvol_selector not set, skipping")
+        return
+
+    source = _get_mount_source(self, self.config_dict['mounts']['root'])
+    destination = self.config_dict['mounts']['root']['destination']
+
+    return f"mount -o subvol=$root_subvol {source} {destination}"
 
 
 def set_default_subvol(self) -> str:

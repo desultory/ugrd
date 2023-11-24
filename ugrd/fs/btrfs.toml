@@ -3,14 +3,14 @@ _kmod_depend = [ "btrfs" ]
 
 subvol_selector = false
 
-[imports.functions]
-"ugrd.fs.btrfs" = [ "get_btrfs_devices" ]
-
 [imports.config_processing]
 "ugrd.fs.btrfs" = [ "_process_root_subvol" ]
 
 [imports.init_premount]
 "ugrd.fs.btrfs" = [ "btrfs_scan", "set_default_subvol" ]
+
+[imports.init_mount]
+"ugrd.fs.btrfs" = [ "select_subvol", "mount_subvol" ]
 
 # Custom parameters
 [custom_parameters]

@@ -79,7 +79,7 @@ class InitramfsGenerator:
         Runs a function.
         If force_include is set, forces the function to be included in the bash source file.
         """
-        self.logger.debug("Running function: %s" % function.__name__)
+        self.logger.info("Running function: %s" % function.__name__)
 
         if function_output := function(self):
             if isinstance(function_output, list) and len(function_output) == 1:
@@ -99,7 +99,7 @@ class InitramfsGenerator:
 
             self.logger.debug("[%s] Function returned output: %s" % (function.__name__, pretty_print(function_output)))
             self.included_functions[function.__name__] = function_output
-            self.logger.info("Created function alias: %s" % function.__name__)
+            self.logger.debug("Created function alias: %s" % function.__name__)
             return function.__name__
         else:
             self.logger.debug("[%s] Function returned no output" % function.__name__)
