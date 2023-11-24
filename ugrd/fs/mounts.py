@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.2.0'
+__version__ = '1.2.1'
 
 from pathlib import Path
 
@@ -39,6 +39,8 @@ def _process_mounts_multi(self, mount_name: str, mount_config) -> None:
 
     # Set defaults
     mount_config['destination'] = Path(mount_config.get('destination', mount_name))
+    if not mount_config['destination'].is_absolute():
+        mount_config['destination'] = '/' / mount_config['destination']
     mount_config['base_mount'] = mount_config.get('base_mount', False)
     mount_config['options'] = set(mount_config.get('options', ''))
 
@@ -163,7 +165,6 @@ def mount_fstab(self) -> list[str]:
             out += ["read -sr"]
 
     out += ["mount -a || (echo 'Failed to mount fstab. Please ensure mounts are made and then exit.' && bash)"]
-
     return out
 
 
@@ -171,10 +172,7 @@ def _get_mounts_source_device(self, mountpoint: str) -> Path:
     """
     Returns the source device of a mountpoint on /proc/mounts
     """
-    # Make the mount a string and ensure it starts with a /
     mountpoint = str(mountpoint)
-    if not mountpoint.startswith('/') and not mountpoint.startswith(' /'):
-        mountpoint = '/' + mountpoint
 
     self.logger.debug("Getting source device path for: %s" % mountpoint)
     # Add space padding to the mountpoint
@@ -265,6 +263,12 @@ def clean_mounts(self) -> list[str]:
     """
     Generates init lines to unmount all mounts
     """
+    umounts = [f"umount {mount['destination']}" for mount in self.config_dict['mounts'].values() if not mount.get('skip_unmount')]
+    # Ensure /proc is unmounted last
+    if 'umount /proc' in umounts and umounts[-1] != 'umount /proc':
+        umounts.remove('umount /proc')
+        umounts.append('umount /proc')
+
     return [f"umount {mount['destination']}" for mount in self.config_dict['mounts'].values() if not mount.get('skip_unmount')]
 
 

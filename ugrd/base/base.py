@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.2.0'
+__version__ = '1.2.2'
 
 
 def do_switch_root(self) -> str:
@@ -10,6 +10,7 @@ def do_switch_root(self) -> str:
     mount_dest = self.config_dict['mounts']['root']['destination']
     out = [f"echo 'Checking root mount: {mount_dest}'"]
     out += [f"if grep -q ' {mount_dest} ' /proc/mounts ; then"]
+    out += ["    clean_mounts"]
     out += [f"    exec switch_root {mount_dest} /sbin/init"]
     out += ["else"]
     out += ["    echo 'Root mount not found, starting bash shell'"]

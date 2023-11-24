@@ -27,7 +27,7 @@ mount_wait = false
 [imports.init_mount]
 "ugrd.fs.mounts" = [ "mount_root" ]
 
-[imports.init_cleanup]
+[imports.functions]
 "ugrd.fs.mounts" = [ "clean_mounts" ]
 
 [custom_parameters]
