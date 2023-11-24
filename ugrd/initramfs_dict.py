@@ -1,9 +1,10 @@
 
 __author__ = "desultory"
-__version__ = "0.10.1"
+__version__ = "0.11.0"
 
 from tomllib import load, TOMLDecodeError
 from pathlib import Path
+from queue import Queue
 
 from zenlib.logging import loggify
 from zenlib.util import handle_plural, pretty_print, NoDupFlatList
@@ -23,7 +24,8 @@ class InitramfsConfigDict(dict):
                           'imports': dict,  # A dict of functions to be imported into the initramfs, under their respective hooks
                           'mask': dict,  # A dict of imported functions to be masked
                           'custom_parameters': dict,  # Custom parameters loaded from imports
-                          'custom_processing': dict}  # Custom processing functions which will be run to validate and process parameters
+                          'custom_processing': dict,  # Custom processing functions which will be run to validate and process parameters
+                          '_processing': dict}  # A dict of queues containienr parameters which have been set before the type was known
 
     def __init__(self, *args, **kwargs):
         # Define the default parameters
@@ -69,8 +71,13 @@ class InitramfsConfigDict(dict):
         else:  # Otherwise set it like a normal dict item
             self.logger.debug("[%s] Unable to determine expected type, valid builtin types: %s" % (key, self.builtin_parameters.keys()))
             self.logger.debug("[%s] Custom types: %s" % (key, self['custom_parameters'].keys()))
+            # If the key starts with an underscore, it's an internal parameter
+            # Create a queue that will be used to store values for later processing
             if key.startswith('_'):
-                self.logger.warning("Setting unknown internal paramaters '%s' with value: %s" % (key, value))
+                self.logger.warning("Adding unknown internal parameter to queue processing: %s" % key)
+                if key not in self['_processing']:
+                    self['_processing'][key] = Queue()
+                self['_processing'][key].put(value)
             else:
                 raise ValueError("Detected undefined parameter type '%s' with value: %s" % (key, value))
 
@@ -91,6 +98,14 @@ class InitramfsConfigDict(dict):
             super().__setitem__(parameter_name, False)
         elif parameter_type == "int":
             super().__setitem__(parameter_name, 0)
+
+        if parameter_name in self['_processing']:
+            self.logger.debug("Processing queued values for '%s'" % parameter_name)
+            while not self['_processing'][parameter_name].empty():
+                value = self['_processing'][parameter_name].get()
+                self.logger.debug("Processing queued value for '%s': %s" % (parameter_name, value))
+                self[parameter_name] = value
+            self['_processing'].pop(parameter_name)
 
     @handle_plural
     def _process_imports(self, import_type: str, import_value: dict) -> None:

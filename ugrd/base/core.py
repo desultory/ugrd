@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.2.2'
+__version__ = '1.2.3'
 
 from pathlib import Path
 from typing import Union
@@ -168,13 +168,8 @@ def _process_binaries_multi(self, binary: str) -> None:
 
     dependencies = calculate_dependencies(self, binary)
     # The first dependency will be the path of the binary itself, don't add this to the library paths
-    first_dep = True
-    for dependency in dependencies:
+    for dependency in dependencies[1:]:
         self['dependencies'] = dependency
-        if first_dep:
-            self.logger.debug("Skipping adding library path for first dependency: %s" % dependency)
-            first_dep = False
-            continue
         if str(dependency.parent) not in self['library_paths']:
             self.logger.info("Adding library path: %s" % dependency.parent)
             # Make it a string so NoDupFlatList can handle it
