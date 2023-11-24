@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.2.2'
+__version__ = '1.3.0'
 
 
 def do_switch_root(self) -> str:
@@ -14,7 +14,6 @@ def do_switch_root(self) -> str:
     out += [f"    exec switch_root {mount_dest} /sbin/init"]
     out += ["else"]
     out += ["    echo 'Root mount not found, starting bash shell'"]
-    out += ["    exec /bin/bash"]
     out += ["fi"]
 
     return out
