@@ -28,7 +28,7 @@ class InitramfsConfigDict(dict):
                           'mask': dict,  # A dict of imported functions to be masked
                           'custom_parameters': dict,  # Custom parameters loaded from imports
                           'custom_processing': dict,  # Custom processing functions which will be run to validate and process parameters
-                          '_processing': dict}  # A dict of queues containienr parameters which have been set before the type was known
+                          '_processing': dict}  # A dict of queues containing parameters which have been set before the type was known
 
     def __init__(self, *args, **kwargs):
         # Define the default parameters
@@ -89,6 +89,8 @@ class InitramfsConfigDict(dict):
         """
         Updates the custom_parameters attribute.
         Sets the initial value of the parameter based on the type.
+
+        If the parameter is in the processing queue, process the queued values.
         """
         self['custom_parameters'][parameter_name] = eval(parameter_type)
         self.logger.debug("Registered custom parameter '%s' with type: %s" % (parameter_name, parameter_type))
