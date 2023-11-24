@@ -389,6 +389,8 @@ Modules can load other modules using the `modules` directive, be careful conside
 
 If a module depends on another module, it can be added to the `mod_depends` list in the module config. A `ValueError` will be thrown if the module is not present.
 
+> Modules can import other modules, but this would throw lots of warnings for things like the "no<kmod category>" modules
+
 `_module_name` can be set within a module for logging purposes, it is verified to be accurate when imported but optional.
 
 #### imports

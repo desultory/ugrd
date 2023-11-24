@@ -17,7 +17,7 @@ def main():
     # Add arguments for dracut compatibility
     argparser.add_argument('-c', '--config', action='store', help='Config file location')
     argparser.add_argument('--kver', action='store', help='Kernel version')
-    argparser.add_argument('--force', action='store_true', help='Enable build cleaning', default=True)
+    argparser.add_argument('--force', action='store_true', help='Enable build cleaning')
     argparser.add_argument('--hostonly', action='store_true', help='Enable hostonly mode')
     argparser.add_argument('--no-hostonly', action='store_true', help='Disable hostonly mode')
 

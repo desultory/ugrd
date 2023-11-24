@@ -159,7 +159,7 @@ class InitramfsConfigDict(dict):
             self.logger.warning("Module '%s' already loaded" % module)
             return
 
-        self.logger.debug("Processing module: %s" % module)
+        self.logger.info("Processing module: %s" % module)
 
         module_path = Path(__file__).parent.parent / (module.replace('.', '/') + '.toml')
         self.logger.debug("Module path: %s" % module_path)
@@ -170,24 +170,21 @@ class InitramfsConfigDict(dict):
             except TOMLDecodeError as e:
                 raise TOMLDecodeError("Unable to load module config: %s" % module) from e
 
-        if 'mod_depends' in module_config:
-            self['mod_depends'] = module_config['mod_depends']
-
-        if 'custom_parameters' in module_config:
-            self['custom_parameters'] = module_config['custom_parameters']
-            self.logger.debug("[%s] Registered custom parameters: %s" % (module, module_config['custom_parameters']))
-
-        if 'imports' in module_config:
-            self['imports'] = module_config['imports']
-            self.logger.debug("[%s] Registered imports: %s" % (module, self['imports']))
+        # Import these first, as they affect how the rest of the config is processed
+        early_imports = ['imports', 'custom_parameters']
+        for import_type in early_imports:
+            if import_type in module_config:
+                self[import_type] = module_config[import_type]
+                self.logger.debug("[%s] Registered %s: %s" % (module, import_type, self[import_type]))
 
         for name, value in module_config.items():
-            if name in ('custom_parameters', 'mod_depends', 'imports'):
+            if name in early_imports:
                 self.logger.log(5, "[%s] Skipping '%s'" % (module, name))
                 continue
             self.logger.debug("[%s] Setting '%s' to: %s" % (module, name, value))
             self[name] = value
 
+        # Append the module to the list of loaded modules, avoid recursion
         self['modules'].append(module)
 
     def verify_deps(self) -> None:
