@@ -1,4 +1,4 @@
-__version__ = '0.3.0'
+__version__ = '0.3.1'
 __author__ = 'desultory'
 
 from ugrd.fs.mounts import _get_mount_source
@@ -60,7 +60,7 @@ def mount_subvol(self) -> str:
         return
 
     source = _get_mount_source(self, self.config_dict['mounts']['root'])
-    destination = self.config_dict['mounts']['root']['destination']
+    destination = self.config_dict['mounts']['root']['destination'] if not self.config_dict.get('switch_root_target') else self.config_dict['switch_root_target']
 
     return f"mount -o subvol=$root_subvol {source} {destination}"
 

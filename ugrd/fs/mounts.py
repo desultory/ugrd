@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.2.1'
+__version__ = '1.2.2'
 
 from pathlib import Path
 
@@ -277,6 +277,6 @@ def clean_mounts(self) -> list[str]:
         umounts.remove('umount /proc')
         umounts.append('umount /proc')
 
-    return [f"umount {mount['destination']}" for mount in self.config_dict['mounts'].values() if not mount.get('skip_unmount')]
+    return ['umount -a'] + umounts
 
 

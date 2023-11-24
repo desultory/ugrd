@@ -10,7 +10,6 @@ def do_switch_root(self) -> str:
     mount_dest = self.config_dict['mounts']['root']['destination'] if not self.config_dict.get('switch_root_target') else self.config_dict['switch_root_target']
     out = [f"echo 'Checking root mount: {mount_dest}'"]
     out += [f"if grep -q ' {mount_dest} ' /proc/mounts ; then"]
-    out += ["    clean_mounts"]
     out += [f"    exec switch_root {mount_dest} /sbin/init"]
     out += ["else"]
     out += ["    echo 'Root mount not found, restarting'"]

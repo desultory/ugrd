@@ -24,6 +24,9 @@ mount_wait = false
 [imports.init_main]
 "ugrd.fs.mounts" = [ "remake_mountpoints" ]
 
+[imports.init_clean]
+"ugrd.fs.mounts" = [ "clean_mounts" ]
+
 [imports.init_mount]
 "ugrd.fs.mounts" = [ "mount_root" ]
 
