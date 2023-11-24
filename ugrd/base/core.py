@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.2.3'
+__version__ = '1.2.4'
 
 from pathlib import Path
 from typing import Union
@@ -168,6 +168,7 @@ def _process_binaries_multi(self, binary: str) -> None:
 
     dependencies = calculate_dependencies(self, binary)
     # The first dependency will be the path of the binary itself, don't add this to the library paths
+    self['dependencies'] = dependencies[0]
     for dependency in dependencies[1:]:
         self['dependencies'] = dependency
         if str(dependency.parent) not in self['library_paths']:
