@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.1.0'
+__version__ = '1.1.1'
 
 _module_name = 'ugrd.crypto.cryptsetup'
 
@@ -101,7 +101,7 @@ def get_crypt_sources(self) -> list[str]:
 
         check_command = [f'if [ -z "$CRYPTSETUP_SOURCE_{name}" ]; then',
                          f'    echo "Unable to resolve device source for {name}"',
-                         '    bash',
+                         '    exec /init',
                          'else',
                          f'    echo "Resolved device source: $CRYPTSETUP_SOURCE_{name}"',
                          'fi']

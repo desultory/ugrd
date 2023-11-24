@@ -1,4 +1,4 @@
-__version__ = '0.3.1'
+__version__ = '0.3.2'
 __author__ = 'desultory'
 
 from ugrd.fs.mounts import _get_mount_source
@@ -31,7 +31,6 @@ def select_subvol(self) -> str:
     out = [f"btrfs subvolume list -o {self.config_dict['mounts']['root']['destination']}",
            "if [[ $? -ne 0 ]]; then",
            f"    echo 'Failed to list btrfs subvolumes for root volume: {self.config_dict['mounts']['root']['destination']}'",
-           "    bash",
            "else",
            "    echo 'Select a subvolume to use as root'",
            "    PS3='Subvolume: '",
