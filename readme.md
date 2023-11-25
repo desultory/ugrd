@@ -69,11 +69,7 @@ UGRD should prompt for relevant input or warn if devices are missing at runtime.
 
 ### Failure recovery
 
-If a failure is detected, a `bash` shell may be spawned where the step could be re-attempted manually. Once completed, `exit` must be used to close this shell and continue the init process.
-
-> `switch_root` must be executed as pid 1.
-
-The recovery environment is designed to correct minor issues. UGRD images are simple, and a failure is often a result of missing kernel modules or libraries.
+In the event of a failure, modules will either fail through, or re-exec the init script.
 
 ## Output
 
