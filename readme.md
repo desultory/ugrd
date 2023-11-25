@@ -278,7 +278,11 @@ These are set at the global level and are not associated with an individual moun
 
 #### ugrd.fs.btrfs
 
-Importing this module will run `btrfs device scan` and pull btrfs modules. No config is required.
+Importing this module will run `btrfs device scan` and pull btrfs modules.
+
+* `subvol_selector` (false) If enabled, the root subvolume will be selected at runtime based on existing subvolumes.
+* `root_subvol` Can be set to the desired root subvolume.
+* `base_mount_path` (/mnt/root_base) Used to determine where the subvolume selector mounts the base filesytem to scan for subvolumes.
 
 ### Cryptographic modules
 
