@@ -79,6 +79,7 @@ def set_root_subvol(self) -> str:
     sets $root_subvol
     """
     if root_subvol := self.config_dict.get("root_subvol"):
+        self.config_dict['masks'] = {'init_mount': 'mount_root'}
         return f"export root_subvol={root_subvol}"
     elif self.config_dict.get('subvol_selector'):
         base_mount_path = self.config_dict['base_mount_path']

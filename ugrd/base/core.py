@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.2.4'
+__version__ = '1.3.0'
 
 from pathlib import Path
 from typing import Union
@@ -278,4 +278,39 @@ def _process_file_owner(self, owner: Union[str, int]) -> None:
     else:
         self.logger.error("Unable to process file owner: %s" % owner)
         raise ValueError("Invalid type passed for file owner: %s" % type(owner))
+
+
+def _process_masks_multi(self, runlevel: str, function: str) -> None:
+    """
+    Processes a mask.
+    """
+    self.logger.debug("[%s] Adding mask: %s" % (runlevel, function))
+    self['masks'][runlevel] = function
+
+    if runlevel not in self['imports']:
+        self.logger.warning("[%s] Runlevel not found in imports, skipping deletion: %s" % (runlevel, function))
+    else:
+        for func in self['imports'][runlevel]:
+            if func.__name__ == function:
+                self['imports'][runlevel].remove(func)
+                self.logger.info("[%s] Removing function from runlevel: %s" % (runlevel, function))
+                break
+        else:
+            self.logger.warning("[%s] Function not found in runlevel, skipping deletion: %s" % (runlevel, function))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

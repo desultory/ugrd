@@ -25,7 +25,6 @@ class InitramfsConfigDict(dict):
     builtin_parameters = {'mod_depends': NoDupFlatList,  # Modules required by other modules, will be re-checked calling .verify_deps()
                           'modules': NoDupFlatList,  # A list of the names of modules which have been loaded, mostly used for dependency checking
                           'imports': dict,  # A dict of functions to be imported into the initramfs, under their respective hooks
-                          'mask': dict,  # A dict of imported functions to be masked
                           'custom_parameters': dict,  # Custom parameters loaded from imports
                           'custom_processing': dict,  # Custom processing functions which will be run to validate and process parameters
                           '_processing': dict}  # A dict of queues containing parameters which have been set before the type was known
@@ -221,12 +220,14 @@ class InitramfsConfigDict(dict):
         """
         Processes masked imports
         """
-        for mask_hook, mask_items in self['mask'].items():
-            if self['imports'].get(mask_hook):
-                for function in self['imports'][mask_hook]:
+        for mask_hook, mask_items in self['masks'].items():
+            if runlevel := self['imports'].get(mask_hook):
+                for function in runlevel.copy():
                     if function.__name__ in mask_items:
-                        self.logger.warning("Masking import: %s" % function.__name__)
-                        self['imports'][mask_hook].remove(function)
+                        runlevel.remove(function)
+                        self.logger.warning("[%s] Masking import: %s" % (mask_hook, function.__name__))
+                    else:
+                        self.logger.debug("[%s] Import not found: %s" % (mask_hook, function.__name__))
 
     def __str__(self) -> str:
         return pretty_print(self)
