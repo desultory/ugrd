@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '0.8.1'
+__version__ = '0.8.2'
 
 from pathlib import Path
 from subprocess import run
@@ -100,6 +100,7 @@ def _get_kmod_info(self, module: str):
         args += ['--set-version', self['kernel_version']]
 
     try:
+        self.logger.debug("[%s] Modinfo command: %s" % (module, args))
         cmd = run(args, capture_output=True)
     except RuntimeError as e:
         raise DependencyResolutionError("Failed to get modinfo for: %s" % module) from e
