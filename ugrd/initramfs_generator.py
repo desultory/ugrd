@@ -202,7 +202,7 @@ class InitramfsGenerator:
                 custom_init.insert(2, f"echo 'Starting custom init, UGRD v{__version__}'")
                 custom_init.insert(2, "source /init_funcs.sh")
 
-        if self.config_dict['_custom_init_file']:
+        if self.config_dict.get('_custom_init_file'):
             self._write(self.config_dict['_custom_init_file'], custom_init, 0o755)
 
         self._write('init', init, 0o755)
