@@ -100,10 +100,10 @@ def _get_kmod_info(self, module: str):
         args += ['--set-version', self['kernel_version']]
 
     try:
-        self.logger.debug("[%s] Modinfo command: %s" % (module, args))
+        self.logger.debug("[%s] Modinfo command: %s" % (module, ' '.join(args)))
         cmd = run(args, capture_output=True)
     except RuntimeError as e:
-        raise DependencyResolutionError("Failed to get modinfo for: %s" % module) from e
+        raise DependencyResolutionError("[%s] Failed to run modinfo command: %s" % (module, ' '.join(args))) from e
 
     module_info = {}
     for line in cmd.stdout.decode().strip().split('\n'):
