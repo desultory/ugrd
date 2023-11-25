@@ -11,7 +11,7 @@ The original goal of this project was to create an initramfs suitable for decryp
 * OpenPGP Smartcards (YubiKey)
 * GPG encrypted LUKS keyfiles
 * LUKS with detatched headers
-* BTRFS subvolumes and RAID
+* BTRFS subvolumes selection
 * Cryptsetup re-attempts and alternative unlock methods
   - Allows for late insertion of a smartcard
   - Can fail back to plain password entry
