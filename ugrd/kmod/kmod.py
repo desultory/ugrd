@@ -123,6 +123,7 @@ def _get_kmod_info(self, module: str):
                 module_info['firmware'] = []
             module_info['firmware'] += line.split()[1:]
     else:
+        self.logger.warning("[%s] Failed to parse modinfo output: %s" % (module, cmd.stdout.decode().strip()))
         raise DependencyResolutionError("Failed to get modinfo for: %s" % module)
 
     self.logger.debug("[%s] Module info: %s" % (module, module_info))
