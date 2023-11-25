@@ -1,4 +1,4 @@
-__version__ = '0.3.2'
+__version__ = '0.4.0'
 __author__ = 'desultory'
 
 from ugrd.fs.mounts import _get_mount_source
@@ -38,13 +38,14 @@ def select_subvol(self) -> str:
         self.logger.log(5, "subvol_selector not set, skipping")
         return
 
-    out = [f"btrfs subvolume list -o {self.config_dict['mounts']['root']['destination']}",
+    root_volume = self.config_dict['mounts']['root']['destination']
+    out = [f"btrfs subvolume list -o {root_volume}",
            "if [[ $? -ne 0 ]]; then",
-           f"    echo 'Failed to list btrfs subvolumes for root volume: {self.config_dict['mounts']['root']['destination']}'",
+           f"    echo 'Failed to list btrfs subvolumes for root volume: {root_volume}'",
            "else",
            "    echo 'Select a subvolume to use as root'",
            "    PS3='Subvolume: '",
-           f"    select subvol in $(btrfs subvolume list -o {self.config_dict['mounts']['root']['destination']} " + "| awk '{print $9}'); do",
+           f"    select subvol in $(btrfs subvolume list -o {root_volume} " + "| awk '{print $9}'); do",
            "        case $subvol in",
            "            *)",
            "                if [[ -z $subvol ]]; then",

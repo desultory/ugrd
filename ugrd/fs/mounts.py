@@ -103,6 +103,7 @@ def _to_mount_cmd(self, mount: dict) -> str:
     """
     out_str = f"mount {_get_mount_source(self, mount)} {mount['destination']}"
 
+    # I could probably add subvol info here, but I want to keep fs specific stuff out of the core
     if options := mount.get('options'):
         out_str += f" --options {','.join(options)}"
 
