@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '0.8.2'
+__version__ = '0.9.0'
 
 from pathlib import Path
 from subprocess import run
@@ -42,6 +42,8 @@ def _process_kernel_modules_multi(self, module: str) -> None:
     try:
         _get_kmod_info(self, module)
     except DependencyResolutionError:
+        if module in self['kmod_init'] or module in self['_kmod_depend']:
+            raise DependencyResolutionError("Failed to get modinfo for kernel required module: %s" % module)
         self.logger.error("Failed to get modinfo for kernel module: %s" % module)
         self['kmod_ignore'] = module
         return
