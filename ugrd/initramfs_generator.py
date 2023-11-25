@@ -198,11 +198,11 @@ class InitramfsGenerator:
             init_funcs = self.generate_init_funcs()
             self._write('init_funcs.sh', init_funcs, 0o755)
             init.insert(3, "source init_funcs.sh")
-            if custom_init:
+            if self.config_dict['imports'].get('custom_init'):
                 custom_init.insert(2, f"echo 'Starting custom init, UGRD v{__version__}'")
                 custom_init.insert(2, "source /init_funcs.sh")
 
-        if custom_init:
+        if self.config_dict['_custom_init_file']:
             self._write(self.config_dict['_custom_init_file'], custom_init, 0o755)
 
         self._write('init', init, 0o755)
