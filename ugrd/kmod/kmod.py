@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '0.8.0'
+__version__ = '0.8.1'
 
 from pathlib import Path
 from subprocess import run
@@ -39,7 +39,12 @@ def _process_kernel_modules_multi(self, module: str) -> None:
         self.logger.warning("Not adding ignored kernel module to kernel_modules: %s" % module)
         return
 
-    _get_kmod_info(self, module)
+    try:
+        _get_kmod_info(self, module)
+    except DependencyResolutionError:
+        self.logger.error("Failed to get modinfo for kernel module: %s" % module)
+        self['kmod_ignore'] = module
+        return
 
     self.logger.debug("Processing kernel module: %s" % module)
     modinfo = self['_kmod_modinfo'][module]
@@ -100,7 +105,6 @@ def _get_kmod_info(self, module: str):
         raise DependencyResolutionError("Failed to get modinfo for: %s" % module) from e
 
     module_info = {}
-
     for line in cmd.stdout.decode().strip().split('\n'):
         line = line.strip()
         if line.startswith('filename:'):
@@ -117,6 +121,8 @@ def _get_kmod_info(self, module: str):
             if 'firmware' not in module_info:
                 module_info['firmware'] = []
             module_info['firmware'] += line.split()[1:]
+    else:
+        raise DependencyResolutionError("Failed to get modinfo for: %s" % module)
 
     self.logger.debug("[%s] Module info: %s" % (module, module_info))
     self['_kmod_modinfo'][module] = module_info
