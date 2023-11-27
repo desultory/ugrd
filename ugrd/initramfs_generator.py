@@ -1,6 +1,5 @@
 
 __author__ = "desultory"
-__version__ = "0.11.1"
 
 from tomllib import load
 from typing import Union
@@ -11,6 +10,10 @@ from zenlib.logging import loggify
 from zenlib.util import pretty_print
 
 from ugrd.initramfs_dict import InitramfsConfigDict
+
+from importlib.metadata import version
+
+__version__ = version(__package__)
 
 
 @loggify

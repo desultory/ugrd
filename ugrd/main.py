@@ -4,6 +4,7 @@ from ugrd.initramfs_generator import InitramfsGenerator
 from zenlib.logging import ColorLognameFormatter
 
 from argparse import ArgumentParser
+from importlib.metadata import version
 import logging
 
 
@@ -13,6 +14,8 @@ def main():
 
     argparser.add_argument('-d', '--debug', action='store_true', help='Debug mode')
     argparser.add_argument('-dd', '--verbose', action='store_true', help='Verbose debug mode')
+
+    argparser.add_argument('-v', '--version', action='store_true', help='Print version and exit')
 
     # Add arguments for dracut compatibility
     argparser.add_argument('-c', '--config', action='store', help='Config file location')
@@ -36,6 +39,10 @@ def main():
     argparser.add_argument('output_file', action='store', help='Output file location', nargs='?')
 
     args = argparser.parse_args()
+
+    if args.version:
+        print(f"ugrd {version(__package__)}")
+        exit(0)
 
     # Set the initial logger debug level based on the args, set the format string based on the debug level
     logger = logging.getLogger()
