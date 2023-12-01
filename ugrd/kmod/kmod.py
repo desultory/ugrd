@@ -21,12 +21,19 @@ def _process_kmod_ignore_multi(self, module: str) -> None:
     """
     self.logger.debug("Adding module to kmod_ignore: %s", module)
     self['kmod_ignore'].append(module)
+    _remove_kmod(self, module, 'Ignored')
 
+
+def _remove_kmod(self, module: str, reason: str) -> None:
+    """
+    Removes a kernel module from all kernel module lists.
+    """
+    self.logger.log(5, "Removing kernel module from all lists: %s", module)
     other_keys = ['kmod_init', 'kernel_modules', '_kmod_depend']
 
     for key in other_keys:
         if module in self[key]:
-            self.logger.debug("Removing ignored module from %s: %s", key, module)
+            self.logger.debug("Removing %s kernel module from %s: %s" % (reason, key, module))
             self[key].remove(module)
 
 
@@ -71,7 +78,7 @@ def _process_kernel_modules_multi(self, module: str) -> None:
 
     if modinfo['filename'] == '(builtin)':
         self.logger.debug("[%s] Kernel module is built-in." % module)
-        self['kmod_ignore'] = module
+        _remove_kmod(self, module, 'built-in')
     else:
         self.logger.debug("Adding kernel module to kernel_modules: %s", module)
         self['kernel_modules'].append(module)
@@ -256,7 +263,7 @@ def process_modules(self) -> None:
         self.config_dict['dependencies'] = Path(modinfo['filename'])
         # If the module has firmware, add it to the dependencies
         if firmware := modinfo.get('firmware'):
-            if self.get('kmod_pull_firmware'):
+            if self.config_dict.get('kmod_pull_firmware'):
                 self.logger.info("[%s] Adding firmware to dependencies: %s" % (kmod, firmware))
                 for file in firmware:
                     try:
