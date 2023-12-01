@@ -294,6 +294,12 @@ def _mount_fail(self) -> list[str]:
             'echo -e "\n\n\nPress enter to restart init\n\n\n"',
             'read -sr',
             'clean_mounts',
-            'exec /init']
+            'if [ "$$" -eq 1 ]; then',
+            '    echo "Restarting init"',
+            '    exec /init',
+            'else',
+            '    echo "PID is not 1, exiting: $$"',
+            '    exit',
+            'fi']
 
 
