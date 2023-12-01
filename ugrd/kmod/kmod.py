@@ -186,7 +186,7 @@ def get_lsmod_modules(self) -> list[str]:
         raise DependencyResolutionError('Failed to get list of kernel modules') from e
 
     raw_modules = cmd.stdout.decode('utf-8').split('\n')[1:]
-    modules = set
+    modules = set()
     # Remove empty lines, header, and ignored modules
     for module in raw_modules:
         if not module:
@@ -267,7 +267,7 @@ def process_modules(self) -> None:
                 self.logger.info("[%s] Adding firmware to dependencies: %s" % (kmod, firmware))
                 for file in firmware:
                     try:
-                        self['dependencies'] = Path('/lib/firmware/') / file
+                        self.config_dict['dependencies'] = Path('/lib/firmware/') / file
                     except FileNotFoundError:
                         self.logger.warning("[%s] Unable to find referenced firmware file: %s" % (kmod, file))
             else:
