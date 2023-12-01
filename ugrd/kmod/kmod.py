@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '0.9.0'
+__version__ = '0.9.1'
 
 from pathlib import Path
 from subprocess import run
