@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.2.2'
+__version__ = '1.3.0'
 
 from pathlib import Path
 
@@ -173,7 +173,7 @@ def mount_fstab(self) -> list[str]:
         else:
             out += ["read -sr"]
 
-    out += ["mount -a || (echo 'Failed to mount fstab' ; echo 'Loaded modules:' ; lsmod ; echo 'Block devices:' ; blkid ; mount_fstab)"]
+    out += ["mount -a || (echo 'Failed to mount fstab' ; _mount_fail)"]
     return out
 
 
@@ -279,5 +279,21 @@ def clean_mounts(self) -> list[str]:
         umounts.append('umount /proc')
 
     return ['umount -a'] + umounts
+
+
+def _mount_fail(self) -> list[str]:
+    """
+    Generates init lines to run if the mount fails
+    """
+    return ['echo "Loaded modules:"',
+            'lsmod',
+            'echo "Block devices:"',
+            'blkid',
+            'echo "Mounts:"',
+            'mount',
+            'echo -e "\n\n\nPress enter to restart init\n\n\n"',
+            'read -sr',
+            'clean_mounts',
+            'exec /init']
 
 
