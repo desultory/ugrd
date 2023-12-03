@@ -3,7 +3,7 @@ cpio_list_name = "cpio.list"
 mknod_cpio = true
 
 [imports.pack]
-"ugrd.base.cpio" = [ "make_cpio_list", "pack_cpio" ]
+"ugrd.base.cpio" = [ "make_cpio" ]
 
 [custom_parameters]
 out_file =  "str"  # The name of the cpio file to create.

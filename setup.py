@@ -8,10 +8,9 @@ setup(
     description="A simple initramfs generator",
     author="desultory",
     package_data={
-        "ugrd": ["*/*.toml",
-                 "include/gen_init_cpio.c"]
+        "ugrd": ["*/*.toml"]
     },
-    install_requires=['zenlib>=1.0.0'],
+    install_requires=['zenlib>=1.1.1', 'pycpio>=0.5.0'],
     entry_points={
         "console_scripts": [
             "ugrd = ugrd.main:main"
