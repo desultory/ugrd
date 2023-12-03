@@ -1,12 +1,12 @@
 __author__ = 'desultory'
-__version__ = '2.0.0'
+__version__ = '2.1.0'
 
 
 from pycpio import PyCPIO
 
 
 def make_cpio(self) -> None:
-    cpio = PyCPIO(logger=self.logger)
+    cpio = PyCPIO(logger=self.logger, _log_bump=5)
     cpio.append_recursive(self.build_dir, relative=True)
 
     if self.config_dict['mknod_cpio']:

@@ -10,7 +10,7 @@ setup(
     package_data={
         "ugrd": ["*/*.toml"]
     },
-    install_requires=['zenlib>=1.1.1', 'pycpio>=0.5.0'],
+    install_requires=['zenlib>=1.2.0', 'pycpio>=0.5.0'],
     entry_points={
         "console_scripts": [
             "ugrd = ugrd.main:main"

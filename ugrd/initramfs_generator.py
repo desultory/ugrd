@@ -1,6 +1,6 @@
 
 __author__ = "desultory"
-__version__ = "0.12.0"
+__version__ = "0.12.1"
 
 
 from tomllib import load
@@ -166,8 +166,6 @@ class InitramfsGenerator:
         for init_type in self.init_types:
             if runlevel := self._run_init_hook(init_type):
                 out += runlevel
-            else:
-                self.logger.debug("No output from init hook: %s" % init_type)
         return out
 
     def generate_init(self) -> None:
