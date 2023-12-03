@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.0.0'
+__version__ = '2.0.1'
 
 from importlib.metadata import version
 
@@ -11,7 +11,7 @@ def do_switch_root(self) -> str:
     """
     mount_dest = self.config_dict['mounts']['root']['destination'] if not self.config_dict.get('switch_root_target') else self.config_dict['switch_root_target']
     out = [f"echo 'Checking root mount: {mount_dest}'",
-           "if grep -q ' {mount_dest} ' /proc/mounts ; then",
+           f"if grep -q ' {mount_dest} ' /proc/mounts ; then",
            f'    echo "Completed UGRD v{version("ugrd")}."',
            f"    exec switch_root {mount_dest} /sbin/init",
            "else",
