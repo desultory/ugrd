@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '0.9.1'
+__version__ = '1.0.0'
 
 from pathlib import Path
 from subprocess import run
@@ -206,22 +206,24 @@ def calculate_modules(self) -> None:
     Populates the kernel_modules list with all required kernel modules.
     If kmod_autodetect_lsmod is set, adds the contents of lsmod if specified.
     If kmod_autodetect_lspci is set, adds the contents of lspci -k if specified.
+    Autodetected modules are added to kmod_init
+
     Adds the contents of _kmod_depend if specified.
     Performs dependency resolution on all kernel modules.
     """
     if self.config_dict['kmod_autodetect_lsmod']:
         autodetected_modules = get_lsmod_modules(self)
         self.logger.info("Autodetected kernel modules from lsmod: %s" % autodetected_modules)
-        self.config_dict['kernel_modules'] = autodetected_modules
+        self.config_dict['kmod_init'] = autodetected_modules
 
     if self.config_dict['kmod_autodetect_lspci']:
         autodetected_modules = get_lspci_modules(self)
         self.logger.info("Autodetected kernel modules from lscpi -k: %s" % autodetected_modules)
-        self.config_dict['kernel_modules'] = autodetected_modules
+        self.config_dict['kmod_init'] = autodetected_modules
 
     if self.config_dict['_kmod_depend']:
         self.logger.info("Adding internal dependencies to kmod_init: %s" % self.config_dict['_kmod_depend'])
-        self.config_dict['kmod_init'] = self.config_dict['_kmod_depend'].copy()  # Copy because _kmood_depend may shrink during iteration
+        self.config_dict['kmod_init'] = self.config_dict['_kmod_depend'].copy()  # Copy because _kmod_depend may shrink during iteration
 
     self.logger.info("Included kernel modules: %s" % self.config_dict['kernel_modules'])
 
