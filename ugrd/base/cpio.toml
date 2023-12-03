@@ -1,5 +1,4 @@
 out_file = "ugrd.cpio"
-cpio_list_name = "cpio.list"
 mknod_cpio = true
 
 [imports.pack]
@@ -7,5 +6,4 @@ mknod_cpio = true
 
 [custom_parameters]
 out_file =  "str"  # The name of the cpio file to create.
-cpio_list_name = "str"  # The name of the CPIO packing list to create
 mknod_cpio = "bool"  # When enabled, mknod is not used to create device nodes, they are just created in the cpio.

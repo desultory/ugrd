@@ -16,7 +16,8 @@ The original goal of this project was to create an initramfs suitable for decryp
   - Allows for late insertion of a smartcard
   - Can fail back to plain password entry
 * Key entry over serial
-* Automatic CPIO generation (gen_init_cpio)
+* Automatic CPIO generation (PyCPIO)
+  - Device nodes are created within the CPIO only, so true root privileges are not required.
 * Basic configuration validation in `hostonly` mode
 * Similar usage/arguments as Dracut
 
@@ -113,7 +114,6 @@ Modules write to a shared config dict that is accessible by other modules.
 This module handles CPIO creation.
 
 * `out_file` (ugrd.cpio) Sets the name of the output file, under `out_dir` unless a path is defined.
-* `cpio_list_name` (cpio.list) Sets the name of the cpio list file for `gen_init_cpio`
 * `mknod_cpio` (true) Only create devicne nodes within the CPIO.
 
 ##### symlink creation
