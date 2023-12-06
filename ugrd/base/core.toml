@@ -3,6 +3,7 @@ build_dir = "/tmp/initramfs"
 out_dir = "/tmp/initramfs_out"
 clean = true
 hostonly = true
+validate = true
 library_paths = [ "/lib64" ]
 old_count = 1
 
@@ -22,6 +23,8 @@ minor = 1
 		     "_process_nodes_multi",
 		     "_process_paths_multi",
 		     "_process_masks_multi",
+		     "_process_hostonly",
+		     "_process_validate",
 		   ]
 
 [imports.build_pre]
@@ -46,7 +49,8 @@ build_dir = "Path"  # The directory where the initramfs is built
 out_dir = "Path"  # The directory where the initramfs is packed/output. If no packer is used, this is the final output directory.
 old_count = "int"  # The number of times to cycle old files before deleting
 clean = "bool"  # Add the clean property, used to define if the mounts should be cleaned up after boot
-hostonly = "bool"  # If true, the initramfs will be designed for the host creating it
+hostonly = "bool"  # If true, the initramfs will be built specifically for the host building it
+validate = "bool"  # If true, the configuration of the initramfs will be validated against the host
 file_owner = "str"  # Add the file_owner property, used to define who should own the copied initramfs files
 _file_owner_uid = "int"  # Add the _file_owner_uid property, used to store the uid of the file owner
 _custom_init_file = "str"  # Add the _custom_init_file propety, used to set where the custom init file is located

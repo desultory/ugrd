@@ -38,7 +38,7 @@ def _get_device_path_from_token(self, token: tuple[str, str]) -> str:
 
     cmd = run(['blkid', '--match-token', token_str, '--output', 'device'], capture_output=True)
     if cmd.returncode != 0:
-        self.logger.warning("If building for another system, hostonly mode must be disabled.")
+        self.logger.warning("If building for another system, validation must be disabled.")
         raise ValueError("Unable to resolve device path using token: %s" % token_str)
 
     device_path = cmd.stdout.decode().strip()
@@ -92,8 +92,8 @@ def get_crypt_sources(self) -> list[str]:
     for name, parameters in self.config_dict['cryptsetup'].items():
         token = ('PARTUUID', parameters['partuuid']) if parameters.get('partuuid') else ('UUID', parameters['uuid'])
         self.logger.debug("[%s] Created block device identifier token: %s" % (name, token))
-        # If using hostonly mode, check that the mount source exists
-        if self.config_dict['hostonly']:
+        # If validation is enabled, check that the mount source exists
+        if self.config_dict['validate']:
             parameters['_host_device_path'] = _get_device_path_from_token(self, token)
         # Add a blkid command to get the source device in the initramfs, only match if the device has a partuuid
         out.append(f"export SOURCE_TOKEN_{name}='{token[0]}={token[1]}'")

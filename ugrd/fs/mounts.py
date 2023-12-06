@@ -12,7 +12,6 @@ def _process_mounts_multi(self, mount_name: str, mount_config) -> None:
     """
     Processes the passed mount config.
     Updates the mount if it already exists.
-    Validates the source when hostonly mode is active.
     """
     # If the mount already exists, merge the options and update it
     if mount_name in self['mounts']:
@@ -225,8 +224,8 @@ def _validate_host_mount(self, mount, destination_path=None) -> bool:
     """
     Checks if a defined mount exists on the host
     """
-    if not self.config_dict['hostonly']:
-        self.logger.debug("Skipping host mount check as hostonly is not set")
+    if not self.config_dict['validate']:
+        self.logger.debug("Skipping host mount check as validation is disabled.")
         return True
 
     source = mount['source']
@@ -263,7 +262,7 @@ def mount_root(self) -> str:
     """
     root_path = self.config_dict['mounts']['root']['destination']
     if not _validate_host_mount(self, self.config_dict['mounts']['root'], '/'):
-        self.logger.error("Unable to validate root mount. Please ensure the root partition is mounted on the host system or disable hostonly mode.")
+        self.logger.error("Unable to validate root mount. Please ensure the root partition is mounted on the host system or disable validation.")
 
     return f"mount {root_path}"
 

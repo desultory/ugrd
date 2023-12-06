@@ -18,7 +18,7 @@ The original goal of this project was to create an initramfs suitable for decryp
 * Key entry over serial
 * Automatic CPIO generation (PyCPIO)
   - Device nodes are created within the CPIO only, so true root privileges are not required.
-* Basic configuration validation in `hostonly` mode
+* Basic configuration validation in `validate` mode
 * Similar usage/arguments as Dracut
 
 ## Installation
@@ -58,9 +58,15 @@ The last argument is the output file, which can be a path:
 
 ### Hostonly mode
 
-UGRD hostonly mode attempts to verify that the generated initramfs will work on the system creating it. This is enabled by default.
+The `hostonly` boolean must be set to use the `lsmod` and `lspci` kmod options, as well as `validation` mode.
 
-It can be forced at runtime with `--hostonly` and disabled with `--nohostonly`.
+It can be forced at runtime with `--hostonly` and disabled with `--no-hostonly`.
+
+### Validation mode
+
+The `validate` option is set by default and attempts to verify that the generated initramfs will work on the system creating it.
+
+It can be forced at runtime with `--validate` and disabled with `--no-validate`.
 
 ## Runtime usage
 
@@ -103,7 +109,8 @@ Modules write to a shared config dict that is accessible by other modules.
 * `build_dir` (/tmp/initramfs) Defines where the build will take place.
 * `out_dir` (/tmp/initramfs_out) Defines where packed files will be placed.
 * `clean` (true) forces the build dir to be cleaned on each run.
-* `hostonly` (true) adds additional checks to verify the initramfs will work on the build host.
+* `hostonly` (true) Builds the initramfs for the current host, if disabled, validation is automatically disabled.
+* `validate` (true) adds additional checks to verify the initramfs will work on the build host.
 * `old_count` (1) Sets the number of old file to keep when running the `_rotate_old` function.
 * `file_owner` (portage) sets the owner for items pulled into the initramfs on the build system
 * `binaries` is a list used to define programs to be pulled into the initrams. `which` is used to find the path of added entries, and `lddtree` is used to resolve dependendies.
@@ -325,7 +332,7 @@ Cryptsetup mounts can be configured with the following options:
 
 `cryptsetup` is a dictionary that contains LUKS volumes to be decrypted.
 
-> If `hostonly` mode is set, additional checks will be used to verify specified LUKS volumes
+> If `validate` is set to true, additional checks will be used to verify specified LUKS volumes
 
 A minimal defintion to decrypt a volume protected by a passphrase:
 

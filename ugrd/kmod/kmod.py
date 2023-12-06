@@ -144,7 +144,7 @@ def get_lspci_modules(self) -> list[str]:
     Gets the name of all kernel modules being used by hardware visible in lspci -k
     """
     if not self.config_dict['hostonly']:
-        raise RuntimeError("lscpi module resolution is only available in hostonly mode")
+        raise RuntimeError("lscpi module resolution is only available in hostonly mod")
 
     try:
         cmd = self._run(['lspci', '-k'])

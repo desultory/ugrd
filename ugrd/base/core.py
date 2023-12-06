@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.3.0'
+__version__ = '1.4.0'
 
 from pathlib import Path
 from typing import Union
@@ -299,18 +299,26 @@ def _process_masks_multi(self, runlevel: str, function: str) -> None:
             self.logger.warning("[%s] Function not found in runlevel, skipping deletion: %s" % (runlevel, function))
 
 
+def _process_hostonly(self, hostonly: bool) -> None:
+    """
+    Processes the hostonly parameter.
+    If validation is enabled, and hostonly mode is set to disabled, disable validation and warn.
+    """
+    self.logger.debug("Processing hostonly: %s" % hostonly)
+    dict.__setitem__(self, 'hostonly', hostonly)
+    if not hostonly and self['validate']:
+        self.logger.warning("Hostonly is disabled, disabling validation")
+        self['validate'] = False
 
 
+def _process_validate(self, validate: bool) -> None:
+    """
+    Processes the validate parameter.
+    It should only be allowed if hostonly mode is enabled.
+    """
+    self.logger.debug("Processing validate: %s" % validate)
+    if not self['hostonly'] and validate:
+        raise ValueError("Cannot enable validation when hostonly mode is disabled")
 
-
-
-
-
-
-
-
-
-
-
-
+    dict.__setitem__(self, 'validate', validate)
 
