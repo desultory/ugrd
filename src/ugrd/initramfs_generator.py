@@ -1,17 +1,17 @@
 
-__author__ = "desultory"
-__version__ = "0.12.2"
-
-
 from tomllib import load
 from typing import Union
 from pathlib import Path
 from subprocess import run, CompletedProcess
+from importlib.metadata import version
 
 from zenlib.logging import loggify
 from zenlib.util import pretty_print
 
 from ugrd.initramfs_dict import InitramfsConfigDict
+
+__author__ = "desultory"
+__version__ = version(__package__)
 
 
 @loggify

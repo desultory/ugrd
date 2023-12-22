@@ -41,7 +41,7 @@ def main():
     args = argparser.parse_args()
 
     if args.version:
-        print(f"ugrd {version(__package__)}")
+        print(f"{__package__} {version(__package__)}")
         exit(0)
 
     # Set the initial logger debug level based on the args, set the format string based on the debug level
