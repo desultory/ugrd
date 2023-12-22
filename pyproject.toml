@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ugrd"
+version = "0.13.0"
+authors = [
+  { name="Desultory", email="dev@pyl.onl" },
+]
+description = "Microgram Ramdisk, a simple initramfs generator using TOML defitions."
+readme = "readme.md"
+requires-python = ">=3.11"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU General Public License v2 (GPLv2)",
+    "Operating System :: OS Independent",
+]
+
+dependencies = [
+    "zenlib >= 1.2.0",
+    "pycpio >= 0.6.1"
+]
+
+[project.scripts]
+ugrd = "ugrd.main:main"
+
+[project.urls]
+Homepage = "https://github.com/desultory/ugrd"
+Issues = "https://github.com/desultory/ugrd/issues"
