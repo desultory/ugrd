@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+
+# this file is installed by sys-kernel/ugrd
+
+ver=${1}
+img=${2}
+initrd=${img%/*}/initrd
+
+# familiar helpers, we intentionally don't use Gentoo functions.sh
+die() {
+	echo -e " ${NOCOLOR-\e[1;31m*\e[0m }${*}" >&2
+	exit 1
+}
+
+einfo() {
+	echo -e " ${NOCOLOR-\e[1;32m*\e[0m }${*}" >&2
+}
+
+ewarn() {
+	echo -e " ${NOCOLOR-\e[1;33m*\e[0m }${*}" >&2
+}
+
+main() {
+	# re-define for subst to work
+	[[ -n ${NOCOLOR+yes} ]] && NOCOLOR=
+
+	# do nothing if somehow ugrd is not installed
+	[[ -x $(command -v ugrd) ]] || { ewarn "ugrd is not installed" && exit 0 ; }
+
+	[[ ${EUID} -eq 0 ]] || die "Please run this script as root"
+
+	ugrd --kver "${ver}" "${initrd}" || die "Failed to generate initramfs"
+}
+
+main
