@@ -30,9 +30,8 @@ class InitramfsGenerator:
         self.init_types = ['init_debug', 'init_early', 'init_main', 'init_late', 'init_premount', 'init_mount', 'init_cleanup']
 
         self.load_config()
-        self.config_dict.verify_deps()
-        self.config_dict.verify_mask()
         self.config_dict.import_args(kwargs)
+        self.config_dict.validate()
 
     def load_config(self) -> None:
         """
@@ -51,17 +50,14 @@ class InitramfsGenerator:
 
         self.logger.debug("Loaded config:\n%s" % self.config_dict)
 
-        for parameter in ['build_dir', 'out_dir', 'clean', 'old_count']:
-            dict_value = self.config_dict[parameter]
-            if dict_value is not None:
-                setattr(self, parameter, dict_value)
-            else:
-                raise KeyError("Required parameter '%s' not found in config" % parameter)
+    def __getattr__(self, item):
+        """ Allows access to the config dict via the InitramfsGenerator object."""
+        if item not in self.__dict__:
+            return self.config_dict[item]
+        return super().__getattr__(item)
 
     def build(self) -> None:
-        """
-        Builds the initramfs.
-        """
+        """ Builds the initramfs. """
         self.logger.info("Building initramfs")
         self.build_structure()
         self.generate_init()
@@ -69,9 +65,7 @@ class InitramfsGenerator:
         self.pack_build()
 
     def build_structure(self) -> None:
-        """
-        builds the initramfs structure.
-        """
+        """ builds the initramfs structure. """
         for hook in self.build_tasks:
             self._run_hook(hook)
 

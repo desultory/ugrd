@@ -1,6 +1,9 @@
 out_file = "ugrd.cpio"
 mknod_cpio = true
 
+[imports.config_processing]
+"ugrd.base.cpio" = [ "_process_out_file" ]
+
 [imports.pack]
 "ugrd.base.cpio" = [ "make_cpio" ]
 

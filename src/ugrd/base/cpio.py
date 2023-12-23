@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.1.1'
+__version__ = '2.2.0'
 
 
 from pycpio import PyCPIO
@@ -18,7 +18,7 @@ def make_cpio(self) -> None:
             self.logger.debug("Adding CPIO node: %s" % node)
             cpio.add_chardev(name=node['path'], mode=node['mode'], major=node['major'], minor=node['minor'])
 
-    out_cpio = self.out_dir / self.config_dict['out_file']
+    out_cpio = self.config_dict['out_dir'] / self.config_dict['out_file']
 
     if not out_cpio.parent.exists():
         raise FileNotFoundError("Output directory does not exist: %s" % out_cpio.parent)
@@ -27,3 +27,19 @@ def make_cpio(self) -> None:
         self._rotate_old(out_cpio)
 
     cpio.write_cpio_file(out_cpio)
+
+
+def _process_out_file(self, out_file):
+    """
+    Processes the out_file configuration option.
+    """
+    if not out_file:
+        raise ValueError("out_file cannot be empty")
+
+    if out_file.startswith('./'):
+        from pathlib import Path
+        self.logger.warning("Relative out_file path detected: %s" % out_file)
+        self['out_dir'] = Path('.').resolve()
+        out_file = Path(out_file[2:])
+
+    dict.__setitem__(self, 'out_file', out_file)

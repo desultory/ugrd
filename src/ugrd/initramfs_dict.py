@@ -25,6 +25,7 @@ class InitramfsConfigDict(dict):
     builtin_parameters = {'mod_depends': NoDupFlatList,  # Modules required by other modules, will be re-checked calling .verify_deps()
                           'modules': NoDupFlatList,  # A list of the names of modules which have been loaded, mostly used for dependency checking
                           'imports': dict,  # A dict of functions to be imported into the initramfs, under their respective hooks
+                          'required_parameters': NoDupFlatList,  # A list of parameters which must be set before the initramfs can be generated
                           'custom_parameters': dict,  # Custom parameters loaded from imports
                           'custom_processing': dict,  # Custom processing functions which will be run to validate and process parameters
                           '_processing': dict}  # A dict of queues containing parameters which have been set before the type was known
@@ -38,9 +39,7 @@ class InitramfsConfigDict(dict):
                 super().__setitem__(parameter, default_type())
 
     def import_args(self, args: dict) -> None:
-        """
-        Imports data from an argument dict
-        """
+        """ Imports data from an argument dict. """
         for arg, value in args.items():
             self.logger.warning("Importing argument '%s' with value: %s" % (arg, value))
             self[arg] = value
@@ -217,9 +216,7 @@ class InitramfsConfigDict(dict):
             self.logger.warning("Unprocessed config values: %s" % self['_processing'])
 
     def verify_mask(self) -> None:
-        """
-        Processes masked imports
-        """
+        """ Processes masked imports. """
         for mask_hook, mask_items in self['masks'].items():
             if runlevel := self['imports'].get(mask_hook):
                 for function in runlevel.copy():
@@ -228,6 +225,20 @@ class InitramfsConfigDict(dict):
                         self.logger.warning("[%s] Masking import: %s" % (mask_hook, function.__name__))
                     else:
                         self.logger.debug("[%s] Import not found: %s" % (mask_hook, function.__name__))
+
+    def verify_required_parameters(self) -> None:
+        """ Verifies that all required parameters are set """
+        for parameter in self['required_parameters']:
+            if parameter not in self:
+                raise KeyError(f"Required parameter '{parameter}' not found in config")
+
+        self.logger.debug("Verified required parameters: %s" % self['required_parameters'])
+
+    def validate(self) -> None:
+        """ Validate config """
+        self.verify_required_parameters()
+        self.verify_deps()
+        self.verify_mask()
 
     def __str__(self) -> str:
         return pretty_print(self)
