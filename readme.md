@@ -107,6 +107,8 @@ This can be set with:
 
 UGRD should prompt for relevant input or warn if devices are missing at runtime.
 
+> If UGRD does not print it's version after the kernel calls /init, the `ugrd.base.console` module may need to be enabled to start an agetty session.
+
 ### Failure recovery
 
 In the event of a failure, modules will either fail through, or re-exec the init script.
