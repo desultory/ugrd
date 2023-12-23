@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ugrd"
-version = "0.13.0"
+version = "0.13.1"
 authors = [
   { name="Desultory", email="dev@pyl.onl" },
 ]
@@ -21,6 +21,9 @@ dependencies = [
     "zenlib >= 1.2.0",
     "pycpio >= 0.6.1"
 ]
+
+[options.package_data]
+ugrd = ["*.toml"]
 
 [project.scripts]
 ugrd = "ugrd.main:main"
