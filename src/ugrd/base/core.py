@@ -79,14 +79,14 @@ def deploy_dependencies(self) -> None:
 
 
 def deploy_copies(self) -> None:
-    """ Copies everything from self.config_dict['copies'] into the build directory. """
+    """ Copies everything from self.copies into the build directory. """
     for copy_name, copy_parameters in self.copies.items():
         self.logger.debug("[%s] Copying: %s" % (copy_name, copy_parameters))
         self._copy(copy_parameters['source'], copy_parameters['destination'])
 
 
 def deploy_symlinks(self) -> None:
-    """ Creates symlinks for all symlinks in self.config_dict['symlinks']."""
+    """ Creates symlinks for all symlinks in self.symlinks."""
     for symlink_name, symlink_parameters in self.symlinks.items():
         self.logger.debug("[%s] Creating symlink: %s" % (symlink_name, symlink_parameters))
         self._symlink(symlink_parameters['source'], symlink_parameters['target'])

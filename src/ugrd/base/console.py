@@ -5,7 +5,7 @@ __version__ = "0.6.0"
 def custom_init(self) -> str:
     """
     init override for the console module.
-    Write the main init runlevels to the self.config_dict['_custom_init_file'] file.
+    Write the main init runlevels to self._custom_init_file.
     Returns the output of console_init which is the command to start agetty.
     """
     custom_init_contents = [self.shebang,

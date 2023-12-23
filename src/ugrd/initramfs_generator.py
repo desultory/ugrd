@@ -55,7 +55,7 @@ class InitramfsGenerator:
         if item not in self.__dict__:
             dict_val = self.config_dict.get(item)
             if not dict_val:
-                self.logger.warning("[%s] Attribute not found in config dict" % item)
+                self.logger.debug("[%s] Attribute not found in config dict" % item)
             return dict_val
         return super().__getattr__(item)
 

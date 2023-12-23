@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.3.0'
+__version__ = '1.4.0'
 
 from pathlib import Path
 
@@ -131,12 +131,10 @@ def _to_fstab_entry(self, mount: dict) -> str:
 
 
 def generate_fstab(self) -> None:
-    """
-    Generates the fstab from the mounts
-    """
+    """ Generates the fstab from the mounts. """
     fstab_info = [f"# UGRD Filesystem module v{__version__}"]
 
-    for mount_name, mount_info in self.config_dict['mounts'].items():
+    for mount_name, mount_info in self.mounts.items():
         if not mount_info.get('base_mount') or mount_name == 'root' and _validate_host_mount(self, mount_info):
             self.logger.debug("Adding fstab entry for: %s" % mount_name)
             fstab_info.append(_to_fstab_entry(self, mount_info))
@@ -145,30 +143,24 @@ def generate_fstab(self) -> None:
 
 
 def mount_base(self) -> list[str]:
-    """
-    Generates mount commands for the base mounts
-    """
-    return [_to_mount_cmd(self, mount) for mount in self.config_dict['mounts'].values() if mount.get('base_mount')]
+    """ Generates mount commands for the base mounts. """
+    return [_to_mount_cmd(self, mount) for mount in self.mounts.values() if mount.get('base_mount')]
 
 
 def remake_mountpoints(self) -> list[str]:
-    """
-    Remakes mountpoints, especially useful when mounting over something like /dev
-    """
-    return [f"mkdir --parents {mount['destination']}" for mount in self.config_dict['mounts'].values() if mount.get('remake_mountpoint')]
+    """ Remakes mountpoints, especially useful when mounting over something like /dev. """
+    return [f"mkdir --parents {mount['destination']}" for mount in self.mounts.values() if mount.get('remake_mountpoint')]
 
 
 def mount_fstab(self) -> list[str]:
-    """
-    Generates the init line for mounting the fstab
-    """
+    """ Generates the init line for mounting the fstab. """
     out = []
 
     # Only wait if root_wait is specified
-    if self.config_dict.get('mount_wait', False):
+    if self.mount_wait:
         out += [r'echo -e "\n\n\nPress enter once devices have settled.\n\n\n"']
-        if self.config_dict.get('mount_timeout', False):
-            out += [f"read -sr -t {self.config_dict['mount_timeout']}"]
+        if self.mount_timeout:
+            out += [f"read -sr -t {self.mount_timeout}"]
         else:
             out += ["read -sr"]
 
@@ -177,9 +169,7 @@ def mount_fstab(self) -> list[str]:
 
 
 def _get_mounts_source_device(self, mountpoint: str) -> Path:
-    """
-    Returns the source device of a mountpoint on /proc/mounts
-    """
+    """ Returns the source device of a mountpoint on /proc/mounts. """
     mountpoint = str(mountpoint)
 
     self.logger.debug("Getting source device path for: %s" % mountpoint)
@@ -199,9 +189,7 @@ def _get_mounts_source_device(self, mountpoint: str) -> Path:
 
 
 def _get_blkid_info(self, device: Path) -> str:
-    """
-    Gets the blkid info for a device
-    """
+    """ Gets the blkid info for a device. """
     from subprocess import run
     self.logger.debug("Getting blkid info for: %s" % device)
 
@@ -221,10 +209,8 @@ def _get_blkid_info(self, device: Path) -> str:
 
 
 def _validate_host_mount(self, mount, destination_path=None) -> bool:
-    """
-    Checks if a defined mount exists on the host
-    """
-    if not self.config_dict['validate']:
+    """ Checks if a defined mount exists on the host. """
+    if not self.validate:
         self.logger.debug("Skipping host mount check as validation is disabled.")
         return True
 
@@ -260,18 +246,16 @@ def mount_root(self) -> str:
     Mounts the root partition.
     Warns if the root partition isn't found on the current system.
     """
-    root_path = self.config_dict['mounts']['root']['destination']
-    if not _validate_host_mount(self, self.config_dict['mounts']['root'], '/'):
+    root_path = self.mounts['root']['destination']
+    if not _validate_host_mount(self, self.mounts['root'], '/'):
         self.logger.error("Unable to validate root mount. Please ensure the root partition is mounted on the host system or disable validation.")
 
     return f"mount {root_path}"
 
 
 def clean_mounts(self) -> list[str]:
-    """
-    Generates init lines to unmount all mounts
-    """
-    umounts = [f"umount {mount['destination']}" for mount in self.config_dict['mounts'].values() if not mount.get('skip_unmount')]
+    """ Generates init lines to unmount all mounts. """
+    umounts = [f"umount {mount['destination']}" for mount in self.mounts.values() if not mount.get('skip_unmount')]
     # Ensure /proc is unmounted last
     if 'umount /proc' in umounts and umounts[-1] != 'umount /proc':
         umounts.remove('umount /proc')
@@ -281,9 +265,7 @@ def clean_mounts(self) -> list[str]:
 
 
 def _mount_fail(self) -> list[str]:
-    """
-    Generates init lines to run if the mount fails
-    """
+    """ Generates init lines to run if the mount fails. """
     return ['echo "Loaded modules:"',
             'lsmod',
             'echo "Block devices:"',

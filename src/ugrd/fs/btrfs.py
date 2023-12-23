@@ -1,4 +1,4 @@
-__version__ = '0.4.0'
+__version__ = '0.6.0'
 __author__ = 'desultory'
 
 from ugrd.fs.mounts import _get_mount_source
@@ -34,11 +34,11 @@ def select_subvol(self) -> str:
     """
     Returns a bash script to list subvolumes on the root volume
     """
-    if not self.config_dict.get('subvol_selector'):
+    if not self.subvol_selector:
         self.logger.log(5, "subvol_selector not set, skipping")
         return
 
-    root_volume = self.config_dict['mounts']['root']['destination']
+    root_volume = self.mounts['root']['destination']
     out = [f"btrfs subvolume list -o {root_volume}",
            "if [[ $? -ne 0 ]]; then",
            f"    echo 'Failed to list btrfs subvolumes for root volume: {root_volume}'",
@@ -66,11 +66,11 @@ def mount_subvol(self) -> str:
     """
     mounts a subvolume
     """
-    if not self.config_dict.get('subvol_selector') and not self.config_dict.get('root_subvol'):
+    if not self.subvol_selector and not self.root_subvol:
         return
 
-    source = _get_mount_source(self, self.config_dict['mounts']['root'])
-    destination = self.config_dict['mounts']['root']['destination'] if not self.config_dict.get('switch_root_target') else self.config_dict['switch_root_target']
+    source = _get_mount_source(self, self.mounts['root'])
+    destination = self.mounts['root']['destination'] if not self.switch_root_target else self.switch_root_target
 
     return f"mount -o subvol=$root_subvol {source} {destination}"
 
@@ -79,12 +79,12 @@ def set_root_subvol(self) -> str:
     """
     sets $root_subvol
     """
-    if root_subvol := self.config_dict.get("root_subvol"):
-        self.config_dict['masks'] = {'init_mount': 'mount_root'}
+    if root_subvol := self.root_subvol:
+        self.masks = {'init_mount': 'mount_root'}
         return f"export root_subvol={root_subvol}"
-    elif self.config_dict.get('subvol_selector'):
-        base_mount_path = self.config_dict['base_mount_path']
+    elif self.subvol_selector:
+        base_mount_path = self.base_mount_path
         self.logger.info("Subvolume selector set, changing root_mount path to: %s", base_mount_path)
-        self.config_dict['switch_root_target'] = self.config_dict['mounts']['root']['destination']
-        self.config_dict['mounts'] = {'root': {'destination': base_mount_path}}
+        self.switch_root_target = self.mounts['root']['destination']
+        self.mounts = {'root': {'destination': base_mount_path}}
 
