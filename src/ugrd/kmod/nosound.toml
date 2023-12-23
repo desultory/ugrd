@@ -1,3 +1,3 @@
 mod_depends = ['ugrd.kmod.kmod']
 
-kmod_ignore = ['snd_hda_intel', 'snd-hda-core', 'snd-hda-codec', 'snd', 'snd-intel-dspcfg', 'snd-pcm', 'snd-hwdep', 'soundcore', 'snd-intel-sdw-acpi', 'snd-timer']
+kmod_ignore = ['snd_hda_intel', 'snd-hda-core', 'snd-hda-codec', 'snd', 'snd-intel-dspcfg', 'snd-pcm', 'snd-hwdep', 'soundcore', 'snd-intel-sdw-acpi', 'snd-timer', 'ledtrig_audio']
