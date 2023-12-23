@@ -1,0 +1,16 @@
+# This config module will simply pull/load kmods
+
+modules = [
+  "ugrd.base.base",
+  "ugrd.kmod.kmod",
+  "ugrd.kmod.nosound",
+  "ugrd.kmod.novideo",
+  "ugrd.kmod.nonetwork",
+]
+
+# Optionally supply a kernel version, uses the current kernel version if not specified
+#kernel_version = "6.1.53-gentoo-dist"
+kmod_autodetect_lspci = true
+
+# Don't validate because a mount is not specified
+validate = false
