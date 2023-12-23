@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.1.1'
+__version__ = '1.1.2'
 
 from pathlib import Path
 from subprocess import run
@@ -170,7 +170,7 @@ def get_lsmod_modules(self) -> list[str]:
     if not self['hostonly']:
         raise RuntimeError("lsmod module resolution is only available in hostonly mode")
 
-    if self['kernel_version'] and self['kernel_version'] != uname().release:
+    if self.get('kernel_version') and self['kernel_version'] != uname().release:
         self.logger.warning("Kernel version is set to %s, but the current kernel version is %s" % (self['kernel_version'], uname().release))
 
     try:

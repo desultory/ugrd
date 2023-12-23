@@ -63,6 +63,8 @@ def _process_mounts_multi(self, mount_name: str, mount_config) -> None:
             if 'ugrd.fs.btrfs' not in self['modules']:
                 self.logger.info("Auto-enabling btrfs module")
                 self['modules'] = 'ugrd.fs.btrfs'
+        else:
+            self.logger.debug("Unknown mount type: %s" % mount_type)
 
     self['mounts'][mount_name] = mount_config
     self.logger.debug("[%s] Added mount: %s" % (mount_name, mount_config))
@@ -165,20 +167,24 @@ def autodetect_root(self) -> None:
     self.logger.debug("Detected root mount info: %s" % root_mount_info)
 
     mount_data = root_mount_info.partition(':')[2].strip().split(' ')
-    root_dict = {key: value for key, value in (entry.split('=') for entry in mount_data)}
+    root_dict = {key: value.strip('"') for key, value in (entry.split('=') for entry in mount_data)}
+
+    mount_info = {'root': {'type': 'auto', 'base_mount': False}}
 
     if mount_type := root_dict.get('TYPE'):
         self.logger.info("Autodetected root type: %s" % mount_type)
-        self['mounts']['root']['type'] = mount_type.lower()
+        mount_info['root']['type'] = mount_type.lower()
 
     if label := root_dict.get('LABEL'):
         self.logger.info("Autodetected root label: %s" % label)
-        self['mounts']['root']['source'] = {'label': label}
+        mount_info['root']['source'] = {'label': label}
     elif uuid := root_dict.get('UUID'):
         self.logger.info("Autodetected root uuid: %s" % uuid)
-        self['mounts']['root']['source'] = {'uuid': uuid}
+        mount_info['root']['source'] = {'uuid': uuid}
     else:
         raise ValueError("Failed to autodetect root mount source.")
+
+    self['mounts'] = mount_info
 
 
 def mount_base(self) -> list[str]:
