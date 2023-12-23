@@ -4,7 +4,7 @@
 
 ver=${1}
 img=${2}
-initrd=${img%/*}/initrd
+initrd=./${img%/*}/initrd
 
 # familiar helpers, we intentionally don't use Gentoo functions.sh
 die() {
