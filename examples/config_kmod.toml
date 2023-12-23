@@ -12,5 +12,10 @@ modules = [
 #kernel_version = "6.1.53-gentoo-dist"
 kmod_autodetect_lspci = true
 
+# Autodetect the root mountpoint
+autodetect_root = true
+
 # Don't validate because a mount is not specified
 validate = false
+
+
