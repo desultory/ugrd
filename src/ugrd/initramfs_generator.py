@@ -50,13 +50,24 @@ class InitramfsGenerator:
 
         self.logger.debug("Loaded config:\n%s" % self.config_dict)
 
+    def __setitem__(self, key, value):
+        """ Allows setting of the config dict via the InitramfsGenerator object. """
+        self.config_dict[key] = value
+
+    def __getitem__(self, item):
+        """ Allows access to the config dict via the InitramfsGenerator object. """
+        return self.config_dict[item]
+
+    def get(self, item, default=None):
+        """ Allows access to the config dict via the InitramfsGenerator object. """
+        return self.config_dict.get(item, default)
+
     def __getattr__(self, item):
-        """ Allows access to the config dict via the InitramfsGenerator object."""
+        """ Allows access to the config dict via the InitramfsGenerator object. """
         if item not in self.__dict__:
-            dict_val = self.config_dict.get(item)
-            if not dict_val:
-                self.logger.debug("[%s] Attribute not found in config dict" % item)
-            return dict_val
+            if item not in self.config_dict['required_parameters']:
+                self.logger.warning("Accessing non-required parameter through getattr -> config_dict: %s" % item)
+            return self[item]
         return super().__getattr__(item)
 
     def build(self) -> None:
@@ -87,7 +98,7 @@ class InitramfsGenerator:
             if function.__name__ in self.included_functions:
                 raise ValueError("Function '%s' has already been included in the bash source file" % function.__name__)
 
-            if function.__name__ in self.binaries:
+            if function.__name__ in self['binaries']:
                 raise ValueError("Function name collides with defined binary: %s" % (function.__name__))
                 return function_output
 
@@ -115,7 +126,7 @@ class InitramfsGenerator:
     def _run_hook(self, hook: str, *args, **kwargs) -> list[str]:
         """ Runs a hook for imported functions. """
         out = []
-        for function in self.imports.get(hook, []):
+        for function in self['imports'].get(hook, []):
             if function_output := self._run_func(function, *args, **kwargs):
                 out.append(function_output)
         return out
@@ -163,7 +174,7 @@ class InitramfsGenerator:
         """
         self.logger.info("Running init generator functions")
 
-        init = [self.shebang]
+        init = [self['shebang']]
         init += [f'echo "Starting UGRD v{__version__}"']
 
         # Run all included functions, so they get included
@@ -171,9 +182,9 @@ class InitramfsGenerator:
 
         init.extend(self._run_init_hook('init_pre'))
 
-        if self._custom_init_file:
+        if self['imports'].get('custom_init') and self.get('_custom_init_file'):
             init += ["\n\n# !!custom_init"]
-            init_line, custom_init = self.imports['custom_init'](self)
+            init_line, custom_init = self['imports']['custom_init'](self)
             init.extend(init_line)
         else:
             init.extend(self.generate_init_main())
@@ -185,12 +196,12 @@ class InitramfsGenerator:
             init_funcs = self.generate_init_funcs()
             self._write('init_funcs.sh', init_funcs, 0o755)
             init.insert(3, "source init_funcs.sh")
-            if self.imports.get('custom_init'):
+            if self['imports'].get('custom_init'):
                 custom_init.insert(2, f"echo 'Starting custom init, UGRD v{__version__}'")
                 custom_init.insert(2, "source /init_funcs.sh")
 
-        if self._custom_init_file:
-            self._write(self._custom_init_file, custom_init, 0o755)
+        if self.get('_custom_init_file'):
+            self._write(self['_custom_init_file'], custom_init, 0o755)
 
         self._write('init', init, 0o755)
         self.logger.debug("Final config:\n%s" % pretty_print(self.config_dict))
@@ -199,7 +210,7 @@ class InitramfsGenerator:
         """
         Packs the initramfs based on self.config_dict['imports']['pack']
         """
-        if self.imports.get('pack'):
+        if self['imports'].get('pack'):
             self._run_hook('pack')
         else:
             self.logger.warning("No pack functions specified, the final build is present in: %s" % self.build_dir)
@@ -217,7 +228,7 @@ class InitramfsGenerator:
             return self.build_dir / path
 
     def _mkdir(self, path: Path) -> None:
-        """ Creates a directory, chowns it as self._file_owner_uid """
+        """ Creates a directory, chowns it as self['_file_owner_uid'] """
         from os.path import isdir
         from os import mkdir
 
@@ -241,22 +252,22 @@ class InitramfsGenerator:
         self._chown(path_dir)
 
     def _chown(self, path: Path) -> None:
-        """ Chowns a file or directory as self._file_owner_uid """
+        """ Chowns a file or directory as self['_file_owner_uid'] """
         from os import chown
 
-        if path.owner() == self._file_owner_uid and path.group() == self._file_owner_uid:
-            self.logger.debug("File '%s' already owned by: %s" % (path, self._file_owner_uid))
+        if path.owner() == self['_file_owner_uid'] and path.group() == self['_file_owner_uid']:
+            self.logger.debug("File '%s' already owned by: %s" % (path, self['_file_owner_uid']))
             return
 
-        chown(path, self._file_owner_uid, self._file_owner_uid)
+        chown(path, self['_file_owner_uid'], self['_file_owner_uid'])
         if path.is_dir():
-            self.logger.debug("[%s] Set directory owner: %s" % (path, self._file_owner_uid))
+            self.logger.debug("[%s] Set directory owner: %s" % (path, self['_file_owner_uid']))
         else:
-            self.logger.debug("[%s] Set file owner: %s" % (path, self._file_owner_uid))
+            self.logger.debug("[%s] Set file owner: %s" % (path, self['_file_owner_uid']))
 
     def _write(self, file_name: Union[Path, str], contents: list[str], chmod_mask=0o644, in_build_dir=True) -> None:
         """
-        Writes a file and owns it as self._file_owner_uid
+        Writes a file and owns it as self['_file_owner_uid']
         Sets the passed chmod
         """
         from os import chmod
@@ -287,7 +298,7 @@ class InitramfsGenerator:
         self._chown(file_path)
 
     def _copy(self, source: Union[Path, str], dest=None) -> None:
-        """ Copies a file, chowns it as self._file_owner_uid """
+        """ Copies a file, chowns it as self['_file_owner_uid'] """
         from shutil import copy2
 
         if not isinstance(source, Path):

@@ -34,11 +34,11 @@ def select_subvol(self) -> str:
     """
     Returns a bash script to list subvolumes on the root volume
     """
-    if not self.subvol_selector:
+    if not self['subvol_selector']:
         self.logger.log(5, "subvol_selector not set, skipping")
         return
 
-    root_volume = self.mounts['root']['destination']
+    root_volume = self['mounts']['root']['destination']
     out = [f"btrfs subvolume list -o {root_volume}",
            "if [[ $? -ne 0 ]]; then",
            f"    echo 'Failed to list btrfs subvolumes for root volume: {root_volume}'",
@@ -63,28 +63,25 @@ def select_subvol(self) -> str:
 
 
 def mount_subvol(self) -> str:
-    """
-    mounts a subvolume
-    """
-    if not self.subvol_selector and not self.root_subvol:
+    """ mounts a subvolume. """
+    if not self.get('subvol_selector') and not self.get('root_subvol'):
+        self.logger.log(5, "subvol_selector and root_subvol not set, skipping")
         return
 
-    source = _get_mount_source(self, self.mounts['root'])
-    destination = self.mounts['root']['destination'] if not self.switch_root_target else self.switch_root_target
+    source = _get_mount_source(self, self['mounts']['root'])
+    destination = self['mounts']['root']['destination'] if not self.switch_root_target else self.switch_root_target
 
     return f"mount -o subvol=$root_subvol {source} {destination}"
 
 
 def set_root_subvol(self) -> str:
-    """
-    sets $root_subvol
-    """
-    if root_subvol := self.root_subvol:
-        self.masks = {'init_mount': 'mount_root'}
+    """ sets $root_subvol """
+    if root_subvol := self.get('root_subvol'):
+        self['masks'] = {'init_mount': 'mount_root'}
         return f"export root_subvol={root_subvol}"
-    elif self.subvol_selector:
-        base_mount_path = self.base_mount_path
+    elif self.get('subvol_selector'):
+        base_mount_path = self['base_mount_path']
         self.logger.info("Subvolume selector set, changing root_mount path to: %s", base_mount_path)
-        self.switch_root_target = self.mounts['root']['destination']
-        self.mounts = {'root': {'destination': base_mount_path}}
+        self['switch_root_target'] = self['mounts']['root']['destination']
+        self['mounts'] = {'root': {'destination': base_mount_path}}
 

@@ -9,6 +9,8 @@ old_count = 1
 
 binaries = [ "bash" ]
 
+required_parameters = [ "clean", "old_count", "build_dir", "out_dir", "file_owner", "validate", "hostonly"]
+
 [nodes.console]
 mode = 0o644
 major = 5

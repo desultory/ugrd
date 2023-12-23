@@ -1,6 +1,6 @@
 
 __author__ = "desultory"
-__version__ = "0.11.0"
+__version__ = "0.12.0"
 
 from tomllib import load, TOMLDecodeError
 from pathlib import Path
@@ -112,9 +112,7 @@ class InitramfsConfigDict(dict):
 
     @handle_plural
     def _process_imports(self, import_type: str, import_value: dict) -> None:
-        """
-        Processes imports in a module, importing the functions and adding them to the appropriate list
-        """
+        """ Processes imports in a module, importing the functions and adding them to the appropriate list. """
         from importlib import import_module
 
         self.logger.debug("Processing imports of type: %s" % import_type)
@@ -158,9 +156,7 @@ class InitramfsConfigDict(dict):
 
     @handle_plural
     def _process_mod_depends(self, module: str) -> None:
-        """
-        Processes module dependencies
-        """
+        """ Processes module dependencies. """
         self.logger.debug("Processing module dependency: %s" % module)
         if module not in self['modules']:
             self.logger.warning("Module dependency added, but required dependency is not loaded: %s" % module)
@@ -230,7 +226,8 @@ class InitramfsConfigDict(dict):
         """ Verifies that all required parameters are set """
         for parameter in self['required_parameters']:
             if parameter not in self:
-                raise KeyError(f"Required parameter '{parameter}' not found in config")
+                self.logger.error(self)
+                raise KeyError("Required parameter not found in config: %s" % parameter)
 
         self.logger.debug("Verified required parameters: %s" % self['required_parameters'])
 

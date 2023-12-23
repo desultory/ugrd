@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.3.0'
+__version__ = '2.3.1'
 
 
 from pycpio import PyCPIO
@@ -13,8 +13,8 @@ def make_cpio(self) -> None:
     cpio = PyCPIO(logger=self.logger, _log_bump=5)
     cpio.append_recursive(self.build_dir, relative=True)
 
-    if self.mknod_cpio:
-        for node in self.nodes.values():
+    if self.get('mknod_cpio:'):
+        for node in self['nodes'].values():
             self.logger.debug("Adding CPIO node: %s" % node)
             cpio.add_chardev(name=node['path'], mode=node['mode'], major=node['major'], minor=node['minor'])
 

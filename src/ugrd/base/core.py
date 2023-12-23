@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.0.0'
+__version__ = '2.1.0'
 
 from pathlib import Path
 from typing import Union
@@ -25,7 +25,7 @@ def generate_structure(self) -> None:
     if not self.build_dir.is_dir():
         self._mkdir(self.build_dir)
 
-    for subdir in set(self.paths):
+    for subdir in set(self['paths']):
         # Get the relative path of each path, create the directory in the build dir
         subdir_relative_path = subdir.relative_to(subdir.anchor)
         target_dir = self.build_dir / subdir_relative_path
@@ -69,7 +69,7 @@ def deploy_dependencies(self) -> None:
     """ Copies all dependencies to the build directory. """
     for dependency in self.dependencies:
         if dependency.is_symlink():
-            if self.symlinks.get(f'_auto_{dependency.name}'):
+            if self['symlinks'].get(f'_auto_{dependency.name}'):
                 self.logger.debug("Dependency is a symlink, skipping: %s" % dependency)
                 continue
             else:
@@ -79,29 +79,29 @@ def deploy_dependencies(self) -> None:
 
 
 def deploy_copies(self) -> None:
-    """ Copies everything from self.copies into the build directory. """
-    for copy_name, copy_parameters in self.copies.items():
+    """ Copies everything from self['copies'] into the build directory. """
+    for copy_name, copy_parameters in self['copies'].items():
         self.logger.debug("[%s] Copying: %s" % (copy_name, copy_parameters))
         self._copy(copy_parameters['source'], copy_parameters['destination'])
 
 
 def deploy_symlinks(self) -> None:
-    """ Creates symlinks for all symlinks in self.symlinks."""
-    for symlink_name, symlink_parameters in self.symlinks.items():
+    """ Creates symlinks for all symlinks in self['symlinks']."""
+    for symlink_name, symlink_parameters in self['symlinks'].items():
         self.logger.debug("[%s] Creating symlink: %s" % (symlink_name, symlink_parameters))
         self._symlink(symlink_parameters['source'], symlink_parameters['target'])
 
 
 def deploy_nodes(self) -> None:
     """ Generates specified device nodes. """
-    if self.mknod_cpio:
+    if self.get('knod_cpio'):
         self.logger.warning("Skipping mknod generation, as mknod_cpio is specified")
         return
 
     from os import makedev, mknod
     from stat import S_IFCHR
 
-    for node, config in self.nodes.items():
+    for node, config in self['nodes'].items():
         node_path_abs = Path(config['path'])
 
         node_path = self.build_dir / node_path_abs.relative_to(node_path_abs.anchor)
@@ -118,7 +118,7 @@ def deploy_nodes(self) -> None:
 
 def configure_library_paths(self) -> None:
     """ Sets the export LD_LIBRARY_PATH variable to the library paths."""
-    library_paths = ":".join(self.library_paths)
+    library_paths = ":".join(self['library_paths'])
     self.logger.debug("Setting LD_LIBRARY_PATH to: %s" % library_paths)
     return "export LD_LIBRARY_PATH=%s" % library_paths
 
@@ -252,16 +252,16 @@ def _process_file_owner(self, owner: Union[str, int]) -> None:
     if isinstance(owner, str):
         try:
             self.logger.debug("Processing file owner: %s" % owner)
-            self['_file_owner_uid'] = getpwnam(owner).pw_uid
-            self.logger.info("Using uid: %s" % self['_file_owner_uid'])
+            owner = getpwnam(owner).pw_uid
+            self.logger.info("Resolved uid: %s" % owner)
         except KeyError as e:
             raise KeyError("Unable to find uid for user: %s" % owner) from e
-    elif isinstance(owner, int):
-        self['_file_owner_uid'] = owner
-        self.logger.info("Set file owner uid: %s" % self['_file_owner_uid'])
-    else:
+    elif not isinstance(owner, int):
         self.logger.error("Unable to process file owner: %s" % owner)
         raise ValueError("Invalid type passed for file owner: %s" % type(owner))
+
+    self['_file_owner_uid'] = owner
+    dict.__setitem__(self, 'file_owner', owner)
 
 
 def _process_masks_multi(self, runlevel: str, function: str) -> None:

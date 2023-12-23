@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.0.0'
+__version__ = '1.1.0'
 
 from pathlib import Path
 from subprocess import run
@@ -25,9 +25,7 @@ def _process_kmod_ignore_multi(self, module: str) -> None:
 
 
 def _remove_kmod(self, module: str, reason: str) -> None:
-    """
-    Removes a kernel module from all kernel module lists.
-    """
+    """ Removes a kernel module from all kernel module lists. """
     self.logger.log(5, "Removing kernel module from all lists: %s", module)
     other_keys = ['kmod_init', 'kernel_modules', '_kmod_depend']
 
@@ -85,9 +83,7 @@ def _process_kernel_modules_multi(self, module: str) -> None:
 
 
 def _process_kmod_init_multi(self, module: str) -> None:
-    """
-    Adds init modules to self['kernel_modules'].
-    """
+    """ Adds init modules to self['kernel_modules']. """
     # First append it to kmod_init
     self['kmod_init'].append(module)
     self.logger.debug("Adding kmod_init module to kernel_modules: %s", module)
@@ -96,9 +92,7 @@ def _process_kmod_init_multi(self, module: str) -> None:
 
 
 def _get_kmod_info(self, module: str):
-    """
-    Runs modinfo on a kernel module, parses the output and stored the results in self.config_dict['_kmod_modinfo']
-    """
+    """ Runs modinfo on a kernel module, parses the output and stored the results in self['_kmod_modinfo']. """
     if module in self['_kmod_modinfo']:
         self.logger.log(5, "Module info already exists for: %s" % module)
         return
@@ -140,10 +134,8 @@ def _get_kmod_info(self, module: str):
 
 
 def get_lspci_modules(self) -> list[str]:
-    """
-    Gets the name of all kernel modules being used by hardware visible in lspci -k
-    """
-    if not self.config_dict['hostonly']:
+    """ Gets the name of all kernel modules being used by hardware visible in lspci -k. """
+    if not self['hostonly']:
         raise RuntimeError("lscpi module resolution is only available in hostonly mod")
 
     try:
@@ -174,11 +166,11 @@ def get_lsmod_modules(self) -> list[str]:
     Gets the name of all currently installed kernel modules
     """
     from platform import uname
-    if not self.config_dict['hostonly']:
+    if not self['hostonly']:
         raise RuntimeError("lsmod module resolution is only available in hostonly mode")
 
-    if self.config_dict.get('kernel_version') and self.config_dict['kernel_version'] != uname().release:
-        self.logger.warning("Kernel version is set to %s, but the current kernel version is %s" % (self.config_dict['kernel_version'], uname().release))
+    if self['kernel_version'] and self['kernel_version'] != uname().release:
+        self.logger.warning("Kernel version is set to %s, but the current kernel version is %s" % (self['kernel_version'], uname().release))
 
     try:
         cmd = self._run(['lsmod'])
@@ -211,21 +203,21 @@ def calculate_modules(self) -> None:
     Adds the contents of _kmod_depend if specified.
     Performs dependency resolution on all kernel modules.
     """
-    if self.config_dict['kmod_autodetect_lsmod']:
+    if self['kmod_autodetect_lsmod']:
         autodetected_modules = get_lsmod_modules(self)
         self.logger.info("Autodetected kernel modules from lsmod: %s" % autodetected_modules)
-        self.config_dict['kmod_init'] = autodetected_modules
+        self['kmod_init'] = autodetected_modules
 
-    if self.config_dict['kmod_autodetect_lspci']:
+    if self['kmod_autodetect_lspci']:
         autodetected_modules = get_lspci_modules(self)
         self.logger.info("Autodetected kernel modules from lscpi -k: %s" % autodetected_modules)
-        self.config_dict['kmod_init'] = autodetected_modules
+        self['kmod_init'] = autodetected_modules
 
-    if self.config_dict['_kmod_depend']:
-        self.logger.info("Adding internal dependencies to kmod_init: %s" % self.config_dict['_kmod_depend'])
-        self.config_dict['kmod_init'] = self.config_dict['_kmod_depend'].copy()  # Copy because _kmod_depend may shrink during iteration
+    if self['_kmod_depend']:
+        self.logger.info("Adding internal dependencies to kmod_init: %s" % self['_kmod_depend'])
+        self['kmod_init'] = self['_kmod_depend'].copy()  # Copy because _kmod_depend may shrink during iteration
 
-    self.logger.info("Included kernel modules: %s" % self.config_dict['kernel_modules'])
+    self.logger.info("Included kernel modules: %s" % self['kernel_modules'])
 
 
 def process_module_metadata(self) -> None:
@@ -233,7 +225,7 @@ def process_module_metadata(self) -> None:
     Gets all module metadata for the specified kernel version.
     Adds kernel module metadata files to dependencies.
     """
-    if 'kernel_version' not in self.config_dict:
+    if not self.get('kernel_version'):
         self.logger.info("Kernel version not specified, using current kernel")
         try:
             cmd = self._run(['uname', '-r'])
@@ -243,7 +235,7 @@ def process_module_metadata(self) -> None:
         kernel_version = cmd.stdout.decode('utf-8').strip()
         self.logger.info(f'Using detected kernel version: {kernel_version}')
     else:
-        kernel_version = self.config_dict['kernel_version']
+        kernel_version = self['kernel_version']
 
     module_path = Path('/lib/modules/') / kernel_version
 
@@ -251,25 +243,23 @@ def process_module_metadata(self) -> None:
         meta_file_path = module_path / meta_file
 
         self.logger.debug("Adding kernel module metadata files to dependencies: %s", meta_file_path)
-        self.config_dict['dependencies'] = meta_file_path
+        self['dependencies'] = meta_file_path
 
 
 def process_modules(self) -> None:
-    """
-    Processes all kernel modules, adding dependencies to the initramfs
-    """
-    for kmod in self.config_dict['kernel_modules']:
+    """ Processes all kernel modules, adding dependencies to the initramfs. """
+    for kmod in self['kernel_modules']:
         self.logger.debug("Processing kernel module: %s" % kmod)
-        modinfo = self.config_dict['_kmod_modinfo'][kmod]
+        modinfo = self['_kmod_modinfo'][kmod]
         # Add the module itself to the dependencies
-        self.config_dict['dependencies'] = Path(modinfo['filename'])
+        self['dependencies'] = Path(modinfo['filename'])
         # If the module has firmware, add it to the dependencies
         if firmware := modinfo.get('firmware'):
-            if self.config_dict.get('kmod_pull_firmware'):
+            if self.get('kmod_pull_firmware'):
                 self.logger.info("[%s] Adding firmware to dependencies: %s" % (kmod, firmware))
                 for file in firmware:
                     try:
-                        self.config_dict['dependencies'] = Path('/lib/firmware/') / file
+                        self['dependencies'] = Path('/lib/firmware/') / file
                     except FileNotFoundError:
                         self.logger.warning("[%s] Unable to find referenced firmware file: %s" % (kmod, file))
             else:
@@ -277,18 +267,16 @@ def process_modules(self) -> None:
 
 
 def load_modules(self) -> None:
-    """
-    Creates a bash script which loads all kernel modules in kmod_init
-    """
+    """ Creates a bash script which loads all kernel modules in kmod_init. """
     # Start by using the kmod_init variable
-    kmods = self.config_dict['kmod_init']
+    kmods = self['kmod_init']
 
     if not kmods:
         self.logger.error("No kernel modules to load")
         return
 
     self.logger.info("Init kernel modules: %s" % kmods)
-    self.logger.warning("Ignored kernel modules: %s" % self.config_dict['kmod_ignore'])
+    self.logger.warning("Ignored kernel modules: %s" % self['kmod_ignore'])
 
     module_str = ' '.join(kmods)
     return f"modprobe -av {module_str}"

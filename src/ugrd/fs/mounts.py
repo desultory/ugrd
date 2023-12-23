@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.4.0'
+__version__ = '1.5.0'
 
 from pathlib import Path
 
@@ -97,9 +97,7 @@ def _get_mount_source(self, mount: dict, pad=False) -> str:
 
 
 def _to_mount_cmd(self, mount: dict) -> str:
-    """
-    Prints the object as a mount command
-    """
+    """ Prints the object as a mount command. """
     out_str = f"mount {_get_mount_source(self, mount)} {mount['destination']}"
 
     # I could probably add subvol info here, but I want to keep fs specific stuff out of the core
@@ -134,7 +132,7 @@ def generate_fstab(self) -> None:
     """ Generates the fstab from the mounts. """
     fstab_info = [f"# UGRD Filesystem module v{__version__}"]
 
-    for mount_name, mount_info in self.mounts.items():
+    for mount_name, mount_info in self['mounts'].items():
         if not mount_info.get('base_mount') or mount_name == 'root' and _validate_host_mount(self, mount_info):
             self.logger.debug("Adding fstab entry for: %s" % mount_name)
             fstab_info.append(_to_fstab_entry(self, mount_info))
@@ -144,12 +142,12 @@ def generate_fstab(self) -> None:
 
 def mount_base(self) -> list[str]:
     """ Generates mount commands for the base mounts. """
-    return [_to_mount_cmd(self, mount) for mount in self.mounts.values() if mount.get('base_mount')]
+    return [_to_mount_cmd(self, mount) for mount in self['mounts'].values() if mount.get('base_mount')]
 
 
 def remake_mountpoints(self) -> list[str]:
     """ Remakes mountpoints, especially useful when mounting over something like /dev. """
-    return [f"mkdir --parents {mount['destination']}" for mount in self.mounts.values() if mount.get('remake_mountpoint')]
+    return [f"mkdir --parents {mount['destination']}" for mount in self['mounts'].values() if mount.get('remake_mountpoint')]
 
 
 def mount_fstab(self) -> list[str]:
@@ -157,10 +155,10 @@ def mount_fstab(self) -> list[str]:
     out = []
 
     # Only wait if root_wait is specified
-    if self.mount_wait:
+    if self.get('mount_wait'):
         out += [r'echo -e "\n\n\nPress enter once devices have settled.\n\n\n"']
-        if self.mount_timeout:
-            out += [f"read -sr -t {self.mount_timeout}"]
+        if timeout := self.get('mount_timeout'):
+            out += [f"read -sr -t {timeout}"]
         else:
             out += ["read -sr"]
 
@@ -246,8 +244,8 @@ def mount_root(self) -> str:
     Mounts the root partition.
     Warns if the root partition isn't found on the current system.
     """
-    root_path = self.mounts['root']['destination']
-    if not _validate_host_mount(self, self.mounts['root'], '/'):
+    root_path = self['mounts']['root']['destination']
+    if not _validate_host_mount(self, self['mounts']['root'], '/'):
         self.logger.error("Unable to validate root mount. Please ensure the root partition is mounted on the host system or disable validation.")
 
     return f"mount {root_path}"
@@ -255,7 +253,7 @@ def mount_root(self) -> str:
 
 def clean_mounts(self) -> list[str]:
     """ Generates init lines to unmount all mounts. """
-    umounts = [f"umount {mount['destination']}" for mount in self.mounts.values() if not mount.get('skip_unmount')]
+    umounts = [f"umount {mount['destination']}" for mount in self['mounts'].values() if not mount.get('skip_unmount')]
     # Ensure /proc is unmounted last
     if 'umount /proc' in umounts and umounts[-1] != 'umount /proc':
         umounts.remove('umount /proc')

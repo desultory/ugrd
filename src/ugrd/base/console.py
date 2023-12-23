@@ -8,7 +8,7 @@ def custom_init(self) -> str:
     Write the main init runlevels to self._custom_init_file.
     Returns the output of console_init which is the command to start agetty.
     """
-    custom_init_contents = [self.shebang,
+    custom_init_contents = [self['shebang'],
                             f"# Console module version v{__version__}",
                             *self.generate_init_main()]
 
@@ -21,10 +21,10 @@ def console_init(self) -> str:
     Tell it to execute teh _custom_init_file
     If the console is a serial port, set the baud rate.
     """
-    name = self.primary_console
-    console = self.console[name]
+    name = self['primary_console']
+    console = self['console'][name]
 
-    out_str = f"agetty --autologin root --login-program {self._custom_init_file}"
+    out_str = f"agetty --autologin root --login-program {self['_custom_init_file']}"
 
     console_type = console.get('type', 'tty')
 

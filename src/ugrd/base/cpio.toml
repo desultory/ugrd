@@ -1,6 +1,8 @@
 out_file = "ugrd.cpio"
 mknod_cpio = true
 
+required_parameters = ['out_file']
+
 [imports.config_processing]
 "ugrd.base.cpio" = [ "_process_out_file" ]
 
