@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.5.0'
+__version__ = '1.6.0'
 
 from pathlib import Path
 
@@ -134,10 +134,17 @@ def generate_fstab(self) -> None:
 
     for mount_name, mount_info in self['mounts'].items():
         if not mount_info.get('base_mount') or mount_name == 'root' and _validate_host_mount(self, mount_info):
-            self.logger.debug("Adding fstab entry for: %s" % mount_name)
-            fstab_info.append(_to_fstab_entry(self, mount_info))
+            try:
+                self.logger.debug("Adding fstab entry for: %s" % mount_name)
+                fstab_info.append(_to_fstab_entry(self, mount_info))
+            except KeyError as e:
+                self.logger.warning("Failed to add fstab entry for: %s" % mount_name)
+                self.logger.warning("Required mount paramter not set: %s" % e)
 
-    self._write('/etc/fstab/', fstab_info)
+    if len(fstab_info) > 1:
+        self._write('/etc/fstab/', fstab_info)
+    else:
+        self.logger.warning("No fstab entries generated.")
 
 
 def mount_base(self) -> list[str]:
