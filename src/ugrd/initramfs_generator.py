@@ -53,7 +53,8 @@ class InitramfsGenerator:
     def __getattr__(self, item):
         """ Allows access to the config dict via the InitramfsGenerator object."""
         if item not in self.__dict__:
-            return self.config_dict[item]
+            self.logger.warning(item)
+            return self.config_dict.get(item)
         return super().__getattr__(item)
 
     def build(self) -> None:
