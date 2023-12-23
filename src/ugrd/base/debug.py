@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 
 from pathlib import Path
 
@@ -8,7 +8,7 @@ def start_shell(self) -> str:
     """
     Start a bash shell at the start of the initramfs.
     """
-    if self.config_dict["start_shell"]:
+    if self["start_shell"]:
         return "bash"
 
 
@@ -18,7 +18,7 @@ def pull_python_parts(self) -> None:
     """
     pyton_parts = ['python', 'python3', 'python-config', 'pydoc']
     for part in pyton_parts:
-        self.config_dict['dependencies'] = Path(f"/usr/lib/python-exec/python{self.config_dict['python_version']}") / part
+        self['dependencies'] = Path(f"/usr/lib/python-exec/python{self['python_version']}") / part
 
 
 def pull_valgrind_parts(self) -> None:
@@ -27,4 +27,4 @@ def pull_valgrind_parts(self) -> None:
     """
     for file in Path('/usr/lib64/valgrind').glob('*.a'):
         self.logger.debug("Found valgrind dependency: %s", file)
-        self.config_dict['dependencies'] = file
+        self['dependencies'] = file

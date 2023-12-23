@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.1.2'
+__version__ = '1.2.0'
 
 _module_name = 'ugrd.crypto.cryptsetup'
 
@@ -89,11 +89,11 @@ def get_crypt_sources(self) -> list[str]:
     """
 
     out = []
-    for name, parameters in self.config_dict['cryptsetup'].items():
+    for name, parameters in self['cryptsetup'].items():
         token = ('PARTUUID', parameters['partuuid']) if parameters.get('partuuid') else ('UUID', parameters['uuid'])
         self.logger.debug("[%s] Created block device identifier token: %s" % (name, token))
         # If validation is enabled, check that the mount source exists
-        if self.config_dict['validate']:
+        if self['validate']:
             parameters['_host_device_path'] = _get_device_path_from_token(self, token)
         # Add a blkid command to get the source device in the initramfs, only match if the device has a partuuid
         out.append(f"export SOURCE_TOKEN_{name}='{token[0]}={token[1]}'")
@@ -162,7 +162,7 @@ def open_crypt_device(self, name: str, parameters: dict) -> list[str]:
             '    else',
             f'        echo "Failed to open device: {name} ($i / {retries})"']
     # Halt if the autoretry is disabled
-    if not self.config_dict['cryptsetup_autoretry']:
+    if not self['cryptsetup_autoretry']:
         out += ['        read -sr -p "Press enter to retry"']
     # Add the reset command if it exists
     if reset_command := parameters.get('reset_command'):
@@ -179,7 +179,7 @@ def crypt_init(self) -> list[str]:
     Generates the bash script portion to prompt for keys
     """
     out = [r'echo -e "\n\n\nPress enter to start drive decryption.\n\n\n"', "read -sr"]
-    for name, parameters in self.config_dict['cryptsetup'].items():
+    for name, parameters in self['cryptsetup'].items():
         out += open_crypt_device(self, name, parameters)
         if 'try_nokey' in parameters and parameters.get('key_file'):
             new_params = parameters.copy()
@@ -208,5 +208,5 @@ def find_libgcc(self) -> None:
     source_path = Path(libgcc.partition('=> ')[-1])
     self.logger.info("Source path for libgcc_s: %s" % source_path)
 
-    self.config_dict['dependencies'] = source_path
-    self.config_dict['library_paths'] = str(source_path.parent)
+    self['dependencies'] = source_path
+    self['library_paths'] = str(source_path.parent)
