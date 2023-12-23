@@ -46,7 +46,7 @@ class InitramfsGenerator:
         # Process into the config dict, it should handle parsing
         for config, value in raw_config.items():
             self.logger.debug("Processing config key: %s" % config)
-            self.config_dict[config] = value
+            self[config] = value
 
         self.logger.debug("Loaded config:\n%s" % self.config_dict)
 
@@ -211,7 +211,7 @@ class InitramfsGenerator:
 
     def pack_build(self) -> None:
         """
-        Packs the initramfs based on self.config_dict['imports']['pack']
+        Packs the initramfs based on self['imports']['pack']
         """
         if self['imports'].get('pack'):
             self._run_hook('pack')

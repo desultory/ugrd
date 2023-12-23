@@ -1,22 +1,17 @@
-__version__ = '0.6.0'
+__version__ = '0.6.2'
 __author__ = 'desultory'
 
 from ugrd.fs.mounts import _get_mount_source
 
 
 def _process_root_subvol(self, root_subvol: str) -> None:
-    """
-    processes the root subvolume
-    Removes options in the root mount if they are set
-    """
+    """ processes the root subvolume """
     self.update({'root_subvol': root_subvol})
     self.logger.debug("Set root_subvol to: %s", root_subvol)
 
 
 def _process_subvol_selector(self, subvol_selector: bool) -> None:
-    """
-    processes the subvol selector
-    """
+    """ Processes the subvol selector parameter, adds the base_mount_paths to paths if enabled. """
     if subvol_selector:
         self.update({'subvol_selector': subvol_selector})
         self.logger.debug("Set subvol_selector to: %s", subvol_selector)
@@ -24,17 +19,13 @@ def _process_subvol_selector(self, subvol_selector: bool) -> None:
 
 
 def btrfs_scan(self) -> str:
-    """
-    sccans for new mounts
-    """
+    """ scan for new btrfs devices. """
     return "btrfs device scan"
 
 
 def select_subvol(self) -> str:
-    """
-    Returns a bash script to list subvolumes on the root volume
-    """
-    if not self['subvol_selector']:
+    """ Returns a bash script to list subvolumes on the root volume. """
+    if not self.get('subvol_selector'):
         self.logger.log(5, "subvol_selector not set, skipping")
         return
 
@@ -69,7 +60,7 @@ def mount_subvol(self) -> str:
         return
 
     source = _get_mount_source(self, self['mounts']['root'])
-    destination = self['mounts']['root']['destination'] if not self.switch_root_target else self.switch_root_target
+    destination = self['mounts']['root']['destination'] if not self.get('switch_root_target') else self['switch_root_target']
 
     return f"mount -o subvol=$root_subvol {source} {destination}"
 
