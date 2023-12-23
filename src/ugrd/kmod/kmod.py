@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.1.0'
+__version__ = '1.1.1'
 
 from pathlib import Path
 from subprocess import run
@@ -42,6 +42,7 @@ def _process_kernel_modules_multi(self, module: str) -> None:
     """
     if module in self['kmod_ignore']:
         self.logger.warning("Not adding ignored kernel module to kernel_modules: %s" % module)
+        self._remove_kmod(module, 'Ignored')
         return
 
     try:
