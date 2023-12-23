@@ -68,6 +68,39 @@ The `validate` option is set by default and attempts to verify that the generate
 
 It can be forced at runtime with `--validate` and disabled with `--no-validate`.
 
+## Output
+
+Unless the `ugrd.base.cpio` module is included, an initramfs environment will be generated at `build_dir` which defaults to `/tmp/initramfs/`.
+
+### Embedding the initramfs image into the kernel
+
+The `build_dir`can be embedded into the Linux kernel using `CONFIG_INITRAMFS_SOURCE="/tmp/initramfs"`.
+
+A CPIO file can be embedded into the Linux kernel passing the path: `CONFIG_INITRAMFS_SOURCE="/usr/src/initramfs/ugrd.cpio"`
+
+### Making the kernel automatically search for the initamfs image
+
+To make the kernel try to load a specific initrd file at boot, without embedding it:
+
+```
+CONFIG_CMDLINE_BOOL=y
+CONFIG_CMDLINE="initrd=ugrd.cpio"
+```
+
+> This will use `ugrd.cpio` under the ESP.
+
+### efibootmgr configuration
+
+If the kernel is built with the `CONFIG_EFI_STUB` option, the path of the initramfs can be passed to it with the `initrd=` command line option.
+
+This can be set with:
+
+`efibootmgr -c -d /dev/sda -L "Gentoo UGRD" -l 'vmlinuz-gentoo.efi' -u 'initrd=ugrd.cpio'`
+
+> This example assumes that the ESP is the first partition on `/dev/sda`, the kernel is named `vmlinuz-gentoo.efi` under the root of the ESP, and `ugrd.cpio` is also on the ESP root.
+
+> On some systems, the EFI may remove entries that don't follow a particular format.
+
 ## Runtime usage
 
 `ugrd` runs the `init` script generated in the build dir. In cases where `agetty` is needed, all but basic initialization and the final switch_root are performed in `init_main.sh`.
@@ -77,13 +110,6 @@ UGRD should prompt for relevant input or warn if devices are missing at runtime.
 ### Failure recovery
 
 In the event of a failure, modules will either fail through, or re-exec the init script.
-
-## Output
-
-Unless the `ugrd.base.cpio` module is included, an initramfs environment will be generated at `build_dir` which defaults to `/tmp/initramfs/`.
-
-This directory can be embedded into the Linux kernel using `CONFIG_INITRAMFS_SOURCE="/tmp/initramfs"`.
-`CONFIG_INITRAMFS_SOURCE` can also be pointed at a CPIO archive, but is easiest to use with a directory.
 
 If a CPIO file is generated, it can be passed to the bootloader. Embedding the initramfs into the kernel is preferred, as the entire kernel image can be signed.
 
