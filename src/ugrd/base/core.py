@@ -67,7 +67,7 @@ def calculate_dependencies(self, binary: str) -> list[Path]:
 
 def deploy_dependencies(self) -> None:
     """ Copies all dependencies to the build directory. """
-    for dependency in self.dependencies:
+    for dependency in self['dependencies']:
         if dependency.is_symlink():
             if self['symlinks'].get(f'_auto_{dependency.name}'):
                 self.logger.debug("Dependency is a symlink, skipping: %s" % dependency)

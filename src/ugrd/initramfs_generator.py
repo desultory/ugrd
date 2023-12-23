@@ -185,7 +185,10 @@ class InitramfsGenerator:
         if self['imports'].get('custom_init') and self.get('_custom_init_file'):
             init += ["\n\n# !!custom_init"]
             init_line, custom_init = self['imports']['custom_init'](self)
-            init.extend(init_line)
+            if isinstance(init_line, str):
+                init.append(init_line)
+            else:
+                init.extend(init_line)
         else:
             init.extend(self.generate_init_main())
 

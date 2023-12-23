@@ -147,6 +147,35 @@ def generate_fstab(self) -> None:
         self.logger.warning("No fstab entries generated.")
 
 
+def autodetect_root(self) -> None:
+    """ Sets self['mounts']['root']['source'] based on the host mount. """
+    if not self['autodetect_root']:
+        self.logger.debug("Skipping root autodetection, autodetect_root is not set.")
+        return
+
+    if not self['hostonly']:
+        self.logger.warning("Skipping root autodetection, hostonly is not set.")
+        return
+
+    if source := self['mounts']['root'].get('source'):
+        self.logger.warning("Skipping root autodetection, source is already set to: %s" % source)
+        return
+
+    root_mount_info = _get_blkid_info(self, _get_mounts_source_device(self, '/'))
+    self.logger.debug("Detected root mount info: %s" % root_mount_info)
+
+    mount_data = root_mount_info.partition(':')[2].strip().split(' ')
+
+    root_dict = {key: value for key, value in (entry.split('=') for entry in mount_data)}
+
+    if label := root_dict.get('LABEL'):
+        self['mounts']['root']['source'] = {'label': label}
+    elif uuid := root_dict.get('UUID'):
+        self['mounts']['root']['source'] = {'uuid': uuid}
+    else:
+        raise ValueError("Failed to autodetect root mount source.")
+
+
 def mount_base(self) -> list[str]:
     """ Generates mount commands for the base mounts. """
     return [_to_mount_cmd(self, mount) for mount in self['mounts'].values() if mount.get('base_mount')]
@@ -235,7 +264,7 @@ def _validate_host_mount(self, mount, destination_path=None) -> bool:
             for key, value in source.items():
                 search_str = f'{key.upper()}="{value}"'
                 if value in blkid_info:
-                    self.logger.debug("Fount host device match: %s" % search_str)
+                    self.logger.debug("Found host device match: %s" % search_str)
                     return True
             else:
                 self.logger.error("Mount device not found on host system. Expected: %s" % source)
