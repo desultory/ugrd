@@ -101,6 +101,7 @@ def main():
         logger.info("Dumping config dict:\n")
         print(generator.config_dict)
         logger.error(e, exc_info=True)
+        exit(1)
 
 
 if __name__ == '__main__':
