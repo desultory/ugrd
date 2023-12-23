@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.3.1'
+__version__ = '2.4.0'
 
 
 from pycpio import PyCPIO
@@ -21,7 +21,7 @@ def make_cpio(self) -> None:
     out_cpio = self.out_dir / self.out_file
 
     if not out_cpio.parent.exists():
-        raise FileNotFoundError("Output directory does not exist: %s" % out_cpio.parent)
+        self._mkdir(out_cpio.parent)
 
     if out_cpio.exists():
         self._rotate_old(out_cpio)
