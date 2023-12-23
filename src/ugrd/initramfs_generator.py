@@ -302,9 +302,7 @@ class InitramfsGenerator:
         self._chown(file_path)
 
     def _copy(self, source: Union[Path, str], dest=None) -> None:
-        """
-        Copies a file, chowns it as self.config_dict['_file_owner_uid']
-        """
+        """ Copies a file, chowns it as self.config_dict['_file_owner_uid'] """
         from shutil import copy2
 
         if not isinstance(source, Path):
@@ -332,9 +330,7 @@ class InitramfsGenerator:
         self._chown(dest_path)
 
     def _symlink(self, source: Union[Path, str], target: Union[Path, str]) -> None:
-        """
-        Creates a symlink
-        """
+        """ Creates a symlink """
         from os import symlink
 
         if not isinstance(source, Path):
@@ -350,9 +346,7 @@ class InitramfsGenerator:
         symlink(source, target)
 
     def _run(self, args: list[str]) -> CompletedProcess:
-        """
-        Runs a command, returns the object
-        """
+        """ Runs a command, returns the CompletedProcess object """
         self.logger.debug("Running command: %s" % ' '.join(args))
         cmd = run(args, capture_output=True)
         if cmd.returncode != 0:
@@ -364,9 +358,7 @@ class InitramfsGenerator:
         return cmd
 
     def _rotate_old(self, file_name: Path, sequence=0) -> None:
-        """
-        Copies a file to file_name.old then file_nane.old.n, where n is the next number in the sequence
-        """
+        """ Copies a file to file_name.old then file_nane.old.n, where n is the next number in the sequence """
         # Nothing to do if the file doesn't exist
         if not file_name.is_file():
             self.logger.debug("File does not exist: %s" % file_name)
