@@ -30,7 +30,7 @@ def select_subvol(self) -> str:
         return
 
     root_volume = self['mounts']['root']['destination']
-    out = [f'if [ -z "$(btrfs subvolume list -o {root_volume}" ]; then',
+    out = [f'if [ -z "$(btrfs subvolume list -o {root_volume})" ]; then',
            f"    echo 'Failed to list btrfs subvolumes for root volume: {root_volume}'",
            "else",
            "    echo 'Select a subvolume to use as root'",
