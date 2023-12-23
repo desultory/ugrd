@@ -1,6 +1,12 @@
 binaries = [ "agetty" ]
 _custom_init_file = "init_main.sh"
 
+# Define the primary console
+primary_console = "tty0"
+
+[console.tty0]
+type = "tty"
+
 [imports.custom_init]
 "ugrd.base.console" = [ "custom_init" ]
 
