@@ -1,35 +1,31 @@
 __author__ = 'desultory'
-__version__ = '1.4.0'
+__version__ = '2.0.0'
 
 from pathlib import Path
 from typing import Union
 
 
 def clean_build_dir(self) -> None:
-    """
-    Cleans the build directory
-    """
+    """ Cleans the build directory. """
     from shutil import rmtree
 
-    if not self.config_dict['clean']:
+    if not self.clean:
         self.logger.info("Skipping cleaning build directory")
         return
 
-    if self.config_dict['build_dir'].is_dir():
-        self.logger.warning("Cleaning build directory: %s" % self.config_dict['build_dir'])
-        rmtree(self.config_dict['build_dir'])
+    if self.build_dir.is_dir():
+        self.logger.warning("Cleaning build directory: %s" % self.build_dir)
+        rmtree(self.build_dir)
     else:
-        self.logger.info("Build directory does not exist, skipping cleaningi: %s" % self.config_dict['build_dir'])
+        self.logger.info("Build directory does not exist, skipping cleaningi: %s" % self.build_dir)
 
 
 def generate_structure(self) -> None:
-    """
-    Generates the initramfs directory structure
-    """
+    """ Generates the initramfs directory structure. """
     if not self.build_dir.is_dir():
         self._mkdir(self.build_dir)
 
-    for subdir in set(self.config_dict['paths']):
+    for subdir in set(self.paths):
         # Get the relative path of each path, create the directory in the build dir
         subdir_relative_path = subdir.relative_to(subdir.anchor)
         target_dir = self.build_dir / subdir_relative_path
@@ -70,12 +66,10 @@ def calculate_dependencies(self, binary: str) -> list[Path]:
 
 
 def deploy_dependencies(self) -> None:
-    """
-    Copies all dependencies to the build directory
-    """
-    for dependency in self.config_dict['dependencies']:
+    """ Copies all dependencies to the build directory. """
+    for dependency in self.dependencies:
         if dependency.is_symlink():
-            if self.config_dict['symlinks'].get(f'_auto_{dependency.name}'):
+            if self.symlinks.get(f'_auto_{dependency.name}'):
                 self.logger.debug("Dependency is a symlink, skipping: %s" % dependency)
                 continue
             else:
@@ -85,38 +79,32 @@ def deploy_dependencies(self) -> None:
 
 
 def deploy_copies(self) -> None:
-    """
-    Copiues everything from self.config_dict['copies'] into the build directory
-    """
-    for copy_name, copy_parameters in self.config_dict['copies'].items():
+    """ Copies everything from self.config_dict['copies'] into the build directory. """
+    for copy_name, copy_parameters in self.copies.items():
         self.logger.debug("[%s] Copying: %s" % (copy_name, copy_parameters))
         self._copy(copy_parameters['source'], copy_parameters['destination'])
 
 
 def deploy_symlinks(self) -> None:
-    """
-    Creates symlinks for all symlinks in self.config_dict['symlinks']
-    """
-    for symlink_name, symlink_parameters in self.config_dict['symlinks'].items():
+    """ Creates symlinks for all symlinks in self.config_dict['symlinks']."""
+    for symlink_name, symlink_parameters in self.symlinks.items():
         self.logger.debug("[%s] Creating symlink: %s" % (symlink_name, symlink_parameters))
         self._symlink(symlink_parameters['source'], symlink_parameters['target'])
 
 
 def deploy_nodes(self) -> None:
-    """
-    Generates specified device nodes
-    """
-    if self.config_dict.get('mknod_cpio'):
+    """ Generates specified device nodes. """
+    if self.mknod_cpio:
         self.logger.warning("Skipping mknod generation, as mknod_cpio is specified")
         return
 
     from os import makedev, mknod
     from stat import S_IFCHR
 
-    for node, config in self.config_dict['nodes'].items():
+    for node, config in self.nodes.items():
         node_path_abs = Path(config['path'])
 
-        node_path = self.config_dict['build_dir'] / node_path_abs.relative_to(node_path_abs.anchor)
+        node_path = self.build_dir / node_path_abs.relative_to(node_path_abs.anchor)
         node_mode = S_IFCHR | config['mode']
 
         try:
@@ -129,10 +117,8 @@ def deploy_nodes(self) -> None:
 
 
 def configure_library_paths(self) -> None:
-    """
-    Sets the export LD_LIBRARY_PATH variable to the library paths
-    """
-    library_paths = ":".join(self.config_dict['library_paths'])
+    """ Sets the export LD_LIBRARY_PATH variable to the library paths."""
+    library_paths = ":".join(self.library_paths)
     self.logger.debug("Setting LD_LIBRARY_PATH to: %s" % library_paths)
     return "export LD_LIBRARY_PATH=%s" % library_paths
 
@@ -156,9 +142,7 @@ def _process_paths_multi(self, path: Union[Path, str]) -> None:
 
 
 def _process_binaries_multi(self, binary: str) -> None:
-    """
-    Processes binaries into the binaries list, adding dependencies along the way.
-    """
+    """ Processes binaries into the binaries list, adding dependencies along the way. """
     # Check if there is an import function that collides with the name of the binary
     if funcs := self['imports'].get('functions'):
         if binary in funcs:
@@ -281,9 +265,7 @@ def _process_file_owner(self, owner: Union[str, int]) -> None:
 
 
 def _process_masks_multi(self, runlevel: str, function: str) -> None:
-    """
-    Processes a mask.
-    """
+    """ Processes a mask definition. """
     self.logger.debug("[%s] Adding mask: %s" % (runlevel, function))
     self['masks'][runlevel] = function
 
