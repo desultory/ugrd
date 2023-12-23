@@ -233,6 +233,8 @@ Similarly `ugrd.kmod.novideo` `nonetwork`, and `nosound` exist to ignore video, 
 
 ### Filesystem modules
 
+`autodetect_root` (false) Can be enabled with `--autodetect-root` and will set the root mount parameter automatatically based on the current root label or uuid.
+
 #### ugrd.fs.mounts
 
 `mounts`: A dictionary containing entries for mounts, with their associated config.

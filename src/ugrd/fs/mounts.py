@@ -165,12 +165,13 @@ def autodetect_root(self) -> None:
     self.logger.debug("Detected root mount info: %s" % root_mount_info)
 
     mount_data = root_mount_info.partition(':')[2].strip().split(' ')
-
     root_dict = {key: value for key, value in (entry.split('=') for entry in mount_data)}
 
     if label := root_dict.get('LABEL'):
+        self.logger.info("Autodetected root label: %s" % label)
         self['mounts']['root']['source'] = {'label': label}
     elif uuid := root_dict.get('UUID'):
+        self.logger.info("Autodetected root uuid: %s" % uuid)
         self['mounts']['root']['source'] = {'uuid': uuid}
     else:
         raise ValueError("Failed to autodetect root mount source.")

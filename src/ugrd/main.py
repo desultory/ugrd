@@ -35,6 +35,9 @@ def main():
     argparser.add_argument('--firmware', action='store_true', help='Include firmware files found with modinfo.')
     argparser.add_argument('--no-firmware', action='store_true', help='Exclude firmware files.')
 
+    # Add argument for autodecting the root partition
+    argparser.add_argument('--autodetect-root', action='store_true', help='Autodetect the root partition.')
+
     # Add the argument for the output file
     argparser.add_argument('output_file', action='store', help='Output file location', nargs='?')
 
@@ -83,6 +86,7 @@ def main():
                         'kernel_version': 'kver',
                         'kmod_autodetect_lspci': 'lspci',
                         'kmod_autodetect_lsmod': 'lsmod',
+                        'autodetect_root': 'autodetect_root',
                         'config': 'config',
                         'out_file': 'output_file'}.items():
         if arg := getattr(args, arg):
