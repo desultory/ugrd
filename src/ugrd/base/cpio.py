@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.4.0'
+__version__ = '2.4.1'
 
 
 from pycpio import PyCPIO
@@ -38,8 +38,9 @@ def _process_out_file(self, out_file):
 
     if out_file.startswith('./'):
         from pathlib import Path
-        self.logger.warning("Relative out_file path detected: %s" % out_file)
+        self.logger.debug("Relative out_file path detected: %s" % out_file)
         self['out_dir'] = Path('.').resolve()
+        self.logger.info("out_dir resolve to: %s" % self['out_dir'])
         out_file = Path(out_file[2:])
 
     dict.__setitem__(self, 'out_file', out_file)
