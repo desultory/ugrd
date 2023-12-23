@@ -167,6 +167,10 @@ def autodetect_root(self) -> None:
     mount_data = root_mount_info.partition(':')[2].strip().split(' ')
     root_dict = {key: value for key, value in (entry.split('=') for entry in mount_data)}
 
+    if mount_type := root_dict.get('TYPE'):
+        self.logger.info("Autodetected root type: %s" % mount_type)
+        self['mounts']['root']['type'] = mount_type.lower()
+
     if label := root_dict.get('LABEL'):
         self.logger.info("Autodetected root label: %s" % label)
         self['mounts']['root']['source'] = {'label': label}
