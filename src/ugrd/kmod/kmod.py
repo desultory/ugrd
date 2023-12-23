@@ -42,7 +42,7 @@ def _process_kernel_modules_multi(self, module: str) -> None:
     """
     if module in self['kmod_ignore']:
         self.logger.warning("Not adding ignored kernel module to kernel_modules: %s" % module)
-        self._remove_kmod(module, 'Ignored')
+        _remove_kmod(self, module, 'Ignored')
         return
 
     try:
