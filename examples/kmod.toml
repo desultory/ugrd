@@ -13,7 +13,3 @@ modules = [
 # Get host modules using lspci and lsmod
 kmod_autodetect_lspci = true
 kmod_autodetect_lsmod = true
-
-# Autodetect the root mountpoint
-autodetect_root = true
-
