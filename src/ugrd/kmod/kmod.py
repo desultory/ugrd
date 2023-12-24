@@ -13,6 +13,10 @@ class DependencyResolutionError(Exception):
     pass
 
 
+class IgnoredKernelModuleError(Exception):
+    pass
+
+
 def _process_kmod_ignore_multi(self, module: str) -> None:
     """
     Adds ignored modules to self['kmod_ignore'].
@@ -40,17 +44,17 @@ def _process_kernel_modules_multi(self, module: str) -> None:
     Adds the passed kernel module to self['kernel_modules']
     Checks if the module is ignored
     """
-    if module in self['kmod_ignore']:
-        self.logger.warning("Not adding ignored kernel module to kernel_modules: %s" % module)
-        _remove_kmod(self, module, 'Ignored')
-        return
-
     try:
         _get_kmod_info(self, module)
-    except DependencyResolutionError:
-        if module in self['kmod_init'] or module in self['_kmod_depend']:
-            raise DependencyResolutionError("Failed to get modinfo for kernel required module: %s" % module)
-        self.logger.error("Failed to get modinfo for kernel module: %s" % module)
+    except IgnoredKernelModuleError:
+        self.logger.debug("[%s] Kernel module is in ignore list." % module)
+        return
+    except DependencyResolutionError as e:
+        if module in self['_kmod_depend']:
+            raise DependencyResolutionError("Failed to get modinfo for required kernel module: %s" % module)
+        elif module in self['kmod_init']:
+            self.logger.warning("Failed to get modinfo for init kernel module: %s" % module)
+        self.logger.debug("[%s] Failed to get modinfo for kernel module: %s" % (module, e))
         self['kmod_ignore'] = module
         return
 
@@ -70,8 +74,9 @@ def _process_kernel_modules_multi(self, module: str) -> None:
 
     for dependency in dependencies:
         if dependency in self['kmod_ignore']:
-            self.logger.error("Kernel module dependency is in ignore list: %s" % dependency)
+            self.logger.warning("[%s] Kernel module dependency is in ignore list: %s" % (module, dependency))
             self['kmod_ignore'] = module
+            return
         self.logger.debug("[%s] Processing dependency: %s" % (module, dependency))
         self['kernel_modules'] = dependency
 
@@ -85,10 +90,13 @@ def _process_kernel_modules_multi(self, module: str) -> None:
 
 def _process_kmod_init_multi(self, module: str) -> None:
     """ Adds init modules to self['kernel_modules']. """
+    if module in self['kmod_ignore']:
+        self.logger.debug("[%s] Module is in ignore list." % module)
+        return
     # First append it to kmod_init
     self['kmod_init'].append(module)
     self.logger.debug("Adding kmod_init module to kernel_modules: %s", module)
-    # If it's an ignored module, kernel_modules processing will resolve that issue
+    # If it has ignored dependencies, kernel_modules processing will resolve that issue
     self['kernel_modules'] = module
 
 
@@ -97,6 +105,9 @@ def _get_kmod_info(self, module: str):
     if module in self['_kmod_modinfo']:
         self.logger.log(5, "Module info already exists for: %s" % module)
         return
+
+    if module in self['kmod_ignore']:
+        raise IgnoredKernelModuleError("[%s] Module is in ignore list." % module)
 
     args = ['modinfo', module]
     # Set kernel version if it exists, otherwise use the running kernel
