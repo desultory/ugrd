@@ -30,9 +30,7 @@ def make_cpio(self) -> None:
 
 
 def _process_out_file(self, out_file):
-    """
-    Processes the out_file configuration option.
-    """
+    """ Processes the out_file configuration option. """
     if not out_file:
         raise ValueError("out_file cannot be empty")
 

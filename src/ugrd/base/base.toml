@@ -1,4 +1,4 @@
-modules = ["ugrd.base.core", "ugrd.fs.mounts", "ugrd.base.cpio"]
+modules = ["ugrd.base.core", "ugrd.fs.mounts", "ugrd.fs.cpio"]
 
 binaries = [ "awk", "grep", "ls", "cat", "switch_root" ]
 

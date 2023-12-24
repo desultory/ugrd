@@ -4,10 +4,10 @@ mknod_cpio = true
 required_parameters = ['out_file']
 
 [imports.config_processing]
-"ugrd.base.cpio" = [ "_process_out_file" ]
+"ugrd.fs.cpio" = [ "_process_out_file" ]
 
 [imports.pack]
-"ugrd.base.cpio" = [ "make_cpio" ]
+"ugrd.fs.cpio" = [ "make_cpio" ]
 
 [custom_parameters]
 out_file =  "str"  # The name of the cpio file to create.
