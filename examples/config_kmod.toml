@@ -17,7 +17,3 @@ kmod_autodetect_lsmod = true
 # Autodetect the root mountpoint
 autodetect_root = true
 
-# Don't validate because a mount is not specified
-validate = false
-
-
