@@ -1,6 +1,7 @@
 # This config will decrypt the LUKS volume with uuid "fdf442da-0574-4531-98c7-55227a041f1d", mapping it to "/dev/mapper/root"
 # It will attempt to mount the btrfs volume with label "rootfs" to /mnt/root
 # It will pull all current kernel modules from lspci -k results
+# It will try to process the cmdline and mount the rootfs based on the root= parameter
 
 modules = [
   "ugrd.base.base",
@@ -8,6 +9,7 @@ modules = [
   "ugrd.kmod.nosound",
   "ugrd.kmod.novideo",
   "ugrd.kmod.nonetwork",
+  "ugrd.base.cmdline",
 #  "ugrd.crypto.cryptsetup", # This is included by the gpg module
 #  "ugrd.crypto.gpg", # This is included by the smartcard module
 #  "ugrd.crypto.smartcard",   
