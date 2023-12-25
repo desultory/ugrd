@@ -1,11 +1,12 @@
 __author__ = 'desultory'
-__version__ = '0.5.2'
+__version__ = '0.6.0'
 
 
 def parse_cmdline(self) -> str:
     """ Returns bash script to parse /proc/cmdline """
     return ['echo "Parsing /proc/cmdline: $(cat /proc/cmdline)"',
-            r"export CMDLINE_ROOT=$(grep -oP '(?<=root=)[^\s]+' /proc/cmdline)"]
+            r"export CMDLINE_ROOT=$(grep -oP '(?<=root=)[^\s]+' /proc/cmdline)",
+            r"export CMDLINE_ROOTFLAGS=$(grep -oP '(?<=rootflags=)[^\s]+' /proc/cmdline)"]
 
 
 def refactor_mounts(self):
@@ -30,7 +31,7 @@ def mount_cmdline_root(self) -> str:
     mount_dest = self['mounts']['root']['destination'] if not self.get('switch_root_target') else self['switch_root_target']
     out_str = ["if [ -n $CMDLINE_ROOT ]; then",
                '    echo "Mounting root partition based on /proc/cmdline: $CMDLINE_ROOT"',
-               f"    mount $CMDLINE_ROOT {mount_dest} -o ro",
+               f'    mount $CMDLINE_ROOT {mount_dest} -o $CMDLINE_ROOTFLAGS',
                'else',
                '    return 1',
                'fi',
