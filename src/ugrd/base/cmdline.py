@@ -36,7 +36,7 @@ def mount_cmdline_root(self) -> str:
                'if [ $? -ne 0 ] || [ -z "$CMDLINE_ROOT" ]; then',
                '    echo "Failed to mount the root parition using /proc/cmdline"']
     for func in self['_init_mount']:
-        if not func():
+        if not func(self):
             continue
         out_str.append(f'    {func.__name__}')
     out_str.append('fi')
