@@ -1,13 +1,14 @@
-__version__ = '0.7.0'
+__version__ = '0.7.1'
 __author__ = 'desultory'
 
 from ugrd.fs.mounts import _get_mount_source
 
 
 def _process_root_subvol(self, root_subvol: str) -> None:
-    """ processes the root subvolume """
+    """ processes the root subvolume, masks the mount_root function. """
     self.update({'root_subvol': root_subvol})
     self.logger.debug("Set root_subvol to: %s", root_subvol)
+    self['masks'] = {'init_mount': 'mount_root'}
 
 
 def _process_subvol_selector(self, subvol_selector: bool) -> None:
@@ -78,7 +79,6 @@ def set_root_subvol(self) -> str:
     Set the switch_root_target to the original root_mount path.
     """
     if root_subvol := self.get('root_subvol'):
-        self['masks'] = {'init_mount': 'mount_root'}
         return f"export root_subvol={root_subvol}"
     elif self.get('subvol_selector'):
         self.logger.info("Subvolume selector set, changing root_mount path to: %s", self['base_mount_path'])
