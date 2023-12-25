@@ -76,3 +76,8 @@ source = "devtmpfs"
 options = ['nosuid', 'mode=0755']
 base_mount = true
 skip_unmount = true
+
+[mounts.run]
+type = "tmpfs"
+source = "tmpfs"
+base_mount = true

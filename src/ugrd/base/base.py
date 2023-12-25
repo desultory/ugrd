@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.7.0'
+__version__ = '2.8.1'
 
 from importlib.metadata import version
 
@@ -11,11 +11,11 @@ def _process_switch_root_target(self, target) -> None:
 
 
 def export_switchroot_target(self) -> str:
-    """ Returns bash to export the switch_root_target variable to MOUNTS_ROOT_PATH, update the mounts dict so the fstab is accurate """
+    """ Returns bash to export the switch_root_target variable to MOUNTS_ROOT_PATH. """
     if target := self.get('switch_root_target'):
-        return f'export SWITCH_ROOT_TARGET="{target}"'
+        return f'echo "{target}" > /run/SWITCH_ROOT_TARGET'
     else:
-        return 'export SWITCH_ROOT_TARGET="$MOUNTS_ROOT_TARGET"'
+        return 'cp /run/MOUNTS_ROOT_PATH /run/SWITCH_ROOT_TARGET'
 
 
 def do_switch_root(self) -> str:
@@ -23,12 +23,12 @@ def do_switch_root(self) -> str:
     Should be the final statement, switches root.
     Checks if the root mount is mounted, if not, starts a bash shell
     """
-    out = ['echo "Checking root mount: $MOUNTS_ROOT_TARGET"',
-           'if grep -q " $MOUNTS_ROOT_TARGET  " /proc/mounts ; then',
+    out = ['echo "Checking root mount: $(cat /run/MOUNTS_ROOT_TARGET)"',
+           'if grep -q " $(cat /run/MOUNTS_ROOT_TARGET) " /proc/mounts ; then',
            f'    echo "Completed UGRD v{version("ugrd")}."',
-           '    exec switch_root "$MOUNTS_ROOT_TARGET"  /sbin/init',
+           '    exec switch_root "$(cat /run/MOUNTS_ROOT_TARGET)" /sbin/init',
            "else",
-           '    echo "Root mount not found at: $MOUNTS_ROOT_TARGET"',
+           '    echo "Root mount not found at: $(cat /run/MOUNTS_ROOT_TARGET)"',
            '    read -p "Press enter to restart UGRD."',
            "    exec /init",
            "fi"]

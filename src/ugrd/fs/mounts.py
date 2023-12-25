@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.7.1'
+__version__ = '1.7.3'
 
 from pathlib import Path
 
@@ -296,15 +296,15 @@ def mount_root(self) -> str:
     if not _validate_host_mount(self, self['mounts']['root'], '/'):
         self.logger.error("Unable to validate root mount. Please ensure the root partition is mounted on the host system or disable validation.")
 
-    return ['''echo "Mounting '$MOUNTS_ROOT_SOURCE' to '$MOUNTS_ROOT_TARGET' with options: $MOUNTS_ROOT_OPTIONS"''',
-            'mount "$MOUNTS_ROOT_SOURCE" "$MOUNTS_ROOT_TARGET" -o "$MOUNTS_ROOT_OPTIONS"']
+    return ['''echo "Mounting '$(cat /run/MOUNTS_ROOT_SOURCE)' to '$(cat /run/MOUNTS_ROOT_TARGET)' with options: $M(cat /run/MOUNTS_ROOT_OPTIONS)"''',
+            'mount "$(cat /run/MOUNTS_ROOT_SOURCE)" "$(cat /run/MOUNTS_ROOT_TARGET)" -o "$(cat /run/MOUNTS_ROOT_OPTIONS)"']
 
 
 def export_mount_info(self) -> None:
-    """ Exports mount info based on the config to MOUNTS_ROOT_TARGET """
-    return [f'export MOUNTS_ROOT_TARGET="{self["mounts"]["root"]["destination"]}"',
-            f"""export MOUNTS_ROOT_OPTIONS="{'.'.join(self['mounts']['root']['options'])}" """,
-            f'export MOUNTS_ROOT_SOURCE="{_get_mount_source(self, self["mounts"]["root"])}"']
+    """ Exports mount info based on the config to /run/MOUNTS_ROOT_{option} """
+    return [f'echo "{self["mounts"]["root"]["destination"]}" > "/run/MOUNTS_ROOT_TARGET"',
+            f'echo "{_get_mount_source(self, self["mounts"]["root"])}" > "/run/MOUNTS_ROOT_SOURCE"',
+            f'''echo "{','.join(self["mounts"]["root"]["options"])}" > "/run/MOUNTS_ROOT_OPTIONS"''']
 
 
 def clean_mounts(self) -> list[str]:
