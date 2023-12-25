@@ -135,7 +135,7 @@ def generate_fstab(self) -> None:
     fstab_info = [f"# UGRD Filesystem module v{__version__}"]
 
     for mount_name, mount_info in self['mounts'].items():
-        if not mount_info.get('base_mount') or mount_name == 'root' and _validate_host_mount(self, mount_info):
+        if not mount_info.get('base_mount'):
             try:
                 self.logger.debug("Adding fstab entry for: %s" % mount_name)
                 fstab_info.append(_to_fstab_entry(self, mount_info))

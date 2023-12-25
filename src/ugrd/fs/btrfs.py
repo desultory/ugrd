@@ -1,4 +1,4 @@
-__version__ = '0.7.1'
+__version__ = '0.7.2'
 __author__ = 'desultory'
 
 from ugrd.fs.mounts import _get_mount_source
@@ -31,6 +31,10 @@ def btrfs_scan(self) -> str:
 
 def select_subvol(self) -> str:
     """ Returns a bash script to list subvolumes on the root volume. """
+    if self.get('root_subvol'):
+        self.logger.log(5, "root_subvol set, skipping")
+        return
+
     if not self.get('subvol_selector'):
         self.logger.log(5, "subvol_selector not set, skipping")
         return
