@@ -22,8 +22,11 @@ def main():
     argparser.add_argument('--kver', action='store', help='Set the kernel version.')
 
     argparser.add_argument('--clean', action='store_true', help='Enable build directory cleaning.')
+    argparser.add_argument('--no-clean', action='store_true', help='Disable build directory cleaning.')
+
     argparser.add_argument('--validate', action='store_true', help='Enable config validation.')
     argparser.add_argument('--no-validate', action='store_true', help='Disable config validation.')
+
     argparser.add_argument('--hostonly', action='store_true', help='Enable hostonly mode, required for automatic kmod detection.')
     argparser.add_argument('--no-hostonly', action='store_true', help='Disable hostonly mode.')
 
@@ -69,7 +72,7 @@ def main():
     kwargs = {'logger': logger}
 
     # Set config toggles
-    for toggle in ['validate', 'hostonly', 'firmware', 'autodetect_root']:
+    for toggle in ['validate', 'hostonly', 'firmware', 'autodetect_root', 'clean']:
         if arg := getattr(args, f"no_{toggle}"):
             kwargs[toggle] = False
 
