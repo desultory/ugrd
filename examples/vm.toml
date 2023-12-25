@@ -1,24 +1,18 @@
-# This config will decrypt the volume with UUID "38a5c4d2-f5af-404a-a663-d789e443a40c", mapping it to /dev/mapper/root
-# It will pull kmods required by btrfs, since it is an included module, and virtio_blk which is part of kmod.vm.
-# The kernel version is set to 6.1.57-gentoo-custom
-# The root filesystem has the label "rootfs", and is mounted at /mnt/rootfs
+# THis config will pull kmods required for VMs to boot
+# Commented config will  decrypt the volume with UUID "38a5c4d2-f5af-404a-a663-d789e443a40c", mapping it to /dev/mapper/root
 
 modules = [
   "ugrd.base.base",
   "ugrd.kmod.kmod",
   "ugrd.kmod.vm",
-  "ugrd.crypto.cryptsetup",
+#  "ugrd.crypto.cryptsetup",
 ]
 
 # Optionally supply a kernel version
-kernel_version = "6.1.57-gentoo-custom"
+#kernel_version = "6.1.57-gentoo-custom"
 
-[mounts.root]
-type = "btrfs"
-
-[mounts.root.source]
-label = "rootfs"
+autodetect_root = true
 
 # The UUID of the encrypted volume, mounted at /dev/mapper/root
-[cryptsetup.root]
-uuid = "38a5c4d2-f5af-404a-a663-d789e443a40c"
+#[cryptsetup.root]
+#uuid = "38a5c4d2-f5af-404a-a663-d789e443a40c"
