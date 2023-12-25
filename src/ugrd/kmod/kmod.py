@@ -148,7 +148,7 @@ def _get_kmod_info(self, module: str):
 def get_lspci_modules(self) -> list[str]:
     """ Gets the name of all kernel modules being used by hardware visible in lspci -k. """
     if not self['hostonly']:
-        raise RuntimeError("lscpi module resolution is only available in hostonly mod")
+        raise RuntimeError("lscpi module resolution is only available in hostonly mode.")
 
     try:
         cmd = self._run(['lspci', '-k'])
@@ -179,7 +179,7 @@ def get_lsmod_modules(self) -> list[str]:
     """
     from platform import uname
     if not self['hostonly']:
-        raise RuntimeError("lsmod module resolution is only available in hostonly mode")
+        raise RuntimeError("lsmod module resolution is only available in hostonly mode.")
 
     if self.get('kernel_version') and self['kernel_version'] != uname().release:
         self.logger.warning("Kernel version is set to %s, but the current kernel version is %s" % (self['kernel_version'], uname().release))

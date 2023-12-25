@@ -37,6 +37,7 @@ def main():
 
     # Add argument for autodecting the root partition
     argparser.add_argument('--autodetect-root', action='store_true', help='Autodetect the root partition.')
+    argparser.add_argument('--no-autodetect-root', action='store_true', help='Do not autodetect the root partition.')
 
     # Add the argument for the output file
     argparser.add_argument('output_file', action='store', help='Output file location', nargs='?')
@@ -67,26 +68,18 @@ def main():
     # Pass the logger to the generator
     kwargs = {'logger': logger}
 
-    if args.no_validate:
-        kwargs['validate'] = False
-    elif args.validate:
-        kwargs['validate'] = True
-
-    if args.no_hostonly:
-        kwargs['hostonly'] = False
-    elif args.hostonly:
-        kwargs['hostonly'] = True
-
-    if args.no_firmware:
-        kwargs['kmod_pull_firmware'] = False
-    elif args.firmware:
-        kwargs['kmod_pull_firmware'] = True
+    # Set config toggles
+    for toggle in ['validate', 'hostonly', 'firmware', 'autodetect_root']:
+        if arg := getattr(args, f"no_{toggle}"):
+            kwargs[toggle] = False
 
     for config, arg in {'clean': 'clean',
                         'kernel_version': 'kver',
                         'kmod_autodetect_lspci': 'lspci',
                         'kmod_autodetect_lsmod': 'lsmod',
                         'autodetect_root': 'autodetect_root',
+                        'validate': 'validate',
+                        'hostonly': 'hostonly',
                         'config': 'config',
                         'out_file': 'output_file'}.items():
         if arg := getattr(args, arg):
