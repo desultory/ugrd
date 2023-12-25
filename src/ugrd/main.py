@@ -45,6 +45,9 @@ def main():
     # Add the argument for the output file
     argparser.add_argument('output_file', action='store', help='Output file location', nargs='?')
 
+    # Print the final config_dict
+    argparser.add_argument('--print-config', action='store_true', help='Print the final config dict.')
+
     args = argparser.parse_args()
 
     if args.version:
@@ -98,6 +101,9 @@ def main():
         print(generator.config_dict)
         logger.error(e, exc_info=True)
         exit(1)
+
+    if args.print_config:
+        print(generator.config_dict)
 
 
 if __name__ == '__main__':
