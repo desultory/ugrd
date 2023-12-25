@@ -302,9 +302,9 @@ def mount_root(self) -> str:
 
 def export_mount_info(self) -> None:
     """ Exports mount info based on the config to /run/MOUNTS_ROOT_{option} """
-    return [f'echo "{self["mounts"]["root"]["destination"]}" > "/run/MOUNTS_ROOT_TARGET"',
-            f'echo "{_get_mount_source(self, self["mounts"]["root"])}" > "/run/MOUNTS_ROOT_SOURCE"',
-            f'''echo "{','.join(self["mounts"]["root"]["options"])}" > "/run/MOUNTS_ROOT_OPTIONS"''']
+    return [f'echo -n "{self["mounts"]["root"]["destination"]}" > "/run/MOUNTS_ROOT_TARGET"',
+            f'echo -n "{_get_mount_source(self, self["mounts"]["root"])}" > "/run/MOUNTS_ROOT_SOURCE"',
+            f'''echo -n "{','.join(self["mounts"]["root"]["options"])}" > "/run/MOUNTS_ROOT_OPTIONS"''']
 
 
 def clean_mounts(self) -> list[str]:
