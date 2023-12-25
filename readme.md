@@ -144,6 +144,10 @@ Modules write to a shared config dict that is accessible by other modules.
 * `binaries` is a list used to define programs to be pulled into the initrams. `which` is used to find the path of added entries, and `lddtree` is used to resolve dependendies.
 * `paths` is a list of directores to create in the `build_dir`. They do not need a leading `/`.
 
+#### base.cmdline
+
+If used, this module will override the `mount_root` function and attempt to mount the root based on the passed cmdline parameters.
+
 ##### symlink creation
 
 Symlinks are defined in the `symlinks` dict. Each entry must have a name, `source` and `target`:
