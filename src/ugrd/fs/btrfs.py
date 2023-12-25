@@ -1,8 +1,6 @@
 __version__ = '0.7.2'
 __author__ = 'desultory'
 
-from ugrd.fs.mounts import _get_mount_source
-
 
 def _process_root_subvol(self, root_subvol: str) -> None:
     """ processes the root subvolume, masks the mount_root function. """
@@ -62,17 +60,6 @@ def select_subvol(self) -> str:
     return out
 
 
-def mount_subvol(self) -> str:
-    """ mounts a subvolume. """
-    if not self.get('subvol_selector') and not self.get('root_subvol'):
-        self.logger.log(5, "subvol_selector and root_subvol not set, skipping")
-        return
-
-    source = _get_mount_source(self, self['mounts']['root'])
-
-    return f"mount -o subvol=$root_subvol {source} $MOUNTS_ROOT_PATH"
-
-
 def set_root_subvol(self) -> str:
     """
     sets $root_subvol.
@@ -82,9 +69,5 @@ def set_root_subvol(self) -> str:
     Set the switch_root_target to the original root_mount path.
     """
     if root_subvol := self.get('root_subvol'):
-        return f"export BTRFS_ROOT_SUBVOL={root_subvol}"
-    elif self.get('subvol_selector'):
-        self.logger.info("Subvolume selector set, changing root_mount path to: %s", self['base_mount_path'])
-        self['switch_root_target'] = self['mounts']['root']['destination']
-        self['mounts'] = {'root': {'destination': self['base_mount_path']}}
+        return f'MOUNTS_ROOT_CMDLINE+="options={root_subvol}"'
 
