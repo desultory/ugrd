@@ -1,12 +1,12 @@
 __author__ = 'desultory'
-__version__ = '0.8.0'
+__version__ = '0.8.1'
 
 
 def parse_cmdline(self) -> str:
     """ Returns bash script to parse /proc/cmdline """
     return ['echo "Parsing /proc/cmdline: $(cat /proc/cmdline)"',
-            r'grep -oP "(?<=root=)[^\s]+" /proc/cmdline) > /run/CMDLINE_ROOT',
-            r'grep -oP "(?<=rootflags=)[^\s]+" /proc/cmdline) > /run/CMDLINE_ROOTFLAGS']
+            r'grep -oP "(?<=root=)[^\s]+" /proc/cmdline > /run/CMDLINE_ROOT',
+            r'grep -oP "(?<=rootflags=)[^\s]+" /proc/cmdline > /run/CMDLINE_ROOTFLAGS']
 
 
 def mount_cmdline_root(self) -> str:
