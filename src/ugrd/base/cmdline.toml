@@ -8,3 +8,7 @@ mod_depends = ['ugrd.base.base']
 
 [masks]
 init_mount = [ "mount_root" ]
+
+# Import this function to be used by mount_cmdline_root
+[imports.functions]
+"ugrd.fs.mounts" = [ "mount_root" ]
