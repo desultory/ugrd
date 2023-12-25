@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '3.0.0'
+__version__ = '3.0.1'
 
 from importlib.metadata import version
 
@@ -11,11 +11,11 @@ def _process_switch_root_target(self, target) -> None:
 
 
 def export_switchroot_target(self) -> str:
-    """ Returns bash to export the switch_root_target variable to MOUNTS_ROOT_PATH. """
+    """ Returns bash to export the switch_root_target variable to MOUNTS_ROOT_TARGET. """
     if target := self.get('switch_root_target'):
         return f'echo "{target}" > /run/SWITCH_ROOT_TARGET'
     else:
-        return 'cp /run/MOUNTS_ROOT_PATH /run/SWITCH_ROOT_TARGET'
+        return 'cp /run/MOUNTS_ROOT_TARGET /run/SWITCH_ROOT_TARGET'
 
 
 def do_switch_root(self) -> str:
