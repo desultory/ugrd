@@ -296,7 +296,7 @@ def mount_root(self) -> str:
     if not _validate_host_mount(self, self['mounts']['root'], '/'):
         self.logger.error("Unable to validate root mount. Please ensure the root partition is mounted on the host system or disable validation.")
 
-    return ['''echo "Mounting '$(cat /run/MOUNTS_ROOT_SOURCE)' to '$(cat /run/MOUNTS_ROOT_TARGET)' with options: $M(cat /run/MOUNTS_ROOT_OPTIONS)"''',
+    return ['''echo "Mounting '$(cat /run/MOUNTS_ROOT_SOURCE)' to '$(cat /run/MOUNTS_ROOT_TARGET)' with options: $(cat /run/MOUNTS_ROOT_OPTIONS)"''',
             'mount "$(cat /run/MOUNTS_ROOT_SOURCE)" "$(cat /run/MOUNTS_ROOT_TARGET)" -o "$(cat /run/MOUNTS_ROOT_OPTIONS)"']
 
 
