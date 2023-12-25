@@ -296,7 +296,8 @@ def mount_root(self) -> str:
     if not _validate_host_mount(self, self['mounts']['root'], '/'):
         self.logger.error("Unable to validate root mount. Please ensure the root partition is mounted on the host system or disable validation.")
 
-    return 'mount "$MOUNTS_ROOT_SOURCE" "$MOUNTS_ROOT_TARGET" -o "$MOUNTS_ROOT_OPTIONS"'
+    return ['''echo "Mounting '$MOUNTS_ROOT_SOURCE' to '$MOUNTS_ROOT_TARGET' with options: $MOUNTS_ROOT_OPTIONS"''',
+            'mount "$MOUNTS_ROOT_SOURCE" "$MOUNTS_ROOT_TARGET" -o "$MOUNTS_ROOT_OPTIONS" || _mount_fail']
 
 
 def export_mount_info(self) -> None:
