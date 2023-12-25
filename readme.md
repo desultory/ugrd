@@ -56,7 +56,7 @@ The last argument is the output file, which can be a path:
 
 `ugrd /boot/ugrd.cpio`
 
-> If no path information is supplied, the filename provided will be crreated under `build_dir`
+> If no path information is supplied, the filename provided will be created under `build_dir`
 
 ### Hostonly mode
 
