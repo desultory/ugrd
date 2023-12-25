@@ -8,25 +8,27 @@ ugrd is designed to generate custom initramfs environments. The final environmen
 
 The original goal of this project was to create an initramfs suitable for decrypting LUKS volumes, currently it supports the following:
 
+* Basic configuration validation in `validate` mode
 * OpenPGP Smartcards (YubiKey)
 * GPG encrypted LUKS keyfiles
 * LUKS with detatched headers
-* BTRFS subvolumes selection
 * Cryptsetup re-attempts and alternative unlock methods
   - Allows for late insertion of a smartcard
   - Can fail back to plain password entry
+* Auto-detection of kernel modules using `lspci` and `lsmod`
+* Auto-detection of the root mount using `/proc/mounts`
+* Similar usage/arguments as Dracut
+* Reading the `root=` parameter from the kernel commandline
+* BTRFS subvolumes selection
 * Key entry over serial
 * Automatic CPIO generation (PyCPIO)
   - Device nodes are created within the CPIO only, so true root privileges are not required.
-* Basic configuration validation in `validate` mode
-* Similar usage/arguments as Dracut
 
 ## Installation
 
 To install `ugrd`, clone the repo and run `pip install .`.
 
 > Setting `--break-system-packages` may be necessary
-
 
 ### Gentoo
 
@@ -58,7 +60,7 @@ The last argument is the output file, which can be a path:
 
 ### Hostonly mode
 
-The `hostonly` boolean must be set to use the `lsmod` and `lspci` kmod options, as well as `validation` mode.
+The `hostonly` boolean is enabled by default and must be set to use the `lsmod` and `lspci` kmod options, as well as `validation` mode.
 
 It can be forced at runtime with `--hostonly` and disabled with `--no-hostonly`.
 
