@@ -50,7 +50,7 @@ def select_subvol(self) -> str:
            "                    echo 'Invalid selection'",
            "                else",
            '                    echo "Selected subvolume: $subvol"',
-           "                    export BTRFS_ROOT_SUBVOL=$subvol",
+           '                    export MOUNT_ROOT_OPTIONS+=",subvol=$subvol"',
            "                    break",
            "                fi",
            "                ;;",
@@ -69,5 +69,5 @@ def set_root_subvol(self) -> str:
     Set the switch_root_target to the original root_mount path.
     """
     if root_subvol := self.get('root_subvol'):
-        return f'MOUNTS_ROOT_OPTIONS+="options={root_subvol}"'
+        return f'MOUNTS_ROOT_OPTIONS+=",subvol={root_subvol}"'
 
