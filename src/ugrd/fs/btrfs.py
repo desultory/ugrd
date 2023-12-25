@@ -1,4 +1,4 @@
-__version__ = '0.7.2'
+__version__ = '0.7.3'
 __author__ = 'desultory'
 
 
@@ -69,5 +69,5 @@ def set_root_subvol(self) -> str:
     Set the switch_root_target to the original root_mount path.
     """
     if root_subvol := self.get('root_subvol'):
-        return f'MOUNTS_ROOT_CMDLINE+="options={root_subvol}"'
+        return f'MOUNTS_ROOT_OPTIONS+="options={root_subvol}"'
 
