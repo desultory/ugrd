@@ -8,6 +8,7 @@ binaries = [
 ]
 
 mount_wait = false
+autodetect_root = true
 
 [imports.config_processing]
 "ugrd.fs.mounts" = [ "_process_mounts_multi" ]

@@ -23,9 +23,6 @@ modules = [
 kmod_autodetect_lspci = true
 kmod_autodetect_lsmod = true
 
-# Autodetect the root mountpoint
-autodetect_root = true
-
 # Wait a few seconds for storage to settle after modules are loaded if external or slow storage is used
 #mount_wait = true
 #mount_timeout = 3

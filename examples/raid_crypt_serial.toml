@@ -6,7 +6,7 @@
 
 modules = [
   "ugrd.base.base",
-  "ugrd.base.console",
+#  "ugrd.base.console", # implied by gpg
   "ugrd.crypto.gpg",
 ]
 
@@ -14,15 +14,8 @@ modules = [
 cryptsetup_key_type = "gpg"
 
 # Set the primary_console to ttyS1
-# The gpg module uses agetty on tty so this must be overridden
+# The gpg module uses agetty on tty1 so this must be overridden
 primary_console = "ttyS1"
-
-# Define the root label
-[mounts.root]
-type = "btrfs"
-
-[mounts.root.source]
-label = "rootfs"
 
 # Define console information
 [console.ttyS1]

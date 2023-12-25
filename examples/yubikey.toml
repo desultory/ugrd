@@ -27,13 +27,6 @@ type = "vfat"
   [mounts.boot.source]
   uuid = "4886-A631"
 
-# The label of the volume under the LUKS partition, a UUID could be used
-[mounts.root]
-type = "btrfs"
-
-[mounts.root.source]
-label = "rootfs"
-
 # Information about the LUKS volume
 [cryptsetup.root]
 uuid = "eee3611d-9b36-42b3-8ed2-62173064c76a"

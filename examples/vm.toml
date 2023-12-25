@@ -12,8 +12,6 @@ modules = [
 # Optionally supply a kernel version
 #kernel_version = "6.1.57-gentoo-custom"
 
-autodetect_root = true
-
 # The UUID of the encrypted volume, mounted at /dev/mapper/root
 #[cryptsetup.root]
 #uuid = "38a5c4d2-f5af-404a-a663-d789e443a40c"

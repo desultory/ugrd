@@ -1,13 +1,13 @@
-# This config will decrypt the colume fdf442da-0574-4531-98c7-55227a041f1d, mapping it to "/dev/mapper/root"
+# This config will decrypt the volume fdf442da-0574-4531-98c7-55227a041f1d, mapping it to "/dev/mapper/root"
 # It will pull all current kernel modules from the active kernel version
-# The kmod.novideo and kmod.nosound modules are pulled to help minmize pulled modules
-
+# The kmod novideo, nosound, and nonetwork modules are pulled to help minmize pulled modules.
 
 modules = [
   "ugrd.base.base",
   "ugrd.kmod.kmod",
   "ugrd.kmod.novideo",
   "ugrd.kmod.nosound",
+  "ugrd.kmod.nonetwork",
   "ugrd.crypto.cryptsetup",
   "ugrd.fs.btrfs",
 ]
@@ -15,15 +15,11 @@ modules = [
 # Optionally supply a kernel version
 #kernel_version = "6.1.53-gentoo-dist"
 kmod_autodetect_lsmod = true
+# Optionally kmod_autodetect_lspci could be used
+#kmod_autodetect_lspci = true
 
 # Allows you to dynamically select root subvol at UGRD runtime
 subvol_selector = true
-
-[mounts.root]
-type = "btrfs"
-
-[mounts.root.source]
-label = "rootfs"
 
 # The UUID of the encrypted volume, mounted at /dev/mapper/root
 [cryptsetup.root]
