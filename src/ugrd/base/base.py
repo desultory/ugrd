@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '3.0.1'
+__version__ = '3.0.2'
 
 from importlib.metadata import version
 
@@ -29,8 +29,8 @@ def do_switch_root(self) -> str:
            '    echo "Root mount not found at: $(cat /run/MOUNTS_ROOT_TARGET)"',
            '    read -p "Press enter to restart UGRD."',
            "    exec /init",
-           "elif [ -e $(cat /run/MOUNTS_ROOT_TARGET)/sbin/init ] ; then",
-           '    echo "/sbin/init found at: $(cat /run/MOUNTS_ROOT_TARGET)"',
+           "elif [ ! -e $(cat /run/MOUNTS_ROOT_TARGET)/sbin/init ] ; then",
+           '    echo "/sbin/init not found at: $(cat /run/MOUNTS_ROOT_TARGET)"',
            '    read -p "Press enter to restart UGRD."',
            '    exec /init',
            'else',

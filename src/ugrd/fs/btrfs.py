@@ -1,4 +1,4 @@
-__version__ = '0.8.0'
+__version__ = '0.8.1'
 __author__ = 'desultory'
 
 
@@ -50,7 +50,7 @@ def select_subvol(self) -> str:
            "                    echo 'Invalid selection'",
            "                else",
            '                    echo "Selected subvolume: $subvol"',
-           '                    echo ",subvol=$subvol" >> /run/MOUNT_ROOT_OPTIONS',
+           '                    echo ",subvol=$subvol" >> /run/MOUNTS_ROOT_OPTIONS',
            "                    break",
            "                fi",
            "                ;;",
@@ -69,5 +69,5 @@ def set_root_subvol(self) -> str:
     Set the switch_root_target to the original root_mount path.
     """
     if root_subvol := self.get('root_subvol'):
-        return f'echo ",subvol={root_subvol}" >> /run/MOUNT_ROOT_OPTIONS'
+        return f'echo ",subvol={root_subvol}" >> /run/MOUNTS_ROOT_OPTIONS'
 
