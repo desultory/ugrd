@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '0.6.2'
+__version__ = '0.6.3'
 
 
 def parse_cmdline(self) -> str:
@@ -33,7 +33,7 @@ def mount_cmdline_root(self) -> str:
                '    echo "Mounting root partition based on /proc/cmdline: $CMDLINE_ROOT"',
                f'    mount $CMDLINE_ROOT {mount_dest} -o $CMDLINE_ROOTFLAGS',
                'fi',
-               'if [ $? -ne 0 ] || [ ! -n "$CMDLINE_ROOT" ]; then',
+               'if [ $? -ne 0 ] || [ -z "$CMDLINE_ROOT" ]; then',
                '    echo "Failed to mount the root parition using /proc/cmdline"']
     for func in self['_init_mount']:
         out_str.append(f'    {func.__name__}')
