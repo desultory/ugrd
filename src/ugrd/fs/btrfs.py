@@ -1,4 +1,4 @@
-__version__ = '0.8.2'
+__version__ = '0.9.0'
 __author__ = 'desultory'
 
 
@@ -37,13 +37,13 @@ def select_subvol(self) -> str:
         self.logger.log(5, "subvol_selector not set, skipping")
         return
 
-    root_volume = self['mounts']['root']['destination']
-    out = [f'if [ -z "$(btrfs subvolume list -o {root_volume})" ]; then',
-           f"    echo 'Failed to list btrfs subvolumes for root volume: {root_volume}'",
+    out = [f'mount -t btrfs -o subvolid=5,ro $(cat /run/MOUNTS_ROOT_SOURCE) {self["base_mount_path"]}',
+           f'''if [ -z "$(btrfs subvolume list -o {self['base_mount_path']})" ]; then''',
+           f'''    echo "Failed to list btrfs subvolumes for root volume: {self['base_mount_path']}"''',
            "else",
            "    echo 'Select a subvolume to use as root'",
            "    PS3='Subvolume: '",
-           f"    select subvol in $(btrfs subvolume list -o {root_volume} " + "| awk '{print $9}'); do",
+           f"    select subvol in $(btrfs subvolume list -o {self['base_mount_path']} " + "| awk '{print $9}'); do",
            "        case $subvol in",
            "            *)",
            "                if [[ -z $subvol ]]; then",
@@ -61,13 +61,7 @@ def select_subvol(self) -> str:
 
 
 def set_root_subvol(self) -> str:
-    """
-    sets $root_subvol.
-    Prefer root_subvol over subvol_selector.
-
-    If the subvol selector is set, change the root_mount path to the base_mount_path.
-    Set the switch_root_target to the original root_mount path.
-    """
+    """ Adds the root_subvol to the root_mount options. """
     if root_subvol := self.get('root_subvol'):
         return f'echo -n ",subvol={root_subvol}" >> /run/MOUNTS_ROOT_OPTIONS'
 
