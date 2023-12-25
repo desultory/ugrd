@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '0.6.4'
+__version__ = '0.6.5'
 
 
 def parse_cmdline(self) -> str:
@@ -30,7 +30,7 @@ def mount_cmdline_root(self) -> str:
     """ Returns bash script to mount root partition based on /proc/cmdline """
     mount_dest = self['mounts']['root']['destination'] if not self.get('switch_root_target') else self['switch_root_target']
     out_str = ['if [ -n "$CMDLINE_ROOT" ]; then',
-               '    echo "Mounting root partition based on /proc/cmdline: $CMDLINE_ROOT"',
+               '    echo "Mounting root partition based on /proc/cmdline: $CMDLINE_ROOT -o $CMDLINE_ROOTFLAGS"',
                f'    mount $CMDLINE_ROOT {mount_dest} -o $CMDLINE_ROOTFLAGS',
                'fi',
                'if [ $? -ne 0 ] || [ -z "$CMDLINE_ROOT" ]; then',
