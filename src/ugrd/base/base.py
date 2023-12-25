@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.6.2'
+__version__ = '2.7.0'
 
 from importlib.metadata import version
 
@@ -28,7 +28,8 @@ def do_switch_root(self) -> str:
            f'    echo "Completed UGRD v{version("ugrd")}."',
            '    exec switch_root "$MOUNTS_ROOT_TARGET"  /sbin/init',
            "else",
-           "    echo 'Root mount not found, restarting'",
+           '    echo "Root mount not found at: $MOUNTS_ROOT_TARGET"',
+           '    read -p "Press enter to restart UGRD."',
            "    exec /init",
            "fi"]
     return out

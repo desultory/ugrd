@@ -326,7 +326,7 @@ def _mount_fail(self) -> list[str]:
             'blkid',
             'echo "Mounts:"',
             'mount',
-            'echo -e "\n\n\nPress enter to restart init\n\n\n"',
+            r'echo -e "\n\n\nPress enter to restart init\n\n\n"',
             'read -sr',
             'clean_mounts',
             'if [ "$$" -eq 1 ]; then',
