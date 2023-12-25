@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.6.0'
+__version__ = '2.6.2'
 
 from importlib.metadata import version
 
@@ -15,7 +15,7 @@ def export_switchroot_target(self) -> str:
     if target := self.get('switch_root_target'):
         return f'export SWITCH_ROOT_TARGET="{target}"'
     else:
-        return 'export SWITCH_ROOT_TARGET="$MOUNTS_ROOT_PATH"'
+        return 'export SWITCH_ROOT_TARGET="$MOUNTS_ROOT_TARGET"'
 
 
 def do_switch_root(self) -> str:
@@ -23,10 +23,10 @@ def do_switch_root(self) -> str:
     Should be the final statement, switches root.
     Checks if the root mount is mounted, if not, starts a bash shell
     """
-    out = ['echo "Checking root mount: $MOUNTS_ROOT_PATH"',
-           'if grep -q " $MOUNTS_ROOT_PATH  " /proc/mounts ; then',
+    out = ['echo "Checking root mount: $MOUNTS_ROOT_TARGET"',
+           'if grep -q " $MOUNTS_ROOT_TARGET  " /proc/mounts ; then',
            f'    echo "Completed UGRD v{version("ugrd")}."',
-           '    exec switch_root "$MOUNTS_ROOT_PATH"  /sbin/init',
+           '    exec switch_root "$MOUNTS_ROOT_TARGET"  /sbin/init',
            "else",
            "    echo 'Root mount not found, restarting'",
            "    exec /init",
