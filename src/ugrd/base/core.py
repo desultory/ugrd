@@ -270,7 +270,7 @@ def _process_masks_multi(self, runlevel: str, function: str) -> None:
     self['masks'][runlevel] = function
 
     if runlevel not in self['imports']:
-        self.logger.warning("[%s] Runlevel not found in imports, skipping deletion: %s" % (runlevel, function))
+        self.logger.warning("[%s] Masked runlevel not found in imports, skipping deletion: %s" % (runlevel, function))
     else:
         for func in self['imports'][runlevel]:
             if func.__name__ == function:
