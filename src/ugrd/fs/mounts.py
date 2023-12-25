@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.7.0'
+__version__ = '1.7.1'
 
 from pathlib import Path
 
@@ -297,7 +297,7 @@ def mount_root(self) -> str:
         self.logger.error("Unable to validate root mount. Please ensure the root partition is mounted on the host system or disable validation.")
 
     return ['''echo "Mounting '$MOUNTS_ROOT_SOURCE' to '$MOUNTS_ROOT_TARGET' with options: $MOUNTS_ROOT_OPTIONS"''',
-            'mount "$MOUNTS_ROOT_SOURCE" "$MOUNTS_ROOT_TARGET" -o "$MOUNTS_ROOT_OPTIONS" || _mount_fail']
+            'mount "$MOUNTS_ROOT_SOURCE" "$MOUNTS_ROOT_TARGET" -o "$MOUNTS_ROOT_OPTIONS"']
 
 
 def export_mount_info(self) -> None:
