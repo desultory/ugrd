@@ -1,4 +1,4 @@
-__version__ = '0.6.2'
+__version__ = '0.7.0'
 __author__ = 'desultory'
 
 from ugrd.fs.mounts import _get_mount_source
@@ -11,11 +11,16 @@ def _process_root_subvol(self, root_subvol: str) -> None:
 
 
 def _process_subvol_selector(self, subvol_selector: bool) -> None:
-    """ Processes the subvol selector parameter, adds the base_mount_paths to paths if enabled. """
+    """
+    Processes the subvol selector parameter
+    Adds the base_mount_paths to paths if enabled.
+    Masks the mount_root function if enabled.
+    """
     if subvol_selector:
         self.update({'subvol_selector': subvol_selector})
         self.logger.debug("Set subvol_selector to: %s", subvol_selector)
         self['paths'] = self['base_mount_path']
+        self['masks'] = {'init_mount': 'mount_root'}
 
 
 def btrfs_scan(self) -> str:
@@ -65,13 +70,18 @@ def mount_subvol(self) -> str:
 
 
 def set_root_subvol(self) -> str:
-    """ sets $root_subvol """
+    """
+    sets $root_subvol.
+    Prefer root_subvol over subvol_selector.
+
+    If the subvol selector is set, change the root_mount path to the base_mount_path.
+    Set the switch_root_target to the original root_mount path.
+    """
     if root_subvol := self.get('root_subvol'):
         self['masks'] = {'init_mount': 'mount_root'}
         return f"export root_subvol={root_subvol}"
     elif self.get('subvol_selector'):
-        base_mount_path = self['base_mount_path']
-        self.logger.info("Subvolume selector set, changing root_mount path to: %s", base_mount_path)
+        self.logger.info("Subvolume selector set, changing root_mount path to: %s", self['base_mount_path'])
         self['switch_root_target'] = self['mounts']['root']['destination']
-        self['mounts'] = {'root': {'destination': base_mount_path}}
+        self['mounts'] = {'root': {'destination': self['base_mount_path']}}
 
