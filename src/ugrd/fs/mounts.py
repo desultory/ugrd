@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.6.0'
+__version__ = '1.6.2'
 
 from pathlib import Path
 
@@ -155,12 +155,12 @@ def autodetect_root(self) -> None:
         self.logger.debug("Skipping root autodetection, autodetect_root is not set.")
         return
 
-    if not self['hostonly']:
-        self.logger.warning("Skipping root autodetection, hostonly is not set.")
-        return
-
     if source := self['mounts']['root'].get('source'):
         self.logger.warning("Skipping root autodetection, source is already set to: %s" % source)
+        return
+
+    if not self['hostonly']:
+        self.logger.warning("Skipping root autodetection, hostonly is not set.")
         return
 
     root_mount_info = _get_blkid_info(self, _get_mounts_source_device(self, '/'))
@@ -263,8 +263,10 @@ def _validate_host_mount(self, mount, destination_path=None) -> bool:
     # If a destination path is passed, like for /, use that instead of the mount's destination
     destination_path = mount['destination'] if destination_path is None else destination_path
 
+    # This will raise a FileNotFoundError if the mountpoint doesn't exist
     host_source_dev = _get_mounts_source_device(self, destination_path)
 
+    # The returned value should equal the mount source if it's a string
     if isinstance(source, str):
         if source != host_source_dev:
             self.logger.warning("Host device mismatch. Expected: %s, Found: %s" % (source, host_source_dev))
