@@ -219,8 +219,6 @@ class InitramfsConfigDict(dict):
                     if function.__name__ in mask_items:
                         runlevel.remove(function)
                         self.logger.warning("[%s] Masking import: %s" % (mask_hook, function.__name__))
-                    else:
-                        self.logger.debug("[%s] Import not found: %s" % (mask_hook, function.__name__))
 
     def verify_required_parameters(self) -> None:
         """ Verifies that all required parameters are set """

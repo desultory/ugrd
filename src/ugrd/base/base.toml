@@ -6,6 +6,12 @@ paths = [ "root" ]
 
 shebang = "#!/bin/bash"
 
+[imports.config_processing]
+"ugrd.base.base" = [ "_process_switch_root_target" ]
+
+[imports.init_premount]
+"ugrd.base.base" = [ "export_switchroot_target" ]
+
 [imports.init_final]
 "ugrd.base.base" = [ "do_switch_root" ]
 

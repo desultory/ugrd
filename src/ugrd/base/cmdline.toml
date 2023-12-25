@@ -6,12 +6,5 @@ mod_depends = ['ugrd.base.base']
 [imports.init_mount]
 "ugrd.base.cmdline" = [ "mount_cmdline_root" ]
 
-[imports.build_pre]
-"ugrd.base.cmdline" = [ "refactor_mounts" ]
-
-# Import this function to be used by mount_cmdline_root
-[imports.functions]
-"ugrd.fs.mounts" = [ "mount_root" ]
-
 [custom_parameters]
 _init_mount = "NoDupFlatList" # List contaning functions which were removed from imports.int_mount by refactor_mounts

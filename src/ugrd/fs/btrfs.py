@@ -48,7 +48,7 @@ def select_subvol(self) -> str:
            "                    echo 'Invalid selection'",
            "                else",
            '                    echo "Selected subvolume: $subvol"',
-           "                    export root_subvol=$subvol",
+           "                    export BTRFS_ROOT_SUBVOL=$subvol",
            "                    break",
            "                fi",
            "                ;;",
@@ -65,9 +65,8 @@ def mount_subvol(self) -> str:
         return
 
     source = _get_mount_source(self, self['mounts']['root'])
-    destination = self['mounts']['root']['destination'] if not self.get('switch_root_target') else self['switch_root_target']
 
-    return f"mount -o subvol=$root_subvol {source} {destination}"
+    return f"mount -o subvol=$root_subvol {source} $MOUNTS_ROOT_PATH"
 
 
 def set_root_subvol(self) -> str:
@@ -79,7 +78,7 @@ def set_root_subvol(self) -> str:
     Set the switch_root_target to the original root_mount path.
     """
     if root_subvol := self.get('root_subvol'):
-        return f"export root_subvol={root_subvol}"
+        return f"export BTRFS_ROOT_SUBVOL={root_subvol}"
     elif self.get('subvol_selector'):
         self.logger.info("Subvolume selector set, changing root_mount path to: %s", self['base_mount_path'])
         self['switch_root_target'] = self['mounts']['root']['destination']

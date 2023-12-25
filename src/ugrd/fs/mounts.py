@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.6.2'
+__version__ = '1.7.0'
 
 from pathlib import Path
 
@@ -290,14 +290,18 @@ def _validate_host_mount(self, mount, destination_path=None) -> bool:
 
 def mount_root(self) -> str:
     """
-    Mounts the root partition.
+    Mounts the root partition to $MOUNTS_ROOT_PATH.
     Warns if the root partition isn't found on the current system.
     """
-    root_path = self['mounts']['root']['destination']
     if not _validate_host_mount(self, self['mounts']['root'], '/'):
         self.logger.error("Unable to validate root mount. Please ensure the root partition is mounted on the host system or disable validation.")
 
-    return f"mount {root_path}"
+    return 'mount $MOUNTS_ROOT_PATH'
+
+
+def export_mount_info(self) -> None:
+    """ Exports mount info based on the config to MOUNTS_ROOT_PATH """
+    return f'export MOUNTS_ROOT_PATH="{self["mounts"]["root"]["destination"]}"'
 
 
 def clean_mounts(self) -> list[str]:

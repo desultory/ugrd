@@ -85,11 +85,11 @@ class InitramfsGenerator:
             self._run_hook(hook)
 
     def _run_func(self, function, force_include=False) -> list[str]:
-        """
-        Runs a function.
-        If force_include is set, forces the function to be included in the bash source file.
-        """
-        self.logger.info("Running function: %s" % function.__name__)
+        """ Runs a function, If force_include is set, forces the function to be included in the bash source file. """
+        if not force_include:
+            self.logger.info("Running function: %s" % function.__name__)
+        else:
+            self.logger.debug("Running function: %s" % function.__name__)
 
         if function_output := function(self):
             if isinstance(function_output, list) and len(function_output) == 1:
@@ -113,16 +113,6 @@ class InitramfsGenerator:
             return function.__name__
         else:
             self.logger.debug("[%s] Function returned no output" % function.__name__)
-
-    def _run_funcs(self, functions: list[str], *args, **kwargs) -> list[str]:
-        """ Runs a list of functions. """
-        self.logger.debug("Running functions: %s" % functions)
-        out = []
-        for function in functions:
-            # Only append if returning the output
-            if function_output := self._run_func(function, *args, **kwargs):
-                out.append(function_output)
-        return out
 
     def _run_hook(self, hook: str, *args, **kwargs) -> list[str]:
         """ Runs a hook for imported functions. """
@@ -170,9 +160,7 @@ class InitramfsGenerator:
         return out
 
     def generate_init(self) -> None:
-        """
-        Generates the init file
-        """
+        """ Generates the init file. """
         self.logger.info("Running init generator functions")
 
         init = [self['shebang']]
@@ -199,6 +187,7 @@ class InitramfsGenerator:
         if self.included_functions:
             init_funcs = self.generate_init_funcs()
             self._write('init_funcs.sh', init_funcs, 0o755)
+            self.logger.info("Included functions:\n%s" % pretty_print(self.included_functions.keys()))
             init.insert(3, "source init_funcs.sh")
             if self['imports'].get('custom_init'):
                 custom_init.insert(2, f"echo 'Starting custom init, UGRD v{__version__}'")
@@ -211,18 +200,14 @@ class InitramfsGenerator:
         self.logger.debug("Final config:\n%s" % pretty_print(self.config_dict))
 
     def pack_build(self) -> None:
-        """
-        Packs the initramfs based on self['imports']['pack']
-        """
+        """ Packs the initramfs based on self['imports']['pack']."""
         if self['imports'].get('pack'):
             self._run_hook('pack')
         else:
             self.logger.warning("No pack functions specified, the final build is present in: %s" % self.build_dir)
 
     def _get_build_path(self, path: Union[Path, str]) -> Path:
-        """
-        Returns the build path
-        """
+        """ Returns the build path. """
         if not isinstance(path, Path):
             path = Path(path)
 

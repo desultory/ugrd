@@ -31,6 +31,9 @@ autodetect_root = true
 [imports.init_clean]
 "ugrd.fs.mounts" = [ "clean_mounts" ]
 
+[imports.init_premount]
+"ugrd.fs.mounts" = [ "export_mount_info" ]
+
 [imports.init_mount]
 "ugrd.fs.mounts" = [ "mount_root" ]
 
