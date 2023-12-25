@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '0.3.0'
+__version__ = '0.3.3'
 
 
 def parse_cmdline(self) -> str:
@@ -15,12 +15,12 @@ def refactor_mounts(self):
     """
     self['_init_mount'] = []
 
-    for name in self['imports']['init_mount'].copy():
-        if name == 'mount_cmdline_root':
+    for func in self['imports']['init_mount'].copy():
+        if func.__name__ == 'mount_cmdline_root':
             continue
-        if name not in self['_init_mount']:
-            self['_init_mount'].append(name)
-        self['imports']['init_mount'].remove(name)
+        if func not in self['_init_mount']:
+            self['_init_mount'].append(func)
+        self['imports']['init_mount'].remove(func)
 
 
 def mount_cmdline_root(self) -> str:
