@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '0.3.3'
+__version__ = '0.4.0'
 
 
 def parse_cmdline(self) -> str:
@@ -11,6 +11,7 @@ def parse_cmdline(self) -> str:
 def refactor_mounts(self):
     """
     Refactors the imports['init_mount'] list to just be mount_cmdline_root.
+    Add moved imports to self['imports']['functions'] to be called at runtime.
     Adds moved imports to self['_init_mount'] for later use.
     """
     self['_init_mount'] = []
@@ -20,6 +21,7 @@ def refactor_mounts(self):
             continue
         if func not in self['_init_mount']:
             self['_init_mount'].append(func)
+            self['imports']['functions'].append(func)
         self['imports']['init_mount'].remove(func)
 
 
@@ -30,7 +32,7 @@ def mount_cmdline_root(self) -> str:
                f"mount $CMDLINE_ROOT {mount_dest} -o ro",
                'if [ $? -ne 0 ]; then',
                '    echo "Failed to mount the root parition using /proc/cmdline"']
-    for name in self['_init_mount']:
-        out_str.append(f'    {name}')
+    for func in self['_init_mount']:
+        out_str.append(f'    {func.__name__}')
     out_str.append('fi')
     return out_str
