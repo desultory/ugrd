@@ -19,6 +19,7 @@ The original goal of this project was to create an initramfs suitable for decryp
 * Auto-detection of the root mount using `/proc/mounts`
 * Similar usage/arguments as Dracut
 * Reading the `root=` parameter from the kernel commandline
+  - Falls back to host mount config if cmdline mount parameters fail
 * BTRFS subvolumes selection
 * Key entry over serial
 * Automatic CPIO generation (PyCPIO)
