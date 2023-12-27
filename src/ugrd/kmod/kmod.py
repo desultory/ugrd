@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.2.0'
+__version__ = '1.2.1'
 
 from pathlib import Path
 from subprocess import run
@@ -231,7 +231,6 @@ def process_module_metadata(self) -> None:
     Adds kernel module metadata files to dependencies.
     """
     if not self.get('kernel_version'):
-        self.logger.info("Kernel version not specified, using current kernel")
         try:
             cmd = self._run(['uname', '-r'])
         except RuntimeError as e:
