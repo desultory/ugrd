@@ -1,5 +1,6 @@
 file_owner = "portage"
 build_dir = "/tmp/initramfs"
+_build_log_level = 10
 out_dir = "/tmp/initramfs_out"
 clean = true
 hostonly = true
@@ -17,7 +18,8 @@ major = 5
 minor = 1
 
 [imports.config_processing]
-"ugrd.base.core" = [ "_process_binaries_multi",
+"ugrd.base.core" = [ "_process_build_logging",
+		     "_process_binaries_multi",
 		     "_process_dependencies_multi",
 		     "_process_copies_multi",
 		     "_process_symlinks_multi",
@@ -48,6 +50,8 @@ nodes = "dict"  # Add the nodes property, used to define the device nodes to be 
 paths = "NoDupFlatList"  # Paths to be copied to the initramfs
 masks = "dict"  # Imports to be masked in the initramfs
 build_dir = "Path"  # The directory where the initramfs is built
+build_logging = "bool" # If true, additional build information will be logged to the console
+_build_log_level = "int"  # The level of logging to use for the build log, set to 10 by default and incremeted by if build_log is true (min 20)
 out_dir = "Path"  # The directory where the initramfs is packed/output. If no packer is used, this is the final output directory.
 old_count = "int"  # The number of times to cycle old files before deleting
 clean = "bool"  # Add the clean property, used to define if the mounts should be cleaned up after boot

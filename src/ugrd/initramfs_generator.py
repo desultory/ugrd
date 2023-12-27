@@ -187,7 +187,7 @@ class InitramfsGenerator:
         if self.included_functions:
             init_funcs = self.generate_init_funcs()
             self._write('init_funcs.sh', init_funcs, 0o755)
-            self.logger.info("Included functions:\n%s" % pretty_print(self.included_functions.keys()))
+            self.logger.info("Included functions: %s" % list(self.included_functions.keys()))
             init.insert(3, "source init_funcs.sh")
             if self['imports'].get('custom_init'):
                 custom_init.insert(2, f"echo 'Starting custom init, UGRD v{__version__}'")
@@ -234,7 +234,7 @@ class InitramfsGenerator:
 
         if not isdir(path_dir):
             mkdir(path)
-            self.logger.info("Created directory: %s" % path)
+            self.logger.log(self['_build_log_level'], "Created directory: %s" % path)
         else:
             self.logger.debug("Directory already exists: %s" % path_dir)
 
@@ -273,7 +273,7 @@ class InitramfsGenerator:
         if file_path.is_file():
             self.logger.warning("File already exists: %s" % file_path)
             if self.clean:
-                self.logger.info("Deleting file: %s" % file_path)
+                self.logger.warning("Deleting file: %s" % file_path)
                 file_path.unlink()
 
         self.logger.debug("[%s] Writing contents:\n%s" % (file_path, contents))
@@ -309,7 +309,7 @@ class InitramfsGenerator:
             self.logger.debug("Destination is a directory, adding source filename: %s" % source.name)
             dest_path = dest_path / source.name
 
-        self.logger.info("Copying '%s' to '%s'" % (source, dest_path))
+        self.logger.log(self['_build_log_level'], "Copying '%s' to '%s'" % (source, dest_path))
         copy2(source, dest_path)
 
         self._chown(dest_path)

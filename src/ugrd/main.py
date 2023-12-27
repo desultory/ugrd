@@ -15,6 +15,9 @@ def main():
     argparser.add_argument('-d', '--debug', action='store_true', help='Debug mode.')
     argparser.add_argument('-dd', '--verbose', action='store_true', help='Verbose debug mode.')
 
+    argparser.add_argument('--build-logging', action='store_true', help='Enable additional build logging.')
+    argparser.add_argument('--no-build-logging', action='store_true', help='Disable additional build logging.')
+
     argparser.add_argument('-v', '--version', action='store_true', help='Print the version and exit.')
 
     # Add arguments for dracut compatibility
@@ -75,7 +78,7 @@ def main():
     kwargs = {'logger': logger}
 
     # Set config toggles
-    for toggle in ['validate', 'hostonly', 'firmware', 'autodetect_root', 'clean']:
+    for toggle in ['validate', 'hostonly', 'firmware', 'autodetect_root', 'clean', 'build_logging']:
         if arg := getattr(args, f"no_{toggle}"):
             kwargs[toggle] = False
 
@@ -86,6 +89,7 @@ def main():
                         'autodetect_root': 'autodetect_root',
                         'validate': 'validate',
                         'hostonly': 'hostonly',
+                        'build_logging': 'build_logging',
                         'config': 'config',
                         'out_file': 'output_file'}.items():
         if arg := getattr(args, arg):

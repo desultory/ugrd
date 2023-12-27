@@ -148,6 +148,14 @@ Modules write to a shared config dict that is accessible by other modules.
 * `binaries` is a list used to define programs to be pulled into the initrams. `which` is used to find the path of added entries, and `lddtree` is used to resolve dependendies.
 * `paths` is a list of directores to create in the `build_dir`. They do not need a leading `/`.
 
+##### Build logging
+
+Verbose information about what what is being moved into the initramfs build directory can be enabled by setting `build_logging` to `true`.
+
+`_build_log_level` can be manually set to any log level. It is incremented by 10 when `build_logging` is enabled, with a minimum of 20.
+
+This can be enabled at runtime with `--build-logging` or disabled wit `--no-build-logging`
+
 #### base.cmdline
 
 If used, this module will override the `mount_root` function and attempt to mount the root based on the passed cmdline parameters.

@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.1.0'
+__version__ = '2.2.0'
 
 from pathlib import Path
 from typing import Union
@@ -187,6 +187,18 @@ def _process_dependencies_multi(self, dependency: Union[Path, str]) -> None:
 
     self.logger.debug("Adding dependency: %s" % dependency)
     self['dependencies'].append(dependency)
+
+
+def _process_build_logging(self, log_build: bool) -> None:
+    """ Sets the build log flag. """
+    build_log_level = self.get('_build_log_level', 10)
+    if log_build:
+        self['_build_log_level'] = max(build_log_level + 10, 20)
+    else:
+        if self['_build_log_level'] > 10:
+            self.logger.warning("Resetting _build_log_level to 10, as build logging is disabled.")
+        self['_build_log_level'] = 10
+    dict.__setitem__(self, 'build_logging', log_build)
 
 
 def _process_copies_multi(self, name: str, parameters: dict) -> None:
