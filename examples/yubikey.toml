@@ -7,7 +7,6 @@
 
 modules = [
   "ugrd.base.base",
-  "ugrd.kmod.kmod",
   "ugrd.kmod.usb",
   "ugrd.kmod.nvme",
   "ugrd.crypto.smartcard",

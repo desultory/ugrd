@@ -6,7 +6,6 @@
 
 modules = [
   "ugrd.base.base",
-  "ugrd.kmod.kmod",
   "ugrd.kmod.novideo",
   "ugrd.kmod.nosound",
   "ugrd.kmod.nonetwork",
