@@ -2,7 +2,7 @@ mod_depends = ['ugrd.base.base']
 
 binaries = [ "cryptsetup" ]
 
-_kmod_depend = [ "dm_crypt", "crc32c" ]
+kmod_init = [ "dm_crypt", "crc32c" ]
 
 cryptsetup_retries = 5
 cryptsetup_autoretry = true

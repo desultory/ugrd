@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.1.2'
+__version__ = '1.2.0'
 
 from pathlib import Path
 from subprocess import run
@@ -20,7 +20,7 @@ class IgnoredKernelModuleError(Exception):
 def _process_kmod_ignore_multi(self, module: str) -> None:
     """
     Adds ignored modules to self['kmod_ignore'].
-    Removes ignored modules from self['kmod_init'], self['kernel_modules'], and self['_kmod_depend'].
+    Removes ignored modules from self['kmod_init'] and self['kernel_modules'].
     Removes any firmware dependencies added by the ignored module.
     """
     self.logger.debug("Adding module to kmod_ignore: %s", module)
@@ -29,14 +29,15 @@ def _process_kmod_ignore_multi(self, module: str) -> None:
 
 
 def _remove_kmod(self, module: str, reason: str) -> None:
-    """ Removes a kernel module from all kernel module lists. """
+    """ Removes a kernel module from all kernel module lists. Tracks removed kmods in self['_removed_kmods']. """
     self.logger.log(5, "Removing kernel module from all lists: %s", module)
-    other_keys = ['kmod_init', 'kernel_modules', '_kmod_depend']
+    other_keys = ['kmod_init', 'kernel_modules']
 
     for key in other_keys:
         if module in self[key]:
-            self.logger.debug("Removing %s kernel module from %s: %s" % (reason, key, module))
+            self.logger.warning("Removing %s kernel module from %s: %s" % (reason, key, module))
             self[key].remove(module)
+            self['_kmod_removed'] = module
 
 
 def _process_kernel_modules_multi(self, module: str) -> None:
@@ -48,11 +49,10 @@ def _process_kernel_modules_multi(self, module: str) -> None:
         _get_kmod_info(self, module)
     except IgnoredKernelModuleError:
         self.logger.debug("[%s] Kernel module is in ignore list." % module)
+        self['_kmod_removed'] = module
         return
     except DependencyResolutionError as e:
-        if module in self['_kmod_depend']:
-            raise DependencyResolutionError("Failed to get modinfo for required kernel module: %s" % module)
-        elif module in self['kmod_init']:
+        if module in self['kmod_init']:
             self.logger.warning("Failed to get modinfo for init kernel module: %s" % module)
         self.logger.debug("[%s] Failed to get modinfo for kernel module: %s" % (module, e))
         self['kmod_ignore'] = module
@@ -174,9 +174,7 @@ def get_lspci_modules(self) -> list[str]:
 
 
 def get_lsmod_modules(self) -> list[str]:
-    """
-    Gets the name of all currently installed kernel modules
-    """
+    """ Gets the name of all currently installed kernel modules """
     from platform import uname
     if not self['hostonly']:
         raise RuntimeError("lsmod module resolution is only available in hostonly mode.")
@@ -212,7 +210,6 @@ def calculate_modules(self) -> None:
     If kmod_autodetect_lspci is set, adds the contents of lspci -k if specified.
     Autodetected modules are added to kmod_init
 
-    Adds the contents of _kmod_depend if specified.
     Performs dependency resolution on all kernel modules.
     """
     if self['kmod_autodetect_lsmod']:
@@ -224,10 +221,6 @@ def calculate_modules(self) -> None:
         autodetected_modules = get_lspci_modules(self)
         self.logger.info("Autodetected kernel modules from lscpi -k: %s" % autodetected_modules)
         self['kmod_init'] = autodetected_modules
-
-    if self['_kmod_depend']:
-        self.logger.info("Adding internal dependencies to kmod_init: %s" % self['_kmod_depend'])
-        self['kmod_init'] = self['_kmod_depend'].copy()  # Copy because _kmod_depend may shrink during iteration
 
     self.logger.info("Included kernel modules: %s" % self['kernel_modules'])
 
@@ -288,7 +281,7 @@ def load_modules(self) -> None:
         return
 
     self.logger.info("Init kernel modules: %s" % kmods)
-    self.logger.warning("Ignored kernel modules: %s" % self['kmod_ignore'])
+    self.logger.warning("Ignored kernel modules: %s" % self['_kmod_removed'])
 
     module_str = ' '.join(kmods)
     return f"modprobe -av {module_str}"

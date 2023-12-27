@@ -14,7 +14,7 @@ kmod_init = "NoDupFlatList"  # Kernel modules to load at initramfs startup
 kmod_autodetect_lsmod = "bool"  # Whether or not to automatically pull currently loaded kernel modules
 kmod_autodetect_lspci = "bool"  # Whether or not to automatically pull kernel modules from lspci -k
 kmod_ignore = "NoDupFlatList"  # Kernel modules to ignore when loading
-_kmod_depend = "NoDupFlatList"  # Meant to be used internally, defines kernel modules to automatically load, typically within other module config
+_kmod_removed = "NoDupFlatList"  # Meant to be used internally, defines kernel modules which have been ignored at runtime
 _kmod_modinfo = "dict" # Used internally, caches modinfo output for kernel modules
 
 [imports.config_processing]

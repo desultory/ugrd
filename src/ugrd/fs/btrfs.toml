@@ -1,5 +1,5 @@
 binaries = [ "btrfs" ]
-_kmod_depend = [ "btrfs" ]
+kmod_init = "btrfs"
 
 base_mount_path = "/mnt/root_base"
 subvol_selector = false

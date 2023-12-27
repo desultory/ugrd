@@ -236,8 +236,6 @@ Setting `start_shell` to `true` will start a bash shell in `init_debug`.
 
 `ugrd.kmod.kmod` is the core of the kernel module loading..
 
-> Modules can use `_kmod_depend` to add required modules. Simply using the `ugrd.crypto.cryptsetup` module, for example, will try to add the `dm_crypt` kmod.
-
 #### ugrd.kmod.kmod confugration parameters
 
 The following parameters can be used to change the kernel module pulling and initializing behavior:
@@ -250,7 +248,6 @@ The following parameters can be used to change the kernel module pulling and ini
 * `kernel_modules` is used to define a list of kernel module names to pull into the initramfs. These modules will not be `modprobe`'d automatically if `kmod_init` is also set.
 * `kmod_ignore` is used to specify kernel modules to ignore. If a module depends on one of these, it will throw an error and drop it from being included.
 * `kmod_ignore_softdeps` (false) ignore softdeps when checking kernel module dependencies.
-* `_kmod_depend` is meant to be used within modules, specifies kernel modules which should be added to `kmod_init` when that `ugrd` module is imported.
 
 #### Kernel module helpers
 
