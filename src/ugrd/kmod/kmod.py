@@ -257,15 +257,8 @@ def process_kmod_dependencies(self, kmod: str) -> None:
 
     if self['_kmod_modinfo'][kmod]['filename'] == '(builtin)':
         raise DependencyResolutionError("Kernel module is built-in: %s" % kmod)
-    else:
-        self.logger.debug("Adding kernel module to kernel_modules: %s", kmod)
-        self['kernel_modules'].append(kmod)
 
-    # Add the module to the dependencies if it's not builtin
-    if not self['_kmod_modinfo'][kmod]['filename'] == '(builtin)':
-        self['dependencies'] = self['_kmod_modinfo'][kmod]['filename']
-    else:
-        self.logger.info("Not adding builtin kernel module to dependencies: %s" % kmod)
+    self['dependencies'] = self['_kmod_modinfo'][kmod]['filename']
     _add_kmod_firmware(self, kmod)
 
 
