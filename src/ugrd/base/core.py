@@ -94,8 +94,8 @@ def deploy_symlinks(self) -> None:
 
 def deploy_nodes(self) -> None:
     """ Generates specified device nodes. """
-    if self.get('knod_cpio'):
-        self.logger.warning("Skipping mknod generation, as mknod_cpio is specified")
+    if self.get('mknod_cpio'):
+        self.logger.debug("Skipping mknod generation, as mknod_cpio is specified")
         return
 
     from os import makedev, mknod
