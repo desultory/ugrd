@@ -86,10 +86,7 @@ class InitramfsGenerator:
 
     def _run_func(self, function, force_include=False) -> list[str]:
         """ Runs a function, If force_include is set, forces the function to be included in the bash source file. """
-        if not force_include:
-            self.logger.info("Running function: %s" % function.__name__)
-        else:
-            self.logger.debug("Running function: %s" % function.__name__)
+        self.logger.log(self['_build_log_level'], "Running function: %s" % function.__name__)
 
         if function_output := function(self):
             if isinstance(function_output, list) and len(function_output) == 1:
