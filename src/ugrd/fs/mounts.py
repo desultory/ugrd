@@ -61,7 +61,7 @@ def _process_mounts_multi(self, mount_name: str, mount_config) -> None:
             self['kmod_init'] = 'vfat'
         elif mount_type == 'btrfs':
             if 'ugrd.fs.btrfs' not in self['modules']:
-                self.logger.info("Auto-enabling btrfs module")
+                self.logger.info("Auto-enabling module: btrfs")
                 self['modules'] = 'ugrd.fs.btrfs'
         else:
             self.logger.debug("Unknown mount type: %s" % mount_type)
