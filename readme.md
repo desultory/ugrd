@@ -18,13 +18,27 @@ The original goal of this project was to create an initramfs suitable for decryp
 * Auto-detection of kernel modules using `lspci` and `lsmod`
 * Auto-detection of the root mount using `/proc/mounts`
 * Similar usage/arguments as Dracut
-* Reading the `root=` parameter from the kernel commandline
+* Reading the `root` and `rootflags` parameters from the kernel commandline
   - Falls back to host mount config if cmdline mount parameters fail
 * BTRFS subvolumes selection
 * Key entry over serial
 * Automatic CPIO generation (PyCPIO)
   - Device nodes are created within the CPIO only, so true root privileges are not required.
   - Hardlinks are automatically created for files with matching SHA256 hashes.
+
+## Design
+
+ugrd is designed to create images which provide a simple and secure environment to mount the root filesystem to boot.
+
+The created images are mostly static, defined by the config used to generate the image. In cases where behavior is determined at runtine,
+modules aim to restrict user input and fail by restarting the init process. This allows for some error handling, while ensuring the boot process
+is relatively restricted.
+
+ugrd attempts to validate passed config, and raise warnings/exceptions indicating potential issues before it leaves the user in a broken boot environment.
+
+In cases where options are specified at runtime, ugrd aims to provide options for fail mechanisms if desired.
+
+> A recovery shell can be enabled with the debug module, but ugrd does not give the user shell access at runtime otherwise.
 
 ## Installation
 
