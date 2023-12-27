@@ -18,6 +18,8 @@ def main():
     argparser.add_argument('--build-logging', action='store_true', help='Enable additional build logging.')
     argparser.add_argument('--no-build-logging', action='store_true', help='Disable additional build logging.')
 
+    argparser.add_argument('--log-file', action='store', help='Log file location.')
+
     argparser.add_argument('-v', '--version', action='store_true', help='Print the version and exit.')
 
     # Add arguments for dracut compatibility
@@ -69,10 +71,13 @@ def main():
         logger.setLevel(20)
         formatter = ColorLognameFormatter()
 
-    # Add the handler to the logger
-    handler = logging.StreamHandler()
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
+    if args.log_file:
+        handler = logging.FileHandler(args.log_file)
+        logger.addHandler(handler)
+    else:
+        handler = logging.StreamHandler()
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
 
     # Pass the logger to the generator
     kwargs = {'logger': logger}

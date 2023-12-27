@@ -156,6 +156,8 @@ Verbose information about what what is being moved into the initramfs build dire
 
 This can be enabled at runtime with `--build-logging` or disabled wit `--no-build-logging`
 
+The output can be logged to a file instead of stdout by specifying a log file with `--log-file`
+
 #### base.cmdline
 
 If used, this module will override the `mount_root` function and attempt to mount the root based on the passed cmdline parameters.
