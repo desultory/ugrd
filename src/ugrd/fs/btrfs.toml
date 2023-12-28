@@ -14,4 +14,4 @@ _base_mount_path = "/mnt/root_base"
 [custom_parameters]
 subvol_selector = "bool"  # Select a btrfs subvolume for the root partition at runtime
 root_subvol = "str"  # Set the default btrfs subvolume for the root filesystem
-_base_mount_path = "Path"  # Set the mount point for the root filesystem
+_base_mount_path = "Path"  # Set the mount point for the root filesystem when used to check for subvols
