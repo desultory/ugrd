@@ -33,6 +33,9 @@ def _validate_root_subvol(self) -> None:
         detected_subvol = _get_mount_subvol(self, '/')
     except SubvolNotFound:
         raise ValueError("Current root mount is not using a subvolume, but root_subvol is set: %s" % self['root_subvol'])
+    except SubvolIsRoot:
+        raise ValueError("Current root mount is not using a subvolume, but root_subvol is set: %s" % self['root_subvol'])
+
     if self['root_subvol'] != detected_subvol:
         raise ValueError("[%s] Root subvolume does not match detected subvolume: %s" % (self['root_subvol'], detected_subvol))
 
@@ -60,9 +63,10 @@ def btrfs_scan(self) -> str:
     return "btrfs device scan"
 
 
-@check_dict('root_subvol', unset=True, log_level=30, message="root_subvol is set, skipping")
-@check_dict('subvol_selector', value=False, log_level=20, message="subvol_selector enabled, skipping")
-@check_dict('autodetect_root_subvol', value=True, message="autodetect_root_subvol not enabled, skipping")
+@check_dict('root_subvol', unset=True, log_level=30, message="root_subvol is set, skipping.")
+@check_dict('subvol_selector', value=False, log_level=20, message="subvol_selector enabled, skipping.")
+@check_dict('autodetect_root_subvol', value=True, message="autodetect_root_subvol not enabled, skipping.")
+@check_dict('hostonly', value=True, message="hostonly is not set, skipping.")
 def autodetect_root_subvol(self):
     """ Detects the root subvolume. """
     try:
