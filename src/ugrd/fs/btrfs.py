@@ -1,25 +1,22 @@
-__version__ = '1.0.1'
+__version__ = '1.1.0'
 __author__ = 'desultory'
 
 
 def _process_root_subvol(self, root_subvol: str) -> None:
-    """ processes the root subvolume, masks the mount_root function. """
+    """ processes the root subvolume. """
     self.update({'root_subvol': root_subvol})
     self.logger.debug("Set root_subvol to: %s", root_subvol)
-    self['masks'] = {'init_mount': 'mount_root'}
 
 
 def _process_subvol_selector(self, subvol_selector: bool) -> None:
     """
     Processes the subvol selector parameter
     Adds the base_mount_paths to paths if enabled.
-    Masks the mount_root function if enabled.
     """
     if subvol_selector:
         self.update({'subvol_selector': subvol_selector})
         self.logger.debug("Set subvol_selector to: %s", subvol_selector)
         self['paths'] = self['base_mount_path']
-        self['masks'] = {'init_mount': 'mount_root'}
 
 
 def btrfs_scan(self) -> str:
