@@ -1,4 +1,4 @@
-__version__ = '0.9.0'
+__version__ = '1.0.0'
 __author__ = 'desultory'
 
 
@@ -56,7 +56,8 @@ def select_subvol(self) -> str:
            "                ;;",
            "        esac",
            "    done",
-           "fi"]
+           "fi",
+           "umount -l $(cat /run/MOUNTS_ROOT_SOURCE)"]
     return out
 
 
