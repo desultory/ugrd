@@ -3,6 +3,7 @@ kmod_init = "btrfs"
 
 subvol_selector = false
 _base_mount_path = "/mnt/root_base"
+autodetect_root_subvol = true
 
 [imports.config_processing]
 "ugrd.fs.btrfs" = [ "_process_root_subvol", "_process_subvol_selector", "_process_autodetect_root_subvol" ]

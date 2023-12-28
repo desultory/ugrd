@@ -213,14 +213,33 @@ def mount_fstab(self) -> list[str]:
     return out
 
 
-def _get_mounts_source_device(self, mountpoint: str) -> Path:
-    """ Returns the source device of a mountpoint on /proc/mounts. """
+def _pad_mountpoint(self, mountpoint: str) -> str:
+    """ Pads the mountpoint with spaces. """
     mountpoint = str(mountpoint)
-
-    self.logger.debug("Getting source device path for: %s" % mountpoint)
-    # Add space padding to the mountpoint
     mountpoint = mountpoint if mountpoint.startswith(' ') else ' ' + mountpoint
     mountpoint = mountpoint if mountpoint.endswith(' ') else mountpoint + ' '
+    return mountpoint
+
+
+def _get_mounts_source_options(self, mountpoint: str) -> Path:
+    """ Returns the options of a mountpoint at /proc/mounts. """
+    mountpoint = _pad_mountpoint(self, mountpoint)
+    self.logger.debug("Getting options for: %s" % mountpoint)
+
+    with open('/proc/mounts', 'r') as mounts:
+        for line in mounts:
+            if mountpoint in line:
+                # If the mountpoint is found, process the options
+                options = set(line.split()[3].split(','))
+                self.logger.debug("[%s] Found mount options: %s" % (mountpoint, options))
+                return options
+    raise FileNotFoundError("Unable to find mount options for: %s" % mountpoint)
+
+
+def _get_mounts_source_device(self, mountpoint: str) -> Path:
+    """ Returns the source device of a mountpoint at /proc/mounts. """
+    mountpoint = _pad_mountpoint(self, mountpoint)
+    self.logger.debug("Getting source device path for: %s" % mountpoint)
 
     with open('/proc/mounts', 'r') as mounts:
         for line in mounts:
@@ -228,7 +247,7 @@ def _get_mounts_source_device(self, mountpoint: str) -> Path:
                 # If the mountpoint is found, return the source
                 # Resolve the path as it may be a symlink
                 mount_source = Path(line.split()[0]).resolve()
-                self.logger.debug("Found mount source: %s" % mount_source)
+                self.logger.debug("[%s] Found mount source: %s" % (mountpoint, mount_source))
                 return mount_source
     raise FileNotFoundError("Unable to find mount source device for: %s" % mountpoint)
 
