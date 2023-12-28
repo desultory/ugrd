@@ -332,7 +332,7 @@ label = "extra"
 This module handles CPIO creation.
 
 * `out_file` (ugrd.cpio) Sets the name of the output file, under `out_dir` unless a path is defined.
-* `mknod_cpio` (true) Only create devicne nodes within the CPIO.
+* `mknod_cpio` (true) Only create device nodes within the CPIO.
 
 ##### General mount options
 
@@ -340,7 +340,6 @@ These are set at the global level and are not associated with an individual moun
 
 * `mount_wait` (false) waits for user input before attenmpting to mount the generated fstab at `init_main`.
 * `mount_timeout` timeout for `mount_wait` to automatically continue.
-
 
 #### ugrd.fs.btrfs
 
