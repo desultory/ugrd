@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.3.0'
+__version__ = '1.3.1'
 
 from pathlib import Path
 from subprocess import run
@@ -34,21 +34,6 @@ def _remove_kmod(self, module: str, reason: str) -> None:
             self.logger.warning("Removing %s kernel module from %s: %s" % (reason, key, module))
             self[key].remove(module)
             self['_kmod_removed'] = module
-
-
-def _process_kernel_modules_multi(self, module: str) -> None:
-    """
-    Adds the passed kernel module to self['kernel_modules']
-    Checks if the module is ignored.
-    """
-    if modinfo := self.get('_kmod_modinfo'):
-        if filename := modinfo.get('filename'):
-            if filename == '(builtin)':
-                self.logger.debug("[%s] Kernel module is built-in." % module)
-                _remove_kmod(self, module, 'built-in')
-                return
-
-    self['kernel_modules'].append(module)
 
 
 def _process_kmod_init_multi(self, module: str) -> None:

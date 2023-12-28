@@ -1,3 +1,1 @@
-mod_depends = ['ugrd.kmod.kmod']
-
 kmod_init = ['uas', 'usbcore', 'scsi_mod', 'ehci_hcd', 'ohci_hcd', 'uhci_hcd', 'xhci_hcd']

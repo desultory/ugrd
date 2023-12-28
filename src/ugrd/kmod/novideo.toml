@@ -1,5 +1,3 @@
-mod_depends = ['ugrd.kmod.kmod']
-
 kmod_ignore = ['amdgpu', 'drm_kms_helper', 'ttm', 'drm_display_helper', 'gpu_sched', 'drm_buddy', 'video', 'drm_ttm_helper',
                'videobuf2_common', 'uvc', 'amdxcp', 'videobuf2_v4l2', 'drm_suballoc_helper', 'uvcvideo', 'videobuf2_vmalloc',
 	       'videodev', 'videobuf2_memops']
