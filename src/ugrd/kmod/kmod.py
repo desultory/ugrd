@@ -262,7 +262,7 @@ def process_kmod_dependencies(self, kmod: str) -> None:
 
 def process_modules(self) -> None:
     """ Processes all kernel modules, adding dependencies to the initramfs. """
-    self.logger.debug("Processuing kernel modules: %s" % self['kernel_modules'])
+    self.logger.debug("Processing kernel modules: %s" % self['kernel_modules'])
     for kmod in self['kernel_modules'].copy():
         self.logger.debug("Processing kernel module: %s" % kmod)
         try:
