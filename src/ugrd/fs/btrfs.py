@@ -1,4 +1,4 @@
-__version__ = '1.3.0'
+__version__ = '1.5.0'
 __author__ = 'desultory'
 
 
@@ -21,7 +21,7 @@ def _get_mount_subvol(self, mountpoint: str) -> list:
             subvol = option.split('=')[1]
             if subvol == '/':
                 raise SubvolIsRoot("Mount is at volume root: %s" % mountpoint)
-            self.logger.info("[%s] Detected subvolume: %s" % (mountpoint, subvol))
+            self.logger.debug("[%s] Detected subvolume: %s" % (mountpoint, subvol))
             return subvol
     raise SubvolNotFound("No subvolume detected.")
 
@@ -66,7 +66,9 @@ def btrfs_scan(self) -> str:
 def autodetect_root_subvol(self):
     """ Detects the root subvolume. """
     try:
-        self['root_subvol'] = _get_mount_subvol(self, '/')
+        root_subvol = _get_mount_subvol(self, '/')
+        self.logger.info("Detected root subvolume: %s", root_subvol)
+        self['root_subvol'] = root_subvol
     except SubvolNotFound:
         self.logger.warning("Failed to detect root subvolume.")
     except SubvolIsRoot:
