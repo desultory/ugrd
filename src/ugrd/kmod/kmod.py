@@ -41,7 +41,6 @@ def _process_kernel_modules_multi(self, module: str) -> None:
     Adds the passed kernel module to self['kernel_modules']
     Checks if the module is ignored.
     """
-
     if modinfo := self.get('_kmod_modinfo'):
         if filename := modinfo.get('filename'):
             if filename == '(builtin)':
@@ -60,7 +59,6 @@ def _process_kmod_init_multi(self, module: str) -> None:
     # First append it to kmod_init
     self['kmod_init'].append(module)
     self.logger.debug("Adding kmod_init module to kernel_modules: %s", module)
-    # If it has ignored dependencies, kernel_modules processing will resolve that issue
     self['kernel_modules'] = module
 
 
@@ -264,6 +262,7 @@ def process_kmod_dependencies(self, kmod: str) -> None:
 
 def process_modules(self) -> None:
     """ Processes all kernel modules, adding dependencies to the initramfs. """
+    self.logger.debug("Processuing kernel modules: %s" % self['kernel_modules'])
     for kmod in self['kernel_modules']:
         self.logger.debug("Processing kernel module: %s" % kmod)
         try:
