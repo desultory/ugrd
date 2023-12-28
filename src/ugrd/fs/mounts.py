@@ -201,7 +201,6 @@ def remake_mountpoints(self) -> list[str]:
 def mount_fstab(self) -> list[str]:
     """ Generates the init line for mounting the fstab. """
     out = []
-
     # Only wait if root_wait is specified
     if self.get('mount_wait'):
         out += [r'echo -e "\n\n\nPress enter once devices have settled.\n\n\n"']

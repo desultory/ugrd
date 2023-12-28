@@ -36,28 +36,27 @@ def btrfs_scan(self) -> str:
 @check_dict('root_subvol', log_level=30, unset=True, message="root_subvol is set, skipping")
 def select_subvol(self) -> str:
     """ Returns a bash script to list subvolumes on the root volume. """
-    out = [f'mount -t btrfs -o subvolid=5,ro $(cat /run/MOUNTS_ROOT_SOURCE) {self["_base_mount_path"]}',
-           f'''if [ -z "$(btrfs subvolume list -o {self['_base_mount_path']})" ]; then''',
-           f'''    echo "Failed to list btrfs subvolumes for root volume: {self['_base_mount_path']}"''',
-           "else",
-           "    echo 'Select a subvolume to use as root'",
-           "    PS3='Subvolume: '",
-           f"    select subvol in $(btrfs subvolume list -o {self['_base_mount_path']} " + "| awk '{print $9}'); do",
-           "        case $subvol in",
-           "            *)",
-           "                if [[ -z $subvol ]]; then",
-           "                    echo 'Invalid selection'",
-           "                else",
-           '                    echo "Selected subvolume: $subvol"',
-           '                    echo -n ",subvol=$subvol" >> /run/MOUNTS_ROOT_OPTIONS',
-           "                    break",
-           "                fi",
-           "                ;;",
-           "        esac",
-           "    done",
-           "fi",
-           f"umount -l {self['_base_mount_path']}"]
-    return out
+    return [f'mount -t btrfs -o subvolid=5,ro $(cat /run/MOUNTS_ROOT_SOURCE) {self["_base_mount_path"]}',
+            f'''if [ -z "$(btrfs subvolume list -o {self['_base_mount_path']})" ]; then''',
+            f'''    echo "Failed to list btrfs subvolumes for root volume: {self['_base_mount_path']}"''',
+            "else",
+            "    echo 'Select a subvolume to use as root'",
+            "    PS3='Subvolume: '",
+            f"    select subvol in $(btrfs subvolume list -o {self['_base_mount_path']} " + "| awk '{print $9}'); do",
+            "        case $subvol in",
+            "            *)",
+            "                if [[ -z $subvol ]]; then",
+            "                    echo 'Invalid selection'",
+            "                else",
+            '                    echo "Selected subvolume: $subvol"',
+            '                    echo -n ",subvol=$subvol" >> /run/MOUNTS_ROOT_OPTIONS',
+            "                    break",
+            "                fi",
+            "                ;;",
+            "        esac",
+            "    done",
+            "fi",
+            f"umount -l {self['_base_mount_path']}"]
 
 
 def set_root_subvol(self) -> str:
