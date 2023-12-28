@@ -1,8 +1,8 @@
 binaries = [ "btrfs" ]
 kmod_init = "btrfs"
 
-base_mount_path = "/mnt/root_base"
 subvol_selector = false
+_base_mount_path = "/mnt/root_base"
 
 [imports.config_processing]
 "ugrd.fs.btrfs" = [ "_process_root_subvol", "_process_subvol_selector" ]
@@ -14,4 +14,4 @@ subvol_selector = false
 [custom_parameters]
 subvol_selector = "bool"  # Select a btrfs subvolume for the root partition at runtime
 root_subvol = "str"  # Set the default btrfs subvolume for the root filesystem
-base_mount_path = "Path"  # Set the mount point for the root filesystem
+_base_mount_path = "Path"  # Set the mount point for the root filesystem

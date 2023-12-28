@@ -1,4 +1,4 @@
-__version__ = '1.1.0'
+__version__ = '1.2.0'
 __author__ = 'desultory'
 
 
@@ -11,12 +11,12 @@ def _process_root_subvol(self, root_subvol: str) -> None:
 def _process_subvol_selector(self, subvol_selector: bool) -> None:
     """
     Processes the subvol selector parameter
-    Adds the base_mount_paths to paths if enabled.
+    Adds the _base_mount_path to paths if enabled.
     """
     if subvol_selector:
         self.update({'subvol_selector': subvol_selector})
         self.logger.debug("Set subvol_selector to: %s", subvol_selector)
-        self['paths'] = self['base_mount_path']
+        self['paths'] = self['_base_mount_path']
 
 
 def btrfs_scan(self) -> str:
@@ -34,13 +34,13 @@ def select_subvol(self) -> str:
         self.logger.log(5, "subvol_selector not set, skipping")
         return
 
-    out = [f'mount -t btrfs -o subvolid=5,ro $(cat /run/MOUNTS_ROOT_SOURCE) {self["base_mount_path"]}',
-           f'''if [ -z "$(btrfs subvolume list -o {self['base_mount_path']})" ]; then''',
-           f'''    echo "Failed to list btrfs subvolumes for root volume: {self['base_mount_path']}"''',
+    out = [f'mount -t btrfs -o subvolid=5,ro $(cat /run/MOUNTS_ROOT_SOURCE) {self["_base_mount_path"]}',
+           f'''if [ -z "$(btrfs subvolume list -o {self['_base_mount_path']})" ]; then''',
+           f'''    echo "Failed to list btrfs subvolumes for root volume: {self['_base_mount_path']}"''',
            "else",
            "    echo 'Select a subvolume to use as root'",
            "    PS3='Subvolume: '",
-           f"    select subvol in $(btrfs subvolume list -o {self['base_mount_path']} " + "| awk '{print $9}'); do",
+           f"    select subvol in $(btrfs subvolume list -o {self['_base_mount_path']} " + "| awk '{print $9}'); do",
            "        case $subvol in",
            "            *)",
            "                if [[ -z $subvol ]]; then",
@@ -54,7 +54,7 @@ def select_subvol(self) -> str:
            "        esac",
            "    done",
            "fi",
-           f"umount -l {self['base_mount_path']}"]
+           f"umount -l {self['_base_mount_path']}"]
     return out
 
 
