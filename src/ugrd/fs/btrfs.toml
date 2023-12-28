@@ -6,7 +6,10 @@ _base_mount_path = "/mnt/root_base"
 autodetect_root_subvol = true
 
 [imports.config_processing]
-"ugrd.fs.btrfs" = [ "_process_root_subvol", "_process_subvol_selector", "_process_autodetect_root_subvol" ]
+"ugrd.fs.btrfs" = [ "_process_root_subvol", "_process_subvol_selector" ]
+
+[imports.build_pre]
+"ugrd.fs.btrfs" = [ "autodetect_root_subvol" ]
 
 [imports.init_premount]
 "ugrd.fs.btrfs" = [ "btrfs_scan", "set_root_subvol", "select_subvol" ]

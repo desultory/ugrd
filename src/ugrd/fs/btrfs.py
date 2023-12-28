@@ -7,7 +7,10 @@ from zenlib.util.check_dict import check_dict
 
 
 class SubvolNotFound(Exception):
-    """ Exception raised when a subvolume is not found. """
+    pass
+
+
+class SubvolIsRoot(Exception):
     pass
 
 
@@ -17,21 +20,10 @@ def _get_mount_subvol(self, mountpoint: str) -> list:
         if option.startswith('subvol='):
             subvol = option.split('=')[1]
             if subvol == '/':
-                raise SubvolNotFound("Mount is at volume root: %s" % mountpoint)
-            self.logger.debug("Detected subvolume: %s", subvol)
+                raise SubvolIsRoot("Mount is at volume root: %s" % mountpoint)
+            self.logger.info("[%s] Detected subvolume: %s" % (mountpoint, subvol))
             return subvol
     raise SubvolNotFound("No subvolume detected.")
-
-
-def _process_autodetect_root_subvol(self, autodetect_root_subvol: bool) -> None:
-    """ Detects the root subvolume. """
-    dict.__setitem__(self, 'autodetect_root_subvol', autodetect_root_subvol)
-    if not autodetect_root_subvol:
-        return
-    try:
-        self['root_subvol'] = _get_mount_subvol(self, '/')
-    except SubvolNotFound:
-        self.logger.warning("Failed to detect root subvolume.")
 
 
 @check_dict('validate', value=True, message="Validate is not set, skipping root subvolume validation.")
@@ -48,6 +40,7 @@ def _validate_root_subvol(self) -> None:
 def _process_root_subvol(self, root_subvol: str) -> None:
     """ processes the root subvolume. """
     self.update({'root_subvol': root_subvol})
+    _validate_root_subvol(self)
     self.logger.debug("Set root_subvol to: %s", root_subvol)
 
 
@@ -67,7 +60,20 @@ def btrfs_scan(self) -> str:
     return "btrfs device scan"
 
 
-@check_dict('subvol_selector', value=True, message="subvol_selector not disabled, skipping")
+@check_dict('root_subvol', unset=True, log_level=30, message="root_subvol is set, skipping")
+@check_dict('subvol_selector', value=False, log_level=20, message="subvol_selector enabled, skipping")
+@check_dict('autodetect_root_subvol', value=True, message="autodetect_root_subvol not enabled, skipping")
+def autodetect_root_subvol(self):
+    """ Detects the root subvolume. """
+    try:
+        self['root_subvol'] = _get_mount_subvol(self, '/')
+    except SubvolNotFound:
+        self.logger.warning("Failed to detect root subvolume.")
+    except SubvolIsRoot:
+        self.logger.debug("Root mount is not using a subvolume.")
+
+
+@check_dict('subvol_selector', value=True, message="subvol_selector not enabled, skipping")
 @check_dict('root_subvol', log_level=30, unset=True, message="root_subvol is set, skipping")
 def select_subvol(self) -> str:
     """ Returns a bash script to list subvolumes on the root volume. """
@@ -97,6 +103,5 @@ def select_subvol(self) -> str:
 @check_dict('root_subvol', message="root_subvol is not set, skipping")
 def set_root_subvol(self) -> str:
     """ Adds the root_subvol to the root_mount options. """
-    _validate_root_subvol(self)
     return f'''echo -n ",subvol={self['root_subvol']}" >> /run/MOUNTS_ROOT_OPTIONS'''
 
