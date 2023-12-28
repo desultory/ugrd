@@ -13,6 +13,10 @@ class DependencyResolutionError(Exception):
     pass
 
 
+class BuiltinModuleError(Exception):
+    pass
+
+
 def _process_kmod_ignore_multi(self, module: str) -> None:
     """ Adds ignored modules to self['kmod_ignore']. Removes module from kmod_init and kernel_modules. """
     self.logger.debug("Adding module to kmod_ignore: %s", module)
@@ -126,7 +130,7 @@ def _get_lsmod_modules(self) -> list[str]:
 
     raw_modules = cmd.stdout.decode('utf-8').split('\n')[1:]
     modules = set()
-    # Remove empty lines, header, and ignored modules
+    # Remove empty lines, header
     for module in raw_modules:
         if not module:
             self.logger.log(5, "Dropping empty line")
@@ -146,8 +150,6 @@ def calculate_modules(self) -> None:
     If kmod_autodetect_lsmod is set, adds the contents of lsmod if specified.
     If kmod_autodetect_lspci is set, adds the contents of lspci -k if specified.
     Autodetected modules are added to kmod_init
-
-    Performs dependency resolution on all kernel modules.
     """
     if self['kmod_autodetect_lsmod']:
         autodetected_modules = _get_lsmod_modules(self)
@@ -226,7 +228,7 @@ def _process_kmod_dependencies(self, kmod: str) -> None:
         _process_kmod_dependencies(self, dependency)
 
     if self['_kmod_modinfo'][kmod]['filename'] == '(builtin)':
-        raise DependencyResolutionError("Kernel module is built-in: %s" % kmod)
+        raise BuiltinModuleError("Not adding built-in module to dependencies: %s" % kmod)
 
     self['dependencies'] = self['_kmod_modinfo'][kmod]['filename']
     _add_kmod_firmware(self, kmod)
@@ -239,12 +241,14 @@ def process_modules(self) -> None:
         self.logger.debug("Processing kernel module: %s" % kmod)
         try:
             _process_kmod_dependencies(self, kmod)
+            continue
+        except BuiltinModuleError as e:
+            self.logger.info(e)
         except DependencyResolutionError as e:
             if kmod in self['kmod_init']:
                 self.logger.warning("[%s] Failed to get modinfo for init kernel module: %s" % (kmod, e))
             self.logger.debug("[%s] Failed to get modinfo for kernel module: %s" % (kmod, e))
-            self['kmod_ignore'] = kmod
-            continue
+        self['kmod_ignore'] = kmod
 
 
 def load_modules(self) -> None:
