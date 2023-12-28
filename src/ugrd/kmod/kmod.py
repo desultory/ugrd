@@ -82,7 +82,7 @@ def _get_kmod_info(self, module: str):
     self['_kmod_modinfo'][module] = module_info
 
 
-def get_lspci_modules(self) -> list[str]:
+def _get_lspci_modules(self) -> list[str]:
     """ Gets the name of all kernel modules being used by hardware visible in lspci -k. """
     if not self['hostonly']:
         raise RuntimeError("lscpi module resolution is only available in hostonly mode.")
@@ -110,7 +110,7 @@ def get_lspci_modules(self) -> list[str]:
     return list(modules)
 
 
-def get_lsmod_modules(self) -> list[str]:
+def _get_lsmod_modules(self) -> list[str]:
     """ Gets the name of all currently installed kernel modules """
     from platform import uname
     if not self['hostonly']:
@@ -138,6 +138,26 @@ def get_lsmod_modules(self) -> list[str]:
 
     self.logger.debug(f'Found {len(modules)} active kernel modules')
     return list(modules)
+
+
+def calculate_modules(self) -> None:
+    """
+    Populates the kernel_modules list with all required kernel modules.
+    If kmod_autodetect_lsmod is set, adds the contents of lsmod if specified.
+    If kmod_autodetect_lspci is set, adds the contents of lspci -k if specified.
+    Autodetected modules are added to kmod_init
+
+    Performs dependency resolution on all kernel modules.
+    """
+    if self['kmod_autodetect_lsmod']:
+        autodetected_modules = _get_lsmod_modules(self)
+        self.logger.info("Autodetected kernel modules from lsmod: %s" % autodetected_modules)
+        self['kmod_init'] = autodetected_modules
+
+    if self['kmod_autodetect_lspci']:
+        autodetected_modules = _get_lspci_modules(self)
+        self.logger.info("Autodetected kernel modules from lscpi -k: %s" % autodetected_modules)
+        self['kmod_init'] = autodetected_modules
 
 
 def process_module_metadata(self) -> None:
