@@ -1,8 +1,9 @@
 __author__ = 'desultory'
-__version__ = '1.7.3'
+__version__ = '2.0.0'
 
 from pathlib import Path
 
+from ugrd.base.core import check_hostonly
 
 MOUNT_PARAMETERS = ['destination', 'source', 'type', 'options', 'base_mount', 'skip_unmount', 'remake_mountpoint']
 SOURCE_TYPES = ['uuid', 'partuuid', 'label']
@@ -149,6 +150,7 @@ def generate_fstab(self) -> None:
         self.logger.warning("No fstab entries generated.")
 
 
+@check_hostonly
 def autodetect_root(self) -> None:
     """ Sets self['mounts']['root']['source'] based on the host mount. """
     if not self['autodetect_root']:
@@ -157,10 +159,6 @@ def autodetect_root(self) -> None:
 
     if source := self['mounts']['root'].get('source'):
         self.logger.warning("Skipping root autodetection, source is already set to: %s" % source)
-        return
-
-    if not self['hostonly']:
-        self.logger.warning("Skipping root autodetection, hostonly is not set.")
         return
 
     root_mount_info = _get_blkid_info(self, _get_mounts_source_device(self, '/'))
@@ -194,7 +192,10 @@ def mount_base(self) -> list[str]:
 
 def remake_mountpoints(self) -> list[str]:
     """ Remakes mountpoints, especially useful when mounting over something like /dev. """
-    return [f"mkdir --parents {mount['destination']}" for mount in self['mounts'].values() if mount.get('remake_mountpoint')]
+    cmds = [f"mkdir --parents {mount['destination']}" for mount in self['mounts'].values() if mount.get('remake_mountpoint')]
+    if cmds:
+        self['binaries'] += 'mkdir'
+        return cmds
 
 
 def mount_fstab(self) -> list[str]:
@@ -302,6 +303,8 @@ def mount_root(self) -> str:
 
 def export_mount_info(self) -> None:
     """ Exports mount info based on the config to /run/MOUNTS_ROOT_{option} """
+    if not self['mounts']['root'].get('source'):
+        raise ValueError("Root mount source not defined.")
     return [f'echo -n "{self["mounts"]["root"]["destination"]}" > "/run/MOUNTS_ROOT_TARGET"',
             f'echo -n "{_get_mount_source(self, self["mounts"]["root"])}" > "/run/MOUNTS_ROOT_SOURCE"',
             f'''echo -n "{','.join(self["mounts"]["root"]["options"])}" > "/run/MOUNTS_ROOT_OPTIONS"''']

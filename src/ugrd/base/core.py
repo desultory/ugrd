@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.2.0'
+__version__ = '2.3.1'
 
 from pathlib import Path
 from typing import Union
@@ -143,6 +143,10 @@ def _process_paths_multi(self, path: Union[Path, str]) -> None:
 
 def _process_binaries_multi(self, binary: str) -> None:
     """ Processes binaries into the binaries list, adding dependencies along the way. """
+    if binary in self['binaries']:
+        self.logger.debug("Binary already in binaries list, skipping: %s" % binary)
+        return
+
     # Check if there is an import function that collides with the name of the binary
     if funcs := self['imports'].get('functions'):
         if binary in funcs:
@@ -315,4 +319,14 @@ def _process_validate(self, validate: bool) -> None:
         raise ValueError("Cannot enable validation when hostonly mode is disabled")
 
     dict.__setitem__(self, 'validate', validate)
+
+
+def check_hostonly(func):
+    """ Decorator to check if hostonly mode is enabled. """
+    def wrapper(self, *args, **kwargs):
+        if not self['hostonly']:
+            self.logger.warning("Hostonly mode is disabled, skipping: %s" % func.__name__)
+            return None
+        return func(self, *args, **kwargs)
+    return wrapper
 

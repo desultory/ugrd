@@ -1,8 +1,10 @@
 __author__ = 'desultory'
-__version__ = '1.3.2'
+__version__ = '2.0.0'
 
 from pathlib import Path
 from subprocess import run
+
+from ugrd.base.core import check_hostonly
 
 
 MODULE_METADATA_FILES = ['modules.alias', 'modules.alias.bin', 'modules.builtin', 'modules.builtin.alias.bin', 'modules.builtin.bin', 'modules.builtin.modinfo',
@@ -34,6 +36,7 @@ def _process_kmod_init_multi(self, module: str) -> None:
     """ Adds init modules to self['kernel_modules']. """
     if module in self['kmod_ignore']:
         self.logger.debug("[%s] Module is in ignore list." % module)
+        self['_kmod_removed'] = module
         return
     # First append it to kmod_init
     self['kmod_init'].append(module)
@@ -79,18 +82,16 @@ def _get_kmod_info(self, module: str):
                 module_info['firmware'] = []
             module_info['firmware'] += line.split()[1:]
 
-    if not module_info:
+    if not module_info.get('filename'):
         raise DependencyResolutionError("[%s] Failed to process modinfo output: %s" % (module, cmd.stdout.decode()))
 
     self.logger.debug("[%s] Module info: %s" % (module, module_info))
     self['_kmod_modinfo'][module] = module_info
 
 
+@check_hostonly
 def _get_lspci_modules(self) -> list[str]:
     """ Gets the name of all kernel modules being used by hardware visible in lspci -k. """
-    if not self['hostonly']:
-        raise RuntimeError("lscpi module resolution is only available in hostonly mode.")
-
     try:
         cmd = self._run(['lspci', '-k'])
     except RuntimeError as e:
@@ -114,12 +115,10 @@ def _get_lspci_modules(self) -> list[str]:
     return list(modules)
 
 
+@check_hostonly
 def _get_lsmod_modules(self) -> list[str]:
     """ Gets the name of all currently installed kernel modules """
     from platform import uname
-    if not self['hostonly']:
-        raise RuntimeError("lsmod module resolution is only available in hostonly mode.")
-
     if self.get('kernel_version') and self['kernel_version'] != uname().release:
         self.logger.warning("Kernel version is set to %s, but the current kernel version is %s" % (self['kernel_version'], uname().release))
 
@@ -146,20 +145,19 @@ def _get_lsmod_modules(self) -> list[str]:
 
 def calculate_modules(self) -> None:
     """
-    Populates the kernel_modules list with all required kernel modules.
-    If kmod_autodetect_lsmod is set, adds the contents of lsmod if specified.
-    If kmod_autodetect_lspci is set, adds the contents of lspci -k if specified.
-    Autodetected modules are added to kmod_init
+    If kmod_autodetect_lsmod is set, adds the contents of lsmod.
+    If kmod_autodetect_lspci is set, adds the contents of lspci -k.
+    Autodetected modules are added to kmod_init.
     """
     if self['kmod_autodetect_lsmod']:
-        autodetected_modules = _get_lsmod_modules(self)
-        self.logger.info("Autodetected kernel modules from lsmod: %s" % autodetected_modules)
-        self['kmod_init'] = autodetected_modules
+        if autodetected_modules := _get_lsmod_modules(self):
+            self.logger.info("Autodetected kernel modules from lsmod: %s" % autodetected_modules)
+            self['kmod_init'] = autodetected_modules
 
     if self['kmod_autodetect_lspci']:
-        autodetected_modules = _get_lspci_modules(self)
-        self.logger.info("Autodetected kernel modules from lscpi -k: %s" % autodetected_modules)
-        self['kmod_init'] = autodetected_modules
+        if autodetected_modules := _get_lspci_modules(self):
+            self.logger.info("Autodetected kernel modules from lscpi -k: %s" % autodetected_modules)
+            self['kmod_init'] = autodetected_modules
 
 
 def process_module_metadata(self) -> None:
@@ -224,7 +222,6 @@ def _process_kmod_dependencies(self, kmod: str) -> None:
             raise DependencyResolutionError("Kernel module dependency is in ignore list: %s" % dependency)
         self.logger.debug("[%s] Processing dependency: %s" % (kmod, dependency))
         self['kernel_modules'] = dependency
-        _get_kmod_info(self, dependency)
         _process_kmod_dependencies(self, dependency)
 
     if self['_kmod_modinfo'][kmod]['filename'] == '(builtin)':

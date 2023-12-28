@@ -2,7 +2,6 @@ binaries = [
   "lsblk",
   "blkid",
   "mount",
-  "mkdir",
   "sleep",
   "umount",
 ]
