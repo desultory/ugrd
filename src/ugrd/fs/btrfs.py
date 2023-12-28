@@ -1,5 +1,13 @@
-__version__ = '1.2.0'
+__version__ = '1.3.0'
 __author__ = 'desultory'
+
+
+from zenlib.util.check_dict import check_dict
+
+
+def _process_autodetect_root_subvol(self, autodetect_root_subvol: bool) -> None:
+    """ Detects the root subvolume. """
+    dict.__setitem__(self, 'autodetect_root_subvol', autodetect_root_subvol)
 
 
 def _process_root_subvol(self, root_subvol: str) -> None:
@@ -24,16 +32,10 @@ def btrfs_scan(self) -> str:
     return "btrfs device scan"
 
 
+@check_dict('subvol_selector', value=True, message="subvol_selector not set, skipping")
+@check_dict('root_subvol', log_level=30, unset=True, message="root_subvol is set, skipping")
 def select_subvol(self) -> str:
     """ Returns a bash script to list subvolumes on the root volume. """
-    if self.get('root_subvol'):
-        self.logger.log(5, "root_subvol set, skipping")
-        return
-
-    if not self.get('subvol_selector'):
-        self.logger.log(5, "subvol_selector not set, skipping")
-        return
-
     out = [f'mount -t btrfs -o subvolid=5,ro $(cat /run/MOUNTS_ROOT_SOURCE) {self["_base_mount_path"]}',
            f'''if [ -z "$(btrfs subvolume list -o {self['_base_mount_path']})" ]; then''',
            f'''    echo "Failed to list btrfs subvolumes for root volume: {self['_base_mount_path']}"''',

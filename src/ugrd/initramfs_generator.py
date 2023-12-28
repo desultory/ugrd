@@ -52,15 +52,15 @@ class InitramfsGenerator:
         self.logger.debug("Loaded config:\n%s" % self.config_dict)
 
     def __setitem__(self, key, value):
-        """ Allows setting of the config dict via the InitramfsGenerator object. """
         self.config_dict[key] = value
 
     def __getitem__(self, item):
-        """ Allows access to the config dict via the InitramfsGenerator object. """
         return self.config_dict[item]
 
+    def __contains__(self, item):
+        return item in self.config_dict
+
     def get(self, item, default=None):
-        """ Allows access to the config dict via the InitramfsGenerator object. """
         return self.config_dict.get(item, default)
 
     def __getattr__(self, item):

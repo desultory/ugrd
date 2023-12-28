@@ -3,28 +3,26 @@ __version__ = '2.0.0'
 
 from pathlib import Path
 
-from ugrd.base.core import check_hostonly
+from zenlib.util.check_dict import check_dict
 
 MOUNT_PARAMETERS = ['destination', 'source', 'type', 'options', 'base_mount', 'skip_unmount', 'remake_mountpoint']
 SOURCE_TYPES = ['uuid', 'partuuid', 'label']
 
 
-def _process_mounts_multi(self, mount_name: str, mount_config) -> None:
-    """
-    Processes the passed mount config.
-    Updates the mount if it already exists.
-    """
-    # If the mount already exists, merge the options and update it
-    if mount_name in self['mounts']:
-        self.logger.info("Updating mount: %s" % mount_name)
-        self.logger.debug("[%s] Updating mount with: %s" % (mount_name, mount_config))
-        if 'options' in self['mounts'][mount_name] and 'options' in mount_config:
-            self.logger.debug("Merging options: %s" % mount_config['options'])
-            self['mounts'][mount_name]['options'] = self['mounts'][mount_name]['options'] | set(mount_config['options'])
-            mount_config.pop('options')
-        mount_config = dict(self['mounts'][mount_name], **mount_config)
+@check_dict('mounts', value_arg=1, return_arg=2)
+def _merge_mounts(self, mount_name: str, mount_config) -> None:
+    """ Returns merges mount config with the existing mount. """
+    self.logger.info("Updating mount: %s" % mount_name)
+    self.logger.debug("[%s] Updating mount with: %s" % (mount_name, mount_config))
+    if 'options' in self['mounts'][mount_name] and 'options' in mount_config:
+        self.logger.debug("Merging options: %s" % mount_config['options'])
+        self['mounts'][mount_name]['options'] = self['mounts'][mount_name]['options'] | set(mount_config['options'])
+        mount_config.pop('options')
+    return dict(self['mounts'][mount_name], **mount_config)
 
-    # Validate the mount config
+
+def _validate_mount_config(self, mount_name: str, mount_config) -> None:
+    """ Validate the mount config. """
     for parameter, value in mount_config.items():
         self.logger.debug("[%s] Validating parameter: %s" % (mount_name, parameter))
         if parameter == 'source' and isinstance(value, dict):
@@ -45,6 +43,15 @@ def _process_mounts_multi(self, mount_name: str, mount_config) -> None:
         elif parameter not in MOUNT_PARAMETERS:
             raise ValueError("Invalid parameter in mount: %s" % parameter)
 
+
+def _process_mounts_multi(self, mount_name: str, mount_config) -> None:
+    """
+    Processes the passed mount config.
+    Updates the mount if it already exists.
+    """
+    mount_config = _merge_mounts(self, mount_name, mount_config)
+    _validate_mount_config(self, mount_name, mount_config)
+
     # Set defaults
     mount_config['destination'] = Path(mount_config.get('destination', mount_name))
     if not mount_config['destination'].is_absolute():
@@ -52,7 +59,7 @@ def _process_mounts_multi(self, mount_name: str, mount_config) -> None:
     mount_config['base_mount'] = mount_config.get('base_mount', False)
     mount_config['options'] = set(mount_config.get('options', ''))
 
-    # Check if the mount exists on the host if it's not a base mount or the root mount
+    # Ensure the source is set for non-base mounts, except for the root mount. The root mount is defined empty.
     if not mount_config['base_mount'] and 'source' not in mount_config and mount_name != 'root':
         raise ValueError("[%s] No source specified in mount: %s" % (mount_name, mount_config))
 
@@ -70,6 +77,7 @@ def _process_mounts_multi(self, mount_name: str, mount_config) -> None:
     self['mounts'][mount_name] = mount_config
     self.logger.debug("[%s] Added mount: %s" % (mount_name, mount_config))
 
+    # Define the mountpoint path
     self['paths'] = mount_config['destination']
 
 
@@ -103,7 +111,6 @@ def _to_mount_cmd(self, mount: dict) -> str:
     """ Prints the object as a mount command. """
     out_str = f"mount {_get_mount_source(self, mount)} {mount['destination']}"
 
-    # I could probably add subvol info here, but I want to keep fs specific stuff out of the core
     if options := mount.get('options'):
         out_str += f" --options {','.join(options)}"
 
@@ -150,17 +157,10 @@ def generate_fstab(self) -> None:
         self.logger.warning("No fstab entries generated.")
 
 
-@check_hostonly
+@check_dict('autodetect_root', value=True, log_level=10, message="Skipping root autodetection, autodetect_root is not set.")
+@check_dict({'mounts': {'root': 'source'}}, unset=True, log_level=30, message="Skipping root autodetection, root source is already set.")
 def autodetect_root(self) -> None:
     """ Sets self['mounts']['root']['source'] based on the host mount. """
-    if not self['autodetect_root']:
-        self.logger.debug("Skipping root autodetection, autodetect_root is not set.")
-        return
-
-    if source := self['mounts']['root'].get('source'):
-        self.logger.warning("Skipping root autodetection, source is already set to: %s" % source)
-        return
-
     root_mount_info = _get_blkid_info(self, _get_mounts_source_device(self, '/'))
     self.logger.debug("Detected root mount info: %s" % root_mount_info)
 
@@ -254,12 +254,9 @@ def _get_blkid_info(self, device: Path) -> str:
     return mount_info
 
 
+@check_dict('validate', value=True, log_level=20, return_val=True, message="Skipping host mount validation.")
 def _validate_host_mount(self, mount, destination_path=None) -> bool:
     """ Checks if a defined mount exists on the host. """
-    if not self.validate:
-        self.logger.debug("Skipping host mount check as validation is disabled.")
-        return True
-
     source = mount['source']
     # If a destination path is passed, like for /, use that instead of the mount's destination
     destination_path = mount['destination'] if destination_path is None else destination_path
@@ -301,10 +298,9 @@ def mount_root(self) -> str:
             'mount "$(cat /run/MOUNTS_ROOT_SOURCE)" "$(cat /run/MOUNTS_ROOT_TARGET)" -o "$(cat /run/MOUNTS_ROOT_OPTIONS)"']
 
 
+@check_dict({'mounts': {'root': 'source'}}, log_level=20, raise_exception=True, message="Root mount source is not defined.")
 def export_mount_info(self) -> None:
     """ Exports mount info based on the config to /run/MOUNTS_ROOT_{option} """
-    if not self['mounts']['root'].get('source'):
-        raise ValueError("Root mount source not defined.")
     return [f'echo -n "{self["mounts"]["root"]["destination"]}" > "/run/MOUNTS_ROOT_TARGET"',
             f'echo -n "{_get_mount_source(self, self["mounts"]["root"])}" > "/run/MOUNTS_ROOT_SOURCE"',
             f'''echo -n "{','.join(self["mounts"]["root"]["options"])}" > "/run/MOUNTS_ROOT_OPTIONS"''']

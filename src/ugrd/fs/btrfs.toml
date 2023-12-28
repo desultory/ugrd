@@ -5,7 +5,7 @@ subvol_selector = false
 _base_mount_path = "/mnt/root_base"
 
 [imports.config_processing]
-"ugrd.fs.btrfs" = [ "_process_root_subvol", "_process_subvol_selector" ]
+"ugrd.fs.btrfs" = [ "_process_root_subvol", "_process_subvol_selector", "_process_autodetect_root_subvol" ]
 
 [imports.init_premount]
 "ugrd.fs.btrfs" = [ "btrfs_scan", "set_root_subvol", "select_subvol" ]
@@ -14,4 +14,5 @@ _base_mount_path = "/mnt/root_base"
 [custom_parameters]
 subvol_selector = "bool"  # Select a btrfs subvolume for the root partition at runtime
 root_subvol = "str"  # Set the default btrfs subvolume for the root filesystem
+autodetect_root_subvol = "bool"  # Automatically detect the root subvolume
 _base_mount_path = "Path"  # Set the mount point for the root filesystem when used to check for subvols
