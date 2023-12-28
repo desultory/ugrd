@@ -9,5 +9,8 @@ mod_depends = ['ugrd.base.base']
 [imports.functions]
 "ugrd.fs.mounts" = [ "mount_root" ]
 
+[masks]
+init_mount = "mount_root"
+
 [custom_parameters]
 _init_mount = "NoDupFlatList" # List contaning functions which were removed from imports.int_mount by refactor_mounts
