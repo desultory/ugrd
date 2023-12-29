@@ -97,9 +97,17 @@ The initramfs will be packed to `out_dir` (`/tmp/initramfs_out`) and named `out_
 
 ### Embedding the initramfs image into the kernel
 
-The `build_dir`can be embedded into the Linux kernel using `CONFIG_INITRAMFS_SOURCE="/tmp/initramfs"`.
+The `build_dir`can be embedded into the Linux kernel with:
 
-A CPIO file can be embedded into the Linux kernel passing the path: `CONFIG_INITRAMFS_SOURCE="/usr/src/initramfs/ugrd.cpio"`
+```
+CONFIG_INITRAMFS_SOURCE="/tmp/initramfs"
+```
+
+A CPIO file can be embedded into the Linux kernel with: 
+
+```
+CONFIG_INITRAMFS_SOURCE="/usr/src/initramfs/ugrd.cpio"
+```
 
 ### Making the kernel automatically search for the initamfs image
 
@@ -229,7 +237,7 @@ Creates `/dev/console` with permissions `0o644`
 
 This module creates an agetty session. This is used by the `ugrd.crypto.gpg` module so the tty can be used for input and output.
 
-Consoles are defined by name in the `console` dict using teh following keys:
+Consoles are defined by name in the `console` dict using the following keys:
 
 * `type` (tty) Specifies the console type, such as `tty` or `vt100`.
 * `baud` - Set the serial device baud rate.
