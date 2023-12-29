@@ -89,7 +89,9 @@ It can be forced at runtime with `--validate` and disabled with `--no-validate`.
 
 ## Output
 
-Unless the `ugrd.base.cpio` module is included, an initramfs environment will be generated at `build_dir` which defaults to `/tmp/initramfs/`.
+An initramfs environment will be generated at `build_dir` (`/tmp/initramfs/`).
+
+The initramfs will be packed to `out_dir` (`/tmp/initramfs_out`) and named `out_file` (`ugrd.cpio`).
 
 ### Embedding the initramfs image into the kernel
 
