@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.0.1'
+__version__ = '2.0.2'
 
 from pathlib import Path
 
@@ -31,7 +31,7 @@ def _validate_mount_config(self, mount_name: str, mount_config) -> None:
                 if source_type in value:
                     break
             else:
-                self.logger.info("Valid source types: %s" % SOURCE_TYPES)
+                self.logger.error("Valid source types: %s" % SOURCE_TYPES)
                 raise ValueError("Invalid source type in mount: %s" % value)
         elif parameter == 'options':
             for option in value:
