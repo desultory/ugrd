@@ -231,8 +231,8 @@ This module creates an agetty session. This is used by the `ugrd.crypto.gpg` mod
 
 Consoles are defined by name in the `console` dict using teh following keys:
 
-* `type` (tty) specifies the console type, such as `tty` or `vt100`.
-* `baud` - Specified the baud rate for serial devices.
+* `type` (tty) Specifies the console type, such as `tty` or `vt100`.
+* `baud` - Set the serial device baud rate.
 
 ex:
 
