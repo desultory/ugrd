@@ -77,7 +77,9 @@ The last argument is the output file, which can be a path:
 
 ### Hostonly mode
 
-The `hostonly` boolean is enabled by default and must be set to use the `lsmod` and `lspci` kmod options, as well as `validation` mode.
+The `hostonly` boolean is enabled by default and is required for `validation`.
+
+`hostonly` mode is also required for most runtime config autodetection, since it's read from the build host.
 
 It can be forced at runtime with `--hostonly` and disabled with `--no-hostonly`.
 
