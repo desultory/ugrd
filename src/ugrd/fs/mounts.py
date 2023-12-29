@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.0.0'
+__version__ = '2.0.1'
 
 from pathlib import Path
 
@@ -9,7 +9,7 @@ MOUNT_PARAMETERS = ['destination', 'source', 'type', 'options', 'base_mount', 's
 SOURCE_TYPES = ['uuid', 'partuuid', 'label']
 
 
-@check_dict('mounts', value_arg=1, return_arg=2)
+@check_dict('mounts', value_arg=1, return_arg=2, contains=True)
 def _merge_mounts(self, mount_name: str, mount_config) -> None:
     """ Returns merges mount config with the existing mount. """
     self.logger.info("Updating mount: %s" % mount_name)
