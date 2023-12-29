@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.4.2'
+__version__ = '2.4.3'
 
 
 from pycpio import PyCPIO
@@ -31,9 +31,6 @@ def make_cpio(self) -> None:
 
 def _process_out_file(self, out_file):
     """ Processes the out_file configuration option. """
-    if not out_file:
-        raise ValueError("out_file cannot be empty")
-
     if out_file.startswith('./'):
         from pathlib import Path
         self.logger.debug("Relative out_file path detected: %s" % out_file)
