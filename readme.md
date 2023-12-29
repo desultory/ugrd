@@ -15,16 +15,17 @@ The original goal of this project was to create an initramfs suitable for decryp
 * Cryptsetup re-attempts and alternative unlock methods
   - Allows for late insertion of a smartcard
   - Can fail back to plain password entry
+* Auto-detection and validation of the root mount using `/proc/mounts`
+* Auto-detection and validation of the btrfs subvolume used for the root mount, if present.
+* Dynamic BTRFS subvolume selection at boot time.
 * Auto-detection of kernel modules using `lspci` and `lsmod`
-* Auto-detection of the root mount using `/proc/mounts`
-* Similar usage/arguments as Dracut
 * Reading the `root` and `rootflags` parameters from the kernel commandline
   - Falls back to host mount config if cmdline mount parameters fail
-* BTRFS subvolumes selection
 * Key entry over serial
 * Automatic CPIO generation (PyCPIO)
   - Device nodes are created within the CPIO only, so true root privileges are not required.
   - Hardlinks are automatically created for files with matching SHA256 hashes.
+* Similar usage/arguments as Dracut
 
 ## Design
 
@@ -346,6 +347,7 @@ These are set at the global level and are not associated with an individual moun
 Importing this module will run `btrfs device scan` and pull btrfs modules.
 
 * `subvol_selector` (false) If enabled, the root subvolume will be selected at runtime based on existing subvolumes.
+* `autodetect_root_subvol` (true) Autodetect the root subvolume, unless `root_subvol` or `subvol_selector` is set. Depends on `hostonly`.
 * `root_subvol` Can be set to the desired root subvolume.
 * `_base_mount_path` (/mnt/root_base) Used to determine where the subvolume selector mounts the base filesytem to scan for subvolumes.
 
