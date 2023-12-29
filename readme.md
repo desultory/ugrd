@@ -160,8 +160,8 @@ Modules write to a shared config dict that is accessible by other modules.
 * `validate` (true) adds additional checks to verify the initramfs will work on the build host.
 * `old_count` (1) Sets the number of old file to keep when running the `_rotate_old` function.
 * `file_owner` (portage) sets the owner for items pulled into the initramfs on the build system
-* `binaries` is a list used to define programs to be pulled into the initrams. `which` is used to find the path of added entries, and `lddtree` is used to resolve dependendies.
-* `paths` is a list of directores to create in the `build_dir`. They do not need a leading `/`.
+* `binaries` - A list used to define programs to be pulled into the initrams. `which` is used to find the path of added entries, and `lddtree` is used to resolve dependendies.
+* `paths` - A list of directores to create in the `build_dir`. They do not need a leading `/`.
 
 ##### Build logging
 
@@ -205,8 +205,8 @@ Device nodes can be created by defining them in the `nodes` dict using the follo
 
 * `mode` (0o600) the device node, in octal.
 * `path` (/dev/node name) the path to create the node at.
-* `major` Major value.
-* `minor` Minor value.
+* `major` - Major value.
+* `minor` - Minor value.
 
 Example:
 
@@ -228,7 +228,7 @@ This module creates an agetty session. This is used by the `ugrd.crypto.gpg` mod
 Consoles are defined by name in the `console` dict using teh following keys:
 
 * `type` (tty) specifies the console type, such as `tty` or `vt100`.
-* `baud` Specified the baud rate for serial devices.
+* `baud` - Specified the baud rate for serial devices.
 
 ex:
 
@@ -249,7 +249,7 @@ Defines /dev/ttyS1 as a `vt100` terminal with a `115200` baud rate.
 
 ##### General console options
 
-`primary_console` (tty0)  is used to set which console will be initialized with agetty on boot.
+`primary_console` (tty0) Used to set which console will be initialized with agetty on boot.
 
 #### base.debug
 
@@ -265,14 +265,14 @@ Setting `start_shell` to `true` will start a bash shell in `init_debug`.
 
 The following parameters can be used to change the kernel module pulling and initializing behavior:
 
-* `kernel_version` (uname -r) is used to specify the kernel version to pull modules for, should be a directory under `/lib/modules/<kernel_version>`.
+* `kernel_version` (uname -r) Used to specify the kernel version to pull modules for, should be a directory under `/lib/modules/<kernel_version>`.
 * `kmod_pull_firmware` (true) Adds kernel module firmware to dependencies
-* `kmod_init`  is used to specify kernel modules to load at boot. If set, ONLY these modules will be loaded with modprobe.
-* `kmod_autodetect_lspci` (false) if set to `true`, will populate `kernel_modules` with modules listed in `lspci -k`.
-* `kmod_autodetect_lsmod` (false) if set to `true`, will populate `kernel_modules` with modules listed in `lsmod`.
-* `kernel_modules` is used to define a list of kernel module names to pull into the initramfs. These modules will not be `modprobe`'d automatically if `kmod_init` is also set.
-* `kmod_ignore` is used to specify kernel modules to ignore. If a module depends on one of these, it will throw an error and drop it from being included.
-* `kmod_ignore_softdeps` (false) ignore softdeps when checking kernel module dependencies.
+* `kmod_init` - Kernel modules to `modprobe` at boot.
+* `kmod_autodetect_lspci` (false) Populates `kmod_init` with modules listed in `lspci -k`.
+* `kmod_autodetect_lsmod` (false) Populates `kmod_init` with modules listed in `lsmod`.
+* `kernel_modules` - Kernel modules to pull into the initramfs. These modules will not be `modprobe`'d automatically.
+* `kmod_ignore` - Kernel modules to ignore. Modules which depend on ignored modules will also be ignored.
+* `kmod_ignore_softdeps` (false) Ignore softdeps when checking kernel module dependencies.
 
 #### Kernel module helpers
 
@@ -294,18 +294,18 @@ Similarly `ugrd.kmod.novideo` `nonetwork`, and `nosound` exist to ignore video, 
 
 Each mount has the following available parameters:
 
-* `type` (auto) the mount or filesystem type.
+* `type` (auto) Mount filesystem type.
   - Setting the `type` to `vfat` includes the `vfat` kernel module automatically.
   - Setting the `type` to `btrfs` imports the `ugrd.fs.btrfs` module automatically.
-* `destination` (/mount name) the mountpoint for the mount, if left unset will use /mount_name.
+* `destination` (/mount name) Mountpoint for the mount, if left unset will use /mount_name.
 * `source` The source string or a dict with a key containing the source type, where the value is the target.
   - `uuid` Mount by the filesystem UUID.
   - `partuuid` Mount by the partition UUID.
   - `label` Mount by the device label.
 * `options` A list of options to add to the mount.
-* `base_mount` (false) is used for builtin mounts such as `/dev`, `/sys`, and `/proc`. Setting this to mounts it with a mount command in `init_pre` instead of using `mount -a` in `init_main`.
-* `skip_unmount` (false) is used for the builtin `/dev` mount, since it will fail to unmount when in use. Like the name suggests, this skips running `umount` during `init_final`.
-* `remake_mountpoint` will recreate the mountpoint with mkdir before the `mount -a` is called. This is useful for `/dev/pty`.
+* `base_mount` (false) Mounts with a mount command during `init_pre` instead of using `mount -a` in `init_main`.
+* `skip_unmount` (false) Skip running `umount` for this mount during `init_clean`.
+* `remake_mountpoint` (false) Recreate the mountpoint with mkdir before the `mount -a` is called. This is useful for `/dev/pty`.
 
 The most minimal mount entry that can be created must have a name, which will be used as the `destination`, and a `source`.
 
@@ -339,17 +339,17 @@ This module handles CPIO creation.
 
 These are set at the global level and are not associated with an individual mount:
 
-* `mount_wait` (false) waits for user input before attenmpting to mount the generated fstab at `init_main`.
-* `mount_timeout` timeout for `mount_wait` to automatically continue.
+* `mount_wait` (false) Qaits for user input before attenmpting to mount the generated fstab at `init_main`.
+* `mount_timeout` - Timeout for `mount_wait` to automatically continue.
 
 #### ugrd.fs.btrfs
 
 Importing this module will run `btrfs device scan` and pull btrfs modules.
 
-* `subvol_selector` (false) If enabled, the root subvolume will be selected at runtime based on existing subvolumes.
+* `subvol_selector` (false) The root subvolume will be selected at runtime based on existing subvolumes. Overridden by `root_subvol`.
 * `autodetect_root_subvol` (true) Autodetect the root subvolume, unless `root_subvol` or `subvol_selector` is set. Depends on `hostonly`.
-* `root_subvol` Can be set to the desired root subvolume.
-* `_base_mount_path` (/mnt/root_base) Used to determine where the subvolume selector mounts the base filesytem to scan for subvolumes.
+* `root_subvol` - Set the desired root subvolume.
+* `_base_mount_path` (/mnt/root_base) Sets where the subvolume selector mounts the base filesytem to scan for subvolumes.
 
 ### Cryptographic modules
 
@@ -387,8 +387,8 @@ Cryptsetup mounts can be configured with the following options:
 * `header_file` - The path of the luks header file.
 * `partuuid` - The partition UUID of the LUKS volume.
 * `uuid` - The UUID fo the LUKS filesystem.
-* `retries` (5) - The number of times to attempt to unlock a key or cryptsetup volume.
-* `try_nokey` - (false) - Whether or not to attempt unlocking with a passphrase if key usage fails
+* `retries` (5) The number of times to attempt to unlock a key or cryptsetup volume.
+* `try_nokey` (false) Whether or not to attempt unlocking with a passphrase if key usage fails
 
 `cryptsetup` is a dictionary that contains LUKS volumes to be decrypted.
 
