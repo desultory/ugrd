@@ -343,7 +343,7 @@ This module handles CPIO creation.
 
 These are set at the global level and are not associated with an individual mount:
 
-* `mount_wait` (false) Qaits for user input before attenmpting to mount the generated fstab at `init_main`.
+* `mount_wait` (false) Waits for user input before attenmpting to mount the generated fstab at `init_main`.
 * `mount_timeout` - Timeout for `mount_wait` to automatically continue.
 
 #### ugrd.fs.btrfs
