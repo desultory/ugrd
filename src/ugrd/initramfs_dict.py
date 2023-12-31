@@ -1,13 +1,13 @@
 
 __author__ = "desultory"
-__version__ = "0.12.0"
+__version__ = "0.12.1"
 
 from tomllib import load, TOMLDecodeError
 from pathlib import Path
 from queue import Queue
 
-from zenlib.logging import loggify
-from zenlib.util import handle_plural, pretty_print, NoDupFlatList
+from zen_logging import loggify
+from zen_util import handle_plural, pretty_print, NoDupFlatList
 
 
 @loggify
