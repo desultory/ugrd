@@ -18,9 +18,9 @@ classifiers = [
 ]
 
 dependencies = [
-    "zen_logging >= 1.0.1",
-    "zen_util >= 1.0.0",
-    "pycpio >= 0.7.2"
+    "zen_logging >= 1.1.0",
+    "zen_util >= 1.0.1",
+    "pycpio >= 0.7.3"
 ]
 
 [options]
