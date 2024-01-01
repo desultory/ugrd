@@ -1,9 +1,9 @@
 __author__ = 'desultory'
-__version__ = '2.1.0'
+__version__ = '2.1.1'
 
 from pathlib import Path
 
-from zen_util import check_dict
+from zenlib.util import check_dict
 
 MOUNT_PARAMETERS = ['destination', 'source', 'type', 'options', 'base_mount', 'skip_unmount', 'remake_mountpoint']
 SOURCE_TYPES = ['uuid', 'partuuid', 'label']

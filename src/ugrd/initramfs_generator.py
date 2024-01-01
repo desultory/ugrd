@@ -4,8 +4,8 @@ from typing import Union
 from pathlib import Path
 from subprocess import run, CompletedProcess
 
-from zen_logging import loggify
-from zen_util import pretty_print
+from zenlib.logging import loggify
+from zenlib.util import pretty_print
 
 from ugrd.initramfs_dict import InitramfsConfigDict
 

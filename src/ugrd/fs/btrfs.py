@@ -1,9 +1,9 @@
-__version__ = '1.5.1'
+__version__ = '1.5.2'
 __author__ = 'desultory'
 
 
 from ugrd.fs.mounts import _get_mounts_source_options
-from zen_util import check_dict
+from zenlib.util import check_dict
 
 
 class SubvolNotFound(Exception):

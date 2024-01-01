@@ -1,8 +1,8 @@
 __author__ = 'desultory'
-__version__ = '0.5.1'
+__version__ = '0.5.2'
 
 
-from zen_util import check_dict
+from zenlib.util import check_dict
 
 
 @check_dict('sc_public_key', raise_exception=True, message="Smartcard public key file not specified (sc_public_key)")
