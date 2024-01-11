@@ -245,7 +245,7 @@ def process_modules(self) -> None:
         self['kmod_ignore'] = kmod
 
 
-@check_dict('kmod_init', message="No kernel modules to load", log_level=30)
+@check_dict('kmod_init', not_empty=True, message="No kernel modules to load", log_level=30)
 def load_modules(self) -> None:
     """ Creates a bash script which loads all kernel modules in kmod_init. """
     # Start by using the kmod_init variable
