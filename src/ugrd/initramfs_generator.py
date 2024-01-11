@@ -4,7 +4,7 @@ from typing import Union
 from pathlib import Path
 from subprocess import run, CompletedProcess
 
-from zenlib.logging import ClassLogger
+from zenlib.logging import loggify
 from zenlib.util import pretty_print
 
 from ugrd.initramfs_dict import InitramfsConfigDict
@@ -15,9 +15,9 @@ __version__ = version(__package__)
 __author__ = "desultory"
 
 
-class InitramfsGenerator(ClassLogger):
+@loggify
+class InitramfsGenerator:
     def __init__(self, config='/etc/ugrd/config.toml', *args, **kwargs):
-        super().__init__(*args, **kwargs)
         self.config_filename = config
         self.config_dict = InitramfsConfigDict(logger=self.logger)
 
