@@ -160,7 +160,7 @@ def calculate_modules(self) -> None:
             self['kmod_init'] = autodetected_modules
 
 
-@check_dict('kmod_init', message="kmod_init is not set, skipping.", log_level=30)
+@check_dict('kmod_init', not_empty=True, message="kmod_init is not set, skipping.", log_level=30)
 def process_module_metadata(self) -> None:
     """ Adds kernel module metadata files to dependencies."""
     module_path = Path('/lib/modules/') / self['kernel_version']
@@ -248,13 +248,7 @@ def process_modules(self) -> None:
 @check_dict('kmod_init', not_empty=True, message="No kernel modules to load", log_level=30)
 def load_modules(self) -> None:
     """ Creates a bash script which loads all kernel modules in kmod_init. """
-    # Start by using the kmod_init variable
-    if not self['kmod_init']:
-        self.logger.error("No kernel modules to load")
-        return
-
     self.logger.info("Init kernel modules: %s" % self['kmod_init'])
     self.logger.warning("Ignored kernel modules: %s" % self['_kmod_removed'])
-
     return f"modprobe -av {' '.join(self['kmod_init'])}"
 
