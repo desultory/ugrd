@@ -162,20 +162,7 @@ def calculate_modules(self) -> None:
 
 @check_dict('kmod_init', message="kmod_init is not set, skipping.", log_level=30)
 def process_module_metadata(self) -> None:
-    """
-    Gets all module metadata for the specified kernel version.
-    Adds kernel module metadata files to dependencies.
-    Sets the kernel version based on the current running kernel if it's not already set.
-    """
-    if not self.get('kernel_version'):
-        try:
-            cmd = self._run(['uname', '-r'])
-        except RuntimeError as e:
-            raise DependencyResolutionError('Failed to get kernel version') from e
-
-        self['kernel_version'] = cmd.stdout.decode('utf-8').strip()
-        self.logger.info(f"Using detected kernel version: {self['kernel_version']}")
-
+    """ Adds kernel module metadata files to dependencies."""
     module_path = Path('/lib/modules/') / self['kernel_version']
 
     for meta_file in MODULE_METADATA_FILES:
@@ -234,6 +221,15 @@ def _process_kmod_dependencies(self, kmod: str) -> None:
 
 def process_modules(self) -> None:
     """ Processes all kernel modules, adding dependencies to the initramfs. """
+    if not self.get('kernel_version'):
+        try:
+            cmd = self._run(['uname', '-r'])
+        except RuntimeError as e:
+            raise DependencyResolutionError('Failed to get kernel version') from e
+
+        self['kernel_version'] = cmd.stdout.decode('utf-8').strip()
+        self.logger.info(f"Using detected kernel version: {self['kernel_version']}")
+
     self.logger.debug("Processing kernel modules: %s" % self['kernel_modules'])
     for kmod in self['kernel_modules'].copy():
         self.logger.debug("Processing kernel module: %s" % kmod)
