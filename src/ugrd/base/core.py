@@ -320,13 +320,3 @@ def _process_validate(self, validate: bool) -> None:
 
     dict.__setitem__(self, 'validate', validate)
 
-
-def check_hostonly(func):
-    """ Decorator to check if hostonly mode is enabled. """
-    def wrapper(self, *args, **kwargs):
-        if not self['hostonly']:
-            self.logger.warning("Hostonly mode is disabled, skipping: %s" % func.__name__)
-            return None
-        return func(self, *args, **kwargs)
-    return wrapper
-

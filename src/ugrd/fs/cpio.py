@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.4.3'
+__version__ = '2.5.0'
 
 
 from pycpio import PyCPIO
@@ -26,7 +26,7 @@ def make_cpio(self) -> None:
     if out_cpio.exists():
         self._rotate_old(out_cpio)
 
-    cpio.write_cpio_file(out_cpio, _log_bump=-10)
+    cpio.write_cpio_file(out_cpio, _log_bump=-10, _log_init=False)
 
 
 def _process_out_file(self, out_file):

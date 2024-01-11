@@ -4,7 +4,7 @@ __version__ = '2.0.0'
 from pathlib import Path
 from subprocess import run
 
-from ugrd.base.core import check_hostonly
+from zenlib.util import check_dict
 
 
 MODULE_METADATA_FILES = ['modules.alias', 'modules.alias.bin', 'modules.builtin', 'modules.builtin.alias.bin', 'modules.builtin.bin', 'modules.builtin.modinfo',
@@ -89,7 +89,7 @@ def _get_kmod_info(self, module: str):
     self['_kmod_modinfo'][module] = module_info
 
 
-@check_hostonly
+@check_dict('hostonly', value=True, message="hostonly is not set, skipping.")
 def _get_lspci_modules(self) -> list[str]:
     """ Gets the name of all kernel modules being used by hardware visible in lspci -k. """
     try:
@@ -115,7 +115,7 @@ def _get_lspci_modules(self) -> list[str]:
     return list(modules)
 
 
-@check_hostonly
+@check_dict('hostonly', value=True, message="hostonly is not set, skipping.")
 def _get_lsmod_modules(self) -> list[str]:
     """ Gets the name of all currently installed kernel modules """
     from platform import uname
@@ -160,6 +160,7 @@ def calculate_modules(self) -> None:
             self['kmod_init'] = autodetected_modules
 
 
+@check_dict('kmod_init', message="kmod_init is not set, skipping.", log_level=30)
 def process_module_metadata(self) -> None:
     """
     Gets all module metadata for the specified kernel version.
@@ -248,18 +249,16 @@ def process_modules(self) -> None:
         self['kmod_ignore'] = kmod
 
 
+@check_dict('kmod_init', message="No kernel modules to load", log_level=30)
 def load_modules(self) -> None:
     """ Creates a bash script which loads all kernel modules in kmod_init. """
     # Start by using the kmod_init variable
-    kmods = self['kmod_init']
-
-    if not kmods:
+    if not self['kmod_init']:
         self.logger.error("No kernel modules to load")
         return
 
-    self.logger.info("Init kernel modules: %s" % kmods)
+    self.logger.info("Init kernel modules: %s" % self['kmod_init'])
     self.logger.warning("Ignored kernel modules: %s" % self['_kmod_removed'])
 
-    module_str = ' '.join(kmods)
-    return f"modprobe -av {module_str}"
+    return f"modprobe -av {' '.join(self['kmod_init'])}"
 

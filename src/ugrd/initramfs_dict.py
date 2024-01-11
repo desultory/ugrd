@@ -1,17 +1,16 @@
 
 __author__ = "desultory"
-__version__ = "0.12.2"
+__version__ = "0.12.3"
 
 from tomllib import load, TOMLDecodeError
 from pathlib import Path
 from queue import Queue
 
-from zenlib.logging import loggify
+from zenlib.logging import ClassLogger
 from zenlib.util import handle_plural, pretty_print, NoDupFlatList
 
 
-@loggify
-class InitramfsConfigDict(dict):
+class InitramfsConfigDict(ClassLogger, dict):
     """
     Dict for containing config for the InitramfsGenerator
 
@@ -31,6 +30,7 @@ class InitramfsConfigDict(dict):
                           '_processing': dict}  # A dict of queues containing parameters which have been set before the type was known
 
     def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         # Define the default parameters
         for parameter, default_type in self.builtin_parameters.items():
             if default_type == NoDupFlatList:
@@ -79,7 +79,7 @@ class InitramfsConfigDict(dict):
                 if key not in self['_processing']:
                     self['_processing'][key] = Queue()
                 self['_processing'][key].put(value)
-            else:
+            elif key != 'logger':
                 raise ValueError("Detected undefined parameter type '%s' with value: %s" % (key, value))
 
     @handle_plural
