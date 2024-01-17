@@ -1,26 +1,15 @@
 #!/usr/bin/env python
 
 from ugrd.initramfs_generator import InitramfsGenerator
-from zenlib.logging import ColorLognameFormatter
-
-from argparse import ArgumentParser
-from importlib.metadata import version
-import logging
+from zenlib.util import init_logger, init_argparser, process_args
 
 
 def main():
-    argparser = ArgumentParser(prog='ugrd',
-                               description='MicrogRAM disk initramfs generator')
-
-    argparser.add_argument('-d', '--debug', action='store_true', help='Debug mode.')
-    argparser.add_argument('-dd', '--verbose', action='store_true', help='Verbose debug mode.')
+    logger = init_logger(__package__)
+    argparser = init_argparser(prog=__package__, description='MicrogRAM disk initramfs generator')
 
     argparser.add_argument('--build-logging', action='store_true', help='Enable additional build logging.')
     argparser.add_argument('--no-build-logging', action='store_true', help='Disable additional build logging.')
-
-    argparser.add_argument('--log-file', action='store', help='Log file location.')
-
-    argparser.add_argument('-v', '--version', action='store_true', help='Print the version and exit.')
 
     # Add arguments for dracut compatibility
     argparser.add_argument('-c', '--config', action='store', help='Config file location.')
@@ -53,31 +42,7 @@ def main():
     # Print the final config_dict
     argparser.add_argument('--print-config', action='store_true', help='Print the final config dict.')
 
-    args = argparser.parse_args()
-
-    if args.version:
-        print(f"{__package__} {version(__package__)}")
-        exit(0)
-
-    # Set the initial logger debug level based on the args, set the format string based on the debug level
-    logger = logging.getLogger()
-    if args.verbose:
-        logger.setLevel(5)
-        formatter = ColorLognameFormatter('%(levelname)s | %(name)-42s | %(message)s')
-    elif args.debug:
-        logger.setLevel(10)
-        formatter = ColorLognameFormatter('%(levelname)s | %(name)-42s | %(message)s')
-    else:
-        logger.setLevel(20)
-        formatter = ColorLognameFormatter()
-
-    if args.log_file:
-        handler = logging.FileHandler(args.log_file)
-        logger.addHandler(handler)
-    else:
-        handler = logging.StreamHandler()
-        handler.setFormatter(formatter)
-        logger.addHandler(handler)
+    args = process_args(argparser, logger=logger)
 
     # Pass the logger to the generator
     kwargs = {'logger': logger}
