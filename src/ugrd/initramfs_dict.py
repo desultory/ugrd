@@ -42,7 +42,7 @@ class InitramfsConfigDict(dict):
     def import_args(self, args: dict) -> None:
         """ Imports data from an argument dict. """
         for arg, value in args.items():
-            self.logger.warning("Importing argument '%s' with value: %s" % (arg, value))
+            self.logger.info("Importing argument '%s' with value: %s" % (arg, value))
             self[arg] = value
 
     def __setitem__(self, key: str, value) -> None:
