@@ -17,7 +17,7 @@ The original goal of this project was to create an initramfs suitable for decryp
   - Can fail back to plain password entry
 * Auto-detection and validation of the root mount using `/proc/mounts`
 * Auto-detection and validation of the btrfs subvolume used for the root mount, if present.
-* Dynamic BTRFS subvolume selection at boot time.
+* Dynamic BTRFS subvolume selection at boot time using `subvol_selector`.
 * Auto-detection of kernel modules using `lspci` and `lsmod`
 * Reading the `root` and `rootflags` parameters from the kernel commandline
   - Falls back to host mount config if cmdline mount parameters fail
