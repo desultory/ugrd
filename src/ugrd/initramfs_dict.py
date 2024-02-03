@@ -176,7 +176,13 @@ class InitramfsConfigDict(dict):
 
         self.logger.info("Processing module: %s" % module)
 
-        module_path = Path(__file__).parent.parent / (module.replace('.', '/') + '.toml')
+        module_subpath = module.replace('.', '/') + '.toml'
+
+        module_path = Path(__file__).parent.parent / module_subpath
+        if not module_path.exists():
+            module_path = Path('/var/lib/ugrd') / module_subpath
+            if not module_path.exists():
+                raise FileNotFoundError("Unable to locate module: %s" % module)
         self.logger.debug("Module path: %s" % module_path)
 
         with open(module_path, 'rb') as module_file:
