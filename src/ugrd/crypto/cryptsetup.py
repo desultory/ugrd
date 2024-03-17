@@ -1,9 +1,9 @@
 __author__ = 'desultory'
-__version__ = '1.2.0'
+__version__ = '1.3.0'
 
 _module_name = 'ugrd.crypto.cryptsetup'
 
-CRYPTSETUP_PARAMETERS = ['key_type', 'partuuid', 'uuid', 'key_file', 'header_file', 'retries', 'key_command', 'reset_command', 'try_nokey']
+CRYPTSETUP_PARAMETERS = ['key_type', 'partuuid', 'uuid', 'path', 'key_file', 'header_file', 'retries', 'key_command', 'reset_command', 'try_nokey']
 
 
 def _process_cryptsetup_key_types_multi(self, key_type: str, config: dict) -> None:
@@ -28,9 +28,7 @@ def _process_cryptsetup_key_types_multi(self, key_type: str, config: dict) -> No
 
 
 def _get_device_path_from_token(self, token: tuple[str, str]) -> str:
-    """
-    Returns the device path for a given a token, using the blkid command
-    """
+    """ Returns the device path for a given a token, using the blkid command """
     from subprocess import run
 
     token_str = f"{token[0]}={token[1]}"
@@ -47,19 +45,17 @@ def _get_device_path_from_token(self, token: tuple[str, str]) -> str:
 
 
 def _process_cryptsetup_multi(self, mapped_name: str, config: dict) -> None:
-    """
-    Processes the cryptsetup configuration
-    """
+    """ Processes the cryptsetup configuration """
     self.logger.debug("[%s] Processing cryptsetup configuration: %s" % (mapped_name, config))
     for parameter in config:
         if parameter not in CRYPTSETUP_PARAMETERS:
             raise ValueError("Invalid parameter: %s" % parameter)
 
     # The partuuid must be specified if using a detached header
-    if config.get('header_file') and not config.get('partuuid'):
-        raise ValueError("A partuuid must be specified when using detached headers: %s" % mapped_name)
-    elif not config.get('partuuid') and not config.get('uuid'):
-        raise ValueError("Either a uuid or partuuid must be specified with cryptsetup mounts: %s" % mapped_name)
+    if config.get('header_file') and (not config.get('partuuid') and not config.get('path')):
+        raise ValueError("A partuuid or device path must be specified when using detached headers: %s" % mapped_name)
+    elif not any([config.get('partuuid'), config.get('uuid'), config.get('path')]):
+        raise ValueError("A devuce uuid, partuuid, or path must be specified for cryptsetup mounts: %s" % mapped_name)
 
     # Check if the key type is defined in the configuration, otherwise use the default, check if it's valid
     if key_type := config.get('key_type', self.get('cryptsetup_key_type')):
@@ -87,26 +83,29 @@ def get_crypt_sources(self) -> list[str]:
     Exports the command as an environment variable in the format:
         CRYPTSETUP_SOURCE_{name}=`device`
     """
-
     out = []
     for name, parameters in self['cryptsetup'].items():
-        token = ('PARTUUID', parameters['partuuid']) if parameters.get('partuuid') else ('UUID', parameters['uuid'])
-        self.logger.debug("[%s] Created block device identifier token: %s" % (name, token))
-        # If validation is enabled, check that the mount source exists
-        if self['validate']:
+        if parameters.get('path') and not self['validate']:
+            self.logger.warning("Using device paths is unreliable and can result in boot failures.")
+            out += [f"export CRYPTSETUP_SOURCE_{name}={parameters.get('path')}"]
+        elif not parameters.get('partuuid') and not parameters.get('uuid'):
+            raise ValueError("Validation must be disabled to use device paths with the cryptsetup module.")
+        else:
+            token = ('PARTUUID', parameters['partuuid']) if parameters.get('partuuid') else ('UUID', parameters['uuid'])
+            self.logger.debug("[%s] Created block device identifier token: %s" % (name, token))
             parameters['_host_device_path'] = _get_device_path_from_token(self, token)
-        # Add a blkid command to get the source device in the initramfs, only match if the device has a partuuid
-        out.append(f"export SOURCE_TOKEN_{name}='{token[0]}={token[1]}'")
-        source_cmd = f'export CRYPTSETUP_SOURCE_{name}=$(blkid --match-token "$SOURCE_TOKEN_{name}" --match-tag PARTUUID --output device)'
+            # Add a blkid command to get the source device in the initramfs, only match if the device has a partuuid
+            out.append(f"export SOURCE_TOKEN_{name}='{token[0]}={token[1]}'")
+            source_cmd = f'export CRYPTSETUP_SOURCE_{name}=$(blkid --match-token "$SOURCE_TOKEN_{name}" --match-tag PARTUUID --output device)'
 
-        check_command = [f'if [ -z "$CRYPTSETUP_SOURCE_{name}" ]; then',
-                         f'    echo "Unable to resolve device source for {name}"',
-                         '    _mount_fail',
-                         'else',
-                         f'    echo "Resolved device source: $CRYPTSETUP_SOURCE_{name}"',
-                         'fi']
-        out += [f"echo 'Attempting to get device path for {name}'", source_cmd, *check_command]
+            check_command = [f'if [ -z "$CRYPTSETUP_SOURCE_{name}" ]; then',
+                             f'    echo "Unable to resolve device source for {name}"',
+                             '    _mount_fail',
+                             'else',
+                             f'    echo "Resolved device source: $CRYPTSETUP_SOURCE_{name}"',
+                             'fi']
 
+            out += [f"echo 'Attempting to get device path for {name}'", source_cmd, *check_command]
     return out
 
 
@@ -124,9 +123,7 @@ def open_crypt_key(self, name: str, parameters: dict) -> tuple[list[str], str]:
 
 
 def open_crypt_device(self, name: str, parameters: dict) -> list[str]:
-    """
-    Returns a bash script to open a cryptsetup device
-    """
+    """ Returns a bash script to open a cryptsetup device. """
     self.logger.debug("[%s] Processing cryptsetup volume: %s" % (name, parameters))
     retries = parameters['retries']
 
@@ -175,9 +172,7 @@ def open_crypt_device(self, name: str, parameters: dict) -> list[str]:
 
 
 def crypt_init(self) -> list[str]:
-    """
-    Generates the bash script portion to prompt for keys
-    """
+    """ Generates the bash script portion to prompt for keys. """
     out = [r'echo -e "\n\n\nPress enter to start drive decryption.\n\n\n"', "read -sr"]
     for name, parameters in self['cryptsetup'].items():
         out += open_crypt_device(self, name, parameters)
