@@ -132,6 +132,10 @@ This can be set with:
 
 > On some systems, the EFI may remove entries that don't follow a particular format.
 
+### Bootloader configuration
+
+If a CPIO file is generated, it can be passed to the bootloader. Embedding the initramfs into the kernel is preferred, as the entire kernel image can be signed.
+
 ## Runtime usage
 
 `ugrd` runs the `init` script generated in the build dir. In cases where `agetty` is needed, all but basic initialization and the final switch_root are performed in `init_main.sh`.
@@ -144,11 +148,9 @@ UGRD should prompt for relevant input or warn if devices are missing at runtime.
 
 In the event of a failure, modules will either fail through, or re-exec the init script.
 
-If a CPIO file is generated, it can be passed to the bootloader. Embedding the initramfs into the kernel is preferred, as the entire kernel image can be signed.
-
 ## Configuration
 
-At runtime, ugrd will try to read `config.toml` for configuration options unless another file is specified..
+At runtime, ugrd will try to read `/etc/ugrd/config.toml` for configuration options unless another file is specified.
 
 ### Base modules
 
