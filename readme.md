@@ -399,12 +399,14 @@ Cryptsetup mounts can be configured with the following options:
 * `header_file` - The path of the luks header file.
 * `partuuid` - The partition UUID of the LUKS volume.
 * `uuid` - The UUID fo the LUKS filesystem.
+* `path` - The path of the LUKS volume (validation must be disabled).
 * `retries` (5) The number of times to attempt to unlock a key or cryptsetup volume.
 * `try_nokey` (false) Whether or not to attempt unlocking with a passphrase if key usage fails
 
 `cryptsetup` is a dictionary that contains LUKS volumes to be decrypted.
 
 > If `validate` is set to true, additional checks will be used to verify specified LUKS volumes
+> Validation cannot be used with `path`, since storage paths may change at boot time.
 
 A minimal defintion to decrypt a volume protected by a passphrase:
 
