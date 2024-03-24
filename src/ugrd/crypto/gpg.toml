@@ -1,6 +1,6 @@
 modules = [ "ugrd.base.console", "ugrd.crypto.cryptsetup" ]
 
-binaries = [ "gpg", "gpg-agent", "gpgconf", "gpg-connect-agent", "pinentry-tty" ]
+binaries = [ "gpg", "gpg-agent", "gpgconf", "gpg-connect-agent", "pinentry-tty", "/usr/libexec/keyboxd"]
 paths = [ "usr/bin" ]
 
 [cryptsetup_key_types.gpg]

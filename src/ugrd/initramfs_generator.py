@@ -324,7 +324,7 @@ class InitramfsGenerator:
             self.logger.debug("Parent directory for '%s' does not exist: %s" % (target.name, target.parent))
             self._mkdir(target.parent)
 
-        self.logger.debug("Creating symlink: %s -> %s" % (source, target))
+        self.logger.debug("Creating symlink: %s -> %s" % (target, source))
         symlink(source, target)
 
     def _run(self, args: list[str]) -> CompletedProcess:

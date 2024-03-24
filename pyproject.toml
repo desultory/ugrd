@@ -19,7 +19,7 @@ classifiers = [
 
 dependencies = [
     "zenlib >= 1.7.3",
-    "pycpio >= 0.9.0"
+    "pycpio >= 0.9.1"
 ]
 
 [options]
