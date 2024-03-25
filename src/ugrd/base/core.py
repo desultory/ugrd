@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.3.2'
+__version__ = '2.3.3'
 
 from pathlib import Path
 from typing import Union
@@ -76,8 +76,6 @@ def check_usr(self) -> None:
 
     if not (self.build_dir / 'sbin').is_dir() and (self.build_dir / 'usr/sbin').is_dir():
         self._symlink('/usr/sbin', '/sbin/')
-    else:
-        raise RuntimeError("Neither /sbin nor /usr/sbin exist in the build directory")
 
 
 def deploy_dependencies(self) -> None:
