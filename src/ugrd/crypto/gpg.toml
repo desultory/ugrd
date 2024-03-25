@@ -1,7 +1,6 @@
 modules = [ "ugrd.base.console", "ugrd.crypto.cryptsetup" ]
 
-binaries = [ "gpg", "gpg-agent", "gpgconf", "gpg-connect-agent", "pinentry-tty", "/usr/libexec/keyboxd"]
-paths = [ "usr/bin" ]
+binaries = [ "/usr/bin/gpg", "/usr/bin/gpg-agent", "/usr/bin/gpgconf", "/usr/bin/gpg-connect-agent", "/usr/bin/pinentry-tty", "/usr/libexec/keyboxd"]
 
 [cryptsetup_key_types.gpg]
 key_command = "gpg --decrypt {key_file} >"
