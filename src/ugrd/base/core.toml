@@ -8,7 +8,7 @@ validate = true
 library_paths = [ "/lib64" ]
 old_count = 1
 
-binaries = [ "bash" ]
+binaries = [ "/bin/bash" ]
 
 required_parameters = [ "clean", "old_count", "build_dir", "out_dir", "file_owner", "validate", "hostonly"]
 

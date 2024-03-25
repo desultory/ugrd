@@ -69,10 +69,11 @@ def check_usr(self) -> None:
     """ Checks for /bin and /sbin in the build directory.
     If the are not present, it will symlink them to /usr/bin and /usr/sbin. """
 
-    if not (self.build_dir / 'bin').is_dir() and (self.build_dir / 'usr/bin').is_dir():
-        self._symlink('/usr/bin', '/bin/')
-    else:
-        raise RuntimeError("Neither /bin nor /usr/bin exist in the build directory")
+    if not (self.build_dir / 'bin').is_dir():
+        if (self.build_dir / 'usr/bin').is_dir():
+            self._symlink('/usr/bin', '/bin/')
+        else:
+            raise RuntimeError("Neither /bin nor /usr/bin exist in the build directory")
 
     if not (self.build_dir / 'sbin').is_dir() and (self.build_dir / 'usr/sbin').is_dir():
         self._symlink('/usr/sbin', '/sbin/')
