@@ -1,0 +1,12 @@
+# This module generates an initramfs that decrypts a passphrase protected LUKS keyslot
+
+modules = [
+  "ugrd.base.base",
+  "ugrd.crypto.cryptsetup",
+]
+
+sc_public_key = "/etc/ugrd/pubkey.gpg"
+
+# Information about the LUKS volume
+[cryptsetup.root]
+uuid = "eee3611d-9b36-42b3-8ed2-62173064c76a"
