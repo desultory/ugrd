@@ -1,9 +1,17 @@
 # This module generates an initramfs that decrypts a passphrase protected LUKS keyslot
+# Automatically pull current kmods
+# Don't pull sound, video, or network kmods
 
 modules = [
   "ugrd.base.base",
   "ugrd.crypto.cryptsetup",
+  "ugrd.kmod.nosound",
+  "ugrd.kmod.novideo",
+  "ugrd.kmod.nonetwork",
 ]
+
+kmod_autodetect_lsmod = true
+
 
 # Information about the LUKS volume
 [cryptsetup.root]
