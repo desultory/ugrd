@@ -26,7 +26,7 @@ def main():
                  {'flags': ['--print-config'], 'action': 'store_true', 'help': 'Print the final config dict.'},
                  {'flags': ['out_file'], 'action': 'store', 'help': 'Output file location', 'nargs': '?'}]
 
-    args, logger = get_args_n_logger(package=__package__, description='MicrogRAM disk initramfs generator', arguments=arguments)
+    args, logger = get_args_n_logger(package=__package__, description='MicrogRAM disk initramfs generator', arguments=arguments, drop_default=True)
     kwargs = get_kwargs_from_args(args, logger=logger)
     kwargs.pop('print_config', None)  # This is not a valid kwarg for InitramfsGenerator
 
