@@ -1,6 +1,6 @@
 binaries = [ "loadkeys" ]
 
-[imports.init_early]
+[imports.init_pre]
 "ugrd.base.keymap" = [ "set_keymap" ]
  
 [imports.config_processing]

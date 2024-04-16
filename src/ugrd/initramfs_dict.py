@@ -1,6 +1,6 @@
 
 __author__ = "desultory"
-__version__ = "0.13.1"
+__version__ = "0.14.0"
 
 from tomllib import load, TOMLDecodeError
 from pathlib import Path
@@ -115,13 +115,27 @@ class InitramfsConfigDict(dict):
     def _process_imports(self, import_type: str, import_value: dict) -> None:
         """ Processes imports in a module, importing the functions and adding them to the appropriate list. """
         from importlib import import_module
+        from importlib.util import spec_from_file_location, module_from_spec
 
         self.logger.debug("Processing imports of type: %s" % import_type)
 
         for module_name, function_names in import_value.items():
             self.logger.debug("Importing module: %s" % module_name)
 
-            module = import_module(module_name)
+            try:
+                module = import_module(module_name)
+            except ModuleNotFoundError as e:
+                module_path = Path('/var/lib/ugrd/' + module_name.replace('.', '/')).with_suffix('.py')
+                self.logger.debug("Attempting to sideload module from: %s" % module_path)
+                if not module_path.exists():
+                    raise ModuleNotFoundError("Module not found: %s" % module_name) from e
+                try:
+                    spec = spec_from_file_location(module_name, module_path)
+                    module = module_from_spec(spec)
+                    spec.loader.exec_module(module)
+                except Exception as e:
+                    raise ModuleNotFoundError("Unable to load module: %s" % module_name) from e
+
             self.logger.log(5, "[%s] Imported module contents: %s" % (module_name, dir(module)))
             if '_module_name' in dir(module) and module._module_name != module_name:
                 self.logger.warning("Module name mismatch: %s != %s" % (module._module_name, module_name))
