@@ -1,0 +1,9 @@
+[imports.init_early]
+"ugrd.base.keymap" = [ "set_keymap" ]
+
+ 
+[imports.config_processing]
+"ugrd.base.keymap" = [ "_process_keymap_file" ]
+
+[custom_parameters]
+keymap_file = "str"  # Path to the keymap file to load
