@@ -37,9 +37,7 @@ is relatively restricted.
 
 ugrd attempts to validate passed config, and raise warnings/exceptions indicating potential issues before it leaves the user in a broken boot environment.
 
-In cases where options are specified at runtime, ugrd aims to provide options for fail mechanisms if desired.
-
-> A recovery shell can be enabled with the debug module, but ugrd does not give the user shell access at runtime otherwise.
+> A debug shell can be enabled with the debug module, otherwise, the user will not have shell access at runtime.
 
 ## Installation
 
