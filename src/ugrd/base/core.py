@@ -92,6 +92,20 @@ def deploy_dependencies(self) -> None:
         self._copy(dependency)
 
 
+def deploy_gz_dependencies(self) -> None:
+    """ Decompresses all gzip dependencies into the build directory. """
+    from gzip import decompress
+    for gz_dependency in self['gz_dependencies']:
+        self.logger.debug("Decompressing: %s" % gz_dependency)
+        out_path = self._get_build_path(str(gz_dependency).replace('.gz', ''))
+        if not out_path.parent.is_dir():
+            self.logger.debug("Creating parent directory: %s" % out_path.parent)
+            self._mkdir(out_path.parent)
+        with out_path.open('wb') as out_file:
+            out_file.write(decompress(gz_dependency.read_bytes()))
+            self.logger.info("Decompressed '%s' to: %s" % (gz_dependency, out_path))
+
+
 def deploy_copies(self) -> None:
     """ Copies everything from self['copies'] into the build directory. """
     for copy_name, copy_parameters in self['copies'].items():
@@ -196,7 +210,7 @@ def _process_dependencies_multi(self, dependency: Union[Path, str]) -> None:
 
     if dependency.is_symlink():
         if self['symlinks'].get(f'_auto_{dependency.name}'):
-            self.logger.log(5, "Dependency is a symlink which is alreadty in the symlinks list, skipping: %s" % dependency)
+            self.logger.log(5, "Dependency is a symlink which is already in the symlinks list, skipping: %s" % dependency)
         else:
             resolved_path = dependency.resolve()
             self.logger.debug("Dependency is a symlink, adding to symlinks: %s -> %s" % (dependency, resolved_path))
@@ -205,6 +219,23 @@ def _process_dependencies_multi(self, dependency: Union[Path, str]) -> None:
 
     self.logger.debug("Adding dependency: %s" % dependency)
     self['dependencies'].append(dependency)
+
+
+def _process_gz_dependencies_multi(self, dependency: Union[Path, str]) -> None:
+    """
+    Checks that the file is a gz file, and adds it to the gz dependencies list.
+    !! Resolves symlinks implicitly !!
+    """
+    if not isinstance(dependency, Path):
+        dependency = Path(dependency)
+
+    if not dependency.exists():
+        raise FileNotFoundError("GZIP dependency does not exist: %s" % dependency)
+
+    if dependency.suffix != '.gz':
+        self.logger.warning("GZIP dependency missing gzip extension: %s" % dependency)
+
+    self['gz_dependencies'].append(dependency)
 
 
 def _process_build_logging(self, log_build: bool) -> None:

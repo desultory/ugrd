@@ -1,4 +1,4 @@
-# THis config will pull kmods required for VMs to boot
+# This config will pull kmods required for VMs to boot, enables the cmdline parameter for easier debugging
 # Commented config will  decrypt the volume with UUID "38a5c4d2-f5af-404a-a663-d789e443a40c", mapping it to /dev/mapper/root
 
 modules = [

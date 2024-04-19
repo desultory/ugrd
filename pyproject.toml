@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ugrd"
-version = "0.22.2"
+version = "1.0.0"
 authors = [
   { name="Desultory", email="dev@pyl.onl" },
 ]
@@ -18,8 +18,8 @@ classifiers = [
 ]
 
 dependencies = [
-    "zenlib >= 1.7.4",
-    "pycpio >= 0.9.1"
+    "zenlib >= 2.0.0",
+    "pycpio >= 1.0.0"
 ]
 
 [options]
