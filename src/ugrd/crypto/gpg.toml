@@ -1,6 +1,8 @@
 modules = [ "ugrd.base.console", "ugrd.crypto.cryptsetup" ]
 
-binaries = [ "/usr/bin/gpg", "/usr/bin/gpg-agent", "/usr/bin/gpgconf", "/usr/bin/gpg-connect-agent", "/usr/bin/pinentry-tty", "/usr/libexec/keyboxd"]
+binaries = [ "/usr/bin/gpg", "/usr/bin/gpg-agent", "/usr/bin/gpgconf", "/usr/bin/gpg-connect-agent", "/usr/bin/pinentry-tty"]
+
+gpg_keyboxd = false
 
 [cryptsetup_key_types.gpg]
 key_command = "gpg --decrypt {key_file} >"
@@ -9,9 +11,16 @@ key_command = "gpg --decrypt {key_file} >"
 source = "/usr/bin/pinentry-tty"
 target = "/usr/bin/pinentry"
 
+[imports.build_tasks]
+"ugrd.crypto.gpg" = [ "write_gpg_config" ]
+
+[imports.config_processing]
+"ugrd.crypto.gpg" = [ "_process_gpg_keyboxd" ]
+
 [imports.init_early]
 "ugrd.crypto.gpg" = [ "start_agent" ]
 
 [custom_parameters]
 gpg_agent_args = "NoDupFlatList"  # Arguments to be passed to the gpg-agent
-
+gpg_common_conf = "NoDupFlatList"  # Common configuration options for gpg
+gpg_keyboxd = "bool"  # Enable the keybox daemon
