@@ -21,6 +21,6 @@ def write_gpg_config(self):
         self['gpg_common_conf'] = 'no-usekeyboxd'
 
     if self['gpg_common_conf']:
-        self._write('/root/.gnupg/common.conf', self['gpg_common_conf'])
+        self._write('/.gnupg/common.conf', self['gpg_common_conf'])
     else:
         self.logger.debug("No GPG common configuration provided.")
