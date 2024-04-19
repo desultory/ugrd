@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '0.6.0'
+__version__ = '1.0.0'
 
 
 def _process_gpg_keyboxd(self, keyboxd_enabled: bool) -> None:
@@ -18,7 +18,7 @@ def start_agent(self) -> str:
 def write_gpg_config(self):
     """ Write the GPG configuration file. """
     if not self['gpg_keyboxd']:
-        self['gpg_common_conf'] = 'no-usekeyboxd'
+        self['gpg_common_conf'] = 'no-use-keyboxd'
 
     if self['gpg_common_conf']:
         self._write('/.gnupg/common.conf', self['gpg_common_conf'])
