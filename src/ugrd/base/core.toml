@@ -21,6 +21,7 @@ minor = 1
 "ugrd.base.core" = [ "_process_build_logging",
 		     "_process_binaries_multi",
 		     "_process_dependencies_multi",
+		     "_process_opt_dependencies_multi",
 		     "_process_gz_dependencies_multi",
 		     "_process_copies_multi",
 		     "_process_symlinks_multi",
@@ -46,13 +47,14 @@ minor = 1
 
 [custom_parameters]
 binaries = "NoDupFlatList"  # Binaries which should be included in the intiramfs, dependencies resolved with lddtree
-dependencies = "NoDupFlatList"  # Add the dependencies property, used to define the dependencies of the initramfs
-gz_dependencies = "NoDupFlatList"  # Add the dependencies property, used to define the gzipped dependencies (will be extracted)
-library_paths = "NoDupFlatList"  # Add the library_paths property, used to define the library paths to add to LD_LIBRARY_PATH
-symlinks = "dict"  # Add the symlinks property, used to define the symlinks to be made in the initramfs
-copies = "dict"  # Add the copies property, used to define the files to be copied to the initramfs
-nodes = "dict"  # Add the nodes property, used to define the device nodes to be created
-paths = "NoDupFlatList"  # Paths to be copied to the initramfs
+dependencies = "NoDupFlatList"  # Dependencies, used to define the dependencies of the initramfs
+opt_dependencies = "NoDupFlatList"  # Optional dependencies, which will be included if they are found
+gz_dependencies = "NoDupFlatList"  # GZipped dependencies property, used to define the gzipped dependencies (will be extracted)
+library_paths = "NoDupFlatList"  # library_paths property, used to define the library paths to add to LD_LIBRARY_PATH
+symlinks = "dict"  # Symlinks dict, defines the symlinks to be made in the initramfs
+copies = "dict"  # Copies dict, defines the files to be copied to the initramfs
+nodes = "dict"  # Nodes dict, defines the device nodes to be created
+paths = "NoDupFlatList"  # Paths to be created in the initramfs
 masks = "dict"  # Imports to be masked in the initramfs
 build_dir = "Path"  # The directory where the initramfs is built
 build_logging = "bool" # If true, additional build information will be logged to the console

@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.3.3'
+__version__ = '3.0.0'
 
 from pathlib import Path
 from typing import Union
@@ -219,6 +219,15 @@ def _process_dependencies_multi(self, dependency: Union[Path, str]) -> None:
 
     self.logger.debug("Adding dependency: %s" % dependency)
     self['dependencies'].append(dependency)
+
+
+def _process_opt_dependencies_multi(self, dependency: Union[Path, str]) -> None:
+    """ Processes optional dependencies. """
+    try:
+        _process_dependencies_multi(self, dependency)
+    except FileNotFoundError as e:
+        self.logger.warning("Optional dependency not found, skipping: %s" % dependency)
+        self.logger.debug(e)
 
 
 def _process_gz_dependencies_multi(self, dependency: Union[Path, str]) -> None:
