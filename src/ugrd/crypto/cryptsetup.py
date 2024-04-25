@@ -148,6 +148,9 @@ def open_crypt_device(self, name: str, parameters: dict) -> list[str]:
         out += [f"    echo 'Using header file: {header_file}'"]
         cryptsetup_command += f' --header {header_file}'
 
+    if self['cryptsetup_trim']:
+        cryptsetup_command += ' --allow-discards'
+
     # Add the variable for the source device and mapped name
     cryptsetup_command += f' $CRYPTSETUP_SOURCE_{name} {name}'
     out += [cryptsetup_command]
