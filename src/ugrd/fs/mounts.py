@@ -203,6 +203,8 @@ def _process_mount_timeout(self, timeout: int) -> None:
     if not self['mount_wait']:
         self.logger.info("Enabling mount wait, as a timeout is set: %s" % timeout)
         self['mount_wait'] = True
+    if not isinstance(timeout, int):
+        raise ValueError("Invalid timeout value: %s" % timeout)
     dict.__setitem__(self, 'mount_timeout', timeout)
 
 
