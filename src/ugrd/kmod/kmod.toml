@@ -1,8 +1,5 @@
 binaries = [ "modprobe", "lsmod" ]
 
-# Ignore this because it's only builtin
-kmod_ignore = ['pcieport', 'piix4_smbus', 'i801_smbus']
-
 kmod_pull_firmware = true
 
 [custom_parameters]
