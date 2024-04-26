@@ -3,4 +3,4 @@ kmod_ignore = ['r8169', 'iwlwifi', 'r8169', 'stp', 'rfkill', '8021q', 'llc', 'ga
 	       'iptable_filter', 'nf_conntrack', 'nf_defrag_ipv4', 'ip6_tables', 'usbnet', 'wireguard', 'ip6table_filter',
 	       'iptable_mangle', 'mac80211', 'ipt_REJECT', 'ip_tables', 'xt_CHECKSUM', 'iptable_nat', 'nf_reject_ipv4',
 	       'ip6_udp_tunnel', 'udp_tunnel', 'nf_nat', 'btmtk', 'bluetooth', 'ip6table_mangle', 'bridge', 'iwlmvm',
-	       'btintel', 'btrtl', 'r8153_ecm', 'cdc_ether', 'cfg80211', 'vhost_net']
+	       'btintel', 'btrtl', 'r8153_ecm', 'cdc_ether', 'cfg80211', 'vhost_net', 'igb']
