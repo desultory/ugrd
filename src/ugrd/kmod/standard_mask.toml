@@ -6,4 +6,4 @@ modules = [
 
 kmod_ignore = [ 'kvm', 'kvm_amd', 'kvm_intel', 'ch341', 'cp210x', 'joydev', 'iTCO_wdt', 'iTCO_vendor_support', 'intel_qat',
                 'intel_powerclamp', 'binfmt_misc', 'coretemp', 'wmi', 'intel_cstate', 'rapl', 'intel_rapl_common',
-                'x86_pkg_temp_thermal', 'intel_rapl_msr', 'intel_pmc_bxt' ]
+                'x86_pkg_temp_thermal', 'intel_rapl_msr', 'intel_pmc_bxt', 'i2c_ismt', 'i2c_i801' ]
