@@ -28,4 +28,4 @@ cryptsetup_key_type = "str"  # The default key type to use for unlocking devices
 cryptsetup_key_types = "dict"  # Dict containing key types and their associated mount commands
 cryptsetup_retries = "int"  # Number of times to retry unlocking a device
 cryptsetup_autoretry = "bool"  # Whether to automatically retry unlocking devices
-cryptsetup_trim = "bool"
+cryptsetup_trim = "bool"  # Adds the --allow-discards option to cryptsetup commands

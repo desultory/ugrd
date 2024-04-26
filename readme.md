@@ -352,7 +352,7 @@ This module handles CPIO creation.
 These are set at the global level and are not associated with an individual mount:
 
 * `mount_wait` (false) Waits for user input before attenmpting to mount the generated fstab at `init_main`.
-* `mount_timeout` - Timeout for `mount_wait` to automatically continue.
+* `mount_timeout` - Timeout for `mount_wait` to automatically continue, passed to `read -t`.
 
 #### ugrd.fs.btrfs
 
@@ -433,6 +433,7 @@ Cryptsetup global config:
 * `cryptsetup_key_type` - Sets the default `key_type` for all cryptsetup entries. 
 * `cryptsetup_retries` (5) The default number of times to try to unlock a device.
 * `cryptsetup_autoretry` (false) Whether or not to automatically retry mount attempts.
+* `cryptsetup_trim` (false) Whether or not to pass `--allow-discards` to cryptsetup (reduces security).
 
 ##### Key type definitions
 

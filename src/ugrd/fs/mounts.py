@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.1.1'
+__version__ = '2.2.0'
 
 from pathlib import Path
 
@@ -198,13 +198,13 @@ def remake_mountpoints(self) -> list[str]:
         return cmds
 
 
-def _process_mount_timeout(self, timeout: int) -> None:
+def _process_mount_timeout(self, timeout: float) -> None:
     """ Set the mount timeout, enables mount_wait. """
+    if not isinstance(timeout, (int, float)):
+        raise ValueError("Invalid timeout: %s" % timeout)
     if not self['mount_wait']:
         self.logger.info("Enabling mount wait, as a timeout is set: %s" % timeout)
         self['mount_wait'] = True
-    if not isinstance(timeout, int):
-        raise ValueError("Invalid timeout value: %s" % timeout)
     dict.__setitem__(self, 'mount_timeout', timeout)
 
 

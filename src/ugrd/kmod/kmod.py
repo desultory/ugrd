@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.0.0'
+__version__ = '2.1.0'
 
 from pathlib import Path
 from subprocess import run
@@ -27,7 +27,10 @@ def _process_kmod_ignore_multi(self, module: str) -> None:
     self.logger.log(5, "Removing kernel module from all lists: %s", module)
     for key in ['kmod_init', 'kernel_modules']:
         if module in self[key]:
-            self.logger.warning("Removing ignored kernel module from %s: %s" % (key, module))
+            if key == 'kmod_init':
+                self.logger.warning("Removing ignored kernel module from kmod_init: %s" % module)
+            else:
+                self.logger.debug("Removing ignored kernel module from kernel_modules: %s" % module)
             self[key].remove(module)
             self['_kmod_removed'] = module
 
@@ -44,15 +47,12 @@ def _process_kmod_init_multi(self, module: str) -> None:
     self['kernel_modules'] = module
 
 
+@check_dict('_kmod_modinfo', contains=True, unset=True, value_arg=1, log_level=5)
 def _get_kmod_info(self, module: str):
     """
     Runs modinfo on a kernel module, parses the output and stored the results in self['_kmod_modinfo'].
     Should be run after metadata is processed so the kver is set properly.
     """
-    if module in self['_kmod_modinfo']:
-        self.logger.log(5, "Module info already exists for: %s" % module)
-        return
-
     args = ['modinfo', module]
     # Set kernel version if it exists, otherwise use the running kernel
     if self.get('kernel_version'):
@@ -63,6 +63,9 @@ def _get_kmod_info(self, module: str):
         cmd = run(args, capture_output=True)
     except RuntimeError as e:
         raise DependencyResolutionError("[%s] Failed to run modinfo command: %s" % (module, ' '.join(args))) from e
+
+    if not cmd.stdout and cmd.stderr:
+        raise DependencyResolutionError("[%s] Modifo returned no output." % module)
 
     module_info = {}
     for line in cmd.stdout.decode().split('\n'):
@@ -172,16 +175,14 @@ def process_module_metadata(self) -> None:
         self['dependencies'] = meta_file_path
 
 
+@check_dict('_kmod_modinfo', contains=True, value_arg=1, raise_exception=True)
 def _add_kmod_firmware(self, kmod: str) -> None:
     """ Adds firmware files for the specified kernel module to the initramfs. """
-    if kmod not in self['_kmod_modinfo']:
-        raise ValueError("Kernel module not found in _kmod_modinfo: %s" % kmod)
+    if self['_kmod_modinfo'][kmod].get('firmware') and not self['kmod_pull_firmware']:
+        self.logger.warning("[%s] Kernel module has firmware files, but kmod_pull_firmware is not set." % kmod)
 
     if not self['_kmod_modinfo'][kmod].get('firmware') or not self.get('kmod_pull_firmware'):
         return
-
-    if self['_kmod_modinfo'][kmod].get('firmware') and self['kmod_pull_firmware']:
-        self.logger.warning("[%s] Kernel module has firmware files, but kmod_pull_firmware is not set." % kmod)
 
     for firmware in self['_kmod_modinfo'][kmod]['firmware']:
         firmware_path = Path('/lib/firmware') / firmware

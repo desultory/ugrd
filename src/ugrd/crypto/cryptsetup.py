@@ -150,6 +150,7 @@ def open_crypt_device(self, name: str, parameters: dict) -> list[str]:
 
     if self['cryptsetup_trim']:
         cryptsetup_command += ' --allow-discards'
+        self.logger.warning("Using --allow-discards can be a security risk.")
 
     # Add the variable for the source device and mapped name
     cryptsetup_command += f' $CRYPTSETUP_SOURCE_{name} {name}'
