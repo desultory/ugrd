@@ -198,6 +198,14 @@ def remake_mountpoints(self) -> list[str]:
         return cmds
 
 
+def _process_mount_timeout(self, timeout: int) -> None:
+    """ Set the mount timeout, enables mount_wait. """
+    if not self['mount_wait']:
+        self.logger.info("Enabling mount wait, as a timeout is set: %s" % timeout)
+        self['mount_wait'] = True
+    dict.__setitem__(self, 'mount_timeout', timeout)
+
+
 def mount_fstab(self) -> list[str]:
     """ Generates the init line for mounting the fstab. """
     out = []

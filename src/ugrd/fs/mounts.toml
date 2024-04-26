@@ -10,7 +10,7 @@ mount_wait = false
 autodetect_root = true
 
 [imports.config_processing]
-"ugrd.fs.mounts" = [ "_process_mounts_multi" ]
+"ugrd.fs.mounts" = [ "_process_mounts_multi", "_process_mount_timeout" ]
 
 [imports.build_pre]
 "ugrd.fs.mounts" = [ "autodetect_root" ]
