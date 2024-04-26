@@ -1,0 +1,8 @@
+modules = [
+  "ugrd.kmod.nosound",
+  "ugrd.kmod.novideo",
+  "ugrd.kmod.nonetwork"
+]
+
+kmod_ignore = [ 'kvm', 'kvm_amd', 'kvm_intel', 'ch341', 'cp210x', 'joydev', 'iTCO_wdt', 'iTCO_vendor_support', 'intel_qat',
+                'intel_powerclamp', 'binfmt_misc', 'coretemp' ]

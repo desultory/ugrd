@@ -1,1 +1,1 @@
-kmod_init = ['vfat']
+kmod_init = [ 'vfat', 'fat' ]

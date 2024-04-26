@@ -5,9 +5,7 @@
 
 modules = [
   "ugrd.base.base",
-  "ugrd.kmod.nosound",
-  "ugrd.kmod.novideo",
-  "ugrd.kmod.nonetwork",
+  "ugrd.kmod.standard_mask",
   "ugrd.base.cmdline",
 #  "ugrd.crypto.cryptsetup", # This is included by the gpg module
 #  "ugrd.crypto.gpg", # This is included by the smartcard module
