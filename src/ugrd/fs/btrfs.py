@@ -1,4 +1,4 @@
-__version__ = '1.6.0'
+__version__ = '1.6.1'
 __author__ = 'desultory'
 
 
@@ -27,6 +27,7 @@ def _get_mount_subvol(self, mountpoint: str) -> list:
 
 
 @check_dict('validate', value=True, message="Validate is not set, skipping root subvolume validation.")
+@check_dict('root_subvol', not_empty=True, message="root_subvol is not set, skipping validation.")
 def _validate_root_subvol(self) -> None:
     """ Validates the root subvolume. """
     try:
