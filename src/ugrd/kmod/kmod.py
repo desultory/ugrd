@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.1.0'
+__version__ = '2.1.1'
 
 from pathlib import Path
 from subprocess import run
@@ -74,7 +74,7 @@ def _get_kmod_info(self, module: str):
             module_info['filename'] = line.split()[1]
         elif line.startswith('depends:') and line != 'depends:':
             if ',' in line:
-                module_info['depends'] = line.split(',')[1:]
+                module_info['depends'] = line.split(':')[1].lstrip().split(',')
             else:
                 module_info['depends'] = [line.split()[1]]
         elif line.startswith('softdep:'):
