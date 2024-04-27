@@ -57,13 +57,13 @@ options = ['ro']
 [mounts.proc]
 type = "proc"
 source = "proc"
-options = ['nodev', 'noexec' ,'nosuid']
+options = ['nodev', 'noexec', 'nosuid']
 base_mount = true
 
 [mounts.sys]
 type = "sysfs"
 source = "sysfs"
-options = ['nodev', 'noexec' ,'nosuid']
+options = ['nodev', 'noexec', 'nosuid']
 base_mount = true
 
 [mounts.dev]

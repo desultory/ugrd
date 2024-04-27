@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.2.0'
+__version__ = '2.2.1'
 
 from pathlib import Path
 
@@ -107,17 +107,27 @@ def _get_mount_source(self, mount: dict, pad=False) -> str:
     return out_str
 
 
-def _to_mount_cmd(self, mount: dict) -> str:
+def _to_mount_cmd(self, mount: dict, check_mount=False) -> str:
     """ Prints the object as a mount command. """
-    out_str = f"mount {_get_mount_source(self, mount)} {mount['destination']}"
+    out = []
 
+    if check_mount:
+        out.append(f"if ! grep -qs {mount['destination']} /proc/mounts; then")
+
+    mount_command = f"mount {_get_mount_source(self, mount)} {mount['destination']}"
     if options := mount.get('options'):
-        out_str += f" --options {','.join(options)}"
-
+        mount_command += f" --options {','.join(options)}"
     if mount_type := mount.get('type'):
-        out_str += f" --types {mount_type}"
+        mount_command += f" --types {mount_type}"
 
-    return out_str
+    if check_mount:
+        out.append(f"    {mount_command}")
+        out += ['else', f"    echo 'Mount already exists, skipping: {mount['destination']}'"]
+        out.append('fi')
+    else:
+        out.append(mount_command)
+
+    return out
 
 
 def _to_fstab_entry(self, mount: dict) -> str:
@@ -187,7 +197,12 @@ def autodetect_root(self) -> None:
 
 def mount_base(self) -> list[str]:
     """ Generates mount commands for the base mounts. """
-    return [_to_mount_cmd(self, mount) for mount in self['mounts'].values() if mount.get('base_mount')]
+    out = []
+    for mount in self['mounts'].values():
+        if mount.get('base_mount'):
+            out += _to_mount_cmd(self, mount, check_mount=True)
+
+    return out
 
 
 def remake_mountpoints(self) -> list[str]:
@@ -355,7 +370,6 @@ def _mount_fail(self) -> list[str]:
             'mount',
             r'echo -e "\n\n\nPress enter to restart init\n\n\n"',
             'read -sr',
-            'clean_mounts',
             'if [ "$$" -eq 1 ]; then',
             '    echo "Restarting init"',
             '    exec /init',
