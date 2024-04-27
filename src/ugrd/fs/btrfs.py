@@ -1,4 +1,4 @@
-__version__ = '1.5.2'
+__version__ = '1.6.0'
 __author__ = 'desultory'
 
 
@@ -43,7 +43,6 @@ def _validate_root_subvol(self) -> None:
 def _process_root_subvol(self, root_subvol: str) -> None:
     """ processes the root subvolume. """
     self.update({'root_subvol': root_subvol})
-    _validate_root_subvol(self)
     self.logger.debug("Set root_subvol to: %s", root_subvol)
 
 
@@ -63,12 +62,14 @@ def btrfs_scan(self) -> str:
     return "btrfs device scan"
 
 
-@check_dict('root_subvol', unset=True, log_level=30, message="root_subvol is set, skipping.")
 @check_dict('subvol_selector', value=False, log_level=20, message="subvol_selector enabled, skipping.")
 @check_dict('autodetect_root_subvol', value=True, message="autodetect_root_subvol not enabled, skipping.")
 @check_dict('hostonly', value=True, message="hostonly is not set, skipping.")
 def autodetect_root_subvol(self):
     """ Detects the root subvolume. """
+    if self['root_subvol']:
+        self.logger.debug("root_subvol is set, skipping autodetection.")
+        return
     try:
         root_subvol = _get_mount_subvol(self, '/')
         self.logger.info("Detected root subvolume: %s", root_subvol)
@@ -109,5 +110,6 @@ def select_subvol(self) -> str:
 @check_dict('root_subvol', message="root_subvol is not set, skipping")
 def set_root_subvol(self) -> str:
     """ Adds the root_subvol to the root_mount options. """
+    _validate_root_subvol(self)
     return f'''echo -n ",subvol={self['root_subvol']}" >> /run/MOUNTS_ROOT_OPTIONS'''
 
