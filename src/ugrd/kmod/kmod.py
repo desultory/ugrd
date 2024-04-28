@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.1.1'
+__version__ = '2.1.2'
 
 from pathlib import Path
 from subprocess import run
@@ -186,6 +186,9 @@ def _add_kmod_firmware(self, kmod: str) -> None:
 
     for firmware in self['_kmod_modinfo'][kmod]['firmware']:
         firmware_path = Path('/lib/firmware') / firmware
+        if not firmware_path.exists():
+            self.logger.error("[%s] Firmware file does not exist: %s" % (kmod, firmware_path))
+            continue
         self.logger.debug("[%s] Adding firmware file to dependencies: %s" % (kmod, firmware_path))
         self['dependencies'] = firmware_path
 
