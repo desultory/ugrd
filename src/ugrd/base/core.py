@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '3.0.0'
+__version__ = '3.0.1'
 
 from pathlib import Path
 from typing import Union
@@ -324,8 +324,10 @@ def _process_file_owner(self, owner: Union[str, int]) -> None:
             self.logger.debug("Processing file owner: %s" % owner)
             owner = getpwnam(owner).pw_uid
             self.logger.info("Resolved uid: %s" % owner)
-        except KeyError as e:
-            raise KeyError("Unable to find uid for user: %s" % owner) from e
+        except KeyError:
+            self.logger.error("Unable to find uid for user: %s" % owner)
+            self.logger.warning("Setting file owner to 0 (root)")
+            owner = 0
     elif not isinstance(owner, int):
         self.logger.error("Unable to process file owner: %s" % owner)
         raise ValueError("Invalid type passed for file owner: %s" % type(owner))
