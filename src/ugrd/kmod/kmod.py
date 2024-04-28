@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.1.2'
+__version__ = '2.1.3'
 
 from pathlib import Path
 from subprocess import run
@@ -65,7 +65,7 @@ def _get_kmod_info(self, module: str):
         raise DependencyResolutionError("[%s] Failed to run modinfo command: %s" % (module, ' '.join(args))) from e
 
     if not cmd.stdout and cmd.stderr:
-        raise DependencyResolutionError("[%s] Modifo returned no output." % module)
+        raise DependencyResolutionError("[%s] Modinfo returned no output." % module)
 
     module_info = {}
     for line in cmd.stdout.decode().split('\n'):
@@ -187,6 +187,7 @@ def _add_kmod_firmware(self, kmod: str) -> None:
     for firmware in self['_kmod_modinfo'][kmod]['firmware']:
         firmware_path = Path('/lib/firmware') / firmware
         if not firmware_path.exists():
+            # Really, this should be a huge error, but with xhci_pci, it wants some renesas firmware that's not in linux-firmware and doesn't seem to matter
             self.logger.error("[%s] Firmware file does not exist: %s" % (kmod, firmware_path))
             continue
         self.logger.debug("[%s] Adding firmware file to dependencies: %s" % (kmod, firmware_path))
