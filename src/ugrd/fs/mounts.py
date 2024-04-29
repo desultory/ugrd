@@ -200,7 +200,7 @@ def autodetect_root(self) -> None:
     self.logger.debug("Detected root mount info: %s" % root_mount_info)
 
     # Check if the mount is under /dev/mapper or starts with /dev/dm-
-    if '/dev/mapper/' in root_mount_info['name'] or '/dev/dm-' in root_mount_info['name']:
+    if root_mount_info['name'].startswith('/dev/mapper') or root_mount_info['name'].startswith('/dev/dm-'):
         mount_loc = Path(root_mount_info['name']).resolve()
         self.logger.debug("Detected a device mapper mount: %s" % mount_loc)
 
@@ -212,7 +212,8 @@ def autodetect_root(self) -> None:
             self.logger.error("Device mapper devices: %s" % dm_info)
             raise RuntimeError("Multiple device mapper devices found for: %s" % mount_loc)
 
-        if mount_loc.name not in dm_info:
+        if mount_loc.name not in dm_info and Path(root_mount_info['name']).name not in dm_info:
+            self.logger.error("Could not verify device mapper device: %s (%s)" % (mount_loc.name, Path(root_mount_info['name']).name))
             raise RuntimeError("Device mapper device not found for: %s" % mount_loc)
 
         if len(dm_info[mount_loc.name]['holders']) > 0:

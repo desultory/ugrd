@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.4.0'
+__version__ = '1.4.1'
 
 from zenlib.util import check_dict
 
@@ -55,10 +55,8 @@ def _get_device_path_from_token(self, token: tuple[str, str]) -> str:
     return device_path
 
 
-def _process_cryptsetup_multi(self, mapped_name: str, config: dict) -> None:
-    """ Processes the cryptsetup configuration """
-    config = _merge_cryptsetup(self, mapped_name, config)  # Merge the config with the existing configuration
-    self.logger.debug("[%s] Processing cryptsetup configuration: %s" % (mapped_name, config))
+def _validate_cryptsetup_config(self, mapped_name: str, config: dict) -> None:
+    self.logger.log(5, "[%s] Validating cryptsetup configuration: %s" % (mapped_name, config))
     for parameter in config:
         if parameter not in CRYPTSETUP_PARAMETERS:
             raise ValueError("Invalid parameter: %s" % parameter)
@@ -67,8 +65,14 @@ def _process_cryptsetup_multi(self, mapped_name: str, config: dict) -> None:
     if config.get('header_file') and (not config.get('partuuid') and not config.get('path')):
         raise ValueError("A partuuid or device path must be specified when using detached headers: %s" % mapped_name)
     elif not any([config.get('partuuid'), config.get('uuid'), config.get('path')]):
-        raise ValueError("A devuce uuid, partuuid, or path must be specified for cryptsetup mounts: %s" % mapped_name)
+        self.logger.error("A device uuid, partuuid, or path must be specified for cryptsetup mount: %s" % mapped_name)
 
+
+def _process_cryptsetup_multi(self, mapped_name: str, config: dict) -> None:
+    """ Processes the cryptsetup configuration """
+    config = _merge_cryptsetup(self, mapped_name, config)  # Merge the config with the existing configuration
+    _validate_cryptsetup_config(self, mapped_name, config)  # Validate the configuration
+    self.logger.debug("[%s] Processing cryptsetup configuration: %s" % (mapped_name, config))
     # Check if the key type is defined in the configuration, otherwise use the default, check if it's valid
     if key_type := config.get('key_type', self.get('cryptsetup_key_type')):
         self.logger.debug("[%s] Using key type: %s" % (mapped_name, key_type))
@@ -103,7 +107,10 @@ def get_crypt_sources(self) -> list[str]:
         elif not parameters.get('partuuid') and not parameters.get('uuid'):
             raise ValueError("Validation must be disabled to use device paths with the cryptsetup module.")
         else:
-            token = ('PARTUUID', parameters['partuuid']) if parameters.get('partuuid') else ('UUID', parameters['uuid'])
+            try:
+                token = ('PARTUUID', parameters['partuuid']) if parameters.get('partuuid') else ('UUID', parameters['uuid'])
+            except KeyError:
+                raise ValueError("A partuuid or uuid must be specified for cryptsetup mount: %s" % name)
             self.logger.debug("[%s] Created block device identifier token: %s" % (name, token))
             parameters['_host_device_path'] = _get_device_path_from_token(self, token)
             # Add a blkid command to get the source device in the initramfs, only match if the device has a partuuid
