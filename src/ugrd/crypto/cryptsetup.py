@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.4.2'
+__version__ = '1.4.3'
 
 from zenlib.util import check_dict
 
@@ -63,7 +63,9 @@ def _validate_cryptsetup_config(self, mapped_name: str, config: dict) -> None:
 
     # The partuuid must be specified if using a detached header
     if config.get('header_file') and (not config.get('partuuid') and not config.get('path')):
-        raise ValueError("A partuuid or device path must be specified when using detached headers: %s" % mapped_name)
+        self.logger.warning("A partuuid or device path must be specified when using detached headers: %s" % mapped_name)
+        if config.get('uuid'):
+            raise ValueError("A UUID cannot be used with a detached header: %s" % mapped_name)
     elif not any([config.get('partuuid'), config.get('uuid'), config.get('path')]):
         self.logger.warning("A device uuid, partuuid, or path must be specified for cryptsetup mount: %s" % mapped_name)
 
