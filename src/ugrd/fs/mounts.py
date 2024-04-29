@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.3.3'
+__version__ = '2.3.4'
 
 from pathlib import Path
 
@@ -213,11 +213,10 @@ def autodetect_root(self) -> None:
             self.logger.error("Device mapper devices: %s" % dm_info)
             raise RuntimeError("Multiple device mapper devices found for: %s" % mount_loc)
 
-        if mount_loc.name not in dm_info and Path(root_mount_info['name']).name not in dm_info:
-            self.logger.warning("Could not verify device mapper device: %s (%s)" % (mount_loc.name, Path(root_mount_info['name']).name))
-            self.logger.info("Device mapper devices: %s" % dm_info)
-
         dm_info = dm_info.popitem()[1]
+
+        if mount_loc.name != dm_info['name']:
+            raise ValueError("Device mapper device name mismatch: %s != %s" % (mount_loc.name, dm_info['name']))
 
         if len(dm_info['holders']) > 0:
             self.logger.error("Device mapper holders: %s" % dm_info['holders'])
