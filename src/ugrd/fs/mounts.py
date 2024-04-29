@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.3.0'
+__version__ = '2.3.2'
 
 from pathlib import Path
 
@@ -182,11 +182,12 @@ def _get_dm_devices(self, f_major=None, f_minor=None) -> dict:
                 self.logger.debug("[%s] Skipping device mapper device, minor mismatch: %s != %s" % (device_name, minor, f_minor))
                 continue
 
-            dm_devices[device_name] = {}
-            dm_devices[device_name]['major'] = maj
-            dm_devices[device_name]['minor'] = minor
-            dm_devices[device_name]['holders'] = [holder.name for holder in (dm_device / 'holders').iterdir()]
-            dm_devices[device_name]['slaves'] = [slave.name for slave in (dm_device / 'slaves').iterdir()]
+            dm_devices[dm_device.name] = {}
+            dm_devices[dm_device.name]['name'] = device_name
+            dm_devices[dm_device.name]['major'] = maj
+            dm_devices[dm_device.name]['minor'] = minor
+            dm_devices[dm_device.name]['holders'] = [holder.name for holder in (dm_device / 'holders').iterdir()]
+            dm_devices[dm_device.name]['slaves'] = [slave.name for slave in (dm_device / 'slaves').iterdir()]
 
     self.logger.debug("Found device mapper devices: %s" % dm_devices)
     return dm_devices
@@ -213,20 +214,22 @@ def autodetect_root(self) -> None:
             raise RuntimeError("Multiple device mapper devices found for: %s" % mount_loc)
 
         if mount_loc.name not in dm_info and Path(root_mount_info['name']).name not in dm_info:
-            self.logger.error("Could not verify device mapper device: %s (%s)" % (mount_loc.name, Path(root_mount_info['name']).name))
-            raise RuntimeError("Device mapper device not found for: %s" % mount_loc)
+            self.logger.warning("Could not verify device mapper device: %s (%s)" % (mount_loc.name, Path(root_mount_info['name']).name))
+            self.logger.info("Device mapper devices: %s" % dm_info)
 
-        if len(dm_info[mount_loc.name]['holders']) > 0:
-            self.logger.error("Device mapper holders: %s" % dm_info[mount_loc.name]['holders'])
+        dm_info = dm_info.popitem()[1]
+
+        if len(dm_info['holders']) > 0:
+            self.logger.error("Device mapper holders: %s" % dm_info['holders'])
             raise RuntimeError("LUKS volumes should not have holders, potential LVM volume: %s" % mount_loc.name)
 
-        if len(dm_info[mount_loc.name]['slaves']) == 0:
+        if len(dm_info['slaves']) == 0:
             raise RuntimeError("No slaves found for device mapper device, unknown type: %s" % mount_loc.name)
-        elif len(dm_info[mount_loc.name]['slaves']) > 1:
-            self.logger.error("Device mapper slaves: %s" % dm_info[mount_loc.name]['slaves'])
+        elif len(dm_info['slaves']) > 1:
+            self.logger.error("Device mapper slaves: %s" % dm_info['slaves'])
             raise RuntimeError("Multiple slaves found for device mapper device, unknown type: %s" % mount_loc.name)
 
-        luks_mount = _get_blkid_info(self, Path('/dev/' + dm_info[mount_loc.name]['slaves'][0]))
+        luks_mount = _get_blkid_info(self, Path('/dev/' + dm_info['slaves'][0]))
         if luks_mount['type'] != 'crypto_LUKS':
             raise ValueError("Unknown device mapper slave type: %s" % luks_mount['type'])
 
