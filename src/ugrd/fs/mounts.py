@@ -244,7 +244,8 @@ def autodetect_root(self) -> None:
             self.logger.info("[%s] Detected LUKS volume partuuid: %s" % (mount_loc.name, partuuid))
             self['cryptsetup'] = {dm_info['name']: {'partuuid': partuuid}}
 
-        self.logger.info("[%s] Configuring cryptsetup for LUKS mount on: %s\n%s" % (mount_loc.name, luks_mount['name'], pretty_print(self['cryptsetup'])))
+        self.logger.info("[%s] Configuring cryptsetup for LUKS mount (%s) on: %s\n%s" %
+                         (mount_loc.name, dm_info['name'], luks_mount['name'], pretty_print(self['cryptsetup'])))
 
     mount_info = {'root': {'type': 'auto', 'base_mount': False}}
 
