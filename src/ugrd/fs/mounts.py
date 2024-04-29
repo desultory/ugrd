@@ -213,9 +213,9 @@ def autodetect_root(self) -> None:
             self.logger.error("Device mapper devices: %s" % dm_info)
             raise RuntimeError("Multiple device mapper devices found for: %s" % mount_loc)
 
-        dm_info = dm_info.popitem()[1]
+        mapped_name, dm_info = dm_info.popitem()
 
-        if mount_loc.name != dm_info['name']:
+        if mount_loc.name != dm_info['name'] and mount_loc.name != mapped_name:
             raise ValueError("Device mapper device name mismatch: %s != %s" % (mount_loc.name, dm_info['name']))
 
         if len(dm_info['holders']) > 0:
