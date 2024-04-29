@@ -1,9 +1,9 @@
 __author__ = 'desultory'
-__version__ = '2.2.1'
+__version__ = '2.3.0'
 
 from pathlib import Path
 
-from zenlib.util import check_dict
+from zenlib.util import check_dict, pretty_print
 
 MOUNT_PARAMETERS = ['destination', 'source', 'type', 'options', 'base_mount', 'skip_unmount', 'remake_mountpoint']
 SOURCE_TYPES = ['uuid', 'partuuid', 'label']
@@ -167,6 +167,31 @@ def generate_fstab(self) -> None:
         self.logger.warning("No fstab entries generated.")
 
 
+def _get_dm_devices(self, f_major=None, f_minor=None) -> dict:
+    """ Returns a dict of device mapper devices. Filters by major and minor if specified."""
+    dm_devices = {}
+    for dm_device in (Path('/sys/devices/virtual/block').iterdir()):
+        if dm_device.name.startswith('dm-'):
+            device_name = (dm_device / 'dm/name').read_text().strip()
+            maj, minor = (dm_device / 'dev').read_text().strip().split(':')
+
+            if f_major is not None and int(f_major) != int(maj):
+                self.logger.debug("[%s] Skipping device mapper device, major mismatch: %s != %s" % (device_name, maj, f_major))
+                continue
+            if f_minor is not None and int(f_minor) != int(minor):
+                self.logger.debug("[%s] Skipping device mapper device, minor mismatch: %s != %s" % (device_name, minor, f_minor))
+                continue
+
+            dm_devices[device_name] = {}
+            dm_devices[device_name]['major'] = maj
+            dm_devices[device_name]['minor'] = minor
+            dm_devices[device_name]['holders'] = [holder.name for holder in (dm_device / 'holders').iterdir()]
+            dm_devices[device_name]['slaves'] = [slave.name for slave in (dm_device / 'slaves').iterdir()]
+
+    self.logger.debug("Found device mapper devices: %s" % dm_devices)
+    return dm_devices
+
+
 @check_dict('autodetect_root', value=True, log_level=10, message="Skipping root autodetection, autodetect_root is not set.")
 @check_dict({'mounts': {'root': 'source'}}, unset=True, log_level=30, message="Skipping root autodetection, root source is already set.")
 def autodetect_root(self) -> None:
@@ -174,19 +199,59 @@ def autodetect_root(self) -> None:
     root_mount_info = _get_blkid_info(self, _get_mounts_source_device(self, '/'))
     self.logger.debug("Detected root mount info: %s" % root_mount_info)
 
-    mount_data = root_mount_info.partition(':')[2].strip().split(' ')
-    root_dict = {key: value.strip('"') for key, value in (entry.split('=') for entry in mount_data)}
+    # Check if the mount is under /dev/mapper or starts with /dev/dm-
+    if '/dev/mapper/' in root_mount_info['name'] or '/dev/dm-' in root_mount_info['name']:
+        mount_loc = Path(root_mount_info['name']).resolve()
+        self.logger.debug("Detected a device mapper mount: %s" % mount_loc)
+
+        major, minor = mount_loc.stat().st_rdev >> 8, mount_loc.stat().st_rdev & 0xFF
+        self.logger.debug("[%s] Major: %s, Minor: %s" % (mount_loc, major, minor))
+        dm_info = _get_dm_devices(self, major, minor)
+
+        if len(dm_info) > 1:  # there should only be one device mapper device associated with the mount
+            self.logger.error("Device mapper devices: %s" % dm_info)
+            raise RuntimeError("Multiple device mapper devices found for: %s" % mount_loc)
+
+        if mount_loc.name not in dm_info:
+            raise RuntimeError("Device mapper device not found for: %s" % mount_loc)
+
+        if len(dm_info[mount_loc.name]['holders']) > 0:
+            self.logger.error("Device mapper holders: %s" % dm_info[mount_loc.name]['holders'])
+            raise RuntimeError("LUKS volumes should not have holders, potential LVM volume: %s" % mount_loc.name)
+
+        if len(dm_info[mount_loc.name]['slaves']) == 0:
+            raise RuntimeError("No slaves found for device mapper device, unknown type: %s" % mount_loc.name)
+        elif len(dm_info[mount_loc.name]['slaves']) > 1:
+            self.logger.error("Device mapper slaves: %s" % dm_info[mount_loc.name]['slaves'])
+            raise RuntimeError("Multiple slaves found for device mapper device, unknown type: %s" % mount_loc.name)
+
+        luks_mount = _get_blkid_info(self, Path('/dev/' + dm_info[mount_loc.name]['slaves'][0]))
+        if luks_mount['type'] != 'crypto_LUKS':
+            raise ValueError("Unknown device mapper slave type: %s" % luks_mount['type'])
+
+        if 'ugrd.crypto.cryptsetup' not in self['modules']:
+            self.logger.info("Autodetected LUKS mount, enabling the cryptsetup module: %s" % luks_mount['name'])
+            self['modules'] = 'ugrd.crypto.cryptsetup'
+
+        if uuid := luks_mount.get('uuid'):
+            self.logger.info("[%s] Detected LUKS volume uuid: %s" % (mount_loc.name, uuid))
+            self['cryptsetup'] = {mount_loc.name: {'uuid': uuid}}
+        elif partuuid := luks_mount.get('partuuid'):
+            self.logger.info("[%s] Detected LUKS volume partuuid: %s" % (mount_loc.name, partuuid))
+            self['cryptsetup'] = {mount_loc.name: {'partuuid': partuuid}}
+
+        self.logger.info("[%s] Configuring cryptsetup for LUKS mount on: %s\n%s" % (mount_loc.name, luks_mount['name'], pretty_print(self['cryptsetup'])))
 
     mount_info = {'root': {'type': 'auto', 'base_mount': False}}
 
-    if mount_type := root_dict.get('TYPE'):
+    if mount_type := root_mount_info.get('type'):  # Attempt to autodetect the root type
         self.logger.info("Autodetected root type: %s" % mount_type)
         mount_info['root']['type'] = mount_type.lower()
 
-    if label := root_dict.get('LABEL'):
+    if label := root_mount_info.get('label'):  # Attempt to autodetect the root mount source
         self.logger.info("Autodetected root label: %s" % label)
         mount_info['root']['source'] = {'label': label}
-    elif uuid := root_dict.get('UUID'):
+    elif uuid := root_mount_info.get('uuid'):
         self.logger.info("Autodetected root uuid: %s" % uuid)
         mount_info['root']['source'] = {'uuid': uuid}
     else:
@@ -287,14 +352,19 @@ def _get_blkid_info(self, device: Path) -> str:
         self.logger.warning("Unable to find blkid info for: %s" % device)
         return None
 
-    mount_info = cmd.stdout.decode().strip()
+    blkid_info = cmd.stdout.decode().strip()
 
-    if not mount_info:
+    if not blkid_info:
         self.logger.warning("Unable to find blkid info for: %s" % device)
         return None
 
-    self.logger.debug("Found blkid info: %s" % mount_info)
-    return mount_info
+    self.logger.debug("[%s] Got blkid info: %s" % (device, blkid_info))
+
+    mount_name, mount_info = blkid_info.split(': ')
+    mount_dict = {key.lower(): value.strip('"') for key, value in (mount_info.split('=') for mount_info in mount_info.split(' '))}
+    mount_dict['name'] = mount_name
+    self.logger.log(5, "Parsed blkid info: %s" % mount_dict)
+    return mount_dict
 
 
 @check_dict('validate', value=True, log_level=20, return_val=True, message="Skipping host mount validation.")
@@ -316,9 +386,8 @@ def _validate_host_mount(self, mount, destination_path=None) -> bool:
         if blkid_info := _get_blkid_info(self, host_source_dev):
             # Unholy for-else, breaks if the uuid, partuuid, or label matches, otherwise warns
             for key, value in source.items():
-                search_str = f'{key.upper()}="{value}"'
-                if value in blkid_info:
-                    self.logger.debug("Found host device match: %s" % search_str)
+                if blkid_info.get(key) == value:
+                    self.logger.debug("[%s] Found host device match, key '%s' == '%s' " % (host_source_dev, key, value))
                     return True
             else:
                 self.logger.error("Mount device not found on host system. Expected: %s" % source)

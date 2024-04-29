@@ -1,9 +1,20 @@
 __author__ = 'desultory'
-__version__ = '1.3.0'
+__version__ = '1.4.0'
+
+from zenlib.util import check_dict
+
 
 _module_name = 'ugrd.crypto.cryptsetup'
 
 CRYPTSETUP_PARAMETERS = ['key_type', 'partuuid', 'uuid', 'path', 'key_file', 'header_file', 'retries', 'key_command', 'reset_command', 'try_nokey']
+
+
+@check_dict('cryptsetup', value_arg=1, return_arg=2, contains=True)  # Check if the mapped name is defined
+def _merge_cryptsetup(self, mapped_name: str, config: dict) -> None:
+    """ Merges the cryptsetup configuration """
+    self.logger.log(5, "Existing cryptsetup configuration: %s" % self['cryptsetup'][mapped_name])
+    self.logger.debug("[%s] Merging cryptsetup configuration: %s" % (mapped_name, config))
+    return dict(self['cryptsetup'][mapped_name], **config)
 
 
 def _process_cryptsetup_key_types_multi(self, key_type: str, config: dict) -> None:
@@ -46,6 +57,7 @@ def _get_device_path_from_token(self, token: tuple[str, str]) -> str:
 
 def _process_cryptsetup_multi(self, mapped_name: str, config: dict) -> None:
     """ Processes the cryptsetup configuration """
+    config = _merge_cryptsetup(self, mapped_name, config)  # Merge the config with the existing configuration
     self.logger.debug("[%s] Processing cryptsetup configuration: %s" % (mapped_name, config))
     for parameter in config:
         if parameter not in CRYPTSETUP_PARAMETERS:
