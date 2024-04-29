@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.3.2'
+__version__ = '2.3.3'
 
 from pathlib import Path
 
@@ -239,10 +239,10 @@ def autodetect_root(self) -> None:
 
         if uuid := luks_mount.get('uuid'):
             self.logger.info("[%s] Detected LUKS volume uuid: %s" % (mount_loc.name, uuid))
-            self['cryptsetup'] = {mount_loc.name: {'uuid': uuid}}
+            self['cryptsetup'] = {luks_mount['name']: {'uuid': uuid}}
         elif partuuid := luks_mount.get('partuuid'):
             self.logger.info("[%s] Detected LUKS volume partuuid: %s" % (mount_loc.name, partuuid))
-            self['cryptsetup'] = {mount_loc.name: {'partuuid': partuuid}}
+            self['cryptsetup'] = {luks_mount['name']: {'partuuid': partuuid}}
 
         self.logger.info("[%s] Configuring cryptsetup for LUKS mount on: %s\n%s" % (mount_loc.name, luks_mount['name'], pretty_print(self['cryptsetup'])))
 
