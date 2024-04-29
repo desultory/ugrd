@@ -1,6 +1,6 @@
 
 __author__ = "desultory"
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 
 from tomllib import load, TOMLDecodeError
 from pathlib import Path
@@ -73,15 +73,12 @@ class InitramfsConfigDict(dict):
         else:
             self.logger.debug("[%s] Unable to determine expected type, valid builtin types: %s" % (key, self.builtin_parameters.keys()))
             self.logger.debug("[%s] Custom types: %s" % (key, self['custom_parameters'].keys()))
-            # If the key starts with an underscore, it's an internal parameter
-            # Create a queue that will be used to store values for later processing
-            if key.startswith('_'):
-                self.logger.warning("Adding unknown internal parameter to queue processing: %s" % key)
+            # for anything but the logger, add to the processing queue
+            if key != 'logger':
+                self.logger.warning("Adding unknown internal parameter to processing queue: %s" % key)
                 if key not in self['_processing']:
                     self['_processing'][key] = Queue()
                 self['_processing'][key].put(value)
-            elif key != 'logger':
-                raise ValueError("Detected undefined parameter type '%s' with value: %s" % (key, value))
 
     @handle_plural
     def _process_custom_parameters(self, parameter_name: str, parameter_type: type) -> None:
