@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '3.0.1'
+__version__ = '3.0.2'
 
 from pathlib import Path
 from typing import Union
@@ -17,7 +17,7 @@ def clean_build_dir(self) -> None:
         self.logger.warning("Cleaning build directory: %s" % self.build_dir)
         rmtree(self.build_dir)
     else:
-        self.logger.info("Build directory does not exist, skipping cleaningi: %s" % self.build_dir)
+        self.logger.info("Build directory does not exist, skipping cleaning: %s" % self.build_dir)
 
 
 def generate_structure(self) -> None:
