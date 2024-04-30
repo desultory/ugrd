@@ -16,6 +16,7 @@ The original goal of this project was to create an initramfs suitable for decryp
   - Allows for late insertion of a smartcard
   - Can fail back to plain password entry
 * Auto-detection and validation of the root mount using `/proc/mounts`
+* Auto-detection and validation of LUKS root mounts.
 * Auto-detection and validation of the btrfs subvolume used for the root mount, if present.
 * Dynamic BTRFS subvolume selection at boot time using `subvol_selector`.
 * Auto-detection of kernel modules using `lspci` and `lsmod`
@@ -297,6 +298,7 @@ Similarly `ugrd.kmod.novideo` `nonetwork`, and `nosound` exist to ignore video, 
 ### Filesystem modules
 
 `autodetect_root` (true) Set the root mount parameter based on the current root label or uuid.
+`autodetect_root_luks` (true) Attempt to automatically configure LUKS mounts for the root device.
 
 #### ugrd.fs.mounts
 

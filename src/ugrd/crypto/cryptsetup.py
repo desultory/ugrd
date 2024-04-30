@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.4.3'
+__version__ = '1.4.4'
 
 from zenlib.util import check_dict
 
@@ -106,7 +106,7 @@ def get_crypt_sources(self) -> list[str]:
         if parameters.get('path') and not self['validate']:
             self.logger.warning("Using device paths is unreliable and can result in boot failures.")
             out += [f"export CRYPTSETUP_SOURCE_{name}={parameters.get('path')}"]
-        elif not parameters.get('partuuid') and not parameters.get('uuid'):
+        elif not parameters.get('partuuid') and not parameters.get('uuid') and parameters.get('path'):
             raise ValueError("Validation must be disabled to use device paths with the cryptsetup module.")
         else:
             try:
