@@ -423,7 +423,7 @@ def mount_root(self) -> str:
             'mount "$(cat /run/MOUNTS_ROOT_SOURCE)" "$(cat /run/MOUNTS_ROOT_TARGET)" -o "$(cat /run/MOUNTS_ROOT_OPTIONS)"']
 
 
-@check_dict({'mounts': {'root': 'source'}}, log_level=20, raise_exception=True, message="Root mount source is not defined.")
+@check_dict({'mounts': {'root': 'source'}}, not_empty=True, log_level=20, raise_exception=True, message="Root mount source is not defined.")
 def export_mount_info(self) -> None:
     """ Exports mount info based on the config to /run/MOUNTS_ROOT_{option} """
     return [f'echo -n "{self["mounts"]["root"]["destination"]}" > "/run/MOUNTS_ROOT_TARGET"',

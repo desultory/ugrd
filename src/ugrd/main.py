@@ -24,7 +24,7 @@ def main():
                  {'flags': ['--autodetect-root'], 'action': 'store_true', 'help': 'Autodetect the root partition.'},
                  {'flags': ['--no-autodetect-root'], 'action': 'store_false', 'help': 'Do not autodetect the root partition.', 'dest': 'autodetect_root'},
                  {'flags': ['--autodetect-root-luks'], 'action': 'store_true', 'help': 'Autodetect LUKS volumes under the root partition.'},
-                 {'flags': ['--no-autodetect-root-luks'], 'action': 'store_false', 'help': 'Do not autodetect root LUKS volumes.', 'dest': 'autodetect_root'},
+                 {'flags': ['--no-autodetect-root-luks'], 'action': 'store_false', 'help': 'Do not autodetect root LUKS volumes.', 'dest': 'autodetect_root_luks'},
                  {'flags': ['--print-config'], 'action': 'store_true', 'help': 'Print the final config dict.'},
                  {'flags': ['out_file'], 'action': 'store', 'help': 'Output file location', 'nargs': '?'}]
 
