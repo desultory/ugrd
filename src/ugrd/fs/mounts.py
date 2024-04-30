@@ -229,7 +229,7 @@ def autodetect_root(self) -> None:
             raise RuntimeError("Multiple slaves found for device mapper device, unknown type: %s" % mount_loc.name)
 
         luks_mount = _get_blkid_info(self, Path('/dev/' + dm_info['slaves'][0]))
-        if luks_mount['type'] != 'crypto_LUKS':
+        if luks_mount.get('type') != 'crypto_LUKS':
             if not luks_mount.get('uuid'):
                 self.logger.error("[%s] Unknown device mapper slave type: %s" % (dm_info['slaves'][0], luks_mount['type']))
             else:
