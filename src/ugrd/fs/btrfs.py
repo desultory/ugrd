@@ -110,10 +110,9 @@ def select_subvol(self) -> str:
             f"umount -l {self['_base_mount_path']}"]
 
 
-@check_dict('root_subvol', not_empty=True)
+@check_dict('root_subvol', not_empty=True, message="root_subvol is not set, skipping.")
 def set_root_subvol(self) -> str:
     """ Adds the root_subvol to the root_mount options. """
-    self.logger.error('asdasdfa')
     _validate_root_subvol(self)
     return f'''echo -n ",subvol={self['root_subvol']}" >> /run/MOUNTS_ROOT_OPTIONS'''
 

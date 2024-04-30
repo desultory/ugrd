@@ -112,7 +112,7 @@ class InitramfsConfigDict(dict):
             self.logger.info("Processing queued values for '%s'" % parameter_name)
             while not self['_processing'][parameter_name].empty():
                 value = self['_processing'][parameter_name].get()
-                self.logger.debug("Processing queued value for '%s': %s" % (parameter_name, value))
+                self.logger.info("Processing queued value for '%s': %s" % (parameter_name, value))
                 self[parameter_name] = value
             self['_processing'].pop(parameter_name)
 
@@ -235,7 +235,7 @@ class InitramfsConfigDict(dict):
 
         self.logger.info("Verified module depndencies: %s" % self['mod_depends'])
         if self['_processing']:
-            self.logger.warning("Unprocessed config values: %s" % self['_processing'])
+            self.logger.warning("Unprocessed config values: %s" % ', '.join(list(self['_processing'].keys())))
 
     def verify_mask(self) -> None:
         """ Processes masked imports. """
