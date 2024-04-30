@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.3.4'
+__version__ = '2.4.0'
 
 from pathlib import Path
 
@@ -230,7 +230,10 @@ def autodetect_root(self) -> None:
 
         luks_mount = _get_blkid_info(self, Path('/dev/' + dm_info['slaves'][0]))
         if luks_mount['type'] != 'crypto_LUKS':
-            raise ValueError("Unknown device mapper slave type: %s" % luks_mount['type'])
+            if not luks_mount.get('uuid'):
+                self.logger.error("[%s] Unknown device mapper slave type: %s" % (dm_info['slaves'][0], luks_mount['type']))
+            else:
+                raise RuntimeError("[%s] Unknown device mapper slave type: %s" % (dm_info['slaves'][0], luks_mount['type']))
 
         if 'ugrd.crypto.cryptsetup' not in self['modules']:
             self.logger.info("Autodetected LUKS mount, enabling the cryptsetup module: %s" % luks_mount['name'])
