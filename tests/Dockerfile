@@ -25,4 +25,4 @@ COPY hooks/51-ugrd.install /etc/kernel/preinst.d
 COPY tests/vm.toml /etc/ugrd/config.toml
 RUN pip install --break .
 
-RUN ugrd
+RUN ugrd /ugrd.cpio

@@ -1,0 +1,21 @@
+# This configuration should autodetect root/luks info and use detached headers
+
+modules = [
+  "ugrd.base.base",
+  "ugrd.kmod.standard_mask",
+  "ugrd.crypto.cryptsetup"
+]
+
+# Wait a few seconds for storage to settle after modules are loaded if external or slow storage is used
+#mount_wait = true
+#mount_timeout = 3
+
+
+[mounts.boot]
+type = "vfat"
+
+  [mounts.boot.source]
+  uuid = "BDF2-0139"
+
+[cryptsetup.root]
+header_file = "/boot/luks_header.img"
