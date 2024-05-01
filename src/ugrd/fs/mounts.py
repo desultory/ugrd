@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.4.0'
+__version__ = '2.4.1'
 
 from pathlib import Path
 
@@ -252,9 +252,11 @@ def _autodetect_root_luks(self, root_mount_info: dict) -> None:
 def autodetect_root(self) -> None:
     """ Sets self['mounts']['root']['source'] based on the host mount. """
     root_mount_info = _get_blkid_info(self, _get_mounts_source_device(self, '/'))
+    if not root_mount_info:
+        raise RuntimeError("Failed to autodetect root mount source, and no source is set in the config.")
+
     self.logger.debug("Detected root mount info: %s" % root_mount_info)
     _autodetect_root_luks(self, root_mount_info)
-
     mount_info = {'root': {'type': 'auto', 'base_mount': False}}
 
     if mount_type := root_mount_info.get('type'):  # Attempt to autodetect the root type
