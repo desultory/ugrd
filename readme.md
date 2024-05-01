@@ -32,7 +32,7 @@ The original goal of this project was to create an initramfs suitable for decryp
 
 ugrd is designed to create images which provide a simple and secure environment to mount the root filesystem to boot.
 
-The created images are mostly static, defined by the config used to generate the image. In cases where behavior is determined at runtine,
+The created images are mostly static, defined by the config used to generate the image. In cases where behavior is determined at runtime,
 modules aim to restrict user input and fail by restarting the init process. This allows for some error handling, while ensuring the boot process
 is relatively restricted.
 
