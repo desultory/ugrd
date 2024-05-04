@@ -153,7 +153,7 @@ def _autodetect_modules_lspci(self) -> None:
         self.logger.warning("No kernel modules detected from lspci -k.")
 
 
-@check_dict('hostonly', value=True, message="hostonly is not set, skipping.")
+@check_dict('hostonly', value=True, log_level=30, message="hostonly is not set, skipping.")
 def autodetect_modules(self) -> None:
     """ Autodetects kernel modules from lsmod and/or lspci -k. """
     _autodetect_modules_lsmod(self)
