@@ -17,6 +17,6 @@ autodetect_root_subvol = true
 # Custom parameters
 [custom_parameters]
 _base_mount_path = "Path"  # Set the mount point for the root filesystem when used to check for subvols
-subvol_selector = "bool"  # Select a btrfs subvolume for the root partition at runtime
 root_subvol = "str"  # Set the default btrfs subvolume for the root filesystem
+subvol_selector = "bool"  # Select a btrfs subvolume for the root partition at runtime
 autodetect_root_subvol = "bool"  # Automatically detect the root subvolume

@@ -1,6 +1,6 @@
 
 __author__ = "desultory"
-__version__ = "1.0.2"
+__version__ = "1.1.0"
 
 from tomllib import load, TOMLDecodeError
 from pathlib import Path
@@ -75,7 +75,7 @@ class InitramfsConfigDict(dict):
             self.logger.debug("[%s] Custom types: %s" % (key, self['custom_parameters'].keys()))
             # for anything but the logger, add to the processing queue
             if key != 'logger':
-                self.logger.warning("Adding unknown internal parameter to processing queue: %s" % key)
+                self.logger.debug("Adding unknown internal parameter to processing queue: %s" % key)
                 if key not in self['_processing']:
                     self['_processing'][key] = Queue()
                 self['_processing'][key].put(value)
@@ -105,10 +105,10 @@ class InitramfsConfigDict(dict):
             self.logger.debug("Leaving '%s' as None" % parameter_name)
 
         if parameter_name in self['_processing']:
-            self.logger.info("Processing queued values for '%s'" % parameter_name)
+            self.logger.debug("Processing queued values for '%s'" % parameter_name)
             while not self['_processing'][parameter_name].empty():
                 value = self['_processing'][parameter_name].get()
-                self.logger.info("Processing queued value for '%s': %s" % (parameter_name, value))
+                self.logger.debug("Processing queued value for '%s': %s" % (parameter_name, value))
                 self[parameter_name] = value
             self['_processing'].pop(parameter_name)
 
@@ -206,19 +206,19 @@ class InitramfsConfigDict(dict):
             except TOMLDecodeError as e:
                 raise TOMLDecodeError("Unable to load module config: %s" % module) from e
 
-        # Import these first, as they affect how the rest of the config is processed
-        early_imports = ['imports', 'custom_parameters']
-        for import_type in early_imports:
-            if import_type in module_config:
-                self[import_type] = module_config[import_type]
-                self.logger.debug("[%s] Registered %s: %s" % (module, import_type, self[import_type]))
-
+        # First import all variabled, then import processing functions/imports in order
+        processing_imports = ['imports', 'custom_parameters']
         for name, value in module_config.items():
-            if name in early_imports:
+            if name in processing_imports:
                 self.logger.log(5, "[%s] Skipping '%s'" % (module, name))
                 continue
             self.logger.debug("[%s] Setting '%s' to: %s" % (module, name, value))
             self[name] = value
+
+        for import_type in processing_imports:
+            if import_type in module_config:
+                self[import_type] = module_config[import_type]
+                self.logger.debug("[%s] Registered %s: %s" % (module, import_type, self[import_type]))
 
         # Append the module to the list of loaded modules, avoid recursion
         self['modules'].append(module)
