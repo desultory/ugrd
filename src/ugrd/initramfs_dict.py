@@ -176,7 +176,7 @@ class InitramfsConfigDict(dict):
         takes list with decorator
         """
         if module in self['modules']:
-            self.logger.warning("Module '%s' already loaded" % module)
+            self.logger.debug("Module '%s' already loaded" % module)
             return
 
         self.logger.info("Processing module: %s" % module)

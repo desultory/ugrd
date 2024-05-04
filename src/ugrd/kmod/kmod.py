@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.1.3'
+__version__ = '2.2.0'
 
 from pathlib import Path
 from subprocess import run
@@ -123,7 +123,7 @@ def _get_lsmod_modules(self) -> list[str]:
     """ Gets the name of all currently installed kernel modules """
     from platform import uname
     if self.get('kernel_version') and self['kernel_version'] != uname().release:
-        self.logger.warning("Kernel version is set to %s, but the current kernel version is %s" % (self['kernel_version'], uname().release))
+        self.logger.critical("Kernel version is set to %s, but the current kernel version is %s" % (self['kernel_version'], uname().release))
 
     try:
         cmd = self._run(['lsmod'])
@@ -166,7 +166,19 @@ def calculate_modules(self) -> None:
 @check_dict('kmod_init', not_empty=True, message="kmod_init is not set, skipping.", log_level=30)
 def process_module_metadata(self) -> None:
     """ Adds kernel module metadata files to dependencies."""
+    if not self.get('kernel_version'):
+        try:
+            cmd = self._run(['uname', '-r'])
+        except RuntimeError as e:
+            raise DependencyResolutionError('Failed to get kernel version') from e
+
+        self['kernel_version'] = cmd.stdout.decode('utf-8').strip()
+        self.logger.info(f"Using detected kernel version: {self['kernel_version']}")
+
     module_path = Path('/lib/modules/') / self['kernel_version']
+
+    if not module_path.exists():
+        raise DependencyResolutionError("[%s] Kernel module directory does not exist for kernel version: %s" % (self['kernel_version'], module_path))
 
     for meta_file in MODULE_METADATA_FILES:
         meta_file_path = module_path / meta_file
@@ -226,15 +238,6 @@ def _process_kmod_dependencies(self, kmod: str) -> None:
 
 def process_modules(self) -> None:
     """ Processes all kernel modules, adding dependencies to the initramfs. """
-    if not self.get('kernel_version'):
-        try:
-            cmd = self._run(['uname', '-r'])
-        except RuntimeError as e:
-            raise DependencyResolutionError('Failed to get kernel version') from e
-
-        self['kernel_version'] = cmd.stdout.decode('utf-8').strip()
-        self.logger.info(f"Using detected kernel version: {self['kernel_version']}")
-
     self.logger.debug("Processing kernel modules: %s" % self['kernel_modules'])
     for kmod in self['kernel_modules'].copy():
         self.logger.debug("Processing kernel module: %s" % kmod)
