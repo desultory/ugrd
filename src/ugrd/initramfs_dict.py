@@ -1,6 +1,6 @@
 
 __author__ = "desultory"
-__version__ = "1.1.0"
+__version__ = "1.1.1"
 
 from tomllib import load, TOMLDecodeError
 from pathlib import Path
@@ -231,7 +231,7 @@ class InitramfsConfigDict(dict):
 
         self.logger.info("Verified module depndencies: %s" % self['mod_depends'])
         if self['_processing']:
-            self.logger.warning("Unprocessed config values: %s" % ', '.join(list(self['_processing'].keys())))
+            self.logger.critical("Unprocessed config values: %s" % ', '.join(list(self['_processing'].keys())))
 
     def verify_mask(self) -> None:
         """ Processes masked imports. """
