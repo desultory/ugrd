@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '3.1.1'
+__version__ = '3.1.2'
 
 from importlib.metadata import version
 from pathlib import Path
@@ -28,7 +28,7 @@ def _process_switch_root_target(self, target) -> None:
 @check_dict('init_target', unset=True, message='init_target already set.')
 def _process_autodetect_init(self, state) -> None:
     from shutil import which
-    dict.__setitem__(self, 'init_target', state)
+    dict.__setitem__(self, 'autodetect_init', state)
     if not state:
         return
 
