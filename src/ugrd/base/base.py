@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '3.1.0'
+__version__ = '3.1.1'
 
 from importlib.metadata import version
 from pathlib import Path
@@ -15,7 +15,7 @@ def _validate_init_target(self) -> None:
 
 def _process_init_target(self, target: Path) -> None:
     if not isinstance(target, Path):
-        target = Path(target)
+        target = Path(target).resolve()
     dict.__setitem__(self, 'init_target', target)
 
 
