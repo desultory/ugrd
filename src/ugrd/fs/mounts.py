@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.4.1'
+__version__ = '2.4.2'
 
 from pathlib import Path
 
@@ -67,6 +67,8 @@ def _process_mounts_multi(self, mount_name: str, mount_config) -> None:
     if mount_type := mount_config.get('type'):
         if mount_type == 'vfat':
             self['kmod_init'] = 'vfat'
+        if mount_type == 'ext4':
+            self['kmod_init'] = 'ext4'
         elif mount_type == 'btrfs':
             if 'ugrd.fs.btrfs' not in self['modules']:
                 self.logger.info("Auto-enabling module: btrfs")
