@@ -92,7 +92,6 @@ def _get_kmod_info(self, module: str):
     self['_kmod_modinfo'][module] = module_info
 
 
-@check_dict('hostonly', value=True, message="hostonly is not set, skipping.")
 def _get_lspci_modules(self) -> list[str]:
     """ Gets the name of all kernel modules being used by hardware visible in lspci -k. """
     try:
@@ -118,27 +117,15 @@ def _get_lspci_modules(self) -> list[str]:
     return list(modules)
 
 
-@check_dict('hostonly', value=True, message="hostonly is not set, skipping.")
 def _get_lsmod_modules(self) -> list[str]:
     """ Gets the name of all currently installed kernel modules """
     from platform import uname
     if self.get('kernel_version') and self['kernel_version'] != uname().release:
         self.logger.critical("Kernel version is set to %s, but the current kernel version is %s" % (self['kernel_version'], uname().release))
 
-    try:
-        cmd = self._run(['lsmod'])
-    except RuntimeError as e:
-        raise DependencyResolutionError('Failed to get list of kernel modules') from e
-
-    raw_modules = cmd.stdout.decode('utf-8').split('\n')[1:]
     modules = set()
-    # Remove empty lines, header
-    for module in raw_modules:
-        if not module:
-            self.logger.log(5, "Dropping empty line")
-        elif module.split()[0] == 'Module':
-            self.logger.log(5, "Dropping header line")
-        else:
+    with open('/proc/modules', 'r') as f:
+        for module in f.readlines():
             self.logger.debug("Adding kernel module: %s", module.split()[0])
             modules.add(module.split()[0])
 
@@ -146,21 +133,31 @@ def _get_lsmod_modules(self) -> list[str]:
     return list(modules)
 
 
-def calculate_modules(self) -> None:
-    """
-    If kmod_autodetect_lsmod is set, adds the contents of lsmod.
-    If kmod_autodetect_lspci is set, adds the contents of lspci -k.
-    Autodetected modules are added to kmod_init.
-    """
-    if self['kmod_autodetect_lsmod']:
-        if autodetected_modules := _get_lsmod_modules(self):
-            self.logger.info("Autodetected kernel modules from lsmod: %s" % autodetected_modules)
-            self['kmod_init'] = autodetected_modules
+@check_dict('kmod_autodetect_lsmod', value=True, message="kmod_autodetect_lsmod is not set, skipping.")
+def _autodetect_modules_lsmod(self) -> None:
+    """ Autodetects kernel modules from lsmod. """
+    if autodetected_modules := _get_lsmod_modules(self):
+        self.logger.info("Autodetected kernel modules from lsmod: %s" % autodetected_modules)
+        self['kmod_init'] = autodetected_modules
+    else:
+        self.logger.warning("No kernel modules detected from lsmod.")
 
-    if self['kmod_autodetect_lspci']:
-        if autodetected_modules := _get_lspci_modules(self):
-            self.logger.info("Autodetected kernel modules from lscpi -k: %s" % autodetected_modules)
-            self['kmod_init'] = autodetected_modules
+
+@check_dict('kmod_autodetect_lspci', value=True, message="kmod_autodetect_lspci is not set, skipping.")
+def _autodetect_modules_lspci(self) -> None:
+    """ Autodetects kernel modules from lspci -k. """
+    if autodetected_modules := _get_lspci_modules(self):
+        self.logger.info("Autodetected kernel modules from lscpi -k: %s" % autodetected_modules)
+        self['kmod_init'] = autodetected_modules
+    else:
+        self.logger.warning("No kernel modules detected from lspci -k.")
+
+
+@check_dict('hostonly', value=True, message="hostonly is not set, skipping.")
+def autodetect_modules(self) -> None:
+    """ Autodetects kernel modules from lsmod and/or lspci -k. """
+    _autodetect_modules_lsmod(self)
+    _autodetect_modules_lspci(self)
 
 
 @check_dict('kmod_init', not_empty=True, message="kmod_init is not set, skipping.", log_level=30)
