@@ -7,15 +7,15 @@ from pathlib import Path
 from zenlib.util import check_dict
 
 
-def _validate_init_target(self, target: Path) -> None:
-    if not target.exists():
-        raise FileNotFoundError('init_target not found at: %s', target)
+@check_dict('validate', value=True)
+def _validate_init_target(self) -> None:
+    if not self['init_target'].exists():
+        raise FileNotFoundError('init_target not found at: %s', self['init_target'])
 
 
 def _process_init_target(self, target: Path) -> None:
     if not isinstance(target, Path):
         target = Path(target)
-    _validate_init_target(self, target)
     dict.__setitem__(self, 'init_target', target)
 
 
@@ -54,6 +54,7 @@ def do_switch_root(self) -> str:
     Checks if the root mount is mounted and that it contains an init.
     If not, it restarts UGRD.
     """
+    _validate_init_target(self)
     out = ['echo "Checking root mount: $(cat /run/MOUNTS_ROOT_TARGET)"',
            'if ! grep -q " $(cat /run/MOUNTS_ROOT_TARGET) " /proc/mounts ; then',
            '    echo "Root mount not found at: $(cat /run/MOUNTS_ROOT_TARGET)"',
