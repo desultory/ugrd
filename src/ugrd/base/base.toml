@@ -5,9 +5,10 @@ binaries = [ "awk", "grep", "ls", "cp", "cat", "switch_root" ]
 paths = [ "root" ]
 
 shebang = "#!/bin/bash"
+autodetect_init = true
 
 [imports.config_processing]
-"ugrd.base.base" = [ "_process_switch_root_target" ]
+"ugrd.base.base" = [ "_process_switch_root_target", "_process_init_target", "_process_autodetect_init" ]
 
 [imports.init_premount]
 "ugrd.base.base" = [ "export_switchroot_target" ]
@@ -16,5 +17,7 @@ shebang = "#!/bin/bash"
 "ugrd.base.base" = [ "do_switch_root" ]
 
 [custom_parameters]
+init_target = "Path"  # Specifies the location of the system init file
+autodetect_init = "bool"  # If set to true, the init_target will be autodetected based on the system's init system
 shebang = "str"  # Add the shebang property, used because this is a bash script
 switch_root_target = "str"  # Add the switch_root_target property, used to specify the target directory for switch_root overriding the root mount destination

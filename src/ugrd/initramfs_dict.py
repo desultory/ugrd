@@ -1,6 +1,6 @@
 
 __author__ = "desultory"
-__version__ = "1.0.1"
+__version__ = "1.0.2"
 
 from tomllib import load, TOMLDecodeError
 from pathlib import Path
@@ -101,12 +101,8 @@ class InitramfsConfigDict(dict):
             super().__setitem__(parameter_name, 0)
         elif parameter_type == "float":
             super().__setitem__(parameter_name, 0.0)
-        elif parameter_type == "str":
-            super().__setitem__(parameter_name, "")
-        elif parameter_type == "Path":
-            super().__setitem__(parameter_name, Path())
         else:
-            raise ValueError("Invalid custom parameter type: %s" % parameter_type)
+            self.logger.debug("Leaving '%s' as None" % parameter_name)
 
         if parameter_name in self['_processing']:
             self.logger.info("Processing queued values for '%s'" % parameter_name)

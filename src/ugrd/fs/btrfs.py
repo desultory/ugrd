@@ -1,4 +1,4 @@
-__version__ = '1.6.2'
+__version__ = '1.6.3'
 __author__ = 'desultory'
 
 
@@ -65,12 +65,10 @@ def btrfs_scan(self) -> str:
 
 @check_dict('subvol_selector', value=False, log_level=20, message="subvol_selector enabled, skipping.")
 @check_dict('autodetect_root_subvol', value=True, message="autodetect_root_subvol not enabled, skipping.")
+@check_dict('root_subvol', unset=True, message="root_subvol is set, skipping.")
 @check_dict('hostonly', value=True, message="hostonly is not set, skipping.")
 def autodetect_root_subvol(self):
     """ Detects the root subvolume. """
-    if self['root_subvol']:
-        self.logger.debug("root_subvol is set, skipping autodetection.")
-        return
     try:
         root_subvol = _get_mount_subvol(self, '/')
         self.logger.info("Detected root subvolume: %s", root_subvol)

@@ -4,21 +4,39 @@ __version__ = '3.1.0'
 from importlib.metadata import version
 from pathlib import Path
 
+from zenlib.util import check_dict
 
-def _validate_switch_root_target(self, target: Path) -> None:
-    """ Ensures the switch_root target is a file path. """
+
+def _validate_init_target(self, target: Path) -> None:
+    if not target.exists():
+        raise FileNotFoundError('init_target not found at: %s', target)
+
+
+def _process_init_target(self, target: Path) -> None:
     if not isinstance(target, Path):
         target = Path(target)
-
-    if not target.is_file():
-        raise FileNotFoundError("switch_root_target not found: %s" % target)
+    _validate_init_target(self, target)
+    dict.__setitem__(self, 'init_target', target)
 
 
 def _process_switch_root_target(self, target) -> None:
     """ Processes the switch_root_target variable. Adds it to the paths. """
-    _validate_switch_root_target(self, target)
     dict.__setitem__(self, 'switch_root_target', target)
     self['paths'] = target
+
+
+@check_dict('init_target', unset=True, message='init_target already set.')
+def _process_autodetect_init(self, state) -> None:
+    from shutil import which
+    dict.__setitem__(self, 'init_target', state)
+    if not state:
+        return
+
+    if init := which('init'):
+        self.logger.info('Detected init at: %s', init)
+        self['init_target'] = init
+    else:
+        raise FileNotFoundError('init_target is not specified and coud not be detected.')
 
 
 def export_switchroot_target(self) -> str:
@@ -29,6 +47,7 @@ def export_switchroot_target(self) -> str:
         return 'cp /run/MOUNTS_ROOT_TARGET /run/SWITCH_ROOT_TARGET'
 
 
+@check_dict('init_target', not_empty=True, raise_exception=True, message='init_target must be set.')
 def do_switch_root(self) -> str:
     """
     Should be the final statement, switches root.
@@ -40,8 +59,8 @@ def do_switch_root(self) -> str:
            '    echo "Root mount not found at: $(cat /run/MOUNTS_ROOT_TARGET)"',
            '    read -p "Press enter to restart UGRD."',
            "    exec /init",
-           "elif [ ! -e $(cat /run/MOUNTS_ROOT_TARGET)/sbin/init ] ; then",
-           '    echo "/sbin/init not found at: $(cat /run/MOUNTS_ROOT_TARGET)"',
+           f"elif [ ! -e $(cat /run/MOUNTS_ROOT_TARGET){self['init_target']} ] ; then",
+           f'    echo "{self["init_target"]} not found at: $(cat /run/MOUNTS_ROOT_TARGET)"',
            '    read -p "Press enter to restart UGRD."',
            '    exec /init',
            'else',
