@@ -1,11 +1,22 @@
 __author__ = 'desultory'
-__version__ = '3.0.2'
+__version__ = '3.1.0'
 
 from importlib.metadata import version
+from pathlib import Path
+
+
+def _validate_switch_root_target(self, target: Path) -> None:
+    """ Ensures the switch_root target is a file path. """
+    if not isinstance(target, Path):
+        target = Path(target)
+
+    if not target.is_file():
+        raise FileNotFoundError("switch_root_target not found: %s" % target)
 
 
 def _process_switch_root_target(self, target) -> None:
     """ Processes the switch_root_target variable. Adds it to the paths. """
+    _validate_switch_root_target(self, target)
     dict.__setitem__(self, 'switch_root_target', target)
     self['paths'] = target
 

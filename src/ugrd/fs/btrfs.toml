@@ -1,8 +1,8 @@
 binaries = [ "btrfs" ]
 kmod_init = "btrfs"
 
-subvol_selector = false
 _base_mount_path = "/mnt/root_base"
+subvol_selector = false
 autodetect_root_subvol = true
 
 [imports.config_processing]
@@ -16,7 +16,7 @@ autodetect_root_subvol = true
 
 # Custom parameters
 [custom_parameters]
+_base_mount_path = "Path"  # Set the mount point for the root filesystem when used to check for subvols
 subvol_selector = "bool"  # Select a btrfs subvolume for the root partition at runtime
 root_subvol = "str"  # Set the default btrfs subvolume for the root filesystem
 autodetect_root_subvol = "bool"  # Automatically detect the root subvolume
-_base_mount_path = "Path"  # Set the mount point for the root filesystem when used to check for subvols
