@@ -2,11 +2,25 @@
 
 > Microgram Ramdisk is a framework used to generate ramdisks using TOML definitions and python functions
 
-## Project goal
+## Design
 
-ugrd is designed to generate custom initramfs environments. The final environment will be left in `build_dir` where it can be explored or modified.
+ugrd is designed to generate a custom initramfs environment to boot the system that built it.
 
-The original goal of this project was to create an initramfs suitable for decrypting LUKS volumes, currently it supports the following:
+Generated images are as static and secure as possible, only including components and features required to mount the root and switch to it.
+
+The final environment will be left in `build_dir` where it can be explored or modified.
+
+The created images are mostly static, defined by the config used to generate the image. In cases where behavior is determined at runtime,
+modules aim to restrict user input and fail by restarting the init process. This allows for some error handling, while ensuring the boot process
+is relatively restricted.
+
+ugrd attempts to validate passed config, and raise warnings/exceptions indicating potential issues before it leaves the user in a broken boot environment.
+
+> A debug shell can be enabled with the debug module, otherwise, the user will not have shell access at runtime.
+
+## Project goal and features
+
+The original goal of this project was to create an initramfs suitable for decrypting a LUKS root filesyem with a smartcard, currently it supports the following:
 
 * Basic configuration validation in `validate` mode
 * OpenPGP Smartcards (YubiKey)
@@ -28,17 +42,26 @@ The original goal of this project was to create an initramfs suitable for decryp
   - Hardlinks are automatically created for files with matching SHA256 hashes.
 * Similar usage/arguments as Dracut
 
-## Design
+### Operating system support
 
-ugrd is designed to create images which provide a simple and secure environment to mount the root filesystem to boot.
+ugrd was designed to work with Gentoo, but has been tested on:
 
-The created images are mostly static, defined by the config used to generate the image. In cases where behavior is determined at runtime,
-modules aim to restrict user input and fail by restarting the init process. This allows for some error handling, while ensuring the boot process
-is relatively restricted.
+* Garuda linux
+* Debian 12
 
-ugrd attempts to validate passed config, and raise warnings/exceptions indicating potential issues before it leaves the user in a broken boot environment.
+### Filesystem support
 
-> A debug shell can be enabled with the debug module, otherwise, the user will not have shell access at runtime.
+If userspace tools are not required to mount a the root filesystem, ugrd can be used with any filesystem supported by the kernel.
+
+The following filesystems have been tested:
+
+* BTRFS
+* EXT4
+* FAT32
+
+If the required kernel module is not built into the kernel, and the filesystem is not listed above, the kernel module may need to be included in `kmod_init`.
+
+> The example config has `kmod_autodetect_lsmod` enabled which should automatically pull in the required modules, unless the active kernel differs from the build kernel.
 
 ## Installation
 
@@ -161,8 +184,11 @@ Modules write to a shared config dict that is accessible by other modules.
 
 > The main module, mostly pulls basic binaries and pulls the `core`, `mounts`, and `cpio` module.
 
+* `init_target` Set the init target for `switch_root`.
+* `autodetect_init` (true) Automatically set the init target based `which init`.
 * `shebang` (#!/bin/bash) sets the shebang on the init script.
 * `switch_root_target` Sets the `switch_root` target, if different from the root mount destination.
+
 
 #### base.core
 
@@ -464,17 +490,15 @@ key_file = "/boot/luks.gpg"
 
 The modules config directive should contain a list with names specifying the path of which will be loaded, such as `ugrd.base.base`, `ugrd.base.console` or `ugrd.crypto.crypsetup`.
 
-Another directory for modules can be created, the naming scheme is similar to how python imports work.
+External modules can be defined in `/var/lib/ugrd`.
 
 When a module is loaded, `initramfs_dict.py` will try to load the toml file for that module, parsing it in the same manner `config.yaml` is parsed.
 
 The order in which modules/directives are loaded is very important!
 
+Within modules, all config values are imported, then processed according to the order of the `custon_parameters` list.
+
 Modules can load other modules using the `modules` directive, be careful considering loading orders.
-
-If a module depends on another module, it can be added to the `mod_depends` list in the module config. A `ValueError` will be thrown if the module is not present.
-
-> Modules can import other modules, but this would throw lots of warnings for things like the "no<kmod category>" modules
 
 `_module_name` can be set within a module for logging purposes, it is verified to be accurate when imported but optional.
 

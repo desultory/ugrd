@@ -1,4 +1,4 @@
-mod_depends = ['ugrd.base.base']
+modules = ['ugrd.base.base']
 
 binaries = [ "cryptsetup" ]
 

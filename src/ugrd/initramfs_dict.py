@@ -1,6 +1,6 @@
 
 __author__ = "desultory"
-__version__ = "1.1.1"
+__version__ = "1.2.0"
 
 from tomllib import load, TOMLDecodeError
 from pathlib import Path
@@ -22,8 +22,7 @@ class InitramfsConfigDict(dict):
     If a new parameter is added, and it's not a known type, an exception will be raised.
     If that paramter name starts with an underscore, it will be added to a queue for later processing.
     """
-    builtin_parameters = {'mod_depends': NoDupFlatList,  # Modules required by other modules, will be re-checked calling .verify_deps()
-                          'modules': NoDupFlatList,  # A list of the names of modules which have been loaded, mostly used for dependency checking
+    builtin_parameters = {'modules': NoDupFlatList,  # A list of the names of modules which have been loaded, mostly used for dependency checking
                           'imports': dict,  # A dict of functions to be imported into the initramfs, under their respective hooks
                           'required_parameters': NoDupFlatList,  # A list of parameters which must be set before the initramfs can be generated
                           'custom_parameters': dict,  # Custom parameters loaded from imports
@@ -171,15 +170,6 @@ class InitramfsConfigDict(dict):
                     self.logger.debug("Registered config processing function: %s" % function.__name__)
 
     @handle_plural
-    def _process_mod_depends(self, module: str) -> None:
-        """ Processes module dependencies. """
-        self.logger.debug("Processing module dependency: %s" % module)
-        if module not in self['modules']:
-            self.logger.warning("Module dependency added, but required dependency is not loaded: %s" % module)
-
-        self['mod_depends'].append(module)
-
-    @handle_plural
     def _process_modules(self, module: str) -> None:
         """
         processes a single module into the config
@@ -223,16 +213,6 @@ class InitramfsConfigDict(dict):
         # Append the module to the list of loaded modules, avoid recursion
         self['modules'].append(module)
 
-    def verify_deps(self) -> None:
-        """ Verifies that all module dependencies are met """
-        for module in self['mod_depends']:
-            if module not in self['modules']:
-                raise KeyError(f"Required module '{module}' not found in config")
-
-        self.logger.info("Verified module depndencies: %s" % self['mod_depends'])
-        if self['_processing']:
-            self.logger.critical("Unprocessed config values: %s" % ', '.join(list(self['_processing'].keys())))
-
     def verify_mask(self) -> None:
         """ Processes masked imports. """
         for mask_hook, mask_items in self['masks'].items():
@@ -254,7 +234,8 @@ class InitramfsConfigDict(dict):
     def validate(self) -> None:
         """ Validate config """
         self.verify_required_parameters()
-        self.verify_deps()
+        if self['_processing']:
+            self.logger.critical("Unprocessed config values: %s" % ', '.join(list(self['_processing'].keys())))
         self.verify_mask()
 
     def __str__(self) -> str:
