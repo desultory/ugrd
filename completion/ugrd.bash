@@ -1,0 +1,28 @@
+_ugrd_autocomplete() {
+    local cur prev args
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    args="--build-logging --no-build-logging -c --config --kernel-version --kver --clean --no-clean --validate --no-validate --hostonly --no-hostonly\
+	--lspci --no-lspci --lsmod --no-lsmod --firmware --no-firmware --autodetect-root --no-autodetect-root --autodetect-root-luks\
+	--no-autodetect-root-luks --print-config out_file"
+
+    COMPREPLY=()
+
+    case "${prev}" in
+		--config|-c)
+			COMPREPLY=( "$(compgen -f -- "${cur}")" )
+			return 0
+			;;
+		--kernel-version|--kver)
+	    		COMPREPLY=( "$(compgen -W "$(ls /lib/modules)" -- "${cur}")" )
+			return 0    
+			;;
+		*)
+			COMPREPLY=( "$(compgen -W "${args}" -- "${cur}")" )
+			return 0
+			;;
+	esac
+
+}
+
+complete -F _ugrd_autocomplete ugrd
