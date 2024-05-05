@@ -1,3 +1,5 @@
+#!/bin/bash
+
 _ugrd_autocomplete() {
     local cur prev args
     cur="${COMP_WORDS[COMP_CWORD]}"
@@ -10,19 +12,18 @@ _ugrd_autocomplete() {
 
     case "${prev}" in
 		--config|-c)
-			COMPREPLY=( "$(compgen -f -- "${cur}")" )
+			mapfile -t COMPREPLY < <(compgen -f -- "${cur}")
 			return 0
 			;;
 		--kernel-version|--kver)
-			COMPREPLY=( "$(compgen -W "$(ls /lib/modules)" -- "${cur}")" )
+			mapfile -t COMPREPLY < <(compgen -W "$(ls /lib/modules)" -- "${cur}")
 			return 0    
 			;;
 		*)
-			COMPREPLY=( "$(compgen -W "${args}" -- "${cur}")" )
+			mapfile -t COMPREPLY < <(compgen -W "${args}" -- "${cur}")
 			return 0
 			;;
 	esac
-
 }
 
 complete -F _ugrd_autocomplete ugrd
