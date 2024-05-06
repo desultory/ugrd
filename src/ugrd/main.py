@@ -52,7 +52,7 @@ def main():
         for runlevel in ['init_pre', *generator.init_types, 'init_final']:
             if runlevel not in generator.imports:
                 continue
-            print({runlevel} + ":")
+            print(runlevel + ":")
             for func in generator.imports[runlevel]:
                 print(f"    {func.__name__}")
 
