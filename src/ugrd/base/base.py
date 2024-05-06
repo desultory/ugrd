@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '3.1.2'
+__version__ = '3.2.0'
 
 from importlib.metadata import version
 from pathlib import Path
@@ -58,10 +58,12 @@ def do_switch_root(self) -> str:
     out = ['echo "Checking root mount: $(cat /run/MOUNTS_ROOT_TARGET)"',
            'if ! grep -q " $(cat /run/MOUNTS_ROOT_TARGET) " /proc/mounts ; then',
            '    echo "Root mount not found at: $(cat /run/MOUNTS_ROOT_TARGET)"',
+           r'    echo -e "Current mounts:\n$(cat /proc/mounts)"',
            '    read -p "Press enter to restart UGRD."',
            "    exec /init",
            f"elif [ ! -e $(cat /run/MOUNTS_ROOT_TARGET){self['init_target']} ] ; then",
            f'    echo "{self["init_target"]} not found at: $(cat /run/MOUNTS_ROOT_TARGET)"',
+           r'    echo -e "Root contents:\n$(ls -l $(cat /run/MOUNTS_ROOT_TARGET))"',
            '    read -p "Press enter to restart UGRD."',
            '    exec /init',
            'else',
