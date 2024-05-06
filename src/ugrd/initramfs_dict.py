@@ -1,6 +1,6 @@
 
 __author__ = "desultory"
-__version__ = "1.2.0"
+__version__ = "1.3.0"
 
 from tomllib import load, TOMLDecodeError
 from pathlib import Path
@@ -24,7 +24,6 @@ class InitramfsConfigDict(dict):
     """
     builtin_parameters = {'modules': NoDupFlatList,  # A list of the names of modules which have been loaded, mostly used for dependency checking
                           'imports': dict,  # A dict of functions to be imported into the initramfs, under their respective hooks
-                          'required_parameters': NoDupFlatList,  # A list of parameters which must be set before the initramfs can be generated
                           'custom_parameters': dict,  # Custom parameters loaded from imports
                           'custom_processing': dict,  # Custom processing functions which will be run to validate and process parameters
                           '_processing': dict}  # A dict of queues containing parameters which have been set before the type was known
@@ -222,18 +221,8 @@ class InitramfsConfigDict(dict):
                         runlevel.remove(function)
                         self.logger.warning("[%s] Masking import: %s" % (mask_hook, function.__name__))
 
-    def verify_required_parameters(self) -> None:
-        """ Verifies that all required parameters are set """
-        for parameter in self['required_parameters']:
-            if parameter not in self:
-                self.logger.error(self)
-                raise KeyError("Required parameter not found in config: %s" % parameter)
-
-        self.logger.debug("Verified required parameters: %s" % self['required_parameters'])
-
     def validate(self) -> None:
         """ Validate config """
-        self.verify_required_parameters()
         if self['_processing']:
             self.logger.critical("Unprocessed config values: %s" % ', '.join(list(self['_processing'].keys())))
         self.verify_mask()

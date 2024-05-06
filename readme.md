@@ -118,6 +118,13 @@ An initramfs environment will be generated at `build_dir` (`/tmp/initramfs/`).
 
 The initramfs will be packed to `out_dir` (`/tmp/initramfs_out`) and named `out_file` (`ugrd.cpio`).
 
+## Config information
+
+The final config dict can be printed with `--print-config`.
+
+A list of functions by runlevel can be printed with `--print-init`.
+
+
 ### Embedding the initramfs image into the kernel
 
 The `build_dir`can be embedded into the Linux kernel with:
@@ -209,7 +216,7 @@ Verbose information about what what is being moved into the initramfs build dire
 
 `_build_log_level` can be manually set to any log level. It is incremented by 10 when `build_logging` is enabled, with a minimum of 20.
 
-This can be enabled at runtime with `--build-logging` or disabled wit `--no-build-logging`
+This can be enabled at runtime with `--build-logging` or disabled with `--no-build-logging`
 
 The output can be logged to a file instead of stdout by specifying a log file with `--log-file`
 

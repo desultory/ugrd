@@ -26,11 +26,13 @@ def main():
                  {'flags': ['--autodetect-root-luks'], 'action': 'store_true', 'help': 'autodetect LUKS volumes under the root partition'},
                  {'flags': ['--no-autodetect-root-luks'], 'action': 'store_false', 'help': 'do not autodetect root LUKS volumes', 'dest': 'autodetect_root_luks'},
                  {'flags': ['--print-config'], 'action': 'store_true', 'help': 'print the final config dict'},
+                 {'flags': ['--print-init'], 'action': 'store_true', 'help': 'print the final init structure'},
                  {'flags': ['out_file'], 'action': 'store', 'help': 'set the output image location', 'nargs': '?'}]
 
     args, logger = get_args_n_logger(package=__package__, description='MicrogRAM disk initramfs generator', arguments=arguments, drop_default=True)
     kwargs = get_kwargs_from_args(args, logger=logger)
     kwargs.pop('print_config', None)  # This is not a valid kwarg for InitramfsGenerator
+    kwargs.pop('print_init', None)  # This is not a valid kwarg for InitramfsGenerator
 
     logger.debug(f"Using the following kwargs: {kwargs}")
     generator = InitramfsGenerator(**kwargs)
@@ -45,6 +47,14 @@ def main():
 
     if 'print_config' in args and args.print_config:
         print(generator.config_dict)
+
+    if 'print_init' in args and args.print_init:
+        for runlevel in ['init_pre', *generator.init_types, 'init_final']:
+            if runlevel not in generator.imports:
+                continue
+            print({runlevel} + ":")
+            for func in generator.imports[runlevel]:
+                print(f"    {func.__name__}")
 
 
 if __name__ == '__main__':

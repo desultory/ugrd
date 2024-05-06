@@ -1,8 +1,6 @@
 out_file = "ugrd.cpio"
 mknod_cpio = true
 
-required_parameters = ['out_file']
-
 [imports.config_processing]
 "ugrd.fs.cpio" = [ "_process_out_file" ]
 
@@ -10,5 +8,5 @@ required_parameters = ['out_file']
 "ugrd.fs.cpio" = [ "make_cpio" ]
 
 [custom_parameters]
-out_file =  "str"  # The name of the cpio file to create.
+out_file = "str"  # The name of the cpio file to create.
 mknod_cpio = "bool"  # When enabled, mknod is not used to create device nodes, they are just created in the cpio.

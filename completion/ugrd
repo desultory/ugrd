@@ -9,6 +9,7 @@ _ugrd_autocomplete() {
 	args+=" ${option}"
     done <<< "$(ugrd --dump_args)"
 
+    args+=" $(ls)"
     COMPREPLY=()
     case "${prev}" in
 		--config|-c)
@@ -20,7 +21,11 @@ _ugrd_autocomplete() {
 			return 0    
 			;;
 		*)
-			mapfile -t COMPREPLY < <(compgen -W "${args}" -- "${cur}")
+			if [[ "${cur}" == -* ]]; then
+				mapfile -t COMPREPLY < <(compgen -W "${args}" -- "${cur}")
+				return 0
+			fi
+			mapfile -t COMPREPLY < <(compgen -f -- "${cur}")
 			return 0
 			;;
 	esac

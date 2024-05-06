@@ -1,4 +1,3 @@
-
 from tomllib import load
 from typing import Union
 from pathlib import Path
@@ -66,8 +65,6 @@ class InitramfsGenerator:
     def __getattr__(self, item):
         """ Allows access to the config dict via the InitramfsGenerator object. """
         if item not in self.__dict__ and item != 'config_dict':
-            if item not in self.config_dict['required_parameters']:
-                self.logger.warning("Accessing non-required parameter through getattr -> config_dict: %s" % item)
             return self[item]
         return super().__getattr__(item)
 
@@ -184,7 +181,7 @@ class InitramfsGenerator:
         if self.included_functions:
             init_funcs = self.generate_init_funcs()
             self._write('init_funcs.sh', init_funcs, 0o755)
-            self.logger.info("Included functions: %s" % list(self.included_functions.keys()))
+            self.logger.info("Included functions: %s" % ', '.join(list(self.included_functions.keys())))
             init.insert(3, "source init_funcs.sh")
             if self['imports'].get('custom_init'):
                 custom_init.insert(2, f"echo 'Starting custom init, UGRD v{__version__}'")
