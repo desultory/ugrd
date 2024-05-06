@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.2.0'
+__version__ = '2.2.1'
 
 from pathlib import Path
 from subprocess import run
@@ -253,7 +253,10 @@ def process_modules(self) -> None:
 @check_dict('kmod_init', not_empty=True, message="No kernel modules to load", log_level=30)
 def load_modules(self) -> None:
     """ Creates a bash script which loads all kernel modules in kmod_init. """
-    self.logger.info("Init kernel modules: %s" % self['kmod_init'])
-    self.logger.warning("Ignored kernel modules: %s" % self['_kmod_removed'])
+    self.logger.info("Init kernel modules: %s" % ', '.join(self['kmod_init']))
+    if included_kmods := list(set(self['kernel_modules']) ^ set(self['kmod_init'])):
+        self.logger.info("Included kernel modules: %s" % ', '.join(included_kmods))
+    if removed_kmods := self.get('_kmod_removed'):
+        self.logger.warning("Ignored kernel modules: %s" % ', '.join(removed_kmods))
     return f"modprobe -av {' '.join(self['kmod_init'])}"
 

@@ -1,17 +1,16 @@
 __author__ = 'desultory'
-__version__ = '3.0.2'
+__version__ = '3.1.0'
 
 from pathlib import Path
 from typing import Union
 
+from zenlib.util import check_dict
 
+
+@check_dict('clean', value=True, log_level=30, message="Skipping cleaning build directory")
 def clean_build_dir(self) -> None:
     """ Cleans the build directory. """
     from shutil import rmtree
-
-    if not self.clean:
-        self.logger.info("Skipping cleaning build directory")
-        return
 
     if self.build_dir.is_dir():
         self.logger.warning("Cleaning build directory: %s" % self.build_dir)
@@ -120,12 +119,9 @@ def deploy_symlinks(self) -> None:
         self._symlink(symlink_parameters['source'], symlink_parameters['target'])
 
 
+@check_dict('mknod_cpio', value=False, log_level=20, message="Skipping real device node creation with mknod, as mknod_cpio is specified.")
 def deploy_nodes(self) -> None:
     """ Generates specified device nodes. """
-    if self.get('mknod_cpio'):
-        self.logger.info("Skipping mknod generation, as mknod_cpio is specified")
-        return
-
     from os import makedev, mknod
     from stat import S_IFCHR
 
