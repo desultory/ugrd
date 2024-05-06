@@ -1,36 +1,22 @@
 #compdef ugrd
 
-_arguments \
-    '--build-logging[Enable additional build logging.]' \
-    '--no-build-logging[Disable additional build logging.]' \
-    '-c[Config file location.]:config file:_files' \
-    '--config[Config file location.]:config file:_files' \
-    '--kernel-version[Set the kernel version.]:kernel version:_files -W /lib/modules -/' \
-    '--kver[Set the kernel version.]:kernel version:_files -W /lib/modules -/' \
-    '--clean[Enable build directory cleaning.]' \
-    '--no-clean[Disable build directory cleaning.]' \
-    '--validate[Enable config validation.]' \
-    '--no-validate[Disable config validation.]' \
-    '--hostonly[Enable hostonly mode, required for automatic kmod detection.]' \
-    '--no-hostonly[Disable hostonly mode.]' \
-    '--lspci[Use lspci to auto-detect kmods]' \
-    '--no-lspci[Do not use lspci to auto-detect kmods]' \
-    '--lsmod[Use lsmod to auto-detect kmods]' \
-    '--no-lsmod[Do not use lsmod to auto-detect kmods]' \
-    '--firmware[Include firmware files found with modinfo.]' \
-    '--no-firmware[Exclude firmware files.]' \
-    '--autodetect-root[Autodetect the root partition.]' \
-    '--no-autodetect-root[Do not autodetect the root partition.]' \
-    '--autodetect-root-luks[Autodetect LUKS volumes under the root partition.]' \
-    '--no-autodetect-root-luks[Do not autodetect root LUKS volumes.]' \
-    '--print-config[Print the final config dict.]' \
-    '-d[Debug mode.]' \
-    '--debug[Debug mode.]' \
-    '--help[Show help information.]' \
-    '-h[Show help information.]' \
-    '-dd[Verbose debug mode.]' \
-    '--verbose[Verbose debug mode.]' \
-    '--log-file[Specify a log file.]' \
-    '--log-level[Specify log level.]' \
-    '-v[Show version information.]' \
-    '--version[Show version information.]'
+# Read over each line of the output of ug --dump_args
+# split the line after the first space
+# the first part is the option, the second part is the description
+base_args=()
+while read -r line; do
+	option=$(echo $line | cut -d' ' -f1)
+	description=$(echo $line | cut -d' ' -f2-)
+	base_args+=("${option}[$description]")
+done <<< "$(ugrd --dump_args)"
+
+args=("-c[Config file location.]:config file:_files"
+	"--config[Config file location.]:config file:_files"
+	"--kernel-version[Set the kernel version.]:kernel version:_files -W /lib/modules -/"
+	"--kver[Set the kernel version.]:kernel version:_files -W /lib/modules -/"
+	"--log-file[Specify a log file.]"
+	"--log-level[Specify log level.]")
+
+args+=($base_args[@])
+
+_arguments "${args[@]}"

@@ -30,16 +30,17 @@ The original goal of this project was to create an initramfs suitable for decryp
   - Allows for late insertion of a smartcard
   - Can fail back to plain password entry
 * Auto-detection and validation of the root mount using `/proc/mounts`
-* Auto-detection and validation of LUKS root mounts.
-* Auto-detection and validation of the btrfs subvolume used for the root mount, if present.
-* Dynamic BTRFS subvolume selection at boot time using `subvol_selector`.
+* Auto-detection and validation of LUKS root mounts
+* Auto-detection and validation of the btrfs subvolume used for the root mount, if present
+* Dynamic BTRFS subvolume selection at boot time using `subvol_selector`
 * Auto-detection of kernel modules using `lspci` and `lsmod`
 * Reading the `root` and `rootflags` parameters from the kernel commandline
   - Falls back to host mount config if cmdline mount parameters fail
 * Key entry over serial
 * Automatic CPIO generation (PyCPIO)
-  - Device nodes are created within the CPIO only, so true root privileges are not required.
-  - Hardlinks are automatically created for files with matching SHA256 hashes.
+  - Device nodes are created within the CPIO only, so true root privileges are not required
+  - Hardlinks are automatically created for files with matching SHA256 hashes
+* ZSH and BASH autocompletion for the ugrd command
 * Similar usage/arguments as Dracut
 
 ### Operating system support

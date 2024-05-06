@@ -15,10 +15,10 @@ def main():
                  {'flags': ['--no-validate'], 'action': 'store_false', 'help': 'Disable config validation.', 'dest': 'validate'},
                  {'flags': ['--hostonly'], 'action': 'store_true', 'help': 'Enable hostonly mode, required for automatic kmod detection.'},
                  {'flags': ['--no-hostonly'], 'action': 'store_false', 'help': 'Disable hostonly mode.', 'dest': 'hostonly'},
-                 {'flags': ['--lspci'], 'action': 'store_true', 'help': 'Use lspci to auto-detect kmods', 'dest': 'kmod_autodetect_lspci'},
-                 {'flags': ['--no-lspci'], 'action': 'store_false', 'help': 'Do not use lspci to auto-detect kmods', 'dest': 'kmod_autodetect_lspci'},
-                 {'flags': ['--lsmod'], 'action': 'store_true', 'help': 'Use lsmod to auto-detect kmods', 'dest': 'kmod_autodetect_lsmod'},
-                 {'flags': ['--no-lsmod'], 'action': 'store_false', 'help': 'Do not use lsmod to auto-detect kmods', 'dest': 'kmod_autodetect_lsmod'},
+                 {'flags': ['--lspci'], 'action': 'store_true', 'help': 'Use lspci to auto-detect kmods.', 'dest': 'kmod_autodetect_lspci'},
+                 {'flags': ['--no-lspci'], 'action': 'store_false', 'help': 'Do not use lspci to auto-detect kmods.', 'dest': 'kmod_autodetect_lspci'},
+                 {'flags': ['--lsmod'], 'action': 'store_true', 'help': 'Use lsmod to auto-detect kmods.', 'dest': 'kmod_autodetect_lsmod'},
+                 {'flags': ['--no-lsmod'], 'action': 'store_false', 'help': 'Do not use lsmod to auto-detect kmods.', 'dest': 'kmod_autodetect_lsmod'},
                  {'flags': ['--firmware'], 'action': 'store_true', 'help': 'Include firmware files found with modinfo.', 'dest': 'kmod_pull_firmware'},
                  {'flags': ['--no-firmware'], 'action': 'store_false', 'help': 'Exclude firmware files.', 'dest': 'kmod_pull_firmware'},
                  {'flags': ['--autodetect-root'], 'action': 'store_true', 'help': 'Autodetect the root partition.'},
@@ -26,7 +26,7 @@ def main():
                  {'flags': ['--autodetect-root-luks'], 'action': 'store_true', 'help': 'Autodetect LUKS volumes under the root partition.'},
                  {'flags': ['--no-autodetect-root-luks'], 'action': 'store_false', 'help': 'Do not autodetect root LUKS volumes.', 'dest': 'autodetect_root_luks'},
                  {'flags': ['--print-config'], 'action': 'store_true', 'help': 'Print the final config dict.'},
-                 {'flags': ['out_file'], 'action': 'store', 'help': 'Output file location', 'nargs': '?'}]
+                 {'flags': ['out_file'], 'action': 'store', 'help': 'Output file location.', 'nargs': '?'}]
 
     args, logger = get_args_n_logger(package=__package__, description='MicrogRAM disk initramfs generator', arguments=arguments, drop_default=True)
     kwargs = get_kwargs_from_args(args, logger=logger)
