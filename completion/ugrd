@@ -4,12 +4,12 @@ _ugrd_autocomplete() {
     local cur prev args
     cur="${COMP_WORDS[COMP_CWORD]}"
     prev="${COMP_WORDS[COMP_CWORD-1]}"
-    args="--build-logging --no-build-logging -c --config --kernel-version --kver --clean --no-clean --validate --no-validate --hostonly --no-hostonly\
-	--lspci --no-lspci --lsmod --no-lsmod --firmware --no-firmware --autodetect-root --no-autodetect-root --autodetect-root-luks\
-	--no-autodetect-root-luks --print-config -d --debug --help -h -dd --verbose --log-file --log-level -v --version"
+    args="-c --config --kernel-version --kver --log-file --log-level"
+    while read -r option _; do
+	args+=" ${option}"
+    done <<< "$(ugrd --dump_args)"
 
     COMPREPLY=()
-
     case "${prev}" in
 		--config|-c)
 			mapfile -t COMPREPLY < <(compgen -f -- "${cur}")
