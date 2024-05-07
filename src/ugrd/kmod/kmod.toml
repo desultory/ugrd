@@ -5,6 +5,7 @@ kmod_pull_firmware = true
 [custom_parameters]
 _kmod_removed = "NoDupFlatList"  # Meant to be used internally, defines kernel modules which have been ignored at runtime
 _kmod_modinfo = "dict" # Used internally, caches modinfo output for kernel modules
+_kmod_auto = "NoDupFlatList"  # Used internally, defines kernel modules which have been automatically detected
 kernel_version = "str"  # Kernel version to use for the initramfs
 kmod_ignore = "NoDupFlatList"  # Kernel modules to ignore when loading
 kmod_pull_firmware = "bool"  # Whether or not to pull firmware for kernel modules
@@ -15,7 +16,7 @@ kernel_modules = "NoDupFlatList"  # Kernel modules to pull into the initramfs
 kmod_init = "NoDupFlatList"  # Kernel modules to load at initramfs startup
 
 [imports.config_processing]
-"ugrd.kmod.kmod" = [ "_process_kmod_init_multi", "_process_kernel_modules_multi", "_process_kmod_ignore_multi" ]
+"ugrd.kmod.kmod" = [ "_process_kmod_init_multi", "_process_kernel_modules_multi", "_process_kmod_ignore_multi", "_process__kmod_auto_multi" ]
 
 [imports.build_pre]
 "ugrd.kmod.kmod" = [ "get_kernel_metadata", "autodetect_modules", "process_modules", "process_module_metadata" ]
