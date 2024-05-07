@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.2.2'
+__version__ = '2.3.0'
 
 from pathlib import Path
 from subprocess import run
@@ -35,16 +35,24 @@ def _process_kmod_ignore_multi(self, module: str) -> None:
             self['_kmod_removed'] = module
 
 
-def _process_kmod_init_multi(self, module: str) -> None:
-    """ Adds init modules to self['kernel_modules']. """
+def _process_kernel_modules_multi(self, module: str) -> None:
+    """ Adds kernel modules to self['kernel_modules']. """
     if module in self['kmod_ignore']:
         self.logger.debug("[%s] Module is in ignore list." % module)
         self['_kmod_removed'] = module
         return
-    # First append it to kmod_init
+
+    self.logger.debug("Adding kernel module to kernel_modules: %s", module)
+    self['kernel_modules'].append(module)
+
+
+def _process_kmod_init_multi(self, module: str) -> None:
+    """ Adds init modules to self['kernel_modules']. """
     self['kmod_init'].append(module)
     self.logger.debug("Adding kmod_init module to kernel_modules: %s", module)
     self['kernel_modules'] = module
+    if module in self['kmod_ignore']:
+        raise ValueError("kmod_init module is in ignore list: %s" % module)
 
 
 @check_dict('_kmod_modinfo', contains=True, unset=True, value_arg=1, log_level=5)
@@ -207,9 +215,7 @@ def _add_kmod_firmware(self, kmod: str) -> None:
 
 def _process_kmod_dependencies(self, kmod: str) -> None:
     """ Processes a kernel module's dependencies. """
-    if kmod not in self['_kmod_modinfo']:
-        _get_kmod_info(self, kmod)
-
+    _get_kmod_info(self, kmod)
     # Add dependencies of the module
     dependencies = []
     if harddeps := self['_kmod_modinfo'][kmod].get('depends'):
