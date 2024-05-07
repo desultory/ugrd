@@ -16,10 +16,10 @@ kernel_modules = "NoDupFlatList"  # Kernel modules to pull into the initramfs
 kmod_init = "NoDupFlatList"  # Kernel modules to load at initramfs startup
 
 [imports.config_processing]
-"ugrd.kmod.kmod" = [ "_process_kmod_init_multi", "_process_kernel_modules_multi", "_process_kmod_ignore_multi", "_process__kmod_auto_multi" ]
+"ugrd.kmod.kmod" = [ "_process_kmod_init_multi", "_process_kernel_modules_multi", "_process__kmod_auto_multi" ]
 
 [imports.build_pre]
-"ugrd.kmod.kmod" = [ "get_kernel_metadata", "autodetect_modules", "process_modules", "process_module_metadata" ]
+"ugrd.kmod.kmod" = [ "get_kernel_metadata", "autodetect_modules", "process_modules", "process_ignored_modules", "process_module_metadata" ]
 
 [imports.init_pre]
 "ugrd.kmod.kmod" = [ "load_modules" ]

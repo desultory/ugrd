@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.4.1'
+__version__ = '2.4.2'
 
 from pathlib import Path
 from subprocess import run
@@ -23,22 +23,6 @@ class IgnoredModuleError(Exception):
     pass
 
 
-def _process_kmod_ignore_multi(self, module: str) -> None:
-    """ Adds ignored modules to self['kmod_ignore']. Removes module from kmod_init and kernel_modules. """
-    self.logger.debug("Adding module to kmod_ignore: %s", module)
-    self['kmod_ignore'].append(module)
-
-    self.logger.log(5, "Removing kernel module from all lists: %s", module)
-    for key in ['kmod_init', 'kernel_modules', '_kmod_auto']:
-        if module in self[key]:
-            if key == 'kmod_init':
-                self.logger.critical("Removing ignored kernel module from kmod_init: %s" % module)
-            else:
-                self.logger.debug("Removing ignored kernel module from %s: %s" % (key, module))
-            self[key].remove(module)
-            self['_kmod_removed'] = module
-
-
 def _process_kernel_modules_multi(self, module: str) -> None:
     """ Adds kernel modules to self['kernel_modules']. """
     if module in self['kmod_ignore']:
@@ -52,11 +36,11 @@ def _process_kernel_modules_multi(self, module: str) -> None:
 
 def _process_kmod_init_multi(self, module: str) -> None:
     """ Adds init modules to self['kernel_modules']. """
+    if module in self['kmod_ignore']:
+        raise IgnoredModuleError("kmod_init module is in the ignore list: %s" % module)
     self['kmod_init'].append(module)
     self.logger.debug("Adding kmod_init module to kernel_modules: %s", module)
     self['kernel_modules'] = module
-    if module in self['kmod_ignore']:
-        raise IgnoredModuleError("kmod_init module is in the ignore list: %s" % module)
 
 
 def _process__kmod_auto_multi(self, module: str) -> None:
@@ -111,14 +95,13 @@ def _get_kmod_info(self, module: str):
     self['_kmod_modinfo'][module] = module_info
 
 
-def _get_lspci_modules(self) -> list[str]:
+@check_dict('kmod_autodetect_lspci', value=True, message="kmod_autodetect_lspci is not set, skipping.")
+def _autodetect_modules_lspci(self) -> None:
     """ Gets the name of all kernel modules being used by hardware visible in lspci -k. """
     try:
         cmd = self._run(['lspci', '-k'])
     except RuntimeError as e:
         raise DependencyResolutionError("Failed to get list of kernel modules") from e
-
-    modules = set()
     # Iterate over all output lines
     for line in cmd.stdout.decode('utf-8').split('\n'):
         # If the line contains the string 'Kernel modules:' or 'Kernel driver in use:', it contains the name of a kernel module
@@ -127,23 +110,10 @@ def _get_lspci_modules(self) -> list[str]:
             if ',' in module:
                 # If there are multiple modules, split them and add them to the module set
                 for module in module.split(','):
-                    modules.add(module.strip())
+                    self['_kmod_auto'] = module.strip()
             else:
                 # Add the single module to the module set
-                modules.add(module.strip())
-
-    self.logger.debug("Kernel modules in use by hardware: %s" % modules)
-    return list(modules)
-
-
-@check_dict('kmod_autodetect_lspci', value=True, message="kmod_autodetect_lspci is not set, skipping.")
-def _autodetect_modules_lspci(self) -> None:
-    """ Autodetects kernel modules from lspci -k. """
-    if autodetected_modules := _get_lspci_modules(self):
-        self.logger.info("Autodetected kernel modules from lscpi -k: %s" % autodetected_modules)
-        self['_kmod_auto'] = autodetected_modules
-    else:
-        self.logger.warning("No kernel modules detected from lspci -k.")
+                self['_kmod_auto'] = module.strip()
 
 
 @check_dict('kmod_autodetect_lsmod', value=True, message="kmod_autodetect_lsmod is not set, skipping.")
@@ -239,6 +209,28 @@ def _process_kmod_dependencies(self, kmod: str) -> None:
     _add_kmod_firmware(self, kmod)
 
 
+def process_ignored_module(self, module: str) -> None:
+    """ Processes an ignored module. """
+    self.logger.debug("Removing kernel module from all lists: %s", module)
+    for key in ['kmod_init', 'kernel_modules', '_kmod_auto']:
+        if module in self[key]:
+            if key == 'kmod_init':
+                if self['_kmod_modinfo'][module]['filename'] == '(builtin)':
+                    self.logger.debug("Removing built-in module from kmod_init: %s" % module)
+                else:
+                    raise ValueError("Cannot ignore external module in kmod_init: %s" % module)
+            else:
+                self.logger.debug("Removing ignored kernel module from %s: %s" % (key, module))
+            self[key].remove(module)
+            self['_kmod_removed'] = module
+
+
+def process_ignored_modules(self) -> None:
+    """ Processes all ignored modules. """
+    for module in self['kmod_ignore']:
+        process_ignored_module(self, module)
+
+
 def process_modules(self) -> None:
     """ Processes all kernel modules, adding dependencies to the initramfs. """
     self.logger.debug("Processing kernel modules: %s" % self['kernel_modules'])
@@ -254,9 +246,9 @@ def process_modules(self) -> None:
                 self.logger.warning("[%s] Failed to get modinfo for init kernel module: %s" % (kmod, e))
             self.logger.debug("[%s] Failed to get modinfo for kernel module: %s" % (kmod, e))
         self['kmod_ignore'] = kmod
-    for kmod in self['_kmod_auto'].copy():
+    for kmod in self['_kmod_auto']:
         if kmod in self['kmod_ignore']:
-            self.logger.warning("Autodetected module is in ignore list!!!: %s" % kmod)
+            self.logger.warning("Autodetected module is in ignore list: %s" % kmod)
             self['_kmod_removed'] = kmod
             continue
         elif kmod in self['kernel_modules']:
