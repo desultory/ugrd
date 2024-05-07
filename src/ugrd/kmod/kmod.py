@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.2.1'
+__version__ = '2.2.2'
 
 from pathlib import Path
 from subprocess import run
@@ -160,9 +160,8 @@ def autodetect_modules(self) -> None:
     _autodetect_modules_lspci(self)
 
 
-@check_dict('kmod_init', not_empty=True, message="kmod_init is not set, skipping.", log_level=30)
-def process_module_metadata(self) -> None:
-    """ Adds kernel module metadata files to dependencies."""
+def get_kernel_metadata(self) -> None:
+    """ Gets metadata for all kernel modules. """
     if not self.get('kernel_version'):
         try:
             cmd = self._run(['uname', '-r'])
@@ -172,11 +171,14 @@ def process_module_metadata(self) -> None:
         self['kernel_version'] = cmd.stdout.decode('utf-8').strip()
         self.logger.info(f"Using detected kernel version: {self['kernel_version']}")
 
+    if not (Path('/lib/modules') / self['kernel_version']).exists():
+        raise DependencyResolutionError(f"Kernel module directory does not exist for kernel: {self['kernel_version']}")
+
+
+@check_dict('kmod_init', not_empty=True, message="kmod_init is not set, skipping.", log_level=30)
+def process_module_metadata(self) -> None:
+    """ Adds kernel module metadata files to dependencies."""
     module_path = Path('/lib/modules/') / self['kernel_version']
-
-    if not module_path.exists():
-        raise DependencyResolutionError("[%s] Kernel module directory does not exist for kernel version: %s" % (self['kernel_version'], module_path))
-
     for meta_file in MODULE_METADATA_FILES:
         meta_file_path = module_path / meta_file
 
