@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.4.0'
+__version__ = '2.4.1'
 
 from pathlib import Path
 from subprocess import run
@@ -32,7 +32,7 @@ def _process_kmod_ignore_multi(self, module: str) -> None:
     for key in ['kmod_init', 'kernel_modules', '_kmod_auto']:
         if module in self[key]:
             if key == 'kmod_init':
-                self.logger.warning("Removing ignored kernel module from kmod_init: %s" % module)
+                self.logger.critical("Removing ignored kernel module from kmod_init: %s" % module)
             else:
                 self.logger.debug("Removing ignored kernel module from %s: %s" % (key, module))
             self[key].remove(module)
@@ -266,6 +266,8 @@ def process_modules(self) -> None:
         try:
             _process_kmod_dependencies(self, kmod)
             self['kmod_init'] = kmod
+        except BuiltinModuleError as e:
+            self.logger.debug(e)
         except Exception as e:
             self.logger.warning("[%s] Failed to process autodetected kernel module: %s" % (kmod, e))
             self['kmod_ignore'] = kmod
