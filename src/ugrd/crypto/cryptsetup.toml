@@ -4,6 +4,8 @@ binaries = [ "cryptsetup" ]
 
 kmod_init = [ "dm_crypt" ]
 
+kernel_modules = [ "dm_mod" ]
+
 cryptsetup_retries = 5
 cryptsetup_autoretry = true
 
