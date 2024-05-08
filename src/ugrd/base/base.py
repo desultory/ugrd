@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '3.2.2'
+__version__ = '3.2.3'
 
 from importlib.metadata import version
 from pathlib import Path
@@ -68,7 +68,7 @@ def do_switch_root(self) -> str:
            '    exec /init',
            'else',
            f'    echo "Completed UGRD v{version("ugrd")}."',
-           f'    echo "Switching root to: $(cat /run/MOUNTS_ROOT_TARGET) ({self["init_target"]})',
+           f'    echo "Switching root to: $(cat /run/MOUNTS_ROOT_TARGET) ({self["init_target"]})"',
            f'    exec switch_root "$(cat /run/MOUNTS_ROOT_TARGET)" {self["init_target"]}',
            "fi"]
     return out
