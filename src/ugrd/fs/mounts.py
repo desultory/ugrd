@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.5.1'
+__version__ = '2.5.2'
 
 from pathlib import Path
 
@@ -69,7 +69,9 @@ def _process_mounts_multi(self, mount_name: str, mount_config) -> None:
             self['kmod_init'] = mount_type
         elif mount_type == 'ntfs':
             self['kmod_init'] = 'ntfs3'
-            mount_config['type'] = 'ntfs'
+            if mount_config.get('type') != 'ntfs3':
+                self.logger.warning("Setting the root mount type to ntfs3, was: %s" % mount_config.get('type'))
+            mount_config['type'] = 'ntfs3'
         elif mount_type == 'btrfs':
             if 'ugrd.fs.btrfs' not in self['modules']:
                 self.logger.info("Auto-enabling module: btrfs")
