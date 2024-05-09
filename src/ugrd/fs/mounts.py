@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.5.2'
+__version__ = '2.6.0'
 
 from pathlib import Path
 
@@ -77,7 +77,7 @@ def _process_mounts_multi(self, mount_name: str, mount_config) -> None:
                 self.logger.info("Auto-enabling module: btrfs")
                 self['modules'] = 'ugrd.fs.btrfs'
         else:
-            self.logger.debug("Unknown mount type: %s" % mount_type)
+            self.logger.warning("Unknown mount type: %s" % mount_type)
 
     self['mounts'][mount_name] = mount_config
     self.logger.debug("[%s] Added mount: %s" % (mount_name, mount_config))
@@ -199,6 +199,7 @@ def _get_dm_devices(self, f_major=None, f_minor=None) -> dict:
 
 
 @check_dict('autodetect_root_luks', value=True, log_level=10, message="Skipping LUKS autodetection, autodetect_root_luks is not set.")
+@check_dict('hostonly', value=True, log_level=30, message="Skipping LUKS autodetection, hostonly mode is disabled.")
 def _autodetect_root_luks(self, root_mount_info: dict) -> None:
     # Check if the mount is under /dev/mapper or starts with /dev/dm-
     if not root_mount_info['name'].startswith('/dev/mapper') and not root_mount_info['name'].startswith('/dev/dm-'):
@@ -242,10 +243,16 @@ def _autodetect_root_luks(self, root_mount_info: dict) -> None:
         self['modules'] = 'ugrd.crypto.cryptsetup'
 
     if uuid := luks_mount.get('uuid'):
-        self.logger.info("[%s] Detected LUKS volume uuid: %s" % (mount_loc.name, uuid))
+        self.logger.info("[%s] LUKS volume uuid: %s" % (mount_loc.name, uuid))
+        if cur_uuid := self['cryptsetup'].get('root', {}).get('uuid'):
+            if cur_uuid != uuid:
+                self.logger.warning("Overriding cryptsetup config for LUKS root uuid: %s" % cur_uuid)
         self['cryptsetup'] = {dm_info['name']: {'uuid': uuid}}
     elif partuuid := luks_mount.get('partuuid'):
-        self.logger.info("[%s] Detected LUKS volume partuuid: %s" % (mount_loc.name, partuuid))
+        self.logger.info("[%s] LUKS volume partuuid: %s" % (mount_loc.name, partuuid))
+        if cur_partuuid := self['cryptsetup'].get('root', {}).get('partuuid'):
+            if cur_partuuid != partuuid:
+                self.logger.warning("Overriding cryptsetup config for LUKS root partuuid: %s" % cur_partuuid)
         self['cryptsetup'] = {dm_info['name']: {'partuuid': partuuid}}
 
     self.logger.info("[%s] Configuring cryptsetup for LUKS mount (%s) on: %s\n%s" %

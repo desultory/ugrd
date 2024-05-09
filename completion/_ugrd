@@ -13,7 +13,8 @@ args=("-c[config file location]:config file:_files"
 	"--kernel-version[set the kernel version]:kernel version:_files -W /lib/modules -/"
 	"--kver[set the kernel version]:kernel version:_files -W /lib/modules -/"
 	"--log-file[specify the log file]"
-	"--log-level[specify the log level]")
+	"--log-level[specify the log level]"
+	"*:file:_files -/")
 
 args+=($base_args[@])
 
