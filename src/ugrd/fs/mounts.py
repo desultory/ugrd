@@ -67,16 +67,11 @@ def _process_mounts_multi(self, mount_name: str, mount_config) -> None:
     if mount_type := mount_config.get('type'):
         if mount_type in ['vfat', 'ext4', 'xfs']:
             self['kmod_init'] = mount_type
-        elif mount_type == 'ntfs':
-            self['kmod_init'] = 'ntfs3'
-            if mount_config.get('type') != 'ntfs3':
-                self.logger.warning("Setting the root mount type to ntfs3, was: %s" % mount_config.get('type'))
-            mount_config['type'] = 'ntfs3'
         elif mount_type == 'btrfs':
             if 'ugrd.fs.btrfs' not in self['modules']:
                 self.logger.info("Auto-enabling module: btrfs")
                 self['modules'] = 'ugrd.fs.btrfs'
-        else:
+        elif mount_type not in ['proc', 'sysfs', 'devtmpfs', 'tmpfs']:
             self.logger.warning("Unknown mount type: %s" % mount_type)
 
     self['mounts'][mount_name] = mount_config
