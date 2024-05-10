@@ -14,7 +14,10 @@ autodetect_init = true
 "ugrd.base.base" = [ "export_switchroot_target" ]
 
 [imports.init_final]
-"ugrd.base.base" = [ "do_switch_root" ]
+"ugrd.base.base" = [ "export_init_target", "do_switch_root" ]
+
+[imports.functions]
+"ugrd.base.base" = [ "_find_init" ]
 
 [custom_parameters]
 init_target = "Path"  # Specifies the location of the system init file

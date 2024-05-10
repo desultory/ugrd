@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '3.2.3'
+__version__ = '3.2.4'
 
 from importlib.metadata import version
 from pathlib import Path
@@ -47,6 +47,24 @@ def export_switchroot_target(self) -> str:
         return 'cp /run/MOUNTS_ROOT_TARGET /run/SWITCH_ROOT_TARGET'
 
 
+def export_init_target(self) -> str:
+    """ Returns bash to export the init_target variable to MOUNTS_ROOT_TARGET. """
+    return f'echo "{self["init_target"]}" > /run/INIT_TARGET'
+
+
+def _find_init(self) -> str:
+    """ Returns bash to find the init_target. """
+    return ['for path in ("/sbin/init", "/bin/init", "/init") ; do',
+            '    if [ -e "$(cat /run/MOUNTS_ROOT_TARGET)$path" ] ; then',
+            '        echo "Found init at: $(cat /run/MOUNTS_ROOT_TARGET)$path"',
+            '        echo "$(cat /run/MOUNTS_ROOT_TARGET)$path" > /run/INIT_TARGET',
+            '        return',
+            '    fi',
+            'done',
+            'echo "Unable to find init."',
+            'return 1']
+
+
 @check_dict('init_target', not_empty=True, raise_exception=True, message='init_target must be set.')
 def do_switch_root(self) -> str:
     """
@@ -60,16 +78,20 @@ def do_switch_root(self) -> str:
            '    echo "Root mount not found at: $(cat /run/MOUNTS_ROOT_TARGET)"',
            r'    echo -e "Current block devices:\n$(blkid)"',
            '    read -p "Press enter to restart UGRD."',
-           "    exec /init",
-           f"elif [ ! -e $(cat /run/MOUNTS_ROOT_TARGET){self['init_target']} ] ; then",
-           f'    echo "{self["init_target"]} not found at: $(cat /run/MOUNTS_ROOT_TARGET)"',
+           '    exec /init',
+           'elif [ ! -e $(cat /run/MOUNTS_ROOT_TARGET)$(cat /run/INIT_TARGET) ] ; then',
+           '    echo "$(cat /run/INIT_TARGET) not found at: $(cat /run/MOUNTS_ROOT_TARGET)"',
            r'    echo -e "Root contents:\n$(ls -l $(cat /run/MOUNTS_ROOT_TARGET))"',
+           '    if _find_init ; then',
+           '        echo "Switching root to: $(cat /run/MOUNTS_ROOT_TARGET) $(cat /run/INIT_TARGET)"',
+           '        exec switch_root "$(cat /run/MOUNTS_ROOT_TARGET)" "$(cat /run/INIT_TARGET)"',
+           '    fi',
            '    read -p "Press enter to restart UGRD."',
            '    exec /init',
            'else',
            f'    echo "Completed UGRD v{version("ugrd")}."',
-           f'    echo "Switching root to: $(cat /run/MOUNTS_ROOT_TARGET) ({self["init_target"]})"',
-           f'    exec switch_root "$(cat /run/MOUNTS_ROOT_TARGET)" {self["init_target"]}',
+           '    echo "Switching root to: $(cat /run/MOUNTS_ROOT_TARGET) $(cat /run/INIT_TARGET)"',
+           '    exec switch_root "$(cat /run/MOUNTS_ROOT_TARGET)" "$(cat /run/INIT_TARGET)"',
            "fi"]
     return out
 
