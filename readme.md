@@ -54,10 +54,11 @@ ugrd was designed to work with Gentoo, but has been tested on:
 
 If userspace tools are not required to mount a the root filesystem, ugrd can be used with any filesystem supported by the kernel.
 
-The following filesystems have been tested:
+The following root filesystems have been tested:
 
 * BTRFS
 * EXT4
+* XFS
 * FAT32
 
 If the required kernel module is not built into the kernel, and the filesystem is not listed above, the kernel module may need to be included in `kmod_init`.
