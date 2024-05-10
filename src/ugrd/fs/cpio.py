@@ -1,8 +1,17 @@
 __author__ = 'desultory'
-__version__ = '2.6.0'
+__version__ = '2.7.0'
 
 
 from pycpio import PyCPIO
+
+
+def check_cpio(self, cpio: PyCPIO) -> None:
+    """ Checks that all dependenceis are in the generated CPIO file. """
+    for dep in self['dependencies']:
+        if str(dep) not in cpio.entries:
+            raise FileNotFoundError("Dependency not found in CPIO: %s" % dep)
+        else:
+            self.logger.debug("Dependency found in CPIO: %s" % dep)
 
 
 def make_cpio(self) -> None:
@@ -12,6 +21,7 @@ def make_cpio(self) -> None:
     """
     cpio = PyCPIO(logger=self.logger, _log_bump=5)
     cpio.append_recursive(self.build_dir, relative=True)
+    check_cpio(self, cpio)
 
     if self.get('mknod_cpio'):
         for node in self['nodes'].values():
