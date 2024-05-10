@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.4.4'
+__version__ = '1.5.0'
 
 from zenlib.util import check_dict
 
@@ -200,6 +200,12 @@ def crypt_init(self) -> list[str]:
     """ Generates the bash script portion to prompt for keys. """
     out = [r'echo -e "\n\n\nPress enter to start drive decryption.\n\n\n"', "read -sr"]
     for name, parameters in self['cryptsetup'].items():
+        # Check if the volume is already open, if so, skip it
+        out += [f'cryptsetup status {name}',
+                'if [ $? -eq 0 ]; then',
+                f'    echo "Device already open: {name}"',
+                '    return',
+                'else']
         out += open_crypt_device(self, name, parameters)
         if 'try_nokey' in parameters and parameters.get('key_file'):
             new_params = parameters.copy()
