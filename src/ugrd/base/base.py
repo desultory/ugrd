@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '3.2.6'
+__version__ = '3.2.7'
 
 from importlib.metadata import version
 from pathlib import Path
@@ -58,7 +58,7 @@ def _find_init(self) -> str:
     return ['for init_path in "/sbin/init" "/bin/init" "/init"; do',
             '    if [ -e "$(cat /run/MOUNTS_ROOT_TARGET)$init_path" ] ; then',
             '        echo "Found init at: $(cat /run/MOUNTS_ROOT_TARGET)$init_path"',
-            '        echo "$(cat /run/MOUNTS_ROOT_TARGET)$init_path" > /run/INIT_TARGET',
+            '        echo "$init_path" > /run/INIT_TARGET',
             '        return',
             '    fi',
             'done',
