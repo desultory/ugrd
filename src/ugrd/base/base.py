@@ -49,6 +49,7 @@ def export_switchroot_target(self) -> str:
 
 def export_init_target(self) -> str:
     """ Returns bash to export the init_target variable to MOUNTS_ROOT_TARGET. """
+    _validate_init_target(self)
     return f'echo "{self["init_target"]}" > /run/INIT_TARGET'
 
 
@@ -72,26 +73,24 @@ def do_switch_root(self) -> str:
     Checks if the root mount is mounted and that it contains an init.
     If not, it restarts UGRD.
     """
-    _validate_init_target(self)
-    out = ['echo "Checking root mount: $(cat /run/MOUNTS_ROOT_TARGET)"',
-           'if ! grep -q " $(cat /run/MOUNTS_ROOT_TARGET) " /proc/mounts ; then',
-           '    echo "Root mount not found at: $(cat /run/MOUNTS_ROOT_TARGET)"',
-           r'    echo -e "Current block devices:\n$(blkid)"',
-           '    read -p "Press enter to restart UGRD."',
-           '    exec /init',
-           'elif [ ! -e $(cat /run/MOUNTS_ROOT_TARGET)$(cat /run/INIT_TARGET) ] ; then',
-           '    echo "$(cat /run/INIT_TARGET) not found at: $(cat /run/MOUNTS_ROOT_TARGET)"',
-           r'    echo -e "Root contents:\n$(ls -l $(cat /run/MOUNTS_ROOT_TARGET))"',
-           '    if _find_init ; then',
-           '        echo "Switching root to: $(cat /run/MOUNTS_ROOT_TARGET) $(cat /run/INIT_TARGET)"',
-           '        exec switch_root "$(cat /run/MOUNTS_ROOT_TARGET)" "$(cat /run/INIT_TARGET)"',
-           '    fi',
-           '    read -p "Press enter to restart UGRD."',
-           '    exec /init',
-           'else',
-           f'    echo "Completed UGRD v{version("ugrd")}."',
-           '    echo "Switching root to: $(cat /run/MOUNTS_ROOT_TARGET) $(cat /run/INIT_TARGET)"',
-           '    exec switch_root "$(cat /run/MOUNTS_ROOT_TARGET)" "$(cat /run/INIT_TARGET)"',
-           "fi"]
-    return out
+    return ['echo "Checking root mount: $(cat /run/MOUNTS_ROOT_TARGET)"',
+            'if ! grep -q " $(cat /run/MOUNTS_ROOT_TARGET) " /proc/mounts ; then',
+            '    echo "Root mount not found at: $(cat /run/MOUNTS_ROOT_TARGET)"',
+            r'    echo -e "Current block devices:\n$(blkid)"',
+            '    read -p "Press enter to restart UGRD."',
+            '    exec /init',
+            'elif [ ! -e $(cat /run/MOUNTS_ROOT_TARGET)$(cat /run/INIT_TARGET) ] ; then',
+            '    echo "$(cat /run/INIT_TARGET) not found at: $(cat /run/MOUNTS_ROOT_TARGET)"',
+            r'    echo -e "Root contents:\n$(ls -l $(cat /run/MOUNTS_ROOT_TARGET))"',
+            '    if _find_init ; then',
+            '        echo "Switching root to: $(cat /run/MOUNTS_ROOT_TARGET) $(cat /run/INIT_TARGET)"',
+            '        exec switch_root "$(cat /run/MOUNTS_ROOT_TARGET)" "$(cat /run/INIT_TARGET)"',
+            '    fi',
+            '    read -p "Press enter to restart UGRD."',
+            '    exec /init',
+            'else',
+            f'    echo "Completed UGRD v{version("ugrd")}."',
+            '    echo "Switching root to: $(cat /run/MOUNTS_ROOT_TARGET) $(cat /run/INIT_TARGET)"',
+            '    exec switch_root "$(cat /run/MOUNTS_ROOT_TARGET)" "$(cat /run/INIT_TARGET)"',
+            "fi"]
 
