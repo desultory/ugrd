@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.6.0'
+__version__ = '2.6.1'
 
 from pathlib import Path
 
@@ -428,7 +428,12 @@ def mount_root(self) -> str:
     if not _validate_host_mount(self, self['mounts']['root'], '/'):
         self.logger.error("Unable to validate root mount. Please ensure the root partition is mounted on the host system or disable validation.")
 
-    return ['''echo "Mounting '$(cat /run/MOUNTS_ROOT_SOURCE)' ($(cat /run/MOUNTS_ROOT_TYPE)) to '$(cat /run/MOUNTS_ROOT_TARGET)' with options: $(cat /run/MOUNTS_ROOT_OPTIONS)"''',
+    # Check if the root mount is already mounted
+    return ['if grep -qs "$(cat /run/MOUNTS_ROOT_TARGET)" /proc/mounts; then',
+            '    echo "Root mount already exists, unmounting: $(cat /run/MOUNTS_ROOT_TARGET)"',
+            '    umount "$(cat /run/MOUNTS_ROOT_TARGET)"',
+            'fi',
+            '''echo "Mounting '$(cat /run/MOUNTS_ROOT_SOURCE)' ($(cat /run/MOUNTS_ROOT_TYPE)) to '$(cat /run/MOUNTS_ROOT_TARGET)' with options: $(cat /run/MOUNTS_ROOT_OPTIONS)"''',
             'mount "$(cat /run/MOUNTS_ROOT_SOURCE)" -t "$(cat /run/MOUNTS_ROOT_TYPE)" "$(cat /run/MOUNTS_ROOT_TARGET)" -o "$(cat /run/MOUNTS_ROOT_OPTIONS)"']
 
 
