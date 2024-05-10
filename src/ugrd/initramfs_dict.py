@@ -1,6 +1,6 @@
 
 __author__ = "desultory"
-__version__ = "1.3.0"
+__version__ = "1.3.1"
 
 from tomllib import load, TOMLDecodeError
 from pathlib import Path
@@ -24,6 +24,7 @@ class InitramfsConfigDict(dict):
     """
     builtin_parameters = {'modules': NoDupFlatList,  # A list of the names of modules which have been loaded, mostly used for dependency checking
                           'imports': dict,  # A dict of functions to be imported into the initramfs, under their respective hooks
+                          'validated': bool,  # A flag to indicate if the config has been validated, mostly used for log levels
                           'custom_parameters': dict,  # Custom parameters loaded from imports
                           'custom_processing': dict,  # Custom processing functions which will be run to validate and process parameters
                           '_processing': dict}  # A dict of queues containing parameters which have been set before the type was known
@@ -106,7 +107,10 @@ class InitramfsConfigDict(dict):
             self.logger.debug("Processing queued values for '%s'" % parameter_name)
             while not self['_processing'][parameter_name].empty():
                 value = self['_processing'][parameter_name].get()
-                self.logger.debug("Processing queued value for '%s': %s" % (parameter_name, value))
+                if self['validated']:
+                    self.logger.info("Processing queued value for '%s': %s" % (parameter_name, value))
+                else:
+                    self.logger.debug("Processing queued value for '%s': %s" % (parameter_name, value))
                 self[parameter_name] = value
             self['_processing'].pop(parameter_name)
 
@@ -226,6 +230,7 @@ class InitramfsConfigDict(dict):
         if self['_processing']:
             self.logger.critical("Unprocessed config values: %s" % ', '.join(list(self['_processing'].keys())))
         self.verify_mask()
+        self['validated'] = True
 
     def __str__(self) -> str:
         return pretty_print(self)

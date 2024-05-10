@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.5.0'
+__version__ = '1.5.1'
 
 from zenlib.util import check_dict
 
@@ -205,7 +205,7 @@ def crypt_init(self) -> list[str]:
                 'if [ $? -eq 0 ]; then',
                 f'    echo "Device already open: {name}"',
                 '    return',
-                'else']
+                'fi\n']
         out += open_crypt_device(self, name, parameters)
         if 'try_nokey' in parameters and parameters.get('key_file'):
             new_params = parameters.copy()

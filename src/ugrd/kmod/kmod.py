@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.4.3'
+__version__ = '2.4.4'
 
 from pathlib import Path
 from subprocess import run
@@ -133,7 +133,10 @@ def autodetect_modules(self) -> None:
     """ Autodetects kernel modules from lsmod and/or lspci -k. """
     _autodetect_modules_lsmod(self)
     _autodetect_modules_lspci(self)
-    self.logger.info("Autodetected kernel modules: %s" % ', '.join(self['_kmod_auto']))
+    if self['_kmod_auto']:
+        self.logger.info("Autodetected kernel modules: %s" % ', '.join(self['_kmod_auto']))
+    else:
+        self.logger.warning("No kernel modules were autodetected.")
 
 
 def get_kernel_metadata(self) -> None:
