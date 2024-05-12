@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.6.0'
+__version__ = '1.5.0'
 
 from zenlib.util import check_dict
 
@@ -198,7 +198,7 @@ def open_crypt_device(self, name: str, parameters: dict) -> list[str]:
 
 def crypt_init(self) -> list[str]:
     """ Generates the bash script portion to prompt for keys. """
-    out = [r'echo "Unlocking encrypted devices, module version: %s"' % __version__,]
+    out = [r'echo "Unlocking LUKS volumes, module version: %s"' % __version__,]
     for name, parameters in self['cryptsetup'].items():
         # Check if the volume is already open, if so, skip it
         out += [f'cryptsetup status {name}',
