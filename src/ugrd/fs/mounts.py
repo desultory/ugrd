@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.6.2'
+__version__ = '2.7.0'
 
 from pathlib import Path
 
@@ -460,7 +460,7 @@ def clean_mounts(self) -> list[str]:
 def _mount_fail(self) -> list[str]:
     """ Generates init lines to run if the mount fails. """
     return ['echo "Loaded modules:"',
-            'lsmod',
+            'cat /proc/modules',
             'echo "Block devices:"',
             'blkid',
             'echo "Mounts:"',

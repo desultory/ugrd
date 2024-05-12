@@ -1,4 +1,4 @@
-binaries = [ "modprobe", "lsmod" ]
+binaries = [ "modprobe" ]
 
 kmod_pull_firmware = true
 

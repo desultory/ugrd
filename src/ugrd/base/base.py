@@ -74,7 +74,7 @@ def do_switch_root(self) -> str:
     If not, it restarts UGRD.
     """
     return ['if [ $$ -ne 1 ] ; then',
-            '    echo "Cannot swithc_root from PID: $$, exiting."',
+            '    echo "Cannot switch_root from PID: $$, exiting."',
             '    exit 1',
             'fi',
             'echo "Checking root mount: $(cat /run/MOUNTS_ROOT_TARGET)"',
