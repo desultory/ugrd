@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '3.2.7'
+__version__ = '3.3.0'
 
 from importlib.metadata import version
 from pathlib import Path
@@ -73,7 +73,11 @@ def do_switch_root(self) -> str:
     Checks if the root mount is mounted and that it contains an init.
     If not, it restarts UGRD.
     """
-    return ['echo "Checking root mount: $(cat /run/MOUNTS_ROOT_TARGET)"',
+    return ['if [ $$ -ne 1 ] ; then',
+            '    echo "Cannot swithc_root from PID: $$, exiting."',
+            '    exit 1',
+            'fi',
+            'echo "Checking root mount: $(cat /run/MOUNTS_ROOT_TARGET)"',
             'if ! grep -q " $(cat /run/MOUNTS_ROOT_TARGET) " /proc/mounts ; then',
             '    echo "Root mount not found at: $(cat /run/MOUNTS_ROOT_TARGET)"',
             r'    echo -e "Current block devices:\n$(blkid)"',
