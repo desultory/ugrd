@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.6.1'
+__version__ = '2.6.2'
 
 from pathlib import Path
 
@@ -321,7 +321,7 @@ def mount_fstab(self) -> list[str]:
         else:
             out += ["read -sr"]
 
-    out += ["mount -a || (echo 'Failed to mount fstab' ; _mount_fail)"]
+    out += ["mount -a || (echo 'Failed to mount fstab' ; exec _mount_fail)"]
     return out
 
 
