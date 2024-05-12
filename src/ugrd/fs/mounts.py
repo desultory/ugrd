@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.7.1'
+__version__ = '2.7.2'
 
 from pathlib import Path
 
@@ -284,7 +284,7 @@ def autodetect_root(self) -> None:
 
 def mount_base(self) -> list[str]:
     """ Generates mount commands for the base mounts. """
-    out = []
+    out = [f'Mounting base mounts, version: {__version__}']
     for mount in self['mounts'].values():
         if mount.get('base_mount'):
             out += _to_mount_cmd(self, mount, check_mount=True)
@@ -469,7 +469,7 @@ def _mount_fail(self) -> list[str]:
             'read -sr',
             'if [ "$$" -eq 1 ]; then',
             '    echo "Restarting init"',
-            '    exec /init',
+            '    exec /init ; exit',
             'else',
             '    echo "PID is not 1, exiting: $$"',
             '    exit',
