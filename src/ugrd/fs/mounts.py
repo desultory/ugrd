@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.7.3'
+__version__ = '2.7.4'
 
 from pathlib import Path
 
@@ -285,7 +285,7 @@ def autodetect_root(self) -> None:
 
 def mount_base(self) -> list[str]:
     """ Generates mount commands for the base mounts. """
-    out = [f'Mounting base mounts, version: {__version__}']
+    out = [f'echo "Mounting base mounts, version: {__version__}"']
     for mount in self['mounts'].values():
         if mount.get('base_mount'):
             out += _to_mount_cmd(self, mount, check_mount=True)
