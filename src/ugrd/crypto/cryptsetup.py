@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.5.0'
+__version__ = '1.5.1'
 
 from zenlib.util import check_dict
 
@@ -201,12 +201,12 @@ def crypt_init(self) -> list[str]:
     out = [r'echo "Unlocking LUKS volumes, module version: %s"' % __version__,]
     for name, parameters in self['cryptsetup'].items():
         # Check if the volume is already open, if so, skip it
-        out += [f'cryptsetup status {name}',
+        out += [f'cryptsetup status {name} > /dev/null 2>&1',
                 'if [ $? -eq 0 ]; then',
                 f'    echo "Device already open: {name}"',
                 '    return',
                 'else'
-                f'    echo "Press enter to unlock device: {name}"',
+                f'    echo -e "\\n\\nPress enter to unlock device: {name}\\n\\n"',
                 '    read -sr',
                 'fi']
         out += open_crypt_device(self, name, parameters)

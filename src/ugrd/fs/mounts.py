@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.7.0'
+__version__ = '2.7.1'
 
 from pathlib import Path
 
@@ -459,11 +459,11 @@ def clean_mounts(self) -> list[str]:
 
 def _mount_fail(self) -> list[str]:
     """ Generates init lines to run if the mount fails. """
-    return ['echo "Loaded modules:"',
+    return [r'echo -e "\nLoaded modules:"',
             'cat /proc/modules',
-            'echo "Block devices:"',
+            r'echo -e "\nBlock devices:"',
             'blkid',
-            'echo "Mounts:"',
+            r'echo -e "\nMounts:"',
             'mount',
             r'echo -e "\n\n\nPress enter to restart init\n\n\n"',
             'read -sr',
