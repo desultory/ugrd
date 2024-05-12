@@ -135,6 +135,7 @@ def _to_fstab_entry(self, mount: dict) -> str:
     Prints the object as a fstab entry
     The type must be specified
     """
+    _validate_host_mount(self, mount)
     fs_type = mount.get('type', 'auto')
     mount_source = _get_mount_source(self, mount, pad=True)
 
@@ -389,7 +390,8 @@ def _get_blkid_info(self, device: Path) -> str:
     return mount_dict
 
 
-@check_dict('validate', value=True, log_level=20, return_val=True, message="Skipping host mount validation.")
+@check_dict('validate', value=True, log_level=30, return_val=True, message="Skipping host mount validation, validation is disabled.")
+@check_dict('hostonly', value=True, log_level=30, return_val=True, message="Skipping host mount validation, hostonly mode is enabled.")
 def _validate_host_mount(self, mount, destination_path=None) -> bool:
     """ Checks if a defined mount exists on the host. """
     source = mount['source']
@@ -425,8 +427,7 @@ def mount_root(self) -> str:
     Mounts the root partition to $MOUNTS_ROOT_TARGET.
     Warns if the root partition isn't found on the current system.
     """
-    if not _validate_host_mount(self, self['mounts']['root'], '/'):
-        self.logger.error("Unable to validate root mount. Please ensure the root partition is mounted on the host system or disable validation.")
+    _validate_host_mount(self, self['mounts']['root'], '/')
 
     # Check if the root mount is already mounted
     return ['if grep -qs "$(cat /run/MOUNTS_ROOT_TARGET)" /proc/mounts; then',
