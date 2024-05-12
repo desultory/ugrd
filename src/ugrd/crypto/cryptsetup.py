@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.5.1'
+__version__ = '1.5.2'
 
 from zenlib.util import check_dict
 
@@ -148,7 +148,8 @@ def open_crypt_device(self, name: str, parameters: dict) -> list[str]:
     self.logger.debug("[%s] Processing cryptsetup volume: %s" % (name, parameters))
     retries = parameters['retries']
 
-    out = [f"echo 'Attempting to unlock device: {name}'"]
+    out = [f"echo -e '\\n\\nPress enter to unlock device: {name}\\n'",
+           'read -sr']
     out += [f"for ((i = 1; i <= {retries}; i++)); do"]
 
     # When there is a key command, read from the named pipe and use that as the key
@@ -205,9 +206,6 @@ def crypt_init(self) -> list[str]:
                 'if [ $? -eq 0 ]; then',
                 f'    echo "Device already open: {name}"',
                 '    return',
-                'else'
-                f'    echo -e "\\n\\nPress enter to unlock device: {name}\\n\\n"',
-                '    read -sr',
                 'fi']
         out += open_crypt_device(self, name, parameters)
         if 'try_nokey' in parameters and parameters.get('key_file'):
