@@ -321,7 +321,7 @@ def mount_fstab(self) -> list[str]:
         else:
             out += ["read -sr"]
 
-    out += ["mount -a || (echo 'Failed to mount fstab' ; exec _mount_fail)"]
+    out += ["mount -a || (echo 'Failed to mount fstab' ; _mount_fail)"]
     return out
 
 
