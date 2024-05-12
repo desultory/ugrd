@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.5.2'
+__version__ = '1.5.3'
 
 from zenlib.util import check_dict
 
@@ -120,8 +120,7 @@ def get_crypt_sources(self) -> list[str]:
             source_cmd = f'export CRYPTSETUP_SOURCE_{name}=$(blkid --match-token "$SOURCE_TOKEN_{name}" --match-tag PARTUUID --output device)'
 
             check_command = [f'if [ -z "$CRYPTSETUP_SOURCE_{name}" ]; then',
-                             f'    echo "Unable to resolve device source for {name}"',
-                             '    _mount_fail',
+                             f'    _mount_fail "Unable to resolve device source for {name}"',
                              'else',
                              f'    echo "Resolved device source: $CRYPTSETUP_SOURCE_{name}"',
                              'fi']
