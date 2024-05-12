@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.5.1'
+__version__ = '1.6.0'
 
 from zenlib.util import check_dict
 
@@ -198,14 +198,17 @@ def open_crypt_device(self, name: str, parameters: dict) -> list[str]:
 
 def crypt_init(self) -> list[str]:
     """ Generates the bash script portion to prompt for keys. """
-    out = [r'echo -e "\n\n\nPress enter to start drive decryption.\n\n\n"', "read -sr"]
+    out = [r'echo "Unlocking encrypted devices, module version: %s"' % __version__,]
     for name, parameters in self['cryptsetup'].items():
         # Check if the volume is already open, if so, skip it
         out += [f'cryptsetup status {name}',
                 'if [ $? -eq 0 ]; then',
                 f'    echo "Device already open: {name}"',
                 '    return',
-                'fi\n']
+                'else'
+                f'    echo "Press enter to unlock device: {name}"',
+                '    read -sr',
+                'fi']
         out += open_crypt_device(self, name, parameters)
         if 'try_nokey' in parameters and parameters.get('key_file'):
             new_params = parameters.copy()
@@ -225,7 +228,7 @@ def crypt_init(self) -> list[str]:
 def find_libgcc(self) -> None:
     """
     Finds libgcc.so, adds a 'dependencies' item for it.
-    Adds the parend directory to 'library_paths'
+    Adds the parent directory to 'library_paths'
     """
     from pathlib import Path
 
