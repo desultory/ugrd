@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.5.3'
+__version__ = '1.5.4'
 
 from zenlib.util import check_dict
 
@@ -92,7 +92,7 @@ def _process_cryptsetup_multi(self, mapped_name: str, config: dict) -> None:
         self['dependencies'] = config['key_file']
 
     if not config.get('retries'):
-        self.logger.info("[%s] No retries specified, using default: %s" % (_module_name, self['cryptsetup_retries']))
+        self.logger.info("[%s:%s] No retries specified, using default: %s" % (_module_name, mapped_name, self['cryptsetup_retries']))
         config['retries'] = self['cryptsetup_retries']
 
     self['cryptsetup'][mapped_name] = config
