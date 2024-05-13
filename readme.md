@@ -40,6 +40,7 @@ The original goal of this project was to create an initramfs suitable for decryp
 * Automatic CPIO generation (PyCPIO)
   - Device nodes are created within the CPIO only, so true root privileges are not required
   - Hardlinks are automatically created for files with matching SHA256 hashes
+  - Automatic xz compression
 * ZSH and BASH autocompletion for the ugrd command
 * Similar usage/arguments as Dracut
 
