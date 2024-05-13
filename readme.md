@@ -439,6 +439,7 @@ Cryptsetup mounts can be configured with the following options:
 * `path` - The device path of the LUKS volume (validation must be disabled).
 * `retries` (5) The number of times to attempt to unlock a key or cryptsetup volume.
 * `try_nokey` (false) Whether or not to attempt unlocking with a passphrase if key usage fails
+* `include_key` (false) Whether or not to include the key file in the initramfs.
 
 `cryptsetup` is a dictionary that contains LUKS volumes to be decrypted.
 

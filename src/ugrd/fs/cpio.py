@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.7.0'
+__version__ = '2.7.1'
 
 
 from pycpio import PyCPIO
@@ -19,7 +19,7 @@ def make_cpio(self) -> None:
     Creates a CPIO archive from the build directory and writes it to the output directory.
     Raises FileNotFoundError if the output directory does not exist.
     """
-    cpio = PyCPIO(logger=self.logger, _log_bump=5)
+    cpio = PyCPIO(logger=self.logger, _log_bump=10)
     cpio.append_recursive(self.build_dir, relative=True)
     check_cpio(self, cpio)
 

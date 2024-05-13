@@ -6,7 +6,7 @@ from zenlib.util import check_dict
 
 _module_name = 'ugrd.crypto.cryptsetup'
 
-CRYPTSETUP_PARAMETERS = ['key_type', 'partuuid', 'uuid', 'path', 'key_file', 'header_file', 'retries', 'key_command', 'reset_command', 'try_nokey']
+CRYPTSETUP_PARAMETERS = ['key_type', 'partuuid', 'uuid', 'path', 'key_file', 'header_file', 'retries', 'key_command', 'reset_command', 'try_nokey', 'include_key']
 
 
 @check_dict('cryptsetup', value_arg=1, return_arg=2, contains=True)  # Check if the mapped name is defined
@@ -87,6 +87,10 @@ def _process_cryptsetup_multi(self, mapped_name: str, config: dict) -> None:
             if value := self['cryptsetup_key_types'][key_type].get(parameter):
                 config[parameter] = value.format(**config)
 
+    # Include the key file if include_key is set
+    if config.get('include_key'):
+        self['dependencies'] = config['key_file']
+
     if not config.get('retries'):
         self.logger.info("[%s] No retries specified, using default: %s" % (_module_name, self['cryptsetup_retries']))
         config['retries'] = self['cryptsetup_retries']
@@ -129,11 +133,38 @@ def get_crypt_sources(self) -> list[str]:
     return out
 
 
+@check_dict('validate', value=True, log_level=30, message="Skipping cryptsetup key validation.")
+def _validate_crypysetup_key(self, key_paramters: dict) -> None:
+    """ Validates the cryptsetup key """
+    if key_paramters.get('include_key'):
+        self.logger.info("Skipping key validation for included key.")
+        return
+
+    from pathlib import Path
+    key_path = Path(key_paramters['key_file'])
+
+    if not key_path.is_file():
+        raise FileNotFoundError("Key file not found: %s" % key_path)
+
+    key_copy = key_path
+    while parent := key_copy.parent:
+        if parent == Path('/'):
+            raise ValueError("No mount is defined for external key file: %s" % key_path)
+        if str(parent).lstrip('/') in self['mounts']:
+            self.logger.debug("Found mount for key file: %s" % parent)
+            break
+        key_copy = parent
+
+
 def open_crypt_key(self, name: str, parameters: dict) -> tuple[list[str], str]:
     """
     Returns a tuple of bash lines and the path to the key file
     Returns bash lines to open a luks key and output it to specified key file
     """
+    if parameters.get('key_file'):
+        _validate_crypysetup_key(self, parameters)
+    else:
+        raise ValueError("Key file must be specified for cryptsetup mount: %s" % name)
     key_path = f"/run/key_{name}"
 
     out = [f"    echo 'Attempting to open luks key for {name}'"]
@@ -159,6 +190,7 @@ def open_crypt_device(self, name: str, parameters: dict) -> list[str]:
         cryptsetup_command = f'    cryptsetup open --key-file {key_name}'
     elif 'key_file' in parameters:
         self.logger.debug("[%s] Using key file: %s" % (name, parameters['key_file']))
+        _validate_crypysetup_key(self, parameters)
         cryptsetup_command = f'    cryptsetup open --key-file {parameters["key_file"]}'
     else:
         # Set tries to 1 since it runs in the loop
@@ -198,7 +230,7 @@ def open_crypt_device(self, name: str, parameters: dict) -> list[str]:
 
 def crypt_init(self) -> list[str]:
     """ Generates the bash script portion to prompt for keys. """
-    out = [r'echo "Unlocking LUKS volumes, module version: %s"' % __version__,]
+    out = [r'echo "Unlocking LUKS volumes, ugrd.cryptsetup version: %s"' % __version__,]
     for name, parameters in self['cryptsetup'].items():
         # Check if the volume is already open, if so, skip it
         out += [f'cryptsetup status {name} > /dev/null 2>&1',
