@@ -383,6 +383,7 @@ This module handles CPIO creation.
 
 * `out_file` (ugrd.cpio) Sets the name of the output file, under `out_dir` unless a path is defined.
 * `mknod_cpio` (true) Only create device nodes within the CPIO.
+* `cpio_compression` (xz) Sets the compression method for the CPIO file.
 
 ##### General mount options
 
