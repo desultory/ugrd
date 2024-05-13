@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "0.6.0"
+__version__ = "1.0.0"
 
 
 def custom_init(self) -> str:
@@ -9,7 +9,7 @@ def custom_init(self) -> str:
     Returns the output of console_init which is the command to start agetty.
     """
     custom_init_contents = [self['shebang'],
-                            f"# Console module version v{__version__}",
+                            f'echo "Starting console module v{__version__}"',
                             *self.generate_init_main()]
 
     return console_init(self), custom_init_contents
@@ -18,7 +18,7 @@ def custom_init(self) -> str:
 def console_init(self) -> str:
     """
     Start agetty on the primary console.
-    Tell it to execute teh _custom_init_file
+    Tell it to execute the _custom_init_file
     If the console is a serial port, set the baud rate.
     """
     name = self['primary_console']
