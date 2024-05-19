@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '3.0.2'
+__version__ = '3.0.3'
 
 from pathlib import Path
 
@@ -435,6 +435,9 @@ def _validate_host_mount(self, mount, destination_path=None) -> bool:
 
     host_mount_options = _get_mounts_source_options(self, destination_path)
     for option in mount.get('options', []):
+        if option == 'ro' and destination_path == '/':
+            # Skip the ro option for the root mount
+            continue
         if option not in host_mount_options:
             raise ValueError("Host mount options mismatch. Expected: %s, Found: %s" % (mount['options'], host_mount_options))
 
