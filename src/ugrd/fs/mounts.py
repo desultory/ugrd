@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '3.0.1'
+__version__ = '3.0.2'
 
 from pathlib import Path
 
@@ -432,6 +432,11 @@ def _validate_host_mount(self, mount, destination_path=None) -> bool:
 
     # This will raise a FileNotFoundError if the mountpoint doesn't exist
     host_source_dev = _get_mounts_source_device(self, destination_path)
+
+    host_mount_options = _get_mounts_source_options(self, destination_path)
+    for option in mount.get('options', []):
+        if option not in host_mount_options:
+            raise ValueError("Host mount options mismatch. Expected: %s, Found: %s" % (mount['options'], host_mount_options))
 
     if mount_type == 'path' and mount_val != host_source_dev:
         raise ValueError("Host mount path device path does not match config. Expected: %s, Found: %s" % (mount_val, host_source_dev))
