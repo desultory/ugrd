@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '3.0.0'
+__version__ = '3.0.1'
 
 from pathlib import Path
 
@@ -235,7 +235,7 @@ def autodetect_root_luks(self) -> None:
 
     mapped_name, dm_info = dm_info.popitem()
 
-    if any(mount_type in self['cryptsetup'][dm_info['name']] for mount_type in SOURCE_TYPES):
+    if 'cryptsetup' in self and any(mount_type in self['cryptsetup'].get(dm_info['name']) for mount_type in SOURCE_TYPES):
         self.logger.warning("Skipping LUKS autodetection, cryptsetup config already set: %s" % self['cryptsetup'][dm_info['name']])
         return
 
