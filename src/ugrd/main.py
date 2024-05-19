@@ -11,6 +11,8 @@ def main():
                  {'flags': ['--kernel-version', '--kver'], 'action': 'store', 'help': 'set the kernel version'},
                  {'flags': ['--clean'], 'action': 'store_true', 'help': 'clean the build directory at runtime'},
                  {'flags': ['--no-clean'], 'action': 'store_false', 'help': 'disable build directory cleaning', 'dest': 'clean'},
+                 {'flags': ['--compress'], 'action': 'store_true', 'help': 'compress the final image', 'dest': 'cpio_compression'},
+                 {'flags': ['--no-compress'], 'action': 'store_false', 'help': "don't compress the final image", 'dest': 'cpio_compression'},
                  {'flags': ['--validate'], 'action': 'store_true', 'help': 'enable configuration validation'},
                  {'flags': ['--no-validate'], 'action': 'store_false', 'help': 'disable config validation', 'dest': 'validate'},
                  {'flags': ['--hostonly'], 'action': 'store_true', 'help': 'enable hostonly mode, required for automatic kmod detection'},

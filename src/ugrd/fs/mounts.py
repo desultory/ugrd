@@ -1,34 +1,29 @@
 __author__ = 'desultory'
-__version__ = '2.7.4'
+__version__ = '3.0.0'
 
 from pathlib import Path
 
 from zenlib.util import check_dict, pretty_print
 
-MOUNT_PARAMETERS = ['destination', 'source', 'type', 'options', 'base_mount', 'skip_unmount', 'remake_mountpoint']
-SOURCE_TYPES = ['uuid', 'partuuid', 'label']
-
-
-@check_dict('mounts', value_arg=1, return_arg=2, contains=True)
-def _merge_mounts(self, mount_name: str, mount_config) -> None:
-    """ Returns merges mount config with the existing mount. """
-    self.logger.info("Updating mount: %s" % mount_name)
-    self.logger.debug("[%s] Updating mount with: %s" % (mount_name, mount_config))
-    if 'options' in self['mounts'][mount_name] and 'options' in mount_config:
-        self.logger.debug("Merging options: %s" % mount_config['options'])
-        self['mounts'][mount_name]['options'] = self['mounts'][mount_name]['options'] | set(mount_config['options'])
-        mount_config.pop('options')
-    return dict(self['mounts'][mount_name], **mount_config)
+SOURCE_TYPES = ['uuid', 'partuuid', 'label', 'path']
+MOUNT_PARAMETERS = ['destination', 'source', 'type', 'options', 'base_mount', 'skip_unmount', 'remake_mountpoint', *SOURCE_TYPES]
 
 
 def _validate_mount_config(self, mount_name: str, mount_config) -> None:
     """ Validate the mount config. """
-    for parameter, value in mount_config.items():
+    if any(source_type in mount_config for source_type in SOURCE_TYPES):
+        self.logger.debug("[%s] Found source type: %s" % (mount_name, mount_config))
+    elif 'source' not in mount_config and mount_name != 'root':  # Don't require source for the root mount, it is defined empty
+        raise ValueError("[%s] No source type found in mount: %s" % (mount_name, mount_config))
+
+    for parameter, value in mount_config.copy().items():
         self.logger.debug("[%s] Validating parameter: %s" % (mount_name, parameter))
         if parameter == 'source' and isinstance(value, dict):
+            self.logger.warning("source dict is deprecated, please define the source type directly")
             # Break if the source type is valid
             for source_type in SOURCE_TYPES:
                 if source_type in value:
+                    mount_config[source_type] = value[source_type]
                     break
             else:
                 self.logger.error("Valid source types: %s" % SOURCE_TYPES)
@@ -44,12 +39,25 @@ def _validate_mount_config(self, mount_name: str, mount_config) -> None:
             raise ValueError("Invalid parameter in mount: %s" % parameter)
 
 
-def _process_mounts_multi(self, mount_name: str, mount_config) -> None:
-    """
-    Processes the passed mount config.
-    Updates the mount if it already exists.
-    """
-    mount_config = _merge_mounts(self, mount_name, mount_config)
+def _merge_mounts(self, mount_name: str, mount_config, mount_class) -> None:
+    """ Merges the passed mount config with the existing mount. """
+    if mount_name not in self[mount_class]:
+        self.logger.debug("[%s] Skipping mount merge, mount not found: %s" % (mount_class, mount_name))
+        return mount_config
+
+    self.logger.info("[%s] Updating mount: %s" % (mount_class, mount_name))
+    self.logger.debug("[%s] Updating mount with: %s" % (mount_name, mount_config))
+    if 'options' in self[mount_class][mount_name] and 'options' in mount_config:
+        self.logger.debug("Merging options: %s" % mount_config['options'])
+        self[mount_class][mount_name]['options'] = self[mount_class][mount_name]['options'] | set(mount_config['options'])
+        mount_config.pop('options')
+
+    return dict(self[mount_class][mount_name], **mount_config)
+
+
+def _process_mount(self, mount_name: str, mount_config, mount_class="mounts") -> None:
+    """ Processes the passed mount config. """
+    mount_config = _merge_mounts(self, mount_name, mount_config, mount_class)
     _validate_mount_config(self, mount_name, mount_config)
 
     # Set defaults
@@ -58,10 +66,6 @@ def _process_mounts_multi(self, mount_name: str, mount_config) -> None:
         mount_config['destination'] = '/' / mount_config['destination']
     mount_config['base_mount'] = mount_config.get('base_mount', False)
     mount_config['options'] = set(mount_config.get('options', ''))
-
-    # Ensure the source is set for non-base mounts, except for the root mount. The root mount is defined empty.
-    if not mount_config['base_mount'] and 'source' not in mount_config and mount_name != 'root':
-        raise ValueError("[%s] No source specified in mount: %s" % (mount_name, mount_config))
 
     # Add imports based on the mount type
     if mount_type := mount_config.get('type'):
@@ -74,30 +78,38 @@ def _process_mounts_multi(self, mount_name: str, mount_config) -> None:
         elif mount_type not in ['proc', 'sysfs', 'devtmpfs', 'tmpfs']:
             self.logger.warning("Unknown mount type: %s" % mount_type)
 
-    self['mounts'][mount_name] = mount_config
+    self[mount_class][mount_name] = mount_config
     self.logger.debug("[%s] Added mount: %s" % (mount_name, mount_config))
 
-    # Define the mountpoint path
-    self['paths'] = mount_config['destination']
+    if mount_class == 'mounts':
+        # Define the mountpoint path for standard mounts
+        self['paths'] = mount_config['destination']
 
 
-def _get_mount_source(self, mount: dict, pad=False) -> str:
-    """
-    returns the mount source string based on the config
-    uses NAME= format so it works in both the fstab and mount command
-    """
-    source = mount['source']
-    pad_size = 44
+def _process_mounts_multi(self, mount_name: str, mount_config) -> None:
+    _process_mount(self, mount_name, mount_config)
 
-    out_str = ''
-    if isinstance(source, dict):
-        # Create the source string from the dict
-        for source_type in SOURCE_TYPES:
-            if source_type in source:
-                out_str = f"{source_type.upper()}={source[source_type]}"
-                break
-    else:
-        out_str = source
+
+def _process_late_mounts_multi(self, mount_name: str, mount_config) -> None:
+    _process_mount(self, mount_name, mount_config, 'late_mounts')
+
+
+def _get_mount_source_type(self, mount: dict, with_val=False) -> str:
+    """ Gets the source from the mount config. """
+    for source_type in SOURCE_TYPES:
+        if source_type in mount:
+            if with_val:
+                return source_type, mount[source_type]
+            return source_type
+    raise ValueError("No source type found in mount: %s" % mount)
+
+
+def _get_mount_str(self, mount: dict, pad=False, pad_size=44) -> str:
+    """ returns the mount source string based on the config,
+    the output string should work with fstab and mount commands.
+    pad: pads the output string with spaces, defined by pad_size (44)."""
+    mount_type, mount_name = _get_mount_source_type(self, mount, with_val=True)
+    out_str = mount_name if mount_type == 'path' else f"{mount_type.upper()}={mount_name}"
 
     if pad:
         if len(out_str) > pad_size:
@@ -114,7 +126,7 @@ def _to_mount_cmd(self, mount: dict, check_mount=False) -> str:
     if check_mount:
         out.append(f"if ! grep -qs {mount['destination']} /proc/mounts; then")
 
-    mount_command = f"mount {_get_mount_source(self, mount)} {mount['destination']}"
+    mount_command = f"mount {_get_mount_str(self, mount)} {mount['destination']}"
     if options := mount.get('options'):
         mount_command += f" --options {','.join(options)}"
     if mount_type := mount.get('type'):
@@ -137,10 +149,8 @@ def _to_fstab_entry(self, mount: dict) -> str:
     """
     _validate_host_mount(self, mount)
     fs_type = mount.get('type', 'auto')
-    mount_source = _get_mount_source(self, mount, pad=True)
 
-    out_str = ''
-    out_str += mount_source
+    out_str = _get_mount_str(self, mount, pad=True)
     out_str += str(mount['destination']).ljust(24, ' ')
     out_str += fs_type.ljust(16, ' ')
 
@@ -149,23 +159,32 @@ def _to_fstab_entry(self, mount: dict) -> str:
     return out_str
 
 
-def generate_fstab(self) -> None:
-    """ Generates the fstab from the mounts. """
+def _generate_fstab(self, mount_class="mounts", filename="/etc/fstab") -> None:
+    """ Generates the fstab from the specified mounts. """
     fstab_info = [f"# UGRD Filesystem module v{__version__}"]
 
-    for mount_name, mount_info in self['mounts'].items():
+    for mount_name, mount_info in self[mount_class].items():
         if not mount_info.get('base_mount') and mount_name != 'root':
             try:
-                self.logger.debug("Adding fstab entry for: %s" % mount_name)
+                self.logger.debug("[%s] Adding fstab entry for: %s" % (mount_class, mount_name))
                 fstab_info.append(_to_fstab_entry(self, mount_info))
             except KeyError as e:
-                self.logger.warning("Failed to add fstab entry for: %s" % mount_name)
+                self.logger.warning("[%s] Failed to add fstab entry for: %s" % (mount_class, mount_name))
                 self.logger.warning("Required mount paramter not set: %s" % e)
 
     if len(fstab_info) > 1:
-        self._write('/etc/fstab/', fstab_info)
+        self._write(filename, fstab_info)
     else:
-        self.logger.warning("No fstab entries generated.")
+        self.logger.warning("No fstab entries generated for mounts: %s" % mount_class)
+
+
+def generate_fstab(self) -> None:
+    _generate_fstab(self)
+
+
+@check_dict('late_mounts', not_empty=True, log_level=30, message="Skipping late fstab generation, late_mounts is not set.")
+def generate_late_fstab(self) -> None:
+    _generate_fstab(self, 'late_mounts', self['late_fstab'])
 
 
 def _get_dm_devices(self, f_major=None, f_minor=None) -> dict:
@@ -196,7 +215,9 @@ def _get_dm_devices(self, f_major=None, f_minor=None) -> dict:
 
 @check_dict('autodetect_root_luks', value=True, log_level=10, message="Skipping LUKS autodetection, autodetect_root_luks is not set.")
 @check_dict('hostonly', value=True, log_level=30, message="Skipping LUKS autodetection, hostonly mode is disabled.")
-def _autodetect_root_luks(self, root_mount_info: dict) -> None:
+def autodetect_root_luks(self) -> None:
+    """ Autodetects LUKS mounts and sets the cryptsetup config. """
+    root_mount_info = _get_blkid_info(self, _get_mounts_source_device(self, '/'))
     # Check if the mount is under /dev/mapper or starts with /dev/dm-
     if not root_mount_info['name'].startswith('/dev/mapper') and not root_mount_info['name'].startswith('/dev/dm-'):
         self.logger.debug("Root mount is not a device mapper mount: %s" % root_mount_info['name'])
@@ -213,6 +234,10 @@ def _autodetect_root_luks(self, root_mount_info: dict) -> None:
         raise RuntimeError("Multiple device mapper devices found for: %s" % mount_loc)
 
     mapped_name, dm_info = dm_info.popitem()
+
+    if any(mount_type in self['cryptsetup'][dm_info['name']] for mount_type in SOURCE_TYPES):
+        self.logger.warning("Skipping LUKS autodetection, cryptsetup config already set: %s" % self['cryptsetup'][dm_info['name']])
+        return
 
     if mount_loc.name != dm_info['name'] and mount_loc.name != mapped_name:
         raise ValueError("Device mapper device name mismatch: %s != %s" % (mount_loc.name, dm_info['name']))
@@ -255,28 +280,29 @@ def _autodetect_root_luks(self, root_mount_info: dict) -> None:
                      (mount_loc.name, dm_info['name'], luks_mount['name'], pretty_print(self['cryptsetup'])))
 
 
-@check_dict('autodetect_root', value=True, log_level=10, message="Skipping root autodetection, autodetect_root is not set.")
-@check_dict({'mounts': {'root': 'source'}}, unset=True, log_level=30, message="Skipping root autodetection, root source is already set.")
+@check_dict('autodetect_root', value=True, log_level=20, message="Skipping root autodetection, autodetect_root is disabled.")
+@check_dict('hostonly', value=True, log_level=30, message="Skipping root autodetection, hostonly mode is disabled.")
 def autodetect_root(self) -> None:
-    """ Sets self['mounts']['root']['source'] based on the host mount. """
-    root_mount_info = _get_blkid_info(self, _get_mounts_source_device(self, '/'))
-    if not root_mount_info:
-        raise RuntimeError("Failed to autodetect root mount source, and no source is set in the config.")
+    """ Sets self['mounts']['root']'s source based on the host mount. """
+    try:
+        self.logger.warning("Root mount source already set: %s", _get_mount_source_type(self, self['mounts']['root']))
+        return
+    except ValueError:
+        pass
 
+    root_mount_info = _get_blkid_info(self, _get_mounts_source_device(self, '/'))
     self.logger.debug("Detected root mount info: %s" % root_mount_info)
-    _autodetect_root_luks(self, root_mount_info)
     mount_info = {'root': {'type': 'auto', 'base_mount': False}}
 
     if mount_type := root_mount_info.get('type'):  # Attempt to autodetect the root type
         self.logger.info("Autodetected root type: %s" % mount_type)
         mount_info['root']['type'] = mount_type.lower()
 
-    if label := root_mount_info.get('label'):  # Attempt to autodetect the root mount source
-        self.logger.info("Autodetected root label: %s" % label)
-        mount_info['root']['source'] = {'label': label}
-    elif uuid := root_mount_info.get('uuid'):
-        self.logger.info("Autodetected root uuid: %s" % uuid)
-        mount_info['root']['source'] = {'uuid': uuid}
+    for source_type in SOURCE_TYPES:
+        if source := root_mount_info.get(source_type):
+            self.logger.info("Autodetected root source: %s=%s" % (source_type, source))
+            mount_info['root'][source_type] = source
+            break
     else:
         raise ValueError("Failed to autodetect root mount source.")
 
@@ -324,6 +350,12 @@ def mount_fstab(self) -> list[str]:
 
     out += ["mount -a || _mount_fail 'failed to mount fstab'"]
     return out
+
+
+@check_dict('late_mounts', not_empty=True, log_level=30, message="Skipping late fstab mount, late_fstab is not set.")
+def mount_late_fstab(self) -> str:
+    """ Mounts the late fstab file, specified as "late_fstab" """
+    return f"mount -a --fstab {self['late_fstab']} | _mount_fail 'failed to mount late fstab'"
 
 
 def _pad_mountpoint(self, mountpoint: str) -> str:
@@ -394,32 +426,25 @@ def _get_blkid_info(self, device: Path) -> str:
 @check_dict('hostonly', value=True, log_level=30, return_val=True, message="Skipping host mount validation, hostonly mode is enabled.")
 def _validate_host_mount(self, mount, destination_path=None) -> bool:
     """ Checks if a defined mount exists on the host. """
-    source = mount['source']
+    mount_type, mount_val = _get_mount_source_type(self, mount, with_val=True)
     # If a destination path is passed, like for /, use that instead of the mount's destination
     destination_path = mount['destination'] if destination_path is None else destination_path
 
     # This will raise a FileNotFoundError if the mountpoint doesn't exist
     host_source_dev = _get_mounts_source_device(self, destination_path)
 
-    # The returned value should equal the mount source if it's a string
-    if isinstance(source, str):
-        if source != host_source_dev:
-            self.logger.warning("Host device mismatch. Expected: %s, Found: %s" % (source, host_source_dev))
-    elif isinstance(source, dict):
-        # If the source is a dict, check that the uuid, partuuid, or label matches the host mount
+    if mount_type == 'path' and mount_val != host_source_dev:
+        raise ValueError("Host mount path device path does not match config. Expected: %s, Found: %s" % (mount_val, host_source_dev))
+    elif mount_type in ['uuid', 'partuuid', 'label']:
+        # For uuid, partuuid, and label types, check that the source matches the host mount
         if blkid_info := _get_blkid_info(self, host_source_dev):
-            # Unholy for-else, breaks if the uuid, partuuid, or label matches, otherwise warns
-            for key, value in source.items():
-                if blkid_info.get(key) == value:
-                    self.logger.debug("[%s] Found host device match, key '%s' == '%s' " % (host_source_dev, key, value))
-                    return True
-            else:
-                self.logger.error("Mount device not found on host system. Expected: %s" % source)
-                self.logger.error("Host device info: %s" % blkid_info)
+            if blkid_info.get(mount_type) != mount_val:
+                raise ValueError("Host device mismatch. Expected %s: %s, Found: %s" % (mount_type, mount_val, blkid_info.get(mount_type)))
+            self.logger.info("Host mount validated: %s" % mount)
+            return True
         else:
-            self.logger.warning("Unable to find blkid info for: %s" % host_source_dev)
-
-    raise ValueError("Unable to validate host mount: %s" % mount)
+            raise RuntimeError("Cannot find blkid info for host mount: %s" % host_source_dev)
+    raise ValueError("[%s] Unable to validate host mount: %s" % (destination_path, mount))
 
 
 def mount_root(self) -> str:
@@ -428,7 +453,6 @@ def mount_root(self) -> str:
     Warns if the root partition isn't found on the current system.
     """
     _validate_host_mount(self, self['mounts']['root'], '/')
-
     # Check if the root mount is already mounted
     return ['if grep -qs "$(cat /run/MOUNTS_ROOT_TARGET)" /proc/mounts; then',
             '    echo "Root mount already exists, unmounting: $(cat /run/MOUNTS_ROOT_TARGET)"',
@@ -438,11 +462,10 @@ def mount_root(self) -> str:
             'mount "$(cat /run/MOUNTS_ROOT_SOURCE)" -t "$(cat /run/MOUNTS_ROOT_TYPE)" "$(cat /run/MOUNTS_ROOT_TARGET)" -o "$(cat /run/MOUNTS_ROOT_OPTIONS)"']
 
 
-@check_dict({'mounts': {'root': 'source'}}, not_empty=True, log_level=20, raise_exception=True, message="Root mount source is not defined.")
 def export_mount_info(self) -> None:
     """ Exports mount info based on the config to /run/MOUNTS_ROOT_{option} """
     return [f'echo -n "{self["mounts"]["root"]["destination"]}" > "/run/MOUNTS_ROOT_TARGET"',
-            f'echo -n "{_get_mount_source(self, self["mounts"]["root"])}" > "/run/MOUNTS_ROOT_SOURCE"',
+            f'echo -n "{_get_mount_str(self, self["mounts"]["root"])}" > "/run/MOUNTS_ROOT_SOURCE"',
             f'echo -n "{self["mounts"]["root"].get("type", "auto")}" > "/run/MOUNTS_ROOT_TYPE"',
             f'''echo -n "{','.join(self["mounts"]["root"]["options"])}" > "/run/MOUNTS_ROOT_OPTIONS"''']
 
