@@ -177,7 +177,7 @@ def generate_fstab(self, mount_class="mounts", filename="/etc/fstab") -> None:
     if len(fstab_info) > 1:
         self._write(filename, fstab_info)
     else:
-        self.logger.warning("[%s] No fstab entries generated for mounts: %s" % (mount_class, ' ,'.join(self[mount_class].keys())))
+        self.logger.debug("[%s] No fstab entries generated for mounts: %s" % (mount_class, ', '.join(self[mount_class].keys())))
 
 
 def _get_dm_devices(self, f_major=None, f_minor=None) -> dict:

@@ -45,7 +45,7 @@ def _process_autodetect_init(self, state) -> None:
 
 def export_switchroot_target(self) -> str:
     """ Returns bash to export the switch_root_target variable to /run/SWITCH_ROOT_TARGET. """
-    if self['switch_root_target'] != self['mounts']['root']['destination']:
+    if self['switch_root_target'] != str(self['mounts']['root']['destination']):
         self.logger.warning("Switch root/root mount mismatch; Root mount target set to '%s', switch root target is: %s" %
                             (self['mounts']['root']['destination'], self['switch_root_target']))
         self['mounts']['root']['destination'] = self['switch_root_target']
