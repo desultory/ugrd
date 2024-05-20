@@ -230,7 +230,7 @@ def open_crypt_device(self, name: str, parameters: dict) -> list[str]:
 
 def crypt_init(self) -> list[str]:
     """ Generates the bash script portion to prompt for keys. """
-    out = [r'echo "Unlocking LUKS volumes, ugrd.cryptsetup version: %s"' % __version__,]
+    out = [r'echo "Unlocking LUKS volumes, ugrd.cryptsetup version: %s"' % __version__]
     for name, parameters in self['cryptsetup'].items():
         # Check if the volume is already open, if so, skip it
         out += [f'cryptsetup status {name} > /dev/null 2>&1',

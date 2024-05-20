@@ -1,4 +1,10 @@
+binaries = ['pvscan', 'vgscan', 'vgchange', 'lvscan']
 
+[imports.config_processing]
+"ugrd.fs.lvm" = [ "_process_lvm_multi" ]
 
-[custom_paramters]
+[imports.init_late]
+"ugrd.fs.lvm" = [ "init_lvm" ]
+
+[custom_parameters]
 lvm = "dict"  # lvm configuration dict
