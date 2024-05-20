@@ -348,21 +348,22 @@ Each mount has the following available parameters:
   - Setting the `type` to `vfat` includes the `vfat` kernel module automatically.
   - Setting the `type` to `btrfs` imports the `ugrd.fs.btrfs` module automatically.
 * `destination` (/mount name) Mountpoint for the mount, if left unset will use /mount_name.
-* `source` The source string or a dict with a key containing the source type, where the value is the target.
+* Source type: Evaluated in the following order:
   - `uuid` Mount by the filesystem UUID.
   - `partuuid` Mount by the partition UUID.
   - `label` Mount by the device label.
+  - `path` Mount by the device path.
 * `options` A list of options to add to the mount.
 * `base_mount` (false) Mounts with a mount command during `init_pre` instead of using `mount -a` in `init_main`.
 * `skip_unmount` (false) Skip running `umount` for this mount during `init_clean`.
 * `remake_mountpoint` (false) Recreate the mountpoint with mkdir before the `mount -a` is called. This is useful for `/dev/pty`.
 
-The most minimal mount entry that can be created must have a name, which will be used as the `destination`, and a `source`.
+The most minimal mount entry that can be created must have a name, which will be used as the `destination`, and a source type.
 
 The following configuration mounts the device with `uuid` `ABCD-1234` at `/boot`:
 
 ```
-[mounts.boot.source]
+[mounts.boot]
 uuid = "ABCD-1234"
 ```
 
@@ -373,8 +374,6 @@ The following configuration mounts the `btrfs` subvolume `stuff`  with `label` `
 options = [ "subvol=stuff" ]
 type = "btrfs"
 destination = "/mnt/extra"
-
-[mounts.extra.source]
 label = "extra"
 ```
 
