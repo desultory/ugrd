@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '3.5.1'
+__version__ = '3.5.2'
 
 from importlib.metadata import version
 from pathlib import Path
@@ -24,8 +24,9 @@ def _process_switch_root_target(self, target) -> None:
     dict.__setitem__(self, 'switch_root_target', target)
     self['paths'] = target
     if self['mounts']['root']['destination'] != target:
-        self.logger.warning("Root mount target set to '%s', updating to match switch root target: %s" %
-                            (self['mounts']['root']['destination'], target))
+        if self['mounts']['root']['destination'] != '/root':
+            self.logger.warning("Root mount target set to '%s', updating to match switch root target: %s" %
+                                (self['mounts']['root']['destination'], target))
         self['mounts']['root']['destination'] = target
 
 
