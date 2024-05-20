@@ -238,8 +238,7 @@ def _autodetect_dm(self, mountpoint='/') -> None:
         raise ValueError("Device mapper device name mismatch: %s != %s" % (mount_loc.name, self._dm_info[mapped_name]['name']))
 
     self.logger.debug("[%s] Device mapper info: %s" % (mount_loc.name, self._dm_info[mapped_name]))
-
-    if dm_mount.get('type') == 'crypto_LUKS' or mapped_name in self['cryptsetup']:
+    if dm_mount.get('type') == 'crypto_LUKS' or mount_loc.name in self['cryptsetup']:
         return autodetect_root_luks(self, mount_loc, mapped_name, dm_mount)
     elif dm_mount.get('type') == 'LVM2_member':
         return autodetect_root_lvm(self, mount_loc, mapped_name, dm_mount)
