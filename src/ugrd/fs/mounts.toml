@@ -18,7 +18,7 @@ late_fstab = "/etc/fstab.late"
 "ugrd.fs.mounts" = [ "autodetect_root", "autodetect_root_luks" ]
 
 [imports.build_final]
-"ugrd.fs.mounts" = [ "generate_fstab", "generate_late_fstab"]
+"ugrd.fs.mounts" = [ "generate_fstab" ]
 
 [imports.init_pre]
 "ugrd.fs.mounts" = [ "mount_base" ]
@@ -33,7 +33,10 @@ late_fstab = "/etc/fstab.late"
 "ugrd.fs.mounts" = [ "clean_mounts" ]
 
 [imports.init_mount]
-"ugrd.fs.mounts" = [ "mount_root", "mount_late_fstab" ]
+"ugrd.fs.mounts" = [ "mount_root" ]
+
+[imports.init_mount_late]
+"ugrd.fs.mounts" = [ "mount_late" ]
 
 [imports.functions]
 "ugrd.fs.mounts" = [ "clean_mounts", "_mount_fail" ]
@@ -48,11 +51,9 @@ mount_cmd = "str"  # The mount command called by mount_root, can be overridden
 autodetect_root = "bool"  # Add the autodetect_root property, if defined, the root mount will be autodetected
 autodetect_root_luks = "bool"  # Whether or not to try to autodetect LUKS partitions
 
-
 # Define the base of the root mount
 [mounts.root]
 skip_unmount = true
-destination = "/mnt/root"
 options = ['ro']
 
 # Define the default mounts

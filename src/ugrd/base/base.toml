@@ -5,6 +5,7 @@ binaries = [ "awk", "grep", "ls", "cp", "cat", "switch_root" ]
 paths = [ "root" ]
 
 shebang = "#!/bin/bash"
+switch_root_target = "/mnt/root"
 autodetect_init = true
 
 [imports.config_processing]
@@ -23,4 +24,4 @@ autodetect_init = true
 init_target = "Path"  # Specifies the location of the system init file
 autodetect_init = "bool"  # If set to true, the init_target will be autodetected based on the system's init system
 shebang = "str"  # Add the shebang property, used because this is a bash script
-switch_root_target = "str"  # Add the switch_root_target property, used to specify the target directory for switch_root overriding the root mount destination
+switch_root_target = "str"  # Add the switch_root_target property, used to specify the target directory for switch_root. Sets the default target for the root mount

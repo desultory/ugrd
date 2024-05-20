@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '3.3.0'
+__version__ = '3.5.1'
 
 from importlib.metadata import version
 from pathlib import Path
@@ -23,6 +23,10 @@ def _process_switch_root_target(self, target) -> None:
     """ Processes the switch_root_target variable. Adds it to the paths. """
     dict.__setitem__(self, 'switch_root_target', target)
     self['paths'] = target
+    if self['mounts']['root']['destination'] != target:
+        self.logger.warning("Root mount target set to '%s', updating to match switch root target: %s" %
+                            (self['mounts']['root']['destination'], target))
+        self['mounts']['root']['destination'] = target
 
 
 @check_dict('init_target', unset=True, message='init_target already set.')
@@ -40,11 +44,12 @@ def _process_autodetect_init(self, state) -> None:
 
 
 def export_switchroot_target(self) -> str:
-    """ Returns bash to export the switch_root_target variable to MOUNTS_ROOT_TARGET. """
-    if target := self.get('switch_root_target'):
-        return f'echo "{target}" > /run/SWITCH_ROOT_TARGET'
-    else:
-        return 'cp /run/MOUNTS_ROOT_TARGET /run/SWITCH_ROOT_TARGET'
+    """ Returns bash to export the switch_root_target variable to /run/SWITCH_ROOT_TARGET. """
+    if self['switch_root_target'] != self['mounts']['root']['destination']:
+        self.logger.warning("Switch root/root mount mismatch; Root mount target set to '%s', switch root target is: %s" %
+                            (self['mounts']['root']['destination'], self['switch_root_target']))
+        self['mounts']['root']['destination'] = self['switch_root_target']
+    return f'echo "{self["switch_root_target"]}" > /run/SWITCH_ROOT_TARGET'
 
 
 def export_init_target(self) -> str:
@@ -56,8 +61,8 @@ def export_init_target(self) -> str:
 def _find_init(self) -> str:
     """ Returns bash to find the init_target. """
     return ['for init_path in "/sbin/init" "/bin/init" "/init"; do',
-            '    if [ -e "$(cat /run/MOUNTS_ROOT_TARGET)$init_path" ] ; then',
-            '        echo "Found init at: $(cat /run/MOUNTS_ROOT_TARGET)$init_path"',
+            '    if [ -e "$(cat /run/SWITCH_ROOT_TARGET)$init_path" ] ; then',
+            '        echo "Found init at: $(cat /run/SWITCH_ROOT_TARGET)$init_path"',
             '        echo "$init_path" > /run/INIT_TARGET',
             '        return',
             '    fi',
@@ -83,18 +88,18 @@ def do_switch_root(self) -> str:
             r'    echo -e "Current block devices:\n$(blkid)"',
             '    read -p "Press enter to restart UGRD."',
             '    exec /init',
-            'elif [ ! -e $(cat /run/MOUNTS_ROOT_TARGET)$(cat /run/INIT_TARGET) ] ; then',
-            '    echo "$(cat /run/INIT_TARGET) not found at: $(cat /run/MOUNTS_ROOT_TARGET)"',
-            r'    echo -e "Root contents:\n$(ls -l $(cat /run/MOUNTS_ROOT_TARGET))"',
+            'elif [ ! -e $(cat /run/SWITCH_ROOT_TARGET)$(cat /run/INIT_TARGET) ] ; then',
+            '    echo "$(cat /run/INIT_TARGET) not found at: $(cat /run/SWITCH_ROOT_TARGET)"',
+            r'    echo -e "Target root contents:\n$(ls -l $(cat /run/SWITCH_ROOT_TARGET))"',
             '    if _find_init ; then',
-            '        echo "Switching root to: $(cat /run/MOUNTS_ROOT_TARGET) $(cat /run/INIT_TARGET)"',
-            '        exec switch_root "$(cat /run/MOUNTS_ROOT_TARGET)" "$(cat /run/INIT_TARGET)"',
+            '        echo "Switching root to: $(cat /run/SWITCH_ROOT_TARGET) $(cat /run/INIT_TARGET)"',
+            '        exec switch_root "$(cat /run/SWITCH_ROOT_TARGET)" "$(cat /run/INIT_TARGET)"',
             '    fi',
             '    read -p "Press enter to restart UGRD."',
             '    exec /init',
             'else',
             f'    echo "Completed UGRD v{version("ugrd")}."',
-            '    echo "Switching root to: $(cat /run/MOUNTS_ROOT_TARGET) $(cat /run/INIT_TARGET)"',
-            '    exec switch_root "$(cat /run/MOUNTS_ROOT_TARGET)" "$(cat /run/INIT_TARGET)"',
+            '    echo "Switching root to: $(cat /run/SWITCH_ROOT_TARGET) $(cat /run/INIT_TARGET)"',
+            '    exec switch_root "$(cat /run/SWITCH_ROOT_TARGET)" "$(cat /run/INIT_TARGET)"',
             "fi"]
 

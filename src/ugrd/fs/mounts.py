@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '3.0.3'
+__version__ = '3.1.3'
 
 from pathlib import Path
 
@@ -132,6 +132,8 @@ def _to_mount_cmd(self, mount: dict, check_mount=False) -> str:
     if mount_type := mount.get('type'):
         mount_command += f" -t {mount_type}"
 
+    mount_command += f" || _mount_fail 'failed to mount: {mount['destination']}'"
+
     if check_mount:
         out.append(f"    {mount_command}")
         out += ['else', f"    echo 'Mount already exists, skipping: {mount['destination']}'"]
@@ -159,7 +161,7 @@ def _to_fstab_entry(self, mount: dict) -> str:
     return out_str
 
 
-def _generate_fstab(self, mount_class="mounts", filename="/etc/fstab") -> None:
+def generate_fstab(self, mount_class="mounts", filename="/etc/fstab") -> None:
     """ Generates the fstab from the specified mounts. """
     fstab_info = [f"# UGRD Filesystem module v{__version__}"]
 
@@ -175,16 +177,7 @@ def _generate_fstab(self, mount_class="mounts", filename="/etc/fstab") -> None:
     if len(fstab_info) > 1:
         self._write(filename, fstab_info)
     else:
-        self.logger.warning("No fstab entries generated for mounts: %s" % mount_class)
-
-
-def generate_fstab(self) -> None:
-    _generate_fstab(self)
-
-
-@check_dict('late_mounts', not_empty=True, log_level=30, message="Skipping late fstab generation, late_mounts is not set.")
-def generate_late_fstab(self) -> None:
-    _generate_fstab(self, 'late_mounts', self['late_fstab'])
+        self.logger.warning("[%s] No fstab entries generated for mounts: %s" % (mount_class, ' ,'.join(self[mount_class].keys())))
 
 
 def _get_dm_devices(self, f_major=None, f_minor=None) -> dict:
@@ -319,6 +312,18 @@ def mount_base(self) -> list[str]:
     return out
 
 
+@check_dict('late_mounts', not_empty=True, log_level=20, message="Skipping late mounts, late_mounts is empty.")
+def mount_late(self) -> list[str]:
+    """ Generates mount commands for the late mounts. """
+    target_dir = self['mounts']['root']['destination'] if not self['switch_root_target'] else self['switch_root_target']
+    out = [f'echo "Mounting late mounts at {target_dir}: {" ,".join(self["late_mounts"].keys())}"']
+    for mount in self['late_mounts'].values():
+        if not str(mount['destination']).startswith(target_dir):
+            mount['destination'] = Path(target_dir, str(mount['destination']).removeprefix('/'))
+        out += _to_mount_cmd(self, mount, check_mount=True)
+    return out
+
+
 def remake_mountpoints(self) -> list[str]:
     """ Remakes mountpoints, especially useful when mounting over something like /dev. """
     cmds = [f"mkdir --parents {mount['destination']}" for mount in self['mounts'].values() if mount.get('remake_mountpoint')]
@@ -350,12 +355,6 @@ def mount_fstab(self) -> list[str]:
 
     out += ["mount -a || _mount_fail 'failed to mount fstab'"]
     return out
-
-
-@check_dict('late_mounts', not_empty=True, log_level=30, message="Skipping late fstab mount, late_fstab is not set.")
-def mount_late_fstab(self) -> str:
-    """ Mounts the late fstab file, specified as "late_fstab" """
-    return f"mount -a --fstab {self['late_fstab']} | _mount_fail 'failed to mount late fstab'"
 
 
 def _pad_mountpoint(self, mountpoint: str) -> str:
@@ -448,7 +447,7 @@ def _validate_host_mount(self, mount, destination_path=None) -> bool:
         if blkid_info := _get_blkid_info(self, host_source_dev):
             if blkid_info.get(mount_type) != mount_val:
                 raise ValueError("Host device mismatch. Expected %s: %s, Found: %s" % (mount_type, mount_val, blkid_info.get(mount_type)))
-            self.logger.info("Host mount validated: %s" % mount)
+            self.logger.debug("Host mount validated: %s" % mount)
             return True
         else:
             raise RuntimeError("Cannot find blkid info for host mount: %s" % host_source_dev)
