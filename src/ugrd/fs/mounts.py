@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '3.1.4'
+__version__ = '3.2.0'
 
 from pathlib import Path
 
@@ -239,7 +239,7 @@ def _autodetect_dm(self, mountpoint='/') -> None:
 
     self.logger.debug("[%s] Device mapper info: %s" % (mount_loc.name, self._dm_info[mapped_name]))
 
-    if dm_mount.get('type') == 'crypto_LUKS':
+    if dm_mount.get('type') == 'crypto_LUKS' or mapped_name in self['cryptsetup']:
         return autodetect_root_luks(self, mount_loc, mapped_name, dm_mount)
     elif dm_mount.get('type') == 'LVM2_member':
         return autodetect_root_lvm(self, mount_loc, mapped_name, dm_mount)
@@ -289,6 +289,7 @@ def autodetect_root_luks(self, mount_loc, mapped_name, luks_mount) -> None:
         raise RuntimeError("Multiple slaves found for device mapper device, unknown type: %s" % mount_loc.name)
 
     luks_mount = _get_blkid_info(self, Path('/dev/' + self._dm_info[mapped_name]['slaves'][0]))
+    self.logger.debug("[%s] LUKS mount info: %s" % (mapped_name, luks_mount))
     if luks_mount.get('type') != 'crypto_LUKS':
         if not luks_mount.get('uuid'):  # No uuid will be defined if there are detached headers
             self.logger.error("[%s] Unknown device mapper slave type: %s" % (self._dm_info[mapped_name]['slaves'][0], luks_mount.get('type')))
