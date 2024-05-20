@@ -8,14 +8,16 @@ binaries = [
 
 mount_wait = false
 autodetect_root = true
+autodetect_root_dm = true
 autodetect_root_luks = true
+autodetect_root_lvm = true
 late_fstab = "/etc/fstab.late"
 
 [imports.config_processing]
 "ugrd.fs.mounts" = [ "_process_mounts_multi", "_process_late_mounts_multi", "_process_mount_timeout" ]
 
 [imports.build_pre]
-"ugrd.fs.mounts" = [ "autodetect_root", "autodetect_root_luks" ]
+"ugrd.fs.mounts" = [ "autodetect_root", "autodetect_root_dm" ]
 
 [imports.build_final]
 "ugrd.fs.mounts" = [ "generate_fstab" ]
@@ -49,7 +51,9 @@ mount_wait = "bool"  # Add the mount_wait property, if defined, user input will 
 mount_timeout = "float"  # Add the mount_timeout property, used to define the timeout for mount_wait
 mount_cmd = "str"  # The mount command called by mount_root, can be overridden
 autodetect_root = "bool"  # Add the autodetect_root property, if defined, the root mount will be autodetected
+autodetect_root_dm = "bool"  # Whether or not to try to autodetect device-mapper partitions
 autodetect_root_luks = "bool"  # Whether or not to try to autodetect LUKS partitions
+autodetect_root_lvm = "bool"  # Whether or not to try to autodetect LVM partitions
 
 # Define the base of the root mount
 [mounts.root]

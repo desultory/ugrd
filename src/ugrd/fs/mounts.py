@@ -207,18 +207,17 @@ def _get_dm_devices(self, f_major=None, f_minor=None) -> dict:
     return dm_devices
 
 
-@check_dict('autodetect_root_luks', value=True, log_level=10, message="Skipping LUKS autodetection, autodetect_root_luks is not set.")
-@check_dict('hostonly', value=True, log_level=30, message="Skipping LUKS autodetection, hostonly mode is disabled.")
-def autodetect_root_luks(self) -> None:
-    """ Autodetects LUKS mounts and sets the cryptsetup config. """
+@check_dict('autodetect_root_dm', value=True, log_level=10, message="Skipping device mapper autodetection, autodetect_root_dm is not set.")
+@check_dict('hostonly', value=True, log_level=30, message="Skipping device mapper autodetection, hostonly mode is disabled.")
+def autodetect_root_dm(self) -> None:
+    """ Autodetects device mapper root config. """
     root_mount_info = _get_blkid_info(self, _get_mounts_source_device(self, '/'))
-    # Check if the mount is under /dev/mapper or starts with /dev/dm-
     if not root_mount_info['name'].startswith('/dev/mapper') and not root_mount_info['name'].startswith('/dev/dm-'):
         self.logger.debug("Root mount is not a device mapper mount: %s" % root_mount_info['name'])
         return
-    mount_loc = Path(root_mount_info['name']).resolve()
-    self.logger.debug("Detected a device mapper mount: %s" % mount_loc)
 
+    mount_loc = Path(root_mount_info['name']).resolve()
+    self.logger.info("Detected a device mapper mount: %s" % mount_loc)
     major, minor = mount_loc.stat().st_rdev >> 8, mount_loc.stat().st_rdev & 0xFF
     self.logger.debug("[%s] Major: %s, Minor: %s" % (mount_loc, major, minor))
     dm_info = _get_dm_devices(self, major, minor)
@@ -229,6 +228,37 @@ def autodetect_root_luks(self) -> None:
 
     mapped_name, dm_info = dm_info.popitem()
 
+    dm_mount = _get_blkid_info(self, Path('/dev/' + dm_info['slaves'][0]))
+    if dm_mount.get('type') == 'crypto_LUKS':
+        return autodetect_root_luks(self, mount_loc, mapped_name, dm_info, dm_mount)
+    elif dm_mount.get('type') == 'LVM2_member':
+        return autodetect_root_lvm(self, mount_loc, mapped_name, dm_info, dm_mount)
+    else:
+        raise RuntimeError("Unknown device mapper device type: %s" % dm_mount.get('type'))
+
+
+@check_dict('autodetect_root_lvm', value=True, log_level=10, message="Skipping LVM autodetection, autodetect_root_lvm is not set.")
+@check_dict('hostonly', value=True, log_level=30, message="Skipping LVM autodetection, hostonly mode is disabled.")
+def autodetect_root_lvm(self, mount_loc, mapped_name, dm_info, lvm_mount) -> None:
+    """ Autodetects LVM mounts and sets the lvm config. """
+    if 'ugrd.fs.lvm' not in self['modules']:
+        self.logger.info("Autodetected LVM mount, enabling the lvm module.")
+        self['modules'] = 'ugrd.fs.lvm'
+
+    self.logger.info(mount_loc)
+    self.logger.info(dm_info)
+    self.logger.info(lvm_mount)
+    raise ValueError(mapped_name)
+
+
+@check_dict('autodetect_root_luks', value=True, log_level=10, message="Skipping LUKS autodetection, autodetect_root_luks is not set.")
+@check_dict('hostonly', value=True, log_level=30, message="Skipping LUKS autodetection, hostonly mode is disabled.")
+def autodetect_root_luks(self, mount_loc, mapped_name, dm_info, luks_mount) -> None:
+    """ Autodetects LUKS mounts and sets the cryptsetup config. """
+    if 'ugrd.crypto.cryptsetup' not in self['modules']:
+        self.logger.info("Autodetected LUKS mount, enabling the cryptsetup module: %s" % luks_mount['name'])
+        self['modules'] = 'ugrd.crypto.cryptsetup'
+
     if 'cryptsetup' in self and any(mount_type in self['cryptsetup'].get(dm_info['name']) for mount_type in SOURCE_TYPES):
         self.logger.warning("Skipping LUKS autodetection, cryptsetup config already set: %s" % self['cryptsetup'][dm_info['name']])
         return
@@ -236,11 +266,11 @@ def autodetect_root_luks(self) -> None:
     if mount_loc.name != dm_info['name'] and mount_loc.name != mapped_name:
         raise ValueError("Device mapper device name mismatch: %s != %s" % (mount_loc.name, dm_info['name']))
 
-    if len(dm_info['holders']) > 0:
+    if len(dm_info['holders']) > 0:  # Sanity check
         self.logger.error("Device mapper holders: %s" % dm_info['holders'])
         raise RuntimeError("LUKS volumes should not have holders, potential LVM volume: %s" % mount_loc.name)
 
-    if len(dm_info['slaves']) == 0:
+    if len(dm_info['slaves']) == 0:  # Sanity check
         raise RuntimeError("No slaves found for device mapper device, unknown type: %s" % mount_loc.name)
     elif len(dm_info['slaves']) > 1:
         self.logger.error("Device mapper slaves: %s" % dm_info['slaves'])
@@ -248,15 +278,12 @@ def autodetect_root_luks(self) -> None:
 
     luks_mount = _get_blkid_info(self, Path('/dev/' + dm_info['slaves'][0]))
     if luks_mount.get('type') != 'crypto_LUKS':
-        if not luks_mount.get('uuid'):
+        if not luks_mount.get('uuid'):  # No uuid will be defined if there are detached headers
             self.logger.error("[%s] Unknown device mapper slave type: %s" % (dm_info['slaves'][0], luks_mount.get('type')))
-        else:
+        else:  # If there is some uuid and it's not LUKS, that's a problem
             raise RuntimeError("[%s] Unknown device mapper slave type: %s" % (dm_info['slaves'][0], luks_mount.get('type')))
 
-    if 'ugrd.crypto.cryptsetup' not in self['modules']:
-        self.logger.info("Autodetected LUKS mount, enabling the cryptsetup module: %s" % luks_mount['name'])
-        self['modules'] = 'ugrd.crypto.cryptsetup'
-
+    # Configure cryptsetup based on the LUKS mount
     if uuid := luks_mount.get('uuid'):
         self.logger.info("[%s] LUKS volume uuid: %s" % (mount_loc.name, uuid))
         if cur_uuid := self['cryptsetup'].get('root', {}).get('uuid'):
