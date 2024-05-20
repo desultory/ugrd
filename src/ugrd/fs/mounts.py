@@ -229,6 +229,11 @@ def autodetect_root_dm(self) -> None:
     mapped_name, dm_info = dm_info.popitem()
 
     dm_mount = _get_blkid_info(self, Path('/dev/' + dm_info['slaves'][0]))
+    if len(dm_info['slaves']) == 0:
+        raise RuntimeError("No slaves found for device mapper device, unknown type: %s" % mount_loc.name)
+    if mount_loc.name != dm_info['name'] and mount_loc.name != mapped_name:
+        raise ValueError("Device mapper device name mismatch: %s != %s" % (mount_loc.name, dm_info['name']))
+
     if dm_mount.get('type') == 'crypto_LUKS':
         return autodetect_root_luks(self, mount_loc, mapped_name, dm_info, dm_mount)
     elif dm_mount.get('type') == 'LVM2_member':
@@ -245,6 +250,16 @@ def autodetect_root_lvm(self, mount_loc, mapped_name, dm_info, lvm_mount) -> Non
         self.logger.info("Autodetected LVM mount, enabling the lvm module.")
         self['modules'] = 'ugrd.fs.lvm'
 
+    if mount_loc.name != dm_info['name'] and mount_loc.name != mapped_name:
+        raise ValueError("Device mapper device name mismatch: %s != %s" % (mount_loc.name, dm_info['name']))
+
+    if uuid := lvm_mount.get('uuid'):
+        self.logger.info("[%s] LVM volume uuid: %s" % (mount_loc.name, uuid))
+        self['lvm'] = {dm_info['name']: {'uuid': uuid}}
+    else:
+        raise ValueError("Failed to autodetect LVM volume uuid: %s" % mount_loc.name)
+
+    self.logger.critical(self['lvm'])
     self.logger.info(mount_loc)
     self.logger.info(dm_info)
     self.logger.info(lvm_mount)
@@ -263,16 +278,11 @@ def autodetect_root_luks(self, mount_loc, mapped_name, dm_info, luks_mount) -> N
         self.logger.warning("Skipping LUKS autodetection, cryptsetup config already set: %s" % self['cryptsetup'][dm_info['name']])
         return
 
-    if mount_loc.name != dm_info['name'] and mount_loc.name != mapped_name:
-        raise ValueError("Device mapper device name mismatch: %s != %s" % (mount_loc.name, dm_info['name']))
-
     if len(dm_info['holders']) > 0:  # Sanity check
         self.logger.error("Device mapper holders: %s" % dm_info['holders'])
         raise RuntimeError("LUKS volumes should not have holders, potential LVM volume: %s" % mount_loc.name)
 
-    if len(dm_info['slaves']) == 0:  # Sanity check
-        raise RuntimeError("No slaves found for device mapper device, unknown type: %s" % mount_loc.name)
-    elif len(dm_info['slaves']) > 1:
+    if len(dm_info['slaves']) > 1:
         self.logger.error("Device mapper slaves: %s" % dm_info['slaves'])
         raise RuntimeError("Multiple slaves found for device mapper device, unknown type: %s" % mount_loc.name)
 
@@ -286,15 +296,9 @@ def autodetect_root_luks(self, mount_loc, mapped_name, dm_info, luks_mount) -> N
     # Configure cryptsetup based on the LUKS mount
     if uuid := luks_mount.get('uuid'):
         self.logger.info("[%s] LUKS volume uuid: %s" % (mount_loc.name, uuid))
-        if cur_uuid := self['cryptsetup'].get('root', {}).get('uuid'):
-            if cur_uuid != uuid:
-                self.logger.warning("Overriding cryptsetup config for LUKS root uuid: %s" % cur_uuid)
         self['cryptsetup'] = {dm_info['name']: {'uuid': uuid}}
     elif partuuid := luks_mount.get('partuuid'):
         self.logger.info("[%s] LUKS volume partuuid: %s" % (mount_loc.name, partuuid))
-        if cur_partuuid := self['cryptsetup'].get('root', {}).get('partuuid'):
-            if cur_partuuid != partuuid:
-                self.logger.warning("Overriding cryptsetup config for LUKS root partuuid: %s" % cur_partuuid)
         self['cryptsetup'] = {dm_info['name']: {'partuuid': partuuid}}
 
     self.logger.info("[%s] Configuring cryptsetup for LUKS mount (%s) on: %s\n%s" %
