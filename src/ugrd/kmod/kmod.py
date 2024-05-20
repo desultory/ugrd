@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.5.0'
+__version__ = '2.5.1'
 
 from pathlib import Path
 from subprocess import run
@@ -258,11 +258,12 @@ def process_modules(self) -> None:
         try:
             _process_kmod_dependencies(self, kmod)
             self['kmod_init'] = kmod
-        except BuiltinModuleError as e:
+            continue
+        except (IgnoredModuleError, BuiltinModuleError) as e:
             self.logger.debug(e)
-        except Exception as e:
-            self.logger.warning("[%s] Failed to process autodetected kernel module: %s" % (kmod, e))
-            self['kmod_ignore'] = kmod
+        except DependencyResolutionError as e:
+            self.logger.warning("[%s] Failed to process autodetected kernel module dependencies: %s" % (kmod, e))
+        self['kmod_ignore'] = kmod
 
 
 @check_dict('kmod_init', not_empty=True, message="No kernel modules to load", log_level=30)
