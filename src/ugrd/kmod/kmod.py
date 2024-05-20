@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.4.4'
+__version__ = '2.5.0'
 
 from pathlib import Path
 from subprocess import run
@@ -249,12 +249,9 @@ def process_modules(self) -> None:
                 self.logger.warning("[%s] Failed to get modinfo for init kernel module: %s" % (kmod, e))
             self.logger.debug("[%s] Failed to get modinfo for kernel module: %s" % (kmod, e))
         self['kmod_ignore'] = kmod
+
     for kmod in self['_kmod_auto']:
-        if kmod in self['kmod_ignore']:
-            self.logger.warning("Autodetected module is in ignore list: %s" % kmod)
-            self['_kmod_removed'] = kmod
-            continue
-        elif kmod in self['kernel_modules']:
+        if kmod in self['kernel_modules']:
             self.logger.debug("Autodetected module is already in kernel_modules: %s" % kmod)
             continue
         self.logger.debug("Processing autodetected kernel module: %s" % kmod)
