@@ -25,9 +25,7 @@ local = true
 
 [mounts.boot]
 type = "vfat"
-
-  [mounts.boot.source]
-  uuid = "4A48-F4DC"
+uuid = "4A48-F4DC"
 
 [cryptsetup.root1]
 uuid = "9e04e825-7f60-4171-815a-86e01ec4c4d3"

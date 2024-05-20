@@ -13,9 +13,7 @@ modules = [
 
 [mounts.boot]
 type = "vfat"
-
-  [mounts.boot.source]
-  uuid = "BDF2-0139"
+uuid = "BDF2-0139"
 
 [cryptsetup.root]
 header_file = "/boot/luks_header.img"

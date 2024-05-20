@@ -28,7 +28,7 @@ kmod_autodetect_lsmod = true
 #sc_public_key = "/etc/ugrd/pubkey.gpg"
 
 # Optionally specify the root mountpoint information manually
-#[mounts.root.source]
+#[mounts.root]
 # The label of the root filesystem, a uuid or partuuid could be used instead
 #label = "rootfs"
 
@@ -36,8 +36,7 @@ kmod_autodetect_lsmod = true
 # The keyfile could be added as a dependency. if it's on the same device.
 #[mounts.boot]
 #type = "vfat"
-#  [mounts.boot.source]
-#  uuid = "4886-A631"
+#uuid = "4886-A631"
 
 
 # If the root is a LUKS volume, specify the LUKS volume information

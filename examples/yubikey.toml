@@ -22,9 +22,7 @@ mount_timeout = 2.5
 # The keyfile could be added as a dependency. if it's on the same device.
 [mounts.boot]
 type = "vfat"
-
-  [mounts.boot.source]
-  uuid = "4886-A631"
+uuid = "4886-A631"
 
 # Information about the LUKS volume
 [cryptsetup.root]
