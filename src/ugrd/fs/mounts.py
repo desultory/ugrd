@@ -187,6 +187,11 @@ def get_dm_info(self, f_major=None, f_minor=None) -> dict:
         self.logger.debug("Device mapper info already set.")
         return
 
+    if not Path('/sys/devices/virtual/block').exists():
+        self['autodetect_dm'] = False
+        self.logger.warning("No virtaul block devices found, disabling device mapper autodetection.")
+        return
+
     for dm_device in (Path('/sys/devices/virtual/block').iterdir()):
         if dm_device.name.startswith('dm-'):
             maj, minor = (dm_device / 'dev').read_text().strip().split(':')
