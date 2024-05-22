@@ -72,15 +72,15 @@ class InitramfsGenerator(GeneratorHelpers):
         self.logger.info("Building initramfs")
         self.build_structure()
         self.generate_init()
-        self._run_hook('build_final')
+        self.run_hook('build_final')
         self.pack_build()
 
     def build_structure(self) -> None:
         """ builds the initramfs structure. """
         for hook in self.build_tasks:
-            self._run_hook(hook)
+            self.run_hook(hook)
 
-    def _run_func(self, function, force_include=False) -> list[str]:
+    def run_func(self, function, force_include=False) -> list[str]:
         """ Runs a function, If force_include is set, forces the function to be included in the bash source file. """
         self.logger.log(self['_build_log_level'], "Running function: %s" % function.__name__)
 
@@ -107,17 +107,17 @@ class InitramfsGenerator(GeneratorHelpers):
         else:
             self.logger.debug("[%s] Function returned no output" % function.__name__)
 
-    def _run_hook(self, hook: str, *args, **kwargs) -> list[str]:
+    def run_hook(self, hook: str, *args, **kwargs) -> list[str]:
         """ Runs a hook for imported functions. """
         out = []
         for function in self['imports'].get(hook, []):
-            if function_output := self._run_func(function, *args, **kwargs):
+            if function_output := self.run_func(function, *args, **kwargs):
                 out.append(function_output)
         return out
 
-    def _run_init_hook(self, level: str) -> list[str]:
+    def run_init_hook(self, level: str) -> list[str]:
         """ Runs the specified init hook, returning the output. """
-        if runlevel := self._run_hook(level):
+        if runlevel := self.run_hook(level):
             out = ['\n\n# Begin %s' % level]
             out += runlevel
             return out
@@ -149,7 +149,7 @@ class InitramfsGenerator(GeneratorHelpers):
         """
         out = []
         for init_type in self.init_types:
-            if runlevel := self._run_init_hook(init_type):
+            if runlevel := self.run_init_hook(init_type):
                 out.extend(runlevel)
         return out
 
@@ -161,9 +161,9 @@ class InitramfsGenerator(GeneratorHelpers):
         init += [f'echo "Starting UGRD v{__version__}"']
 
         # Run all included functions, so they get included
-        self._run_hook('functions', force_include=True)
+        self.run_hook('functions', force_include=True)
 
-        init.extend(self._run_init_hook('init_pre'))
+        init.extend(self.run_init_hook('init_pre'))
 
         if self['imports'].get('custom_init') and self.get('_custom_init_file'):
             init += ["\n\n# !!custom_init"]
@@ -175,7 +175,7 @@ class InitramfsGenerator(GeneratorHelpers):
         else:
             init.extend(self.generate_init_main())
 
-        init.extend(self._run_init_hook('init_final'))
+        init.extend(self.run_init_hook('init_final'))
         init += ["\n\n# END INIT"]
 
         if self.included_functions:
@@ -196,7 +196,7 @@ class InitramfsGenerator(GeneratorHelpers):
     def pack_build(self) -> None:
         """ Packs the initramfs based on self['imports']['pack']."""
         if self['imports'].get('pack'):
-            self._run_hook('pack')
+            self.run_hook('pack')
         else:
             self.logger.warning("No pack functions specified, the final build is present in: %s" % self.build_dir)
 
