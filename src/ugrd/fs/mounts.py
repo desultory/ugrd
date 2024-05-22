@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '3.2.0'
+__version__ = '3.2.1'
 
 from pathlib import Path
 
@@ -188,7 +188,7 @@ def get_dm_info(self, f_major=None, f_minor=None) -> dict:
         return
 
     if not Path('/sys/devices/virtual/block').exists():
-        self['autodetect_dm'] = False
+        self['autodetect_root_dm'] = False
         self.logger.warning("No virtaul block devices found, disabling device mapper autodetection.")
         return
 
