@@ -2,9 +2,9 @@ from typing import Union
 from pathlib import Path
 from subprocess import run, CompletedProcess
 
-from importlib.metadata import version
+from zenlib.util import pretty_print
 
-__version__ = version(__package__)
+__version__ = "1.0.0"
 __author__ = "desultory"
 
 
@@ -61,7 +61,8 @@ class GeneratorHelpers:
     def _write(self, file_name: Union[Path, str], contents: list[str], chmod_mask=0o644, in_build_dir=True) -> None:
         """
         Writes a file and owns it as self['_file_owner_uid']
-        Sets the passed chmod
+        Sets the passed chmod_mask.
+        If the first line is a shebang, bash -n is run on the file.
         """
         from os import chmod
 
@@ -83,6 +84,13 @@ class GeneratorHelpers:
         self.logger.debug("[%s] Writing contents:\n%s" % (file_path, contents))
         with open(file_path, 'w') as file:
             file.writelines("\n".join(contents))
+
+        if contents[0] == self.shebang:
+            self.logger.debug("Running bash -n on file: %s" % file_name)
+            try:
+                self._run(['bash', '-n', str(file_path)])
+            except RuntimeError as e:
+                raise RuntimeError("Failed to validate bash script: %s" % pretty_print(contents)) from e
 
         self.logger.info("Wrote file: %s" % file_path)
         chmod(file_path, chmod_mask)
