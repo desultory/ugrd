@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.5.4'
+__version__ = '1.5.5'
 
 from zenlib.util import check_dict
 
@@ -67,7 +67,8 @@ def _validate_cryptsetup_config(self, mapped_name: str, config: dict) -> None:
         if config.get('uuid'):
             raise ValueError("A UUID cannot be used with a detached header: %s" % mapped_name)
     elif not any([config.get('partuuid'), config.get('uuid'), config.get('path')]):
-        self.logger.warning("A device uuid, partuuid, or path must be specified for cryptsetup mount: %s" % mapped_name)
+        if not self['autodetect_root_luks']:
+            raise ValueError("A device uuid, partuuid, or path must be specified for cryptsetup mount: %s" % mapped_name)
 
 
 def _process_cryptsetup_multi(self, mapped_name: str, config: dict) -> None:
