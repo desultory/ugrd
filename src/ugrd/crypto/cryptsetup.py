@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.5.5'
+__version__ = '1.5.6'
 
 from zenlib.util import check_dict
 
@@ -263,7 +263,7 @@ def find_libgcc(self) -> None:
     from pathlib import Path
 
     ldconfig = self._run(['ldconfig', '-p']).stdout.decode().split("\n")
-    libgcc = [lib for lib in ldconfig if 'libgcc_s' in lib and 'libc6,x86-64' in lib][0]
+    libgcc = [lib for lib in ldconfig if 'libgcc_s' in lib and '(libc6,' in lib][0]
     source_path = Path(libgcc.partition('=> ')[-1])
     self.logger.info("Source path for libgcc_s: %s" % source_path)
 
