@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '3.2.1'
+__version__ = '3.2.2'
 
 from pathlib import Path
 
@@ -243,7 +243,7 @@ def _autodetect_dm(self, mountpoint='/') -> None:
         raise ValueError("Device mapper device name mismatch: %s != %s" % (mount_loc.name, self._dm_info[mapped_name]['name']))
 
     self.logger.debug("[%s] Device mapper info: %s" % (mount_loc.name, self._dm_info[mapped_name]))
-    if dm_mount.get('type') == 'crypto_LUKS' or mount_loc.name in self['cryptsetup']:
+    if dm_mount.get('type') == 'crypto_LUKS' or mount_loc.name in self.get('cryptsetup', {}):
         return autodetect_root_luks(self, mount_loc, mapped_name, dm_mount)
     elif dm_mount.get('type') == 'LVM2_member':
         return autodetect_root_lvm(self, mount_loc, mapped_name, dm_mount)
