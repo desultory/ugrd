@@ -84,7 +84,7 @@ def _get_kmod_info(self, module: str):
             module_info['softdep'] = line.split()[2::2]
         elif line.startswith('firmware:'):
             # Firmware is a list, so append to it, making sure it exists first
-         oh wait i think i imssed   if 'firmware' not in module_info:
+            if 'firmware' not in module_info:
                 module_info['firmware'] = []
             module_info['firmware'] += line.split()[1:]
 
@@ -208,6 +208,7 @@ def _process_kmod_dependencies(self, kmod: str) -> None:
             _process_kmod_dependencies(self, dependency)
         except BuiltinModuleError as e:
             self.logger.debug(e)
+            continue
         self['kernel_modules'] = dependency
 
     if self['_kmod_modinfo'][kmod]['filename'] == '(builtin)':
