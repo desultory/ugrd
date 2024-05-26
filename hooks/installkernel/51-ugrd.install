@@ -24,6 +24,9 @@ main() {
 	# re-define for subst to work
 	[[ -n ${NOCOLOR+yes} ]] && NOCOLOR=
 
+	# Exit if ugrd is not the INSTALLKERNEL_INITRD_GENERATOR
+	[[ ${INSTALLKERNEL_INITRD_GENERATOR} == "ugrd" ]] || exit 0
+
 	# do nothing if somehow ugrd is not installed
 	[[ -x $(command -v ugrd) ]] || { ewarn "ugrd is not installed" && exit 0 ; }
 
