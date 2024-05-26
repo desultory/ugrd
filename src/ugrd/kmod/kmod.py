@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.5.3'
+__version__ = '2.5.4'
 
 from pathlib import Path
 from subprocess import run
@@ -199,8 +199,10 @@ def _process_kmod_dependencies(self, kmod: str) -> None:
             dependencies += sofdeps
 
     for dependency in dependencies:
-        if dependency in self['kmod_ignore'] and self['_kmod_modinfo'][dependency]['filename'] != '(builtin)':
-            raise DependencyResolutionError("[%s] Kernel module dependency is in ignore list: %s" % (kmod, dependency))
+        if dependency in self['kmod_ignore']:  # Don't add modules with ignored dependencies
+            if modinfo := self['_kmod_modinfo'].get(dependency):
+                if modinfo['filename'] != '(builtin)':  # But if it's ignored because it's built-in, that's fine
+                    raise DependencyResolutionError("[%s] Kernel module dependency is in ignore list: %s" % (kmod, dependency))
         self.logger.debug("[%s] Processing dependency: %s" % (kmod, dependency))
         _process_kmod_dependencies(self, dependency)
         self['kernel_modules'] = dependency
@@ -242,7 +244,7 @@ def process_modules(self) -> None:
         try:
             _process_kmod_dependencies(self, kmod)
             continue
-        except BuiltinModuleError as e:
+        except (IgnoredModuleError, BuiltinModuleError) as e:
             self.logger.info(e)
         except DependencyResolutionError as e:
             if kmod in self['kmod_init']:
