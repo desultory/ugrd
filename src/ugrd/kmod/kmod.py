@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.5.4'
+__version__ = '2.5.5'
 
 from pathlib import Path
 from subprocess import run
@@ -84,7 +84,7 @@ def _get_kmod_info(self, module: str):
             module_info['softdep'] = line.split()[2::2]
         elif line.startswith('firmware:'):
             # Firmware is a list, so append to it, making sure it exists first
-            if 'firmware' not in module_info:
+         oh wait i think i imssed   if 'firmware' not in module_info:
                 module_info['firmware'] = []
             module_info['firmware'] += line.split()[1:]
 
@@ -204,7 +204,10 @@ def _process_kmod_dependencies(self, kmod: str) -> None:
                 if modinfo['filename'] != '(builtin)':  # But if it's ignored because it's built-in, that's fine
                     raise DependencyResolutionError("[%s] Kernel module dependency is in ignore list: %s" % (kmod, dependency))
         self.logger.debug("[%s] Processing dependency: %s" % (kmod, dependency))
-        _process_kmod_dependencies(self, dependency)
+        try:
+            _process_kmod_dependencies(self, dependency)
+        except BuiltinModuleError as e:
+            self.logger.debug(e)
         self['kernel_modules'] = dependency
 
     if self['_kmod_modinfo'][kmod]['filename'] == '(builtin)':
