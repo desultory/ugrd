@@ -87,6 +87,16 @@ def _process_mount(self, mount_name: str, mount_config, mount_class="mounts") ->
         self['paths'] = mount_config['destination']
 
 
+def _process_mount_timeout(self, timeout: float) -> None:
+    """ Set the mount timeout, enables mount_wait. """
+    if not isinstance(timeout, (int, float)):
+        raise ValueError("Invalid timeout: %s" % timeout)
+    if not self['mount_wait']:
+        self.logger.info("Enabling mount wait, as a timeout is set: %s" % timeout)
+        self['mount_wait'] = True
+    dict.__setitem__(self, 'mount_timeout', timeout)
+
+
 def _process_mounts_multi(self, mount_name: str, mount_config) -> None:
     _process_mount(self, mount_name, mount_config)
 
@@ -181,6 +191,20 @@ def generate_fstab(self, mount_class="mounts", filename="/etc/fstab") -> None:
         self.logger.debug("[%s] No fstab entries generated for mounts: %s" % (mount_class, ', '.join(self[mount_class].keys())))
 
 
+def get_blkid_info(self) -> str:
+    """ Gets the blkid info for all device. """
+    blkid_output = self._run(['blkid']).stdout.decode().strip()
+    if not blkid_output:
+        raise ValueError("Unable to get blkid info.")
+
+    for device_info in blkid_output.split('\n'):
+        device, info = device_info.split(': ')
+        self.logger.debug("Got blkid info for: %s" % device)
+        self['_blkid_info'][device] = {key.lower(): value.strip('"') for key, value in (info.split('=') for info in info.split(' '))}
+
+    self.logger.debug("Blkid info: %s" % pretty_print(self['_blkid_info']))
+
+
 def get_dm_info(self) -> dict:
     """ Populates the device mapper info. """
     if self.get('_dm_info'):
@@ -213,41 +237,41 @@ def _autodetect_dm(self, mountpoint='/') -> None:
     """ Autodetects device mapper root config. """
     self.logger.debug("Detecting device mapper info for mountpoint: %s", mountpoint)
 
-    try:
-        root_mount_info = _get_blkid_info(self, _get_mounts_source_device(self, mountpoint))
-    except FileNotFoundError:
-        mapped_name = str(mountpoint).replace('/dev/', '')
-        mount_loc = Path('/dev/' + mapped_name)
-        if not self._dm_info.get(mapped_name):
-            raise FileNotFoundError("Unable to find blkdid info for mount point: %s" % mountpoint)
+    source_device = _get_mounts_source_device(self, mountpoint)
+    root_mount_info = self['_blkid_info'].get(source_device)
+
+    if not root_mount_info:
+        root_mount_info = self['_blkid_info'].get(f"/dev/{self._dm_info[str(mountpoint).replace('/dev/', '')]['slaves'][0]}")
+
+    if not root_mount_info:
+        raise FileNotFoundError("Unable to find blkdid info for mount point: %s" % mountpoint)
+
+    if not source_device.startswith('/dev/mapper') and not source_device.startswith('/dev/dm-'):
+        self.logger.debug("[%s] Mount is not a device mapper mount: %s" % (source_device, root_mount_info))
+        return
+    self.logger.info("Detected a device mapper mount: %s" % source_device)
+    source_device = Path(source_device)
+    major, minor = source_device.stat().st_rdev >> 8, source_device.stat().st_rdev & 0xFF
+    self.logger.debug("[%s] Major: %s, Minor: %s" % (source_device, major, minor))
+
+    for name, info in self['_dm_info'].items():
+        if info['major'] == str(major) and info['minor'] == str(minor):
+            mapped_name = name
+            break
     else:
-        if not root_mount_info['name'].startswith('/dev/mapper') and not root_mount_info['name'].startswith('/dev/dm-'):
-            self.logger.debug("[%s] Mount is not a device mapper mount: %s" % (mountpoint, root_mount_info['name']))
-            return
+        raise RuntimeError("Unable to find device mapper device: %s" % source_device)
 
-        mount_loc = Path(root_mount_info['name']).resolve()
-        self.logger.info("Detected a device mapper mount: %s" % mount_loc)
-        major, minor = mount_loc.stat().st_rdev >> 8, mount_loc.stat().st_rdev & 0xFF
-        self.logger.debug("[%s] Major: %s, Minor: %s" % (mount_loc, major, minor))
-
-        for name, info in self['_dm_info'].items():
-            if info['major'] == str(major) and info['minor'] == str(minor):
-                mapped_name = name
-                break
-        else:
-            raise RuntimeError("Unable to find device mapper device: %s" % mount_loc)
-
-    dm_mount = _get_blkid_info(self, Path('/dev/' + self._dm_info[mapped_name]['slaves'][0]))
+    dm_mount = self['_blkid_info'][f"/dev/{self._dm_info[mapped_name]['slaves'][0]}"]
     if len(self._dm_info[mapped_name]['slaves']) == 0:
-        raise RuntimeError("No slaves found for device mapper device, unknown type: %s" % mount_loc.name)
-    if mount_loc.name != self._dm_info[mapped_name]['name'] and mount_loc.name != mapped_name:
-        raise ValueError("Device mapper device name mismatch: %s != %s" % (mount_loc.name, self._dm_info[mapped_name]['name']))
+        raise RuntimeError("No slaves found for device mapper device, unknown type: %s" % source_device.name)
+    if source_device.name != self._dm_info[mapped_name]['name'] and source_device.name != mapped_name:
+        raise ValueError("Device mapper device name mismatch: %s != %s" % (source_device.name, self._dm_info[mapped_name]['name']))
 
-    self.logger.debug("[%s] Device mapper info: %s" % (mount_loc.name, self._dm_info[mapped_name]))
-    if dm_mount.get('type') == 'crypto_LUKS' or mount_loc.name in self.get('cryptsetup', {}):
-        return autodetect_root_luks(self, mount_loc, mapped_name, dm_mount)
+    self.logger.debug("[%s] Device mapper info: %s" % (source_device.name, self._dm_info[mapped_name]))
+    if dm_mount.get('type') == 'crypto_LUKS' or source_device.name in self.get('cryptsetup', {}):
+        return autodetect_root_luks(self, source_device, mapped_name, dm_mount)
     elif dm_mount.get('type') == 'LVM2_member':
-        return autodetect_root_lvm(self, mount_loc, mapped_name, dm_mount)
+        return autodetect_root_lvm(self, source_device, mapped_name, dm_mount)
     else:
         raise RuntimeError("Unknown device mapper device type: %s" % dm_mount.get('type'))
 
@@ -293,7 +317,7 @@ def autodetect_root_luks(self, mount_loc, mapped_name, luks_mount) -> None:
         self.logger.error("Device mapper slaves: %s" % self._dm_info[mapped_name]['slaves'])
         raise RuntimeError("Multiple slaves found for device mapper device, unknown type: %s" % mount_loc.name)
 
-    luks_mount = _get_blkid_info(self, Path('/dev/' + self._dm_info[mapped_name]['slaves'][0]))
+    luks_mount = self['_blkid_info'][f"/dev/{self._dm_info[mapped_name]['slaves'][0]}"]
     self.logger.debug("[%s] LUKS mount info: %s" % (mapped_name, luks_mount))
     if luks_mount.get('type') != 'crypto_LUKS':
         if not luks_mount.get('uuid'):  # No uuid will be defined if there are detached headers
@@ -311,20 +335,18 @@ def autodetect_root_luks(self, mount_loc, mapped_name, luks_mount) -> None:
         self['cryptsetup'] = {self._dm_info[mapped_name]['name']: {'partuuid': partuuid}}
 
     self.logger.info("[%s] Configuring cryptsetup for LUKS mount (%s) on: %s\n%s" %
-                     (mount_loc.name, self._dm_info[mapped_name]['name'], luks_mount['name'], pretty_print(self['cryptsetup'])))
+                     (mount_loc.name, self._dm_info[mapped_name]['name'], mapped_name, pretty_print(self['cryptsetup'])))
 
 
 @check_dict('autodetect_root', value=True, log_level=20, message="Skipping root autodetection, autodetect_root is disabled.")
 @check_dict('hostonly', value=True, log_level=30, message="Skipping root autodetection, hostonly mode is disabled.")
 def autodetect_root(self) -> None:
     """ Sets self['mounts']['root']'s source based on the host mount. """
-    try:
-        self.logger.warning("Root mount source already set: %s", _get_mount_source_type(self, self['mounts']['root']))
+    if any(source_type in self['mounts']['root'] for source_type in SOURCE_TYPES):
+        self.logger.warning("Root mount source already set: %s", pretty_print(self['mounts']['root']))
         return
-    except ValueError:
-        pass
 
-    root_mount_info = _get_blkid_info(self, _get_mounts_source_device(self, '/'))
+    root_mount_info = self['_blkid_info'][_get_mounts_source_device(self, '/')]
     self.logger.debug("Detected root mount info: %s" % root_mount_info)
     mount_info = {'root': {'type': 'auto', 'base_mount': False}}
 
@@ -371,16 +393,6 @@ def remake_mountpoints(self) -> list[str]:
     if cmds:
         self['binaries'] += 'mkdir'
         return cmds
-
-
-def _process_mount_timeout(self, timeout: float) -> None:
-    """ Set the mount timeout, enables mount_wait. """
-    if not isinstance(timeout, (int, float)):
-        raise ValueError("Invalid timeout: %s" % timeout)
-    if not self['mount_wait']:
-        self.logger.info("Enabling mount wait, as a timeout is set: %s" % timeout)
-        self['mount_wait'] = True
-    dict.__setitem__(self, 'mount_timeout', timeout)
 
 
 def mount_fstab(self) -> list[str]:
@@ -433,33 +445,8 @@ def _get_mounts_source_device(self, mountpoint: str) -> Path:
                 # Resolve the path as it may be a symlink
                 mount_source = Path(line.split()[0]).resolve()
                 self.logger.debug("[%s] Found mount source: %s" % (mountpoint, mount_source))
-                return mount_source
+                return str(mount_source)
     raise FileNotFoundError("Unable to find mount source device for: %s" % mountpoint)
-
-
-def _get_blkid_info(self, device: Path) -> str:
-    """ Gets the blkid info for a device. """
-    from subprocess import run
-    self.logger.debug("Getting blkid info for: %s" % device)
-
-    cmd = run(['blkid', str(device)], capture_output=True)
-    if cmd.returncode != 0:
-        self.logger.warning("Unable to find blkid info for: %s" % device)
-        return None
-
-    blkid_info = cmd.stdout.decode().strip()
-
-    if not blkid_info:
-        self.logger.warning("Unable to find blkid info for: %s" % device)
-        return None
-
-    self.logger.debug("[%s] Got blkid info: %s" % (device, blkid_info))
-
-    mount_name, mount_info = blkid_info.split(': ')
-    mount_dict = {key.lower(): value.strip('"') for key, value in (mount_info.split('=') for mount_info in mount_info.split(' '))}
-    mount_dict['name'] = mount_name
-    self.logger.log(5, "Parsed blkid info: %s" % mount_dict)
-    return mount_dict
 
 
 @check_dict('validate', value=True, log_level=30, return_val=True, message="Skipping host mount validation, validation is disabled.")
@@ -481,17 +468,14 @@ def _validate_host_mount(self, mount, destination_path=None) -> bool:
         if option not in host_mount_options:
             raise ValueError("Host mount options mismatch. Expected: %s, Found: %s" % (mount['options'], host_mount_options))
 
-    if mount_type == 'path' and mount_val != host_source_dev:
+    if mount_type == 'path' and mount_val != Path(host_source_dev):
         raise ValueError("Host mount path device path does not match config. Expected: %s, Found: %s" % (mount_val, host_source_dev))
     elif mount_type in ['uuid', 'partuuid', 'label']:
         # For uuid, partuuid, and label types, check that the source matches the host mount
-        if blkid_info := _get_blkid_info(self, host_source_dev):
-            if blkid_info.get(mount_type) != mount_val:
-                raise ValueError("Host device mismatch. Expected %s: %s, Found: %s" % (mount_type, mount_val, blkid_info.get(mount_type)))
-            self.logger.debug("Host mount validated: %s" % mount)
-            return True
-        else:
-            raise RuntimeError("Cannot find blkid info for host mount: %s" % host_source_dev)
+        if self['_blkid_info'][host_source_dev][mount_type] != mount_val:
+            raise ValueError("Host mount source device mismatch. Expected: %s: %s, Found: %s" % (mount_type, mount_val, host_source_dev))
+        self.logger.debug("[%s] Host mount validated: %s" % (destination_path, mount))
+        return True
     raise ValueError("[%s] Unable to validate host mount: %s" % (destination_path, mount))
 
 
