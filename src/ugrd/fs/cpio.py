@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.8.0'
+__version__ = '2.8.1'
 
 
 from pycpio import PyCPIO
@@ -18,14 +18,15 @@ def get_cpio_filename(self) -> str:
     """ Generates a CPIO filename based on the current configuration. """
     if out_file := self.get('out_file'):
         self.logger.info("Using specified out_file: %s" % out_file)
-    elif self.get('kmod_init'):
-        out_file = f"ugrd-{self['kernel_version']}.cpio"
     else:
-        out_file = f"ugrd-{self['version']}.cpio"
+        if self.get('kmod_init'):
+            out_file = f"ugrd-{self['kernel_version']}.cpio"
+        else:
+            out_file = f"ugrd-{self['version']}.cpio"
 
-    if compression_type := self['cpio_compression']:
-        if compression_type.lower() != 'false':  # The variable is a string, so we need to check for the string 'false'
-            out_file += f".{compression_type}"
+        if compression_type := self['cpio_compression']:
+            if compression_type.lower() != 'false':  # The variable is a string, so we need to check for the string 'false'
+                out_file += f".{compression_type}"
 
     return self.out_dir / out_file
 
@@ -53,10 +54,10 @@ def make_cpio(self) -> None:
         if self['cpio_rotate']:
             self._rotate_old(out_cpio)
         elif self['clean']:
-            self.logger.warning("Removing existing CPIO file: %s" % out_cpio)
+            self.logger.warning("Removing existing file: %s" % out_cpio)
             out_cpio.unlink()
         else:
-            raise FileExistsError("CPIO file already exists: %s" % out_cpio)
+            raise FileExistsError("File already exists, and cleaning/rotation are disabled: %s" % out_cpio)
 
     cpio.write_cpio_file(out_cpio, compression=self['cpio_compression'], _log_bump=-10, _log_init=False)
 
