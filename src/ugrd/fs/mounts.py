@@ -461,6 +461,9 @@ def _get_mounts_source_device(self, mountpoint: str) -> Path:
                 mount_source = Path(line.split()[0]).resolve()
                 self.logger.debug("[%s] Found mount source: %s" % (mountpoint, mount_source))
                 return str(mount_source)
+    if mountpoint.strip().startswith('/dev/dm-'):
+        dm_name = self['_dm_info'][mountpoint.strip().removeprefix('/dev/dm-')]['name']
+        return _get_mounts_source_device(self, '/dev/mapper/' + dm_name)
     raise FileNotFoundError("Unable to find mount source device for: %s" % mountpoint)
 
 
