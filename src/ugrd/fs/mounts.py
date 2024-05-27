@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '3.2.3'
+__version__ = '3.2.4'
 
 from pathlib import Path
 
@@ -535,7 +535,7 @@ def _mount_fail(self) -> list[str]:
             'else',
             '    echo "Mount failed"',
             'fi',
-            'echo -e "\n\n\nPress enter to display debug info.\n\n\n"',
+            r'echo -e "\n\n\nPress enter to display debug info.\n\n\n"',
             'read -sr',
             r'echo -e "\nLoaded modules:"',
             'cat /proc/modules',
