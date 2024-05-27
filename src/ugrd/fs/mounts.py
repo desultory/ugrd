@@ -271,7 +271,7 @@ def _autodetect_dm(self, mountpoint='/') -> None:
     try:
         dm_mount = self['_blkid_info'][f"/dev/{self._dm_info[mapped_name]['slaves'][0]}"]
     except KeyError:
-        dm_mount = self['_blkid_info'][f'/dev/mapper/{mapped_name}']
+        dm_mount = self['_blkid_info'][f"/dev/mapper/{self._dm_info[mapped_name]['name']}"]
     if len(self._dm_info[mapped_name]['slaves']) == 0:
         raise RuntimeError("No slaves found for device mapper device, unknown type: %s" % source_device.name)
     if source_device.name != self._dm_info[mapped_name]['name'] and source_device.name != mapped_name:
