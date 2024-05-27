@@ -55,7 +55,6 @@ _dm_info = "dict"  # The device-mapper information
 
 # Define the base of the root mount
 [mounts.root]
-skip_unmount = true
 options = ['ro']
 
 # Define the default mounts
@@ -79,7 +78,6 @@ type = "devtmpfs"
 path = "devtmpfs"
 options = ['nosuid', 'mode=0755']
 base_mount = true
-skip_unmount = true
 
 [mounts.run]
 type = "tmpfs"
