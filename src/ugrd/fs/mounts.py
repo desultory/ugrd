@@ -200,6 +200,7 @@ def get_blkid_info(self) -> str:
 
     for device_info in blkid_output.split('\n'):
         device, info = device_info.split(': ')
+        info = ' ' + info  # Add space to make regex consistent
         self['_blkid_info'][device] = {}
         self.logger.debug("[%s] Processing blkid line: %s" % (device, info))
         for field in BLKID_FIELDS:
