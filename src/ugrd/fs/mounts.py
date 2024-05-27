@@ -2,9 +2,9 @@ __author__ = 'desultory'
 __version__ = '3.3.1'
 
 from pathlib import Path
-
 from zenlib.util import check_dict, pretty_print
 
+BLKID_FIELDS = ['uuid', 'partuuid', 'label', 'type']
 SOURCE_TYPES = ['uuid', 'partuuid', 'label', 'path']
 MOUNT_PARAMETERS = ['destination', 'source', 'type', 'options', 'base_mount', 'remake_mountpoint', *SOURCE_TYPES]
 
@@ -193,14 +193,21 @@ def generate_fstab(self, mount_class="mounts", filename="/etc/fstab") -> None:
 
 def get_blkid_info(self) -> str:
     """ Gets the blkid info for all device. """
+    from re import search
     blkid_output = self._run(['blkid']).stdout.decode().strip()
     if not blkid_output:
         raise ValueError("Unable to get blkid info.")
 
     for device_info in blkid_output.split('\n'):
         device, info = device_info.split(': ')
-        self.logger.debug("Got blkid info for: %s" % device)
-        self['_blkid_info'][device] = {key.lower(): value.strip('"') for key, value in (info.split('=') for info in info.split(' '))}
+        self['_blkid_info'][device] = {}
+        self.logger.debug("[%s] Processing blkid line: %s" % (device, info))
+        for field in BLKID_FIELDS:
+            if match := search(f'{field.upper()}="(.+?)"', info):
+                self['_blkid_info'][device][field] = match.group(1)
+
+        if not self['_blkid_info'][device]:
+            raise ValueError("[%s] Failed to parse blkid info: %s" % (device, info))
 
     self.logger.debug("Blkid info: %s" % pretty_print(self['_blkid_info']))
 
