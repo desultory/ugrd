@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.5.6'
+__version__ = '1.6.0'
 
 from zenlib.util import check_dict
 
@@ -111,26 +111,38 @@ def get_crypt_sources(self) -> list[str]:
         if parameters.get('path') and not self['validate']:
             self.logger.warning("Using device paths is unreliable and can result in boot failures.")
             out += [f"export CRYPTSETUP_SOURCE_{name}={parameters.get('path')}"]
+            continue
         elif not parameters.get('partuuid') and not parameters.get('uuid') and parameters.get('path'):
             raise ValueError("Validation must be disabled to use device paths with the cryptsetup module.")
-        else:
+
+        try:
+            token = ('PARTUUID', parameters['partuuid']) if parameters.get('partuuid') else ('UUID', parameters['uuid'])
+        except KeyError:
+            raise ValueError("A partuuid or uuid must be specified for cryptsetup mount: %s" % name)
+
+        self.logger.debug("[%s] Created block device identifier token: %s" % (name, token))
+        parameters['_host_device_path'] = _get_device_path_from_token(self, token)
+        # Check that it's actually a LUKS device
+        if self['validate']:
             try:
-                token = ('PARTUUID', parameters['partuuid']) if parameters.get('partuuid') else ('UUID', parameters['uuid'])
-            except KeyError:
-                raise ValueError("A partuuid or uuid must be specified for cryptsetup mount: %s" % name)
-            self.logger.debug("[%s] Created block device identifier token: %s" % (name, token))
-            parameters['_host_device_path'] = _get_device_path_from_token(self, token)
-            # Add a blkid command to get the source device in the initramfs, only match if the device has a partuuid
-            out.append(f"export SOURCE_TOKEN_{name}='{token[0]}={token[1]}'")
-            source_cmd = f'export CRYPTSETUP_SOURCE_{name}=$(blkid --match-token "$SOURCE_TOKEN_{name}" --match-tag PARTUUID --output device)'
+                self._run(['cryptsetup', 'luksUUID', parameters['_host_device_path']])
+            except RuntimeError:
+                raise ValueError("[%s] Failed to valiate LUKS device: %s" % (name, parameters))
 
-            check_command = [f'if [ -z "$CRYPTSETUP_SOURCE_{name}" ]; then',
-                             f'    _mount_fail "Unable to resolve device source for {name}"',
-                             'else',
-                             f'    echo "Resolved device source: $CRYPTSETUP_SOURCE_{name}"',
-                             'fi']
+            cmd = ['cryptsetup', 'luksUUID', parameters['_host_device_path']]
+            if self._run(cmd).returncode != 0:
+                raise ValueError("Device is not a LUKS device: %s" % name)
+        # Add a blkid command to get the source device in the initramfs, only match if the device has a partuuid
+        out.append(f"export SOURCE_TOKEN_{name}='{token[0]}={token[1]}'")
+        source_cmd = f'export CRYPTSETUP_SOURCE_{name}=$(blkid --match-token "$SOURCE_TOKEN_{name}" --match-tag PARTUUID --output device)'
 
-            out += [f"echo 'Attempting to get device path for {name}'", source_cmd, *check_command]
+        check_command = [f'if [ -z "$CRYPTSETUP_SOURCE_{name}" ]; then',
+                         f'    _mount_fail "Unable to resolve device source for {name}"',
+                         'else',
+                         f'    echo "Resolved device source: $CRYPTSETUP_SOURCE_{name}"',
+                         'fi']
+
+        out += [f"echo 'Attempting to get device path for {name}'", source_cmd, *check_command]
     return out
 
 
