@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.7.1'
+__version__ = '2.8.0'
 
 
 from pycpio import PyCPIO
@@ -12,6 +12,22 @@ def check_cpio(self, cpio: PyCPIO) -> None:
             raise FileNotFoundError("Dependency not found in CPIO: %s" % dep)
         else:
             self.logger.debug("Dependency found in CPIO: %s" % dep)
+
+
+def get_cpio_filename(self) -> str:
+    """ Generates a CPIO filename based on the current configuration. """
+    if out_file := self.get('out_file'):
+        self.logger.info("Using specified out_file: %s" % out_file)
+    elif self.get('kmod_init'):
+        out_file = f"ugrd-{self['kernel_version']}.cpio"
+    else:
+        out_file = f"ugrd-{self['version']}.cpio"
+
+    if compression_type := self['cpio_compression']:
+        if compression_type.lower() != 'false':  # The variable is a string, so we need to check for the string 'false'
+            out_file += f".{compression_type}"
+
+    return self.out_dir / out_file
 
 
 def make_cpio(self) -> None:
@@ -28,13 +44,19 @@ def make_cpio(self) -> None:
             self.logger.debug("Adding CPIO node: %s" % node)
             cpio.add_chardev(name=node['path'], mode=node['mode'], major=node['major'], minor=node['minor'])
 
-    out_cpio = self.out_dir / self.out_file
+    out_cpio = get_cpio_filename(self)
 
     if not out_cpio.parent.exists():
         self._mkdir(out_cpio.parent)
 
     if out_cpio.exists():
-        self._rotate_old(out_cpio)
+        if self['cpio_rotate']:
+            self._rotate_old(out_cpio)
+        elif self['clean']:
+            self.logger.warning("Removing existing CPIO file: %s" % out_cpio)
+            out_cpio.unlink()
+        else:
+            raise FileExistsError("CPIO file already exists: %s" % out_cpio)
 
     cpio.write_cpio_file(out_cpio, compression=self['cpio_compression'], _log_bump=-10, _log_init=False)
 

@@ -13,6 +13,8 @@ def main():
                  {'flags': ['--no-clean'], 'action': 'store_false', 'help': 'disable build directory cleaning', 'dest': 'clean'},
                  {'flags': ['--compress'], 'action': 'store_true', 'help': 'compress the final image', 'dest': 'cpio_compression'},
                  {'flags': ['--no-compress'], 'action': 'store_false', 'help': "don't compress the final image", 'dest': 'cpio_compression'},
+                 {'flags': ['--rotate'], 'action': 'store_true', 'help': 'rotate old cpio images', 'dest': 'cpio_rotate'},
+                 {'flags': ['--no-rotate'], 'action': 'store_false', 'help': "don't rotate old cpio images", 'dest': 'cpio_rotate'},
                  {'flags': ['--validate'], 'action': 'store_true', 'help': 'enable configuration validation'},
                  {'flags': ['--no-validate'], 'action': 'store_false', 'help': 'disable config validation', 'dest': 'validate'},
                  {'flags': ['--hostonly'], 'action': 'store_true', 'help': 'enable hostonly mode, required for automatic kmod detection'},
