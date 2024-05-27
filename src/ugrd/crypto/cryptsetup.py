@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.6.0'
+__version__ = '1.6.1'
 
 from zenlib.util import check_dict
 
@@ -124,14 +124,10 @@ def get_crypt_sources(self) -> list[str]:
         parameters['_host_device_path'] = _get_device_path_from_token(self, token)
         # Check that it's actually a LUKS device
         if self['validate']:
-            try:
-                self._run(['cryptsetup', 'luksUUID', parameters['_host_device_path']])
-            except RuntimeError:
-                raise ValueError("[%s] Failed to valiate LUKS device: %s" % (name, parameters))
-
-            cmd = ['cryptsetup', 'luksUUID', parameters['_host_device_path']]
-            if self._run(cmd).returncode != 0:
-                raise ValueError("Device is not a LUKS device: %s" % name)
+            if name not in self['_dm_info']:
+                raise ValueError("No device mapper information found for: %s" % name)
+            if not self['_dm_info'][name]['uuid'].startswith('CRYPT-LUKS'):
+                raise ValueError("[%s] Device is not a crypt device: %s" % (name, self['_dm_info'][name]))
         # Add a blkid command to get the source device in the initramfs, only match if the device has a partuuid
         out.append(f"export SOURCE_TOKEN_{name}='{token[0]}={token[1]}'")
         source_cmd = f'export CRYPTSETUP_SOURCE_{name}=$(blkid --match-token "$SOURCE_TOKEN_{name}" --match-tag PARTUUID --output device)'

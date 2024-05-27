@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '3.2.4'
+__version__ = '3.3.0'
 
 from pathlib import Path
 
@@ -181,8 +181,8 @@ def generate_fstab(self, mount_class="mounts", filename="/etc/fstab") -> None:
         self.logger.debug("[%s] No fstab entries generated for mounts: %s" % (mount_class, ', '.join(self[mount_class].keys())))
 
 
-def get_dm_info(self, f_major=None, f_minor=None) -> dict:
-    """ Returns a dict of device mapper devices. Filters by major and minor if specified."""
+def get_dm_info(self) -> dict:
+    """ Populates the device mapper info. """
     if self.get('_dm_info'):
         self.logger.debug("Device mapper info already set.")
         return
@@ -199,7 +199,8 @@ def get_dm_info(self, f_major=None, f_minor=None) -> dict:
                                                 'major': maj,
                                                 'minor': minor,
                                                 'holders': [holder.name for holder in (dm_device / 'holders').iterdir()],
-                                                'slaves': [slave.name for slave in (dm_device / 'slaves').iterdir()]}
+                                                'slaves': [slave.name for slave in (dm_device / 'slaves').iterdir()],
+                                                'uuid': (dm_device / 'dm/uuid').read_text().strip()}
     if self['_dm_info']:
         self.logger.info("Found device mapper devices: %s" % ', '.join(self['_dm_info'].keys()))
         self.logger.debug("Device mapper info: %s" % pretty_print(self['_dm_info']))
