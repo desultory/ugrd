@@ -32,7 +32,7 @@ main() {
 
 	[[ ${EUID} -eq 0 ]] || die "Please run this script as root"
 
-	ugrd --kver "${ver}" "${initrd}" || die "Failed to generate initramfs"
+	ugrd --no-rotate --kver "${ver}" "${initrd}" || die "Failed to generate initramfs"
 }
 
 main

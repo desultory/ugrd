@@ -11,4 +11,4 @@ if [[ "${KERNEL_INSTALL_INITRD_GENERATOR:-ugrd}" != "ugrd" ]]; then
     exit 0
 fi
 
-ugrd $([[ $KERNEL_INSTALL_VERBOSE == 1 ]] && echo --debug) --kver "$KERNEL_VERSION" "$KERNEL_INSTALL_STAGING_AREA/initrd" || exit 1
+ugrd $([[ $KERNEL_INSTALL_VERBOSE == 1 ]] && echo --debug) --no-rotate --kver "$KERNEL_VERSION" "$KERNEL_INSTALL_STAGING_AREA/initrd" || exit 1
