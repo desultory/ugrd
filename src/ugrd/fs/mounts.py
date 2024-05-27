@@ -337,7 +337,7 @@ def autodetect_root_luks(self, mount_loc, mapped_name, luks_mount) -> None:
     self.logger.debug("[%s] LUKS mount info: %s" % (mapped_name, luks_mount))
     if luks_mount.get('type') != 'crypto_LUKS':
         if not luks_mount.get('uuid'):  # No uuid will be defined if there are detached headers
-            if self['cryptsetup'][mount_loc.name].get('header_file'):
+            if not self['cryptsetup'][mount_loc.name].get('header_file'):
                 raise ValueError("[%s] Unknown LUKS mount type, if using detached headers, specify 'header_file': %s" % (mount_loc.name, luks_mount.get('type')))
         else:  # If there is some uuid and it's not LUKS, that's a problem
             raise RuntimeError("[%s] Unknown device mapper slave type: %s" % (self._dm_info[mapped_name]['slaves'][0], luks_mount.get('type')))
