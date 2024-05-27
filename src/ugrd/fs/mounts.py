@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '3.2.2'
+__version__ = '3.2.3'
 
 from pathlib import Path
 
@@ -535,13 +535,15 @@ def _mount_fail(self) -> list[str]:
             'else',
             '    echo "Mount failed"',
             'fi',
+            'echo -e "\n\n\nPress enter to display debug info.\n\n\n"',
+            'read -sr',
             r'echo -e "\nLoaded modules:"',
             'cat /proc/modules',
             r'echo -e "\nBlock devices:"',
             'blkid',
             r'echo -e "\nMounts:"',
             'mount',
-            r'echo -e "\n\n\nPress enter to restart init\n\n\n"',
+            r'echo -e "\n\n\nPress enter to restart init.\n\n\n"',
             'read -sr',
             'if [ "$$" -eq 1 ]; then',
             '    echo "Restarting init"',

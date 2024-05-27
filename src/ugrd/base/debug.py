@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "0.1.3"
+__version__ = "1.0.0"
 
 
 def start_shell(self) -> str:
@@ -7,5 +7,5 @@ def start_shell(self) -> str:
     Start a bash shell at the start of the initramfs.
     """
     if self["start_shell"]:
-        return "bash"
+        return [f"echo -e '\n\nStarting debug module version: {__version__}\n\n'", "bash"]
 
