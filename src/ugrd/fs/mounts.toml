@@ -31,9 +31,6 @@ late_fstab = "/etc/fstab.late"
 [imports.init_main]
 "ugrd.fs.mounts" = [ "remake_mountpoints" ]
 
-[imports.init_clean]
-"ugrd.fs.mounts" = [ "clean_mounts" ]
-
 [imports.init_mount]
 "ugrd.fs.mounts" = [ "mount_root" ]
 
@@ -41,7 +38,7 @@ late_fstab = "/etc/fstab.late"
 "ugrd.fs.mounts" = [ "mount_late" ]
 
 [imports.functions]
-"ugrd.fs.mounts" = [ "clean_mounts", "_mount_fail" ]
+"ugrd.fs.mounts" = [ "_mount_fail" ]
 
 [custom_parameters]
 mounts = "dict"  # Add the mounts property, used to define the mounts to be made in the fstab

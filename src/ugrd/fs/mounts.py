@@ -1,12 +1,12 @@
 __author__ = 'desultory'
-__version__ = '3.3.0'
+__version__ = '3.3.1'
 
 from pathlib import Path
 
 from zenlib.util import check_dict, pretty_print
 
 SOURCE_TYPES = ['uuid', 'partuuid', 'label', 'path']
-MOUNT_PARAMETERS = ['destination', 'source', 'type', 'options', 'base_mount', 'skip_unmount', 'remake_mountpoint', *SOURCE_TYPES]
+MOUNT_PARAMETERS = ['destination', 'source', 'type', 'options', 'base_mount', 'remake_mountpoint', *SOURCE_TYPES]
 
 
 def _validate_mount_config(self, mount_name: str, mount_config) -> None:
@@ -516,17 +516,6 @@ def export_mount_info(self) -> None:
             f'echo -n "{_get_mount_str(self, self["mounts"]["root"])}" > "/run/MOUNTS_ROOT_SOURCE"',
             f'echo -n "{self["mounts"]["root"].get("type", "auto")}" > "/run/MOUNTS_ROOT_TYPE"',
             f'''echo -n "{','.join(self["mounts"]["root"]["options"])}" > "/run/MOUNTS_ROOT_OPTIONS"''']
-
-
-def clean_mounts(self) -> list[str]:
-    """ Generates init lines to unmount all mounts. """
-    umounts = [f"umount {mount['destination']}" for mount in self['mounts'].values() if not mount.get('skip_unmount')]
-    # Ensure /proc is unmounted last
-    if 'umount /proc' in umounts and umounts[-1] != 'umount /proc':
-        umounts.remove('umount /proc')
-        umounts.append('umount /proc')
-
-    return ['umount -a'] + umounts
 
 
 def _mount_fail(self) -> list[str]:

@@ -4,7 +4,7 @@
 
 ## Design
 
-ugrd is designed to generate a custom initramfs environment to boot the system that built it.
+UGRD is designed to generate a custom initramfs environment to boot the system that built it.
 
 Generated images are as static and secure as possible, only including components and features required to mount the root and switch to it.
 
@@ -47,10 +47,14 @@ The original goal of this project was to create an initramfs suitable for decryp
 
 ### Operating system support
 
-ugrd was designed to work with Gentoo, but has been tested on:
+UGRD was designed to work with Gentoo, but has been tested on:
 
 * Garuda linux
 * Debian 12
+
+### Architecture support
+
+UGRD is primarily tested on x86_64, but has been tested on arm64.
 
 ### Filesystem support
 
@@ -356,7 +360,6 @@ Each mount has the following available parameters:
   - `path` Mount by the device path.
 * `options` A list of options to add to the mount.
 * `base_mount` (false) Mounts with a mount command during `init_pre` instead of using `mount -a` in `init_main`.
-* `skip_unmount` (false) Skip running `umount` for this mount during `init_clean`.
 * `remake_mountpoint` (false) Recreate the mountpoint with mkdir before the `mount -a` is called. This is useful for `/dev/pty`.
 
 The most minimal mount entry that can be created must have a name, which will be used as the `destination`, and a source type.
@@ -635,7 +638,8 @@ By default, the specified init hooks are:
 * `init_late` - Space for additional checks, stuff that should run later in the init process.
 * `init_premount` - Where filesystem related commands such as `btrfs device scan` can run.
 * `init_mount` - Where the root filesystem mount takes place
-* `init_cleanup` - Where filesystems are unmounted and the system is prepared to `exec switch_root`
+* `init_mount_late` - Where late mount actions such as mounting paths under the root filesystem can take place.
+* `init_cleanup` - Currently unused, where cleanup before `switch_root` should take place.
 * `init_final` - Where `switch_root` is executed.
 
 > These hooks are defined under the `init_types` list in the `InitramfsGenerator` object.
