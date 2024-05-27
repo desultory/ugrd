@@ -114,7 +114,7 @@ def _validate_luks_source(self, source_info: dict, cryptsetup_info: dict) -> Non
     for token_type in ['partuuid', 'uuid']:
         if cryptsetup_token := cryptsetup_info.get(token_type):
             if blkid_info.get(token_type) != cryptsetup_token:
-                raise ValueError("LUKS token mismatch, found '%s', expected: %s" % (cryptsetup_token, blkid_info[token_type]))
+                raise ValueError("LUKS %s mismatch, found '%s', expected: %s" % (token_type, cryptsetup_token, blkid_info[token_type]))
             break
     else:
         raise ValueError("Unable to validate LUKS source: %s" % source_info)
