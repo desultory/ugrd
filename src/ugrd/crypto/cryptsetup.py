@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.6.2'
+__version__ = '1.7.0'
 
 from zenlib.util import check_dict
 
@@ -99,6 +99,27 @@ def _process_cryptsetup_multi(self, mapped_name: str, config: dict) -> None:
     self['cryptsetup'][mapped_name] = config
 
 
+def _validate_luks_source(self, source_info: dict, cryptsetup_info: dict) -> None:
+    """ Checks that a LUKS source device is valid """
+    if not source_info['uuid'].startswith('CRYPT-LUKS'):
+        raise ValueError("Device is not a crypt device: %s" % source_info)
+
+    slave_source = source_info['slaves'][0]
+
+    try:
+        blkid_info = self['_blkid_info'][f'/dev/{slave_source}']
+    except KeyError:
+        blkid_info = self['_blkid_info'][f'/dev/mapper/{slave_source}']
+
+    for token_type in ['partuuid', 'uuid']:
+        if cryptsetup_token := cryptsetup_info.get(token_type):
+            if blkid_info.get(token_type) != cryptsetup_token:
+                raise ValueError("LUKS token mismatch, found '%s', expected: %s" % (cryptsetup_token, blkid_info[token_type]))
+            break
+    else:
+        raise ValueError("Unable to validate LUKS source: %s" % source_info)
+
+
 def get_crypt_sources(self) -> list[str]:
     """
     Goes through each cryptsetup device
@@ -125,10 +146,8 @@ def get_crypt_sources(self) -> list[str]:
         if self['validate']:  # Check that it's actually a LUKS device
             for dm_info in self['_dm_info'].values():
                 if dm_info['name'] == name:
-                    if dm_info['uuid'].startswith('CRYPT-LUKS'):
-                        self.logger.debug("[%s] Validated dm uuid type: %s" % (name, dm_info['uuid']))
-                        break
-                    raise ValueError("[%s] Device is not a crypt device: %s" % (name, dm_info))
+                    _validate_luks_source(self, dm_info, parameters)
+                    break
             else:
                 raise ValueError("No device mapper information found for: %s" % name)
         # Add a blkid command to get the source device in the initramfs, only match if the device has a partuuid
