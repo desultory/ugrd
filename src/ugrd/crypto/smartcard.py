@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '0.5.2'
+__version__ = '1.0.0'
 
 
 from zenlib.util import check_dict
@@ -9,11 +9,6 @@ from zenlib.util import check_dict
 def fetch_keys(self) -> None:
     self.logger.info("Adding GPG public key file to dependencies: %s", self['sc_public_key'])
     self['dependencies'] = self['sc_public_key']
-
-
-def check_card(self) -> str:
-    """ Check if a smartcard is present. """
-    return "gpg --card-status"
 
 
 @check_dict('sc_public_key', raise_exception=True, message="Smartcard public key file not specified (sc_public_key)")

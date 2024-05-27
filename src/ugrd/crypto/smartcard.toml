@@ -18,6 +18,3 @@ sc_public_key = "str"  # The path to the public key to import
 [imports.init_early]
 "ugrd.crypto.smartcard" = [ "import_keys" ]
 
-[imports.init_main]
-"ugrd.crypto.smartcard" = [ "check_card" ]
-
