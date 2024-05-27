@@ -240,11 +240,11 @@ def get_dm_info(self) -> dict:
 
 
 @check_dict('hostonly', value=True, log_level=30, message="Skipping device mapper autodetection, hostonly mode is disabled.")
-def _autodetect_dm(self, mountpoint='/') -> None:
+def _autodetect_dm(self, mountpoint) -> None:
     """ Autodetects device mapper root config. """
     self.logger.debug("Detecting device mapper info for mountpoint: %s", mountpoint)
 
-    source_device = _get_mounts_source_device(self, mountpoint)
+    source_device = _get_mounts_source_device(self, mountpoint) if not mountpoint.startswith('/dev/') else mountpoint
     root_mount_info = self['_blkid_info'].get(source_device)
 
     if not root_mount_info:
@@ -294,7 +294,7 @@ def _autodetect_dm(self, mountpoint='/') -> None:
 @check_dict('autodetect_root_dm', value=True, log_level=10, message="Skipping device mapper autodetection, autodetect_root_dm is not set.")
 @check_dict('hostonly', value=True, log_level=30, message="Skipping device mapper autodetection, hostonly mode is disabled.")
 def autodetect_root_dm(self) -> None:
-    _autodetect_dm(self)
+    _autodetect_dm(self, '/')
 
 
 @check_dict('autodetect_root_lvm', value=True, log_level=10, message="Skipping LVM autodetection, autodetect_root_lvm is not set.")
