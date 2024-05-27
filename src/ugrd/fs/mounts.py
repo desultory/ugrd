@@ -313,7 +313,7 @@ def autodetect_root_lvm(self, mount_loc, mapped_name, lvm_mount) -> None:
 
     # Check if the LVM volume is part of a LUKS volume
     for slave in self._dm_info[mapped_name]['slaves']:
-        _autodetect_dm(self, Path('/dev/' + slave))
+        _autodetect_dm(self, '/dev/' + slave)
 
 
 @check_dict('autodetect_root_luks', value=True, log_level=10, message="Skipping LUKS autodetection, autodetect_root_luks is not set.")
