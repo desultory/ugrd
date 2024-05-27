@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '3.3.2'
+__version__ = '3.3.3'
 
 from pathlib import Path
 from zenlib.util import check_dict, pretty_print
@@ -203,7 +203,7 @@ def get_blkid_info(self) -> str:
         self['_blkid_info'][device] = {}
         self.logger.debug("[%s] Processing blkid line: %s" % (device, info))
         for field in BLKID_FIELDS:
-            if match := search(f'{field.upper()}="(.+?)"', info):
+            if match := search(f' {field.upper()}="(.+?)"', info):
                 self['_blkid_info'][device][field] = match.group(1)
 
         if not self['_blkid_info'][device]:
