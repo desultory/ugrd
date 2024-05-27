@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.6.1'
+__version__ = '1.6.2'
 
 from zenlib.util import check_dict
 
@@ -121,13 +121,16 @@ def get_crypt_sources(self) -> list[str]:
             raise ValueError("A partuuid or uuid must be specified for cryptsetup mount: %s" % name)
 
         self.logger.debug("[%s] Created block device identifier token: %s" % (name, token))
-        parameters['_host_device_path'] = _get_device_path_from_token(self, token)
         # Check that it's actually a LUKS device
-        if self['validate']:
-            if name not in self['_dm_info']:
+        if self['validate']:  # Check that it's actually a LUKS device
+            for dm_info in self['_dm_info'].values():
+                if dm_info['name'] == name:
+                    if dm_info['uuid'].startswith('CRYPT-LUKS'):
+                        self.logger.debug("[%s] Validated dm uuid type: %s" % (name, dm_info['uuid']))
+                        break
+                    raise ValueError("[%s] Device is not a crypt device: %s" % (name, dm_info))
+            else:
                 raise ValueError("No device mapper information found for: %s" % name)
-            if not self['_dm_info'][name]['uuid'].startswith('CRYPT-LUKS'):
-                raise ValueError("[%s] Device is not a crypt device: %s" % (name, self['_dm_info'][name]))
         # Add a blkid command to get the source device in the initramfs, only match if the device has a partuuid
         out.append(f"export SOURCE_TOKEN_{name}='{token[0]}={token[1]}'")
         source_cmd = f'export CRYPTSETUP_SOURCE_{name}=$(blkid --match-token "$SOURCE_TOKEN_{name}" --match-tag PARTUUID --output device)'
