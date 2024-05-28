@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '3.3.3'
+__version__ = '3.3.4'
 
 from pathlib import Path
 from zenlib.util import check_dict, pretty_print
@@ -322,7 +322,7 @@ def autodetect_root_lvm(self, mount_loc, mapped_name, lvm_mount) -> None:
 def autodetect_root_luks(self, mount_loc, mapped_name, luks_mount) -> None:
     """ Autodetects LUKS mounts and sets the cryptsetup config. """
     if 'ugrd.crypto.cryptsetup' not in self['modules']:
-        self.logger.info("Autodetected LUKS mount, enabling the cryptsetup module: %s" % luks_mount['name'])
+        self.logger.info("Autodetected LUKS mount, enabling the cryptsetup module: %s" % mount_loc.name)
         self['modules'] = 'ugrd.crypto.cryptsetup'
 
     if 'cryptsetup' in self and any(mount_type in self['cryptsetup'].get(self._dm_info[mapped_name]['name'], []) for mount_type in SOURCE_TYPES):
