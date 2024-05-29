@@ -125,24 +125,27 @@ def check_quiet(self) -> str:
     """
     return ['if [ -z "$(readvar QUIET)" ]; then',
             '    if [ -e /proc/cmdline ]; then',
-            r'        return $((! $(grep -qE "(^\s)+quiet(\s|$)" /proc/cmdline)))',
+            r'        return $(grep -qE "(^\s)+quiet(\s|$)" /proc/cmdline)',
             '    fi',
+            '    return 1',
+            'fi',
+            'if [ "$(readvar QUIET)" == "1" ]; then',
             '    return 0',
             'fi',
-            'return $(readvar QUIET)']
+            'return 1']
 
 
 # To feel more at home
 def einfo(self) -> str:
     """ Returns a bash function like einfo. """
-    return ['if [ check_quiet -eq 1 ]; then',
+    return ['if check_quiet; then',
             '    return',
             'fi']
 
 
 def ewarn(self) -> str:
     """ Returns a bash function like ewarn. """
-    return ['if [ check_quiet -eq 1 ]; then',
+    return ['if check_quiet; then',
             '    return',
             'fi',
             r'echo -e "\e[1;33m*\e[0m ${*}" >&2']
