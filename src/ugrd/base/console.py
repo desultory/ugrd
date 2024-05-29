@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 
 
 def custom_init(self) -> str:
@@ -9,7 +9,7 @@ def custom_init(self) -> str:
     Returns the output of console_init which is the command to start agetty.
     """
     custom_init_contents = [self['shebang'],
-                            f'echo "Starting console module v{__version__}"',
+                            f'einfo "Starting console module v{__version__}"',
                             *self.generate_init_main()]
 
     return console_init(self), custom_init_contents

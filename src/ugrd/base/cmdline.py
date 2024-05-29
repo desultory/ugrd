@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.0.0'
+__version__ = '1.1.0'
 
 
 def parse_cmdline(self) -> str:
@@ -13,10 +13,10 @@ def parse_cmdline(self) -> str:
 def mount_cmdline_root(self) -> str:
     """ Returns bash script to mount root partition based on /proc/cmdline """
     return ['if [ -n "$(cat /run/CMDLINE_ROOT)" ]; then',
-            '    echo "Mounting root partition based on /proc/cmdline: $(cat /run/CMDLINE_ROOT) -t $(cat /run/CMDLINE_ROOT_TYPE) -o $(cat /run/CMDLINE_ROOT_FLAGS)"',
+            '    einfo "Mounting root partition based on /proc/cmdline: $(cat /run/CMDLINE_ROOT) -t $(cat /run/CMDLINE_ROOT_TYPE) -o $(cat /run/CMDLINE_ROOT_FLAGS)"',
             '    mount $(cat /run/CMDLINE_ROOT) $(cat /run/MOUNTS_ROOT_TARGET) -t $(cat /run/CMDLINE_ROOT_TYPE) -o $(cat /run/CMDLINE_ROOT_FLAGS)',
             'fi',
             'if [ $? -ne 0 ] || [ -z "$(cat /run/CMDLINE_ROOT)" ]; then',
-            '    echo "Failed to mount the root parition using /proc/cmdline"',
+            '    ewarn "Failed to mount the root parition using /proc/cmdline"',
             '    mount_root',
             'fi']

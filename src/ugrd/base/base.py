@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '3.5.3'
+__version__ = '3.6.0'
 
 from importlib.metadata import version
 from pathlib import Path
@@ -63,7 +63,7 @@ def _find_init(self) -> str:
     """ Returns bash to find the init_target. """
     return ['for init_path in "/sbin/init" "/bin/init" "/init"; do',
             '    if [ -e "$(cat /run/SWITCH_ROOT_TARGET)$init_path" ] ; then',
-            '        echo "Found init at: $(cat /run/SWITCH_ROOT_TARGET)$init_path"',
+            '        einfo "Found init at: $(cat /run/SWITCH_ROOT_TARGET)$init_path"',
             '        echo "$init_path" > /run/INIT_TARGET',
             '        return',
             '    fi',
@@ -80,27 +80,48 @@ def do_switch_root(self) -> str:
     If not, it restarts UGRD.
     """
     return ['if [ $$ -ne 1 ] ; then',
-            '    echo "Cannot switch_root from PID: $$, exiting."',
+            '    ewarn "Cannot switch_root from PID: $$, exiting."',
             '    exit 1',
             'fi',
             'echo "Checking root mount: $(cat /run/MOUNTS_ROOT_TARGET)"',
             'if ! grep -q " $(cat /run/MOUNTS_ROOT_TARGET) " /proc/mounts ; then',
-            '    echo "Root mount not found at: $(cat /run/MOUNTS_ROOT_TARGET)"',
-            r'    echo -e "Current block devices:\n$(blkid)"',
+            '    ewarn "Root mount not found at: $(cat /run/MOUNTS_ROOT_TARGET)"',
+            r'    einfo -e "Current block devices:\n$(blkid)"',
             '    read -p "Press enter to restart UGRD."',
             '    exec /init',
             'elif [ ! -e $(cat /run/SWITCH_ROOT_TARGET)$(cat /run/INIT_TARGET) ] ; then',
-            '    echo "$(cat /run/INIT_TARGET) not found at: $(cat /run/SWITCH_ROOT_TARGET)"',
-            r'    echo -e "Target root contents:\n$(ls -l $(cat /run/SWITCH_ROOT_TARGET))"',
+            '    ewarn "$(cat /run/INIT_TARGET) not found at: $(cat /run/SWITCH_ROOT_TARGET)"',
+            r'    einfo -e "Target root contents:\n$(ls -l $(cat /run/SWITCH_ROOT_TARGET))"',
             '    if _find_init ; then',
-            '        echo "Switching root to: $(cat /run/SWITCH_ROOT_TARGET) $(cat /run/INIT_TARGET)"',
+            '        einfo "Switching root to: $(cat /run/SWITCH_ROOT_TARGET) $(cat /run/INIT_TARGET)"',
             '        exec switch_root "$(cat /run/SWITCH_ROOT_TARGET)" "$(cat /run/INIT_TARGET)"',
             '    fi',
             '    read -p "Press enter to restart UGRD."',
             '    exec /init',
             'else',
-            f'    echo "Completed UGRD v{version("ugrd")}."',
-            '    echo "Switching root to: $(cat /run/SWITCH_ROOT_TARGET) $(cat /run/INIT_TARGET)"',
+            f'    einfo "Completed UGRD v{version("ugrd")}."',
+            '    einfo "Switching root to: $(cat /run/SWITCH_ROOT_TARGET) $(cat /run/INIT_TARGET)"',
             '    exec switch_root "$(cat /run/SWITCH_ROOT_TARGET)" "$(cat /run/INIT_TARGET)"',
             "fi"]
+
+
+# To feel more at home
+def einfo(self) -> str:
+    """ Returns a bash function like einfo. """
+    return ['einfo() {',
+            '    if [ "$QUIET" == "1" ]; then',
+            '        return',
+            '    fi',
+            r'    echo -e "\e[1;32m*\e[0m ${*}" >&2',
+            '}']
+
+
+def ewarn(self) -> str:
+    """ Returns a bash function like ewarn. """
+    return ['ewarn() {',
+            '    if [ "$QUIET" == "1" ]; then',
+            '        return',
+            '    fi',
+            r'    echo -e "\e[1;33m*\e[0m ${*}" >&2',
+            '}']
 
