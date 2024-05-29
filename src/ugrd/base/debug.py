@@ -6,7 +6,7 @@ from zenlib.util import check_dict
 
 def start_shell(self) -> str:
     """ Start a bash shell at the start of the initramfs. """
-    return ['if [ "$(readvar DEBUG" != "1" ]; then',
+    return ['if [ "$(readvar DEBUG)" != "1" ]; then',
             '    return',
             'fi',
             'einfo "Starting debug shell"',
