@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '3.8.1'
+__version__ = '3.8.2'
 
 from importlib.metadata import version
 from pathlib import Path
@@ -125,7 +125,7 @@ def check_quiet(self) -> str:
     """
     return ['if [ -z "$(readvar QUIET)" ]; then',
             '    if [ -e /proc/cmdline ]; then',
-            r'        return $(grep -qE "(^\s)+quiet(\s|$)" /proc/cmdline)',
+            r'        return $(grep -qE "(^|\s)quiet(\s|$)" /proc/cmdline)',
             '    fi',
             '    return 1',
             'fi',
