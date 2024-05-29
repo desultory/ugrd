@@ -2,8 +2,11 @@ binaries = ['cp', 'mv', 'rm', 'nano', 'find', 'grep', 'dmesg', 'chmod', 'touch']
 
 start_shell = true
 
+[imports.init_pre]
+"ugrd.base.debug" = [ "enable_debug" ]
+
 [imports.init_debug]
 "ugrd.base.debug" = [ "start_shell" ]
 
 [custom_parameters]
-start_shell = "bool"  # Start a shell during init_early
+start_shell = "bool"  # Start a shell after init_early, before init_pre. Can be enabled by the debug cmdline option.
