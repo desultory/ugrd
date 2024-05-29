@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '3.8.2'
+__version__ = '3.8.3'
 
 from importlib.metadata import version
 from pathlib import Path
@@ -140,7 +140,9 @@ def einfo(self) -> str:
     """ Returns a bash function like einfo. """
     return ['if check_quiet; then',
             '    return',
-            'fi']
+            'fi',
+            r'echo -e "\e[1;32m*\e[0m ${*}"'
+            ]
 
 
 def ewarn(self) -> str:
@@ -148,5 +150,5 @@ def ewarn(self) -> str:
     return ['if check_quiet; then',
             '    return',
             'fi',
-            r'echo -e "\e[1;33m*\e[0m ${*}" >&2']
+            r'echo -e "\e[1;33m*\e[0m ${*}"']
 
