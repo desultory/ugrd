@@ -4,7 +4,7 @@ binaries = [ "awk", "grep", "ls", "cp", "cat", "switch_root" ]
 
 paths = [ "root" ]
 
-shebang = "#!/bin/bash"
+shebang = "#!/bin/bash -l"
 switch_root_target = "/mnt/root"
 autodetect_init = true
 
