@@ -250,7 +250,6 @@ def _autodetect_dm(self, mountpoint) -> None:
 
     source_device = self['_mounts'][mountpoint]['device']
 
-#    source_device = _get_mounts_source_device(self, mountpoint) if not mountpoint.startswith('/dev/') else mountpoint
     root_mount_info = self['_blkid_info'].get(source_device)
 
     if not root_mount_info:
