@@ -4,7 +4,6 @@
 modules = [
   "ugrd.base.base",
   "ugrd.base.debug",
-  "ugrd.base.cmdline",
   "ugrd.kmod.vm",
   "ugrd.crypto.opensc",
 ]

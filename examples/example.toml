@@ -6,11 +6,13 @@
 modules = [
   "ugrd.base.base",
   "ugrd.kmod.standard_mask",
-  "ugrd.base.cmdline",
 #  "ugrd.crypto.cryptsetup", # This is included by the gpg module
 #  "ugrd.crypto.gpg", # This is included by the smartcard module
 #  "ugrd.crypto.smartcard",   
 ]
+
+# Mask the parse_cmdline function to prevent it from running
+#mask.init_pre = 'parse_cmdline'
 
 # The initramfs will be built in /tmp/initramfs if "build_dir" is not specified not specified
 #out_dir = "/usr/src/initramfs"
