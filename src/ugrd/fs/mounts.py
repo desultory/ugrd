@@ -130,12 +130,9 @@ def _get_mount_str(self, mount: dict, pad=False, pad_size=44) -> str:
     return out_str
 
 
-def _to_mount_cmd(self, mount: dict, check_mount=False) -> str:
+def _to_mount_cmd(self, mount: dict) -> str:
     """ Prints the object as a mount command. """
-    out = []
-
-    if check_mount:
-        out.append(f"if ! grep -qs {mount['destination']} /proc/mounts; then")
+    out = [f"if ! grep -qs {mount['destination']} /proc/mounts; then"]
 
     mount_command = f"mount {_get_mount_str(self, mount)} {mount['destination']}"
     if options := mount.get('options'):
@@ -145,12 +142,10 @@ def _to_mount_cmd(self, mount: dict, check_mount=False) -> str:
 
     mount_command += f" || _mount_fail 'failed to mount: {mount['destination']}'"
 
-    if check_mount:
-        out.append(f"    {mount_command}")
-        out += ['else', f"    ewarn 'Mount already exists, skipping: {mount['destination']}'"]
-        out.append('fi')
-    else:
-        out.append(mount_command)
+    out += [f"    {mount_command}",
+            'else',
+            f"    ewarn 'Mount already exists, skipping: {mount['destination']}'",
+            'fi']
 
     return out
 
@@ -383,7 +378,7 @@ def autodetect_root(self) -> None:
 
 def mount_base(self) -> list[str]:
     """ Generates mount commands for the base mounts. """
-    out = [mount for mount in self['mounts'].values() if mount.get('base_mount')]
+    out = [_to_mount_cmd(self, mount) for mount in self['mounts'].values() if mount.get('base_mount')]
     out += ['mkdir -p /run/vars',
             f'einfo "Mounting base mounts, version: {__version__}"']
     return out
@@ -397,7 +392,7 @@ def mount_late(self) -> list[str]:
     for mount in self['late_mounts'].values():
         if not str(mount['destination']).startswith(target_dir):
             mount['destination'] = Path(target_dir, str(mount['destination']).removeprefix('/'))
-        out += _to_mount_cmd(self, mount, check_mount=True)
+        out += _to_mount_cmd(self, mount)
     return out
 
 
