@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '3.3.4'
+__version__ = '3.4.0'
 
 from pathlib import Path
 from zenlib.util import check_dict, pretty_print
@@ -147,7 +147,7 @@ def _to_mount_cmd(self, mount: dict, check_mount=False) -> str:
 
     if check_mount:
         out.append(f"    {mount_command}")
-        out += ['else', f"    echo 'Mount already exists, skipping: {mount['destination']}'"]
+        out += ['else', f"    ewarn 'Mount already exists, skipping: {mount['destination']}'"]
         out.append('fi')
     else:
         out.append(mount_command)
@@ -383,7 +383,7 @@ def autodetect_root(self) -> None:
 
 def mount_base(self) -> list[str]:
     """ Generates mount commands for the base mounts. """
-    out = [f'echo "Mounting base mounts, version: {__version__}"']
+    out = [f'einfo "Mounting base mounts, version: {__version__}"']
     for mount in self['mounts'].values():
         if mount.get('base_mount'):
             out += _to_mount_cmd(self, mount, check_mount=True)
@@ -395,7 +395,7 @@ def mount_base(self) -> list[str]:
 def mount_late(self) -> list[str]:
     """ Generates mount commands for the late mounts. """
     target_dir = self['mounts']['root']['destination'] if not self['switch_root_target'] else self['switch_root_target']
-    out = [f'echo "Mounting late mounts at {target_dir}: {" ,".join(self["late_mounts"].keys())}"']
+    out = [f'einfo "Mounting late mounts at {target_dir}: {" ,".join(self["late_mounts"].keys())}"']
     for mount in self['late_mounts'].values():
         if not str(mount['destination']).startswith(target_dir):
             mount['destination'] = Path(target_dir, str(mount['destination']).removeprefix('/'))
@@ -506,10 +506,10 @@ def mount_root(self) -> str:
     _validate_host_mount(self, self['mounts']['root'], '/')
     # Check if the root mount is already mounted
     return ['if grep -qs "$(cat /run/MOUNTS_ROOT_TARGET)" /proc/mounts; then',
-            '    echo "Root mount already exists, unmounting: $(cat /run/MOUNTS_ROOT_TARGET)"',
+            '    ewarn "Root mount already exists, unmounting: $(cat /run/MOUNTS_ROOT_TARGET)"',
             '    umount "$(cat /run/MOUNTS_ROOT_TARGET)"',
             'fi',
-            '''echo "Mounting '$(cat /run/MOUNTS_ROOT_SOURCE)' ($(cat /run/MOUNTS_ROOT_TYPE)) to '$(cat /run/MOUNTS_ROOT_TARGET)' with options: $(cat /run/MOUNTS_ROOT_OPTIONS)"''',
+            '''einfo "Mounting '$(cat /run/MOUNTS_ROOT_SOURCE)' ($(cat /run/MOUNTS_ROOT_TYPE)) to '$(cat /run/MOUNTS_ROOT_TARGET)' with options: $(cat /run/MOUNTS_ROOT_OPTIONS)"''',
             'mount "$(cat /run/MOUNTS_ROOT_SOURCE)" -t "$(cat /run/MOUNTS_ROOT_TYPE)" "$(cat /run/MOUNTS_ROOT_TARGET)" -o "$(cat /run/MOUNTS_ROOT_OPTIONS)"']
 
 
@@ -524,25 +524,25 @@ def export_mount_info(self) -> None:
 def _mount_fail(self) -> list[str]:
     """ Generates init lines to run if the mount fails. """
     return ['if [ -n "$1" ]; then',
-            '    echo "Mount failed: $1"',
+            '    ewarn "Mount failed: $1"',
             'else',
-            '    echo "Mount failed"',
+            '    ewarn "Mount failed"',
             'fi',
             r'echo -e "\n\n\nPress enter to display debug info.\n\n\n"',
             'read -sr',
-            r'echo -e "\nLoaded modules:"',
+            r'einfo -e "\nLoaded modules:"',
             'cat /proc/modules',
-            r'echo -e "\nBlock devices:"',
+            r'einfo -e "\nBlock devices:"',
             'blkid',
-            r'echo -e "\nMounts:"',
+            r'einfo -e "\nMounts:"',
             'mount',
             r'echo -e "\n\n\nPress enter to restart init.\n\n\n"',
             'read -sr',
             'if [ "$$" -eq 1 ]; then',
-            '    echo "Restarting init"',
+            '    einfo "Restarting init"',
             '    exec /init ; exit',
             'else',
-            '    echo "PID is not 1, exiting: $$"',
+            '    ewarn "PID is not 1, exiting: $$"',
             '    exit',
             'fi']
 

@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.7.0'
+__version__ = '1.8.0'
 
 from zenlib.util import check_dict
 
@@ -157,10 +157,10 @@ def get_crypt_sources(self) -> list[str]:
         check_command = [f'if [ -z "$CRYPTSETUP_SOURCE_{name}" ]; then',
                          f'    _mount_fail "Unable to resolve device source for {name}"',
                          'else',
-                         f'    echo "Resolved device source: $CRYPTSETUP_SOURCE_{name}"',
+                         f'    einfo "Resolved device source: $CRYPTSETUP_SOURCE_{name}"',
                          'fi']
 
-        out += [f"echo 'Attempting to get device path for {name}'", source_cmd, *check_command]
+        out += [f"einfo 'Attempting to get device path for {name}'", source_cmd, *check_command]
     return out
 
 
@@ -198,7 +198,7 @@ def open_crypt_key(self, name: str, parameters: dict) -> tuple[list[str], str]:
         raise ValueError("Key file must be specified for cryptsetup mount: %s" % name)
     key_path = f"/run/key_{name}"
 
-    out = [f"    echo 'Attempting to open luks key for {name}'"]
+    out = [f"    einfo 'Attempting to open luks key for {name}'"]
     out += [f"    {parameters['key_command']} {key_path}"]
 
     return out, key_path
@@ -229,7 +229,7 @@ def open_crypt_device(self, name: str, parameters: dict) -> list[str]:
 
     # Add the header file if it exists
     if header_file := parameters.get('header_file'):
-        out += [f"    echo 'Using header file: {header_file}'"]
+        out += [f"    einfo 'Using header file: {header_file}'"]
         cryptsetup_command += f' --header {header_file}'
 
     if self['cryptsetup_trim']:
@@ -242,16 +242,16 @@ def open_crypt_device(self, name: str, parameters: dict) -> list[str]:
 
     # Check if the device was successfully opened
     out += ['    if [ $? -eq 0 ]; then',
-            f'        echo "Successfully opened device: {name}"',
+            f'        einfo "Successfully opened device: {name}"',
             '        break',
             '    else',
-            f'        echo "Failed to open device: {name} ($i / {retries})"']
+            f'        ewarn "Failed to open device: {name} ($i / {retries})"']
     # Halt if the autoretry is disabled
     if not self['cryptsetup_autoretry']:
         out += ['        read -sr -p "Press enter to retry"']
     # Add the reset command if it exists
     if reset_command := parameters.get('reset_command'):
-        out += ['        echo "Running key reset command"',
+        out += ['        einfo "Running key reset command"',
                 f'        {reset_command}']
     out += ['    fi']
     out += ['done\n']
@@ -261,12 +261,12 @@ def open_crypt_device(self, name: str, parameters: dict) -> list[str]:
 
 def crypt_init(self) -> list[str]:
     """ Generates the bash script portion to prompt for keys. """
-    out = [r'echo "Unlocking LUKS volumes, ugrd.cryptsetup version: %s"' % __version__]
+    out = [r'einfo "Unlocking LUKS volumes, ugrd.cryptsetup version: %s"' % __version__]
     for name, parameters in self['cryptsetup'].items():
         # Check if the volume is already open, if so, skip it
         out += [f'cryptsetup status {name} > /dev/null 2>&1',
                 'if [ $? -eq 0 ]; then',
-                f'    echo "Device already open: {name}"',
+                f'    ewarn "Device already open: {name}"',
                 '    return',
                 'fi']
         out += open_crypt_device(self, name, parameters)
@@ -279,7 +279,7 @@ def crypt_init(self) -> list[str]:
                     pass
             out += [f'cryptsetup status {name}',
                     'if [ $? -ne 0 ]; then',
-                    f'    echo "Failed to open device using keys: {name}"']
+                    f'    ewarn "Failed to open device using keys: {name}"']
             out += [f'    {bash_line}' for bash_line in open_crypt_device(self, name, new_params)]
             out += ['fi']
     return out

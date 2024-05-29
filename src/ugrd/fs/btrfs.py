@@ -1,4 +1,4 @@
-__version__ = '1.6.3'
+__version__ = '1.6.4'
 __author__ = 'desultory'
 
 
@@ -85,7 +85,7 @@ def select_subvol(self) -> str:
     """ Returns a bash script to list subvolumes on the root volume. """
     return [f'mount -t btrfs -o subvolid=5,ro $(cat /run/MOUNTS_ROOT_SOURCE) {self["_base_mount_path"]}',
             f'''if [ -z "$(btrfs subvolume list -o {self['_base_mount_path']})" ]; then''',
-            f'''    echo "Failed to list btrfs subvolumes for root volume: {self['_base_mount_path']}"''',
+            f'''    ewarn "Failed to list btrfs subvolumes for root volume: {self['_base_mount_path']}"''',
             "else",
             "    echo 'Select a subvolume to use as root'",
             "    PS3='Subvolume: '",
@@ -93,9 +93,9 @@ def select_subvol(self) -> str:
             "        case $subvol in",
             "            *)",
             "                if [[ -z $subvol ]]; then",
-            "                    echo 'Invalid selection'",
+            "                    ewarn 'Invalid selection'",
             "                else",
-            '                    echo "Selected subvolume: $subvol"',
+            '                    einfo "Selected subvolume: $subvol"',
             '                    echo -n ",subvol=$subvol" >> /run/MOUNTS_ROOT_OPTIONS',
             "                    break",
             "                fi",

@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.0.0'
+__version__ = '1.0.1'
 
 from zenlib.util import check_dict
 
@@ -14,7 +14,7 @@ def _process_lvm_multi(self, mapped_name: str, config: dict) -> None:
 @check_dict('lvm', not_empty=True, log_level=10, message="Skipping LVM initialization, no LVM configurations found.")
 def init_lvm(self) -> None:
     """ Returns bash lines to initialize LVM """
-    return ['echo "Initializing LVM, module version %s"' % __version__,
+    return ['einfo "Initializing LVM, module version %s"' % __version__,
             'pvscan',
             'vgscan',
             'vgchange -ay',
