@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '3.8.0'
+__version__ = '3.8.1'
 
 from importlib.metadata import version
 from pathlib import Path
@@ -123,7 +123,7 @@ def readvar(self) -> str:
 def einfo(self) -> str:
     """ Returns a bash function like einfo. """
     return ['einfo() {',
-            '    if [ "$QUIET" == "1" ]; then',
+            '    if [ "$(getvar QUIET)" ]; then',
             '        return',
             '    fi',
             r'    echo -e "\e[1;32m*\e[0m ${*}" >&2',
