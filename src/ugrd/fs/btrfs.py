@@ -1,4 +1,4 @@
-__version__ = '1.6.4'
+__version__ = '1.6.5'
 __author__ = 'desultory'
 
 
@@ -83,7 +83,7 @@ def autodetect_root_subvol(self):
 @check_dict('root_subvol', unset=True, message="root_subvol is set, skipping.")
 def select_subvol(self) -> str:
     """ Returns a bash script to list subvolumes on the root volume. """
-    return [f'mount -t btrfs -o subvolid=5,ro $(cat /run/MOUNTS_ROOT_SOURCE) {self["_base_mount_path"]}',
+    return [f'mount -t btrfs -o subvolid=5,ro $(readvar MOUNTS_ROOT_SOURCE) {self["_base_mount_path"]}',
             f'''if [ -z "$(btrfs subvolume list -o {self['_base_mount_path']})" ]; then''',
             f'''    ewarn "Failed to list btrfs subvolumes for root volume: {self['_base_mount_path']}"''',
             "else",

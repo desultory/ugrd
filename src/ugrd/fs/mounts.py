@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '3.4.0'
+__version__ = '3.5.0'
 
 from pathlib import Path
 from zenlib.util import check_dict, pretty_print
@@ -505,12 +505,12 @@ def mount_root(self) -> str:
     """
     _validate_host_mount(self, self['mounts']['root'], '/')
     # Check if the root mount is already mounted
-    return ['if grep -qs "$(cat /run/MOUNTS_ROOT_TARGET)" /proc/mounts; then',
-            '    ewarn "Root mount already exists, unmounting: $(cat /run/MOUNTS_ROOT_TARGET)"',
-            '    umount "$(cat /run/MOUNTS_ROOT_TARGET)"',
+    return ['if grep -qs "$(readvar MOUNTS_ROOT_TARGET)" /proc/mounts; then',
+            '    ewarn "Root mount already exists, unmounting: $(readvar MOUNTS_ROOT_TARGET)"',
+            '    umount "$(readvar MOUNTS_ROOT_TARGET)"',
             'fi',
-            '''einfo "Mounting '$(cat /run/MOUNTS_ROOT_SOURCE)' ($(cat /run/MOUNTS_ROOT_TYPE)) to '$(cat /run/MOUNTS_ROOT_TARGET)' with options: $(cat /run/MOUNTS_ROOT_OPTIONS)"''',
-            'mount "$(cat /run/MOUNTS_ROOT_SOURCE)" -t "$(cat /run/MOUNTS_ROOT_TYPE)" "$(cat /run/MOUNTS_ROOT_TARGET)" -o "$(cat /run/MOUNTS_ROOT_OPTIONS)"']
+            '''einfo "Mounting '$(readvar MOUNTS_ROOT_SOURCE)' ($(readvar MOUNTS_ROOT_TYPE)) to '$(readvar MOUNTS_ROOT_TARGET)' with options: $(readvar MOUNTS_ROOT_OPTIONS)"''',
+            'mount "$(readvar MOUNTS_ROOT_SOURCE)" -t "$(readvar MOUNTS_ROOT_TYPE)" "$(readvar MOUNTS_ROOT_TARGET)" -o "$(readvar MOUNTS_ROOT_OPTIONS)"']
 
 
 def export_mount_info(self) -> None:
