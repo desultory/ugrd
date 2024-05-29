@@ -111,21 +111,38 @@ def setvar(self) -> str:
 
 
 def readvar(self) -> str:
-    """ Returns a bash function that reads a variable from /run/vars/{name}. """
-    return 'cat "/run/vars/${1}"'
+    """
+    Returns a bash function that reads a variable from /run/vars/{name}.
+    If the variable is not found, it returns an empty string.
+    """
+    return 'cat "/run/vars/${1} 2>/dev/null" || echo ""'
+
+
+def check_quiet(self) -> str:
+    """
+    Returns a bash function that checks the value of QUIET,
+    if it's not set, tries to read the cmdline.
+    """
+    return ['if [ -z "$(readvar QUIET)" ]; then',
+            '    if [ -e /proc/cmdline ]; then',
+            r'        return $((! $(grep -qE "(^\s)+quiet(\s|$)" /proc/cmdline)))',
+            '    fi',
+            '    return 0',
+            'fi',
+            'return $(readvar QUIET)']
 
 
 # To feel more at home
 def einfo(self) -> str:
     """ Returns a bash function like einfo. """
-    return ['if [ "$(readvar QUIET)" ]; then',
+    return ['if [ check_quiet -eq 1 ]; then',
             '    return',
             'fi']
 
 
 def ewarn(self) -> str:
     """ Returns a bash function like ewarn. """
-    return ['if [ "$(readvar QUIET)" ]; then',
+    return ['if [ check_quiet -eq 1 ]; then',
             '    return',
             'fi',
             r'echo -e "\e[1;33m*\e[0m ${*}" >&2']
