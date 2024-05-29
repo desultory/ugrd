@@ -1,14 +1,15 @@
 __author__ = 'desultory'
-__version__ = '1.2.1'
+__version__ = '1.2.2'
 
 
 def parse_cmdline(self) -> str:
     """ Returns bash script to parse /proc/cmdline """
-    return [r'grep -qE "(^\s)+quiet(\s|$)" /proc/cmdline && echo "1" > /run/QUIET',
-            r'grep -oP "(?<=root=)[^\s]+" /proc/cmdline > /run/CMDLINE_ROOT',
-            r'''echo "$(grep -oP "(?<=roottype=)[^\s]+" /proc/cmdline || echo 'auto')" > /run/CMDLINE_ROOT_TYPE''',
-            r'''echo "$(grep -oP '(?<=rootflags=)[^\s]+' /proc/cmdline || echo 'defaults,ro')" > /run/CMDLINE_ROOT_FLAGS''',
-            'einfo "Parsed values: $(ls /run/)"']
+    return [r'grep -qE "(^\s)+quiet(\s|$)" /proc/cmdline && setvar QUIET 1 || setvar QUIET 0',
+            r'setvar CMDLINE_ROOT $(grep -oP "(?<=root=)[^\s]+" /proc/cmdline)',
+            r'setvar CMDLINE_ROOT_TYPE $(grep -oP "(?<=roottype=)[^\s]+" /proc/cmdline || echo "auto")',
+            r'setvar CMDLINE_ROOT_FLAGS $(grep -oP "(?<=rootflags=)[^\s]+" /proc/cmdline || echo "defaults,ro")',
+            r'setvar RECOVERY_SHELL $(grep -qE "(^\s)+recovery(\s|$)" /proc/cmdline && echo 1 || echo 0)',
+            'einfo "Parsed values: $(ls /run/vars)"']
 
 
 def mount_cmdline_root(self) -> str:

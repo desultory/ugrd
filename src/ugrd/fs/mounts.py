@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '3.5.0'
+__version__ = '3.5.2'
 
 from pathlib import Path
 from zenlib.util import check_dict, pretty_print
@@ -388,6 +388,7 @@ def mount_base(self) -> list[str]:
         if mount.get('base_mount'):
             out += _to_mount_cmd(self, mount, check_mount=True)
 
+    out += 'mkdir -p /run/vars'
     return out
 
 
@@ -536,6 +537,10 @@ def _mount_fail(self) -> list[str]:
             'blkid',
             r'einfo -e "\nMounts:"',
             'mount',
+            'if [ readvar RECOVERY -eq 1 ]; then',
+            '    einfo "Entering recovery shell"',
+            '    exec bash',
+            'fi',
             r'echo -e "\n\n\nPress enter to restart init.\n\n\n"',
             'read -sr',
             'if [ "$$" -eq 1 ]; then',

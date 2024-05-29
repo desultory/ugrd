@@ -105,10 +105,17 @@ def do_switch_root(self) -> str:
             "fi"]
 
 
+def setvar(self) -> str:
+    """ Returns a bash function that sets a variable in /run/vars/{name}. """
+    return ['setvar() {',
+            '    echo "$2" > "/run/vars/${1}"',
+            '}']
+
+
 def readvar(self) -> str:
     """ Returns a bash function that reads a variable from /run/{name}. """
     return ['readvar() {',
-            '    cat "/run/${1}"',
+            '    cat "/run/vars/${1}"',
             '}']
 
 
