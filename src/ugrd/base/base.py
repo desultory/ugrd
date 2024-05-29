@@ -107,7 +107,7 @@ def do_switch_root(self) -> str:
 
 def setvar(self) -> str:
     """ Returns a bash function that sets a variable in /run/vars/{name}. """
-    return ['if [ "$(readvar DEBUG)" == "1" ]; then',
+    return ['if check_var DEBUG; then',
             '    edebug "Setting $1 to $2"',
             'fi',
             'echo "$2" > "/run/vars/${1}"']
@@ -121,18 +121,18 @@ def readvar(self) -> str:
     return 'cat "/run/vars/${1}" 2>/dev/null || echo ""'
 
 
-def check_quiet(self) -> str:
+def check_var(self) -> str:
     """
-    Returns a bash function that checks the value of QUIET,
+    Returns a bash function that checks the value of a variable.
     if it's not set, tries to read the cmdline.
     """
-    return ['if [ -z "$(readvar QUIET)" ]; then',
+    return ['if [ -z "$(readvar $1)" ]; then',
             '    if [ -e /proc/cmdline ]; then',
-            r'        return $(grep -qE "(^|\s)quiet(\s|$)" /proc/cmdline)',
+            r'        return $(grep -qE "(^|\s)$1(\s|$)" /proc/cmdline)',
             '    fi',
             '    return 1',
             'fi',
-            'if [ "$(readvar QUIET)" == "1" ]; then',
+            'if [ "$(readvar $1)" == "1" ]; then',
             '    return 0',
             'fi',
             'return 1']
@@ -153,7 +153,7 @@ def edebug(self) -> str:
 
 def einfo(self) -> str:
     """ Returns a bash function like einfo. """
-    return ['if check_quiet; then',
+    return ['if check_var quiet; then',
             '    return',
             'fi',
             r'echo -e "\e[1;32m*\e[0m ${*}"'
