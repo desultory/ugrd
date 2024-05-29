@@ -4,6 +4,7 @@ binaries = [
   "mount",
   "sleep",
   "umount",
+  "mkdir",
 ]
 
 mount_wait = false
