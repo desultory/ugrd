@@ -18,7 +18,7 @@ late_fstab = "/etc/fstab.late"
 "ugrd.fs.mounts" = [ "_process_mounts_multi", "_process_late_mounts_multi", "_process_mount_timeout" ]
 
 [imports.build_pre]
-"ugrd.fs.mounts" = [ "get_dm_info", "get_blkid_info", "autodetect_root", "autodetect_root_dm" ]
+"ugrd.fs.mounts" = [ "get_mounts_info", "get_dm_info", "get_blkid_info", "autodetect_root", "autodetect_root_dm" ]
 
 [imports.build_final]
 "ugrd.fs.mounts" = [ "generate_fstab" ]
@@ -52,6 +52,7 @@ autodetect_root = "bool"  # Add the autodetect_root property, if defined, the ro
 autodetect_root_dm = "bool"  # Whether or not to try to autodetect device-mapper partitions
 autodetect_root_luks = "bool"  # Whether or not to try to autodetect LUKS partitions
 autodetect_root_lvm = "bool"  # Whether or not to try to autodetect LVM partitions
+_mounts = "dict"  # The mounts information
 _dm_info = "dict"  # The device-mapper information
 _blkid_info = "dict"  # The blkid information
 

@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.0.1'
+__version__ = '4.1.0'
 
 from pathlib import Path
 from zenlib.util import check_dict, pretty_print
@@ -178,7 +178,7 @@ def generate_fstab(self, mount_class="mounts", filename="/etc/fstab") -> None:
                 fstab_info.append(_to_fstab_entry(self, mount_info))
             except KeyError as e:
                 self.logger.warning("[%s] Failed to add fstab entry for: %s" % (mount_class, mount_name))
-                self.logger.warning("Required mount paramter not set: %s" % e)
+                self.logger.warning("Required mount parameter not set: %s" % e)
 
     if len(fstab_info) > 1:
         self._write(filename, fstab_info)
@@ -186,8 +186,16 @@ def generate_fstab(self, mount_class="mounts", filename="/etc/fstab") -> None:
         self.logger.debug("[%s] No fstab entries generated for mounts: %s" % (mount_class, ', '.join(self[mount_class].keys())))
 
 
+def get_mounts_info(self) -> None:
+    """ Gets the mount info for all devices. """
+    with open('/proc/mounts', 'r') as mounts:
+        for line in mounts:
+            device, mountpoint, fstype, options, _, _ = line.split()
+            self['_mounts'][mountpoint] = {'device': device, 'fstype': fstype, 'options': options.split(',')}
+
+
 def get_blkid_info(self) -> str:
-    """ Gets the blkid info for all device. """
+    """ Gets the blkid info for all devices. """
     from re import search
     blkid_output = self._run(['blkid']).stdout.decode().strip()
     if not blkid_output:
@@ -240,7 +248,9 @@ def _autodetect_dm(self, mountpoint) -> None:
     """ Autodetects device mapper root config. """
     self.logger.debug("Detecting device mapper info for mountpoint: %s", mountpoint)
 
-    source_device = _get_mounts_source_device(self, mountpoint) if not mountpoint.startswith('/dev/') else mountpoint
+    source_device = self['_mounts'][mountpoint]['device']
+
+#    source_device = _get_mounts_source_device(self, mountpoint) if not mountpoint.startswith('/dev/') else mountpoint
     root_mount_info = self['_blkid_info'].get(source_device)
 
     if not root_mount_info:
@@ -357,7 +367,7 @@ def autodetect_root(self) -> None:
         self.logger.warning("Root mount source already set: %s", pretty_print(self['mounts']['root']))
         return
 
-    root_mount_info = self['_blkid_info'][_get_mounts_source_device(self, '/')]
+    root_mount_info = self['_blkid_info'][self['_mounts']['/']['device']]
     self.logger.debug("Detected root mount info: %s" % root_mount_info)
     mount_info = {'root': {'type': 'auto', 'base_mount': False}}
 
@@ -422,60 +432,17 @@ def mount_fstab(self) -> list[str]:
     return out
 
 
-def _pad_mountpoint(self, mountpoint: str) -> str:
-    """ Pads the mountpoint with spaces. """
-    mountpoint = str(mountpoint)
-    mountpoint = mountpoint if mountpoint.startswith(' ') else ' ' + mountpoint
-    mountpoint = mountpoint if mountpoint.endswith(' ') else mountpoint + ' '
-    return mountpoint
-
-
-def _get_mounts_source_options(self, mountpoint: str) -> Path:
-    """ Returns the options of a mountpoint at /proc/mounts. """
-    mountpoint = _pad_mountpoint(self, mountpoint)
-    self.logger.debug("Getting options for: %s" % mountpoint)
-
-    with open('/proc/mounts', 'r') as mounts:
-        for line in mounts:
-            if mountpoint in line:
-                # If the mountpoint is found, process the options
-                options = set(line.split()[3].split(','))
-                self.logger.debug("[%s] Found mount options: %s" % (mountpoint, options))
-                return options
-    raise FileNotFoundError("Unable to find mount options for: %s" % mountpoint)
-
-
-def _get_mounts_source_device(self, mountpoint: str) -> Path:
-    """ Returns the source device of a mountpoint at /proc/mounts. """
-    mountpoint = _pad_mountpoint(self, mountpoint)
-    self.logger.debug("Getting source device path for: %s" % mountpoint)
-
-    with open('/proc/mounts', 'r') as mounts:
-        for line in mounts:
-            if mountpoint in line:
-                # If the mountpoint is found, return the source
-                # Resolve the path as it may be a symlink
-                mount_source = Path(line.split()[0]).resolve()
-                self.logger.debug("[%s] Found mount source: %s" % (mountpoint, mount_source))
-                return str(mount_source)
-    if mountpoint.strip().startswith('/dev/dm-'):
-        dm_name = self['_dm_info'][mountpoint.strip().removeprefix('/dev/')]['name']
-        return _get_mounts_source_device(self, '/dev/mapper/' + dm_name)
-    raise FileNotFoundError("Unable to find mount source device for: %s" % mountpoint)
-
-
 @check_dict('validate', value=True, log_level=30, return_val=True, message="Skipping host mount validation, validation is disabled.")
 @check_dict('hostonly', value=True, log_level=30, return_val=True, message="Skipping host mount validation, hostonly mode is enabled.")
 def _validate_host_mount(self, mount, destination_path=None) -> bool:
     """ Checks if a defined mount exists on the host. """
     mount_type, mount_val = _get_mount_source_type(self, mount, with_val=True)
     # If a destination path is passed, like for /, use that instead of the mount's destination
-    destination_path = mount['destination'] if destination_path is None else destination_path
+    destination_path = str(mount['destination']) if destination_path is None else destination_path
 
-    # This will raise a FileNotFoundError if the mountpoint doesn't exist
-    host_source_dev = _get_mounts_source_device(self, destination_path)
-
-    host_mount_options = _get_mounts_source_options(self, destination_path)
+    # Using the mount path, get relevant hsot mount info
+    host_source_dev = self['_mounts'][destination_path]['device']
+    host_mount_options = self['_mounts'][destination_path]['options']
     for option in mount.get('options', []):
         if option == 'ro' and destination_path == '/':
             # Skip the ro option for the root mount

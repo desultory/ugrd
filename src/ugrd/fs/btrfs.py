@@ -1,8 +1,7 @@
-__version__ = '1.6.5'
+__version__ = '1.7.0'
 __author__ = 'desultory'
 
 
-from ugrd.fs.mounts import _get_mounts_source_options
 from zenlib.util import check_dict
 
 
@@ -16,7 +15,7 @@ class SubvolIsRoot(Exception):
 
 def _get_mount_subvol(self, mountpoint: str) -> list:
     """ Returns the subvolume name for a mountpoint. """
-    for option in _get_mounts_source_options(self, mountpoint):
+    for option in self['_mounts'][mountpoint]['options']:
         if option.startswith('subvol='):
             subvol = option.split('=')[1]
             if subvol == '/':
