@@ -1,12 +1,12 @@
 __author__ = "desultory"
-__version__ = "1.1.2"
+__version__ = "1.2.0"
 
 from zenlib.util import check_dict
 
 
 def start_shell(self) -> str:
     """ Start a bash shell at the start of the initramfs. """
-    return ['if check_var debug; then',
+    return ['if ! check_var debug; then',
             '    ewarn "The debug module is enabled, but debug is not set enabled"',
             '    return',
             'fi',
