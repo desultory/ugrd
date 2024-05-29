@@ -12,7 +12,7 @@ def parse_cmdline(self) -> str:
             r'setvar RECOVERY_SHELL $(grep -qE "(^\s)+recovery(\s|$)" /proc/cmdline && echo 1 || echo 0)',
             'if [ "$(readvar DEBUG)" == "1" ]; then',
             '    for file in /run/vars/*; do',
-            '        einfo "Parsed value: ${file}=$(cat $file)"',
+            '        edebug "Parsed value: ${file}=$(cat $file)"',
             '    done',
             'fi']
 

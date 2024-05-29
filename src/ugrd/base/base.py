@@ -136,6 +136,18 @@ def check_quiet(self) -> str:
 
 
 # To feel more at home
+def edebug(self) -> str:
+    """ Returns a bash function like edebug. """
+    return ['if check_quiet; then',
+            '    return',
+            'fi',
+            'if [ "$(readvar DEBUG)" != "1" ]; then',
+            '    return',
+            'fi',
+            r'echo -e "\e[1;34m*\e[0m ${*}"'
+            ]
+
+
 def einfo(self) -> str:
     """ Returns a bash function like einfo. """
     return ['if check_quiet; then',

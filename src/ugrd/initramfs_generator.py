@@ -179,13 +179,10 @@ class InitramfsGenerator(GeneratorHelpers):
         init += ["\n\n# END INIT"]
 
         if self.included_functions:
-            init_funcs = self.generate_init_funcs()
-            self._write('init_funcs.sh', init_funcs, 0o755)
+            self._write('/etc/bash.bashrc', self.generate_init_funcs(), 0o755)
             self.logger.info("Included functions: %s" % ', '.join(list(self.included_functions.keys())))
-            init.insert(3, "source init_funcs.sh")
             if self['imports'].get('custom_init'):
                 custom_init.insert(2, f"echo 'Starting custom init, UGRD v{__version__}'")
-                custom_init.insert(2, "source /init_funcs.sh")
 
         if self.get('_custom_init_file'):
             self._write(self['_custom_init_file'], custom_init, 0o755)
