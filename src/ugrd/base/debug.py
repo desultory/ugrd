@@ -1,7 +1,7 @@
 __author__ = "desultory"
 __version__ = "1.1.0"
 
-from zenlub.util import check_dict
+from zenlib.util import check_dict
 
 
 def start_shell(self) -> str:
