@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.3.1'
+__version__ = '1.3.2'
 
 
 def parse_cmdline(self) -> str:
@@ -10,6 +10,7 @@ def parse_cmdline(self) -> str:
             r'setvar CMDLINE_ROOT_TYPE $(grep -oP "(?<=roottype=)[^\s]+" /proc/cmdline || echo "auto")',
             r'setvar CMDLINE_ROOT_FLAGS $(grep -oP "(?<=rootflags=)[^\s]+" /proc/cmdline || echo "defaults,ro")',
             r'setvar RECOVERY_SHELL $(grep -qE "(^\s)+recovery(\s|$)" /proc/cmdline && echo 1 || echo 0)',
+            'einfo "Parsed cmdline: $(cat /proc/cmdline)"',
             'if [ "$(readvar DEBUG)" == "1" ]; then',
             '    for file in /run/vars/*; do',
             '        edebug "Parsed value: ${file}=$(cat $file)"',
