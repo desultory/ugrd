@@ -1,5 +1,3 @@
-modules = ['ugrd.base.base']
-
 [imports.init_pre]
 "ugrd.base.cmdline" = [ "parse_cmdline" ]
 
