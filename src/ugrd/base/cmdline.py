@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.2.0'
+__version__ = '1.2.1'
 
 
 def parse_cmdline(self) -> str:
@@ -8,7 +8,7 @@ def parse_cmdline(self) -> str:
             r'grep -oP "(?<=root=)[^\s]+" /proc/cmdline > /run/CMDLINE_ROOT',
             r'''echo "$(grep -oP "(?<=roottype=)[^\s]+" /proc/cmdline || echo 'auto')" > /run/CMDLINE_ROOT_TYPE''',
             r'''echo "$(grep -oP '(?<=rootflags=)[^\s]+' /proc/cmdline || echo 'defaults,ro')" > /run/CMDLINE_ROOT_FLAGS''',
-            'einfo "Parsed values: $(ls /run/)']
+            'einfo "Parsed values: $(ls /run/)"']
 
 
 def mount_cmdline_root(self) -> str:
