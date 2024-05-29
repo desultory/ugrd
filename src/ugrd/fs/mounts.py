@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '3.5.4'
+__version__ = '3.5.5'
 
 from pathlib import Path
 from zenlib.util import check_dict, pretty_print
@@ -387,8 +387,7 @@ def mount_base(self) -> list[str]:
     for mount in self['mounts'].values():
         if mount.get('base_mount'):
             out += _to_mount_cmd(self, mount, check_mount=True)
-
-    out += 'mkdir -p /run/vars'
+    out.append('mkdir -p /run/vars')
     return out
 
 
