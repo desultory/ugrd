@@ -115,7 +115,7 @@ def readvar(self) -> str:
     Returns a bash function that reads a variable from /run/vars/{name}.
     If the variable is not found, it returns an empty string.
     """
-    return 'cat "/run/vars/${1} 2>/dev/null" || echo ""'
+    return 'cat "/run/vars/${1}" 2>/dev/null || echo ""'
 
 
 def check_quiet(self) -> str:
