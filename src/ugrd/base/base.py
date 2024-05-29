@@ -123,7 +123,7 @@ def readvar(self) -> str:
 def einfo(self) -> str:
     """ Returns a bash function like einfo. """
     return ['einfo() {',
-            '    if [ "$(getvar QUIET)" ]; then',
+            '    if [ "$(readvar QUIET)" ]; then',
             '        return',
             '    fi',
             r'    echo -e "\e[1;32m*\e[0m ${*}" >&2',
