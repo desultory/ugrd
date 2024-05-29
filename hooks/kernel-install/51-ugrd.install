@@ -3,12 +3,9 @@
 KERNEL_VERSION="${2:?}"
 
 # Do not attempt to create initramfs if the supplied image is already a UKI
-if [[ "$KERNEL_INSTALL_IMAGE_TYPE" = "uki" ]]; then
-    exit 0
-fi
+[[ "$KERNEL_INSTALL_IMAGE_TYPE" = "uki" ]] && exit 0
 
-if [[ "${KERNEL_INSTALL_INITRD_GENERATOR:-ugrd}" != "ugrd" ]]; then
-    exit 0
-fi
+# Only run if the initrd generator is ugrd
+[[ ${KERNEL_INSTALL_INITRD_GENERATOR} == "ugrd" ]] || exit 0
 
 ugrd $([[ $KERNEL_INSTALL_VERBOSE == 1 ]] && echo --debug) --no-rotate --kver "$KERNEL_VERSION" "$KERNEL_INSTALL_STAGING_AREA/initrd" || exit 1
