@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '3.8.5'
+__version__ = '4.0.0'
 
 from importlib.metadata import version
 from pathlib import Path
@@ -107,7 +107,7 @@ def do_switch_root(self) -> str:
 
 def setvar(self) -> str:
     """ Returns a bash function that sets a variable in /run/vars/{name}. """
-    return ['if check_var DEBUG; then',
+    return ['if check_var debug; then',
             '    edebug "Setting $1 to $2"',
             'fi',
             'echo "$2" > "/run/vars/${1}"']
@@ -141,10 +141,10 @@ def check_var(self) -> str:
 # To feel more at home
 def edebug(self) -> str:
     """ Returns a bash function like edebug. """
-    return ['if check_var QUIET; then',
+    return ['if check_var quiet; then',
             '    return',
             'fi',
-            'if [ "$(readvar DEBUG)" != "1" ]; then',
+            'if [ "$(readvar debug)" != "1" ]; then',
             '    return',
             'fi',
             r'echo -e "\e[1;34m*\e[0m ${*}"'
@@ -153,7 +153,7 @@ def edebug(self) -> str:
 
 def einfo(self) -> str:
     """ Returns a bash function like einfo. """
-    return ['if check_var QUIET; then',
+    return ['if check_var quiet; then',
             '    return',
             'fi',
             r'echo -e "\e[1;32m*\e[0m ${*}"'
@@ -162,7 +162,7 @@ def einfo(self) -> str:
 
 def ewarn(self) -> str:
     """ Returns a bash function like ewarn. """
-    return ['if check_var QUIET; then',
+    return ['if check_var quiet; then',
             '    return',
             'fi',
             r'echo -e "\e[1;33m*\e[0m ${*}"']

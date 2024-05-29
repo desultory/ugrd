@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.6.1'
+__version__ = '2.6.2'
 
 from pathlib import Path
 from subprocess import run
@@ -282,7 +282,7 @@ def load_modules(self) -> None:
         self.logger.warning("Ignored kernel modules: %s" % ', '.join(removed_kmods))
 
     module_list = ' '.join(self['kmod_init'])
-    return ['if [ "$(readvar QUIET)" == "1" ]; then',
+    return ['if check_var quiet ]; then',
             '    modprobe -aq %s' % module_list,
             'else',
             '    einfo "Loading kernel modules: %s"' % module_list,

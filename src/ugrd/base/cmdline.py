@@ -1,11 +1,11 @@
 __author__ = 'desultory'
-__version__ = '1.4.0'
+__version__ = '1.4.1'
 
 
 def parse_cmdline(self) -> str:
     """ Returns bash script to parse /proc/cmdline """
-    return [r'grep -qE "(^|\s)quiet(\s|$)" /proc/cmdline && setvar QUIET 1 || setvar QUIET 0',
-            r'grep -qE "(^|\s)debug(\s|$)" /proc/cmdline && setvar DEBUG 1 || setvar DEBUG 0',
+    return [r'grep -qE "(^|\s)quiet(\s|$)" /proc/cmdline && setvar quiet 1 || setvar quiet 0',
+            r'grep -qE "(^|\s)debug(\s|$)" /proc/cmdline && setvar debug 1 || setvar debug 0',
             r'setvar CMDLINE_ROOT $(grep -oP "(?<=root=)[^\s]+" /proc/cmdline)',
             r'setvar CMDLINE_ROOT_TYPE $(grep -oP "(?<=roottype=)[^\s]+" /proc/cmdline || echo "auto")',
             r'setvar CMDLINE_ROOT_FLAGS $(grep -oP "(?<=rootflags=)[^\s]+" /proc/cmdline || echo "defaults,ro")',
