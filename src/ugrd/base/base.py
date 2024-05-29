@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '3.8.4'
+__version__ = '3.8.5'
 
 from importlib.metadata import version
 from pathlib import Path
@@ -141,7 +141,7 @@ def check_var(self) -> str:
 # To feel more at home
 def edebug(self) -> str:
     """ Returns a bash function like edebug. """
-    return ['if check_quiet; then',
+    return ['if check_var QUIET; then',
             '    return',
             'fi',
             'if [ "$(readvar DEBUG)" != "1" ]; then',
@@ -153,7 +153,7 @@ def edebug(self) -> str:
 
 def einfo(self) -> str:
     """ Returns a bash function like einfo. """
-    return ['if check_var quiet; then',
+    return ['if check_var QUIET; then',
             '    return',
             'fi',
             r'echo -e "\e[1;32m*\e[0m ${*}"'
@@ -162,7 +162,7 @@ def einfo(self) -> str:
 
 def ewarn(self) -> str:
     """ Returns a bash function like ewarn. """
-    return ['if check_quiet; then',
+    return ['if check_var QUIET; then',
             '    return',
             'fi',
             r'echo -e "\e[1;33m*\e[0m ${*}"']
