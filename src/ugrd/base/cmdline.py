@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.3.0'
+__version__ = '1.3.1'
 
 
 def parse_cmdline(self) -> str:
@@ -12,7 +12,7 @@ def parse_cmdline(self) -> str:
             r'setvar RECOVERY_SHELL $(grep -qE "(^\s)+recovery(\s|$)" /proc/cmdline && echo 1 || echo 0)',
             'if [ "$(readvar DEBUG)" == "1" ]; then',
             '    for file in /run/vars/*; do',
-            '        einfo "Parsed value: $($file)=$(cat $file)"',
+            '        einfo "Parsed value: ${file}=$(cat $file)"',
             '    done',
             'fi']
 
