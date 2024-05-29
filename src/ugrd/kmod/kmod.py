@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.5.5'
+__version__ = '2.5.6'
 
 from pathlib import Path
 from subprocess import run
@@ -121,7 +121,7 @@ def _autodetect_modules_lsmod(self) -> list[str]:
     """ Gets the name of all currently used kernel modules. """
     from platform import uname
     if self.get('kernel_version') and self['kernel_version'] != uname().release:
-        self.logger.critical("Kernel version is set to %s, but the current kernel version is %s" % (self['kernel_version'], uname().release))
+        self.logger.warning("Kernel version is set to %s, but the current kernel version is %s" % (self['kernel_version'], uname().release))
 
     with open('/proc/modules', 'r') as f:
         for module in f.readlines():
