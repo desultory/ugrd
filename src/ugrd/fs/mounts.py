@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '3.5.2'
+__version__ = '3.5.4'
 
 from pathlib import Path
 from zenlib.util import check_dict, pretty_print
@@ -516,10 +516,10 @@ def mount_root(self) -> str:
 
 def export_mount_info(self) -> None:
     """ Exports mount info based on the config to /run/MOUNTS_ROOT_{option} """
-    return [f'echo -n "{self["mounts"]["root"]["destination"]}" > "/run/MOUNTS_ROOT_TARGET"',
-            f'echo -n "{_get_mount_str(self, self["mounts"]["root"])}" > "/run/MOUNTS_ROOT_SOURCE"',
-            f'echo -n "{self["mounts"]["root"].get("type", "auto")}" > "/run/MOUNTS_ROOT_TYPE"',
-            f'''echo -n "{','.join(self["mounts"]["root"]["options"])}" > "/run/MOUNTS_ROOT_OPTIONS"''']
+    return [f'setvar MOUNTS_ROOT_TARGET "{self["mounts"]["root"]["destination"]}"',
+            f'setvar MOUNTS_ROOT_SOURCE "{_get_mount_str(self, self["mounts"]["root"])}"',
+            f'setvar MOUNTS_ROOT_TYPE "{self["mounts"]["root"].get("type", "auto")}"',
+            f'setvar MOUNTS_ROOT_OPTIONS "{",".join(self["mounts"]["root"]["options"])}"']
 
 
 def _mount_fail(self) -> list[str]:

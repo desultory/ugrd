@@ -196,7 +196,7 @@ def open_crypt_key(self, name: str, parameters: dict) -> tuple[list[str], str]:
         _validate_crypysetup_key(self, parameters)
     else:
         raise ValueError("Key file must be specified for cryptsetup mount: %s" % name)
-    key_path = f"/run/key_{name}"
+    key_path = f"/run/vars/key_{name}"
 
     out = [f"    einfo 'Attempting to open luks key for {name}'"]
     out += [f"    {parameters['key_command']} {key_path}"]

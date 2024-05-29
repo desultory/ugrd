@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '3.7.0'
+__version__ = '3.8.0'
 
 from importlib.metadata import version
 from pathlib import Path
@@ -45,18 +45,18 @@ def _process_autodetect_init(self, state) -> None:
 
 
 def export_switchroot_target(self) -> str:
-    """ Returns bash to export the switch_root_target variable to /run/SWITCH_ROOT_TARGET. """
+    """ Returns bash to export the switch_root_target variable to SWITCH_ROOT_TARGET. """
     if self['switch_root_target'] != str(self['mounts']['root']['destination']):
         self.logger.warning("Switch root/root mount mismatch; Root mount target set to '%s', switch root target is: %s" %
                             (self['mounts']['root']['destination'], self['switch_root_target']))
         self['mounts']['root']['destination'] = self['switch_root_target']
-    return f'echo "{self["switch_root_target"]}" > /run/SWITCH_ROOT_TARGET'
+    return f'setvar SWITCH_ROOT_TARGET "{self["switch_root_target"]}"'
 
 
 def export_init_target(self) -> str:
     """ Returns bash to export the init_target variable to MOUNTS_ROOT_TARGET. """
     _validate_init_target(self)
-    return f'echo "{self["init_target"]}" > /run/INIT_TARGET'
+    return f'setvar INIT_TARGET "{self["init_target"]}"'
 
 
 def _find_init(self) -> str:
@@ -64,7 +64,7 @@ def _find_init(self) -> str:
     return ['for init_path in "/sbin/init" "/bin/init" "/init"; do',
             '    if [ -e "$(readvar SWITCH_ROOT_TARGET)$init_path" ] ; then',
             '        einfo "Found init at: $(readvar SWITCH_ROOT_TARGET)$init_path"',
-            '        echo "$init_path" > /run/INIT_TARGET',
+            '        setvar INIT_TARGET "$init_path"',
             '        return',
             '    fi',
             'done',
@@ -113,7 +113,7 @@ def setvar(self) -> str:
 
 
 def readvar(self) -> str:
-    """ Returns a bash function that reads a variable from /run/{name}. """
+    """ Returns a bash function that reads a variable from /run/vars/{name}. """
     return ['readvar() {',
             '    cat "/run/vars/${1}"',
             '}']

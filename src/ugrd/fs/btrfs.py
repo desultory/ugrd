@@ -96,7 +96,7 @@ def select_subvol(self) -> str:
             "                    ewarn 'Invalid selection'",
             "                else",
             '                    einfo "Selected subvolume: $subvol"',
-            '                    echo -n ",subvol=$subvol" >> /run/MOUNTS_ROOT_OPTIONS',
+            '                    echo -n ",subvol=$subvol" >> /run/vars/MOUNTS_ROOT_OPTIONS',
             "                    break",
             "                fi",
             "                ;;",
@@ -110,5 +110,5 @@ def select_subvol(self) -> str:
 def set_root_subvol(self) -> str:
     """ Adds the root_subvol to the root_mount options. """
     _validate_root_subvol(self)
-    return f'''echo -n ",subvol={self['root_subvol']}" >> /run/MOUNTS_ROOT_OPTIONS'''
+    return f'''echo -n ",subvol={self['root_subvol']}" >> /run/vars/MOUNTS_ROOT_OPTIONS'''
 
