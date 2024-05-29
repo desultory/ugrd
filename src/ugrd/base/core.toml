@@ -40,9 +40,6 @@ minor = 1
 [imports.build_final]
 "ugrd.base.core" = [ "check_usr" ]
 
-[imports.init_pre]
-"ugrd.base.core" = [ "configure_library_paths" ]
-
 [custom_parameters]
 hostonly = "bool"  # If true, the initramfs will be built specifically for the host building it
 validate = "bool"  # If true, the configuration of the initramfs will be validated against the host

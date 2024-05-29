@@ -140,13 +140,6 @@ def deploy_nodes(self) -> None:
             raise e
 
 
-def configure_library_paths(self) -> None:
-    """ Sets the export LD_LIBRARY_PATH variable to the library paths."""
-    library_paths = ":".join(self['library_paths'])
-    self.logger.debug("Setting LD_LIBRARY_PATH to: %s" % library_paths)
-    return "export LD_LIBRARY_PATH=%s" % library_paths
-
-
 def _process_paths_multi(self, path: Union[Path, str]) -> None:
     """
     Converts the input to a Path if it is not one.
