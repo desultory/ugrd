@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '3.5.5'
+__version__ = '4.0.0'
 
 from pathlib import Path
 from zenlib.util import check_dict, pretty_print
@@ -383,11 +383,9 @@ def autodetect_root(self) -> None:
 
 def mount_base(self) -> list[str]:
     """ Generates mount commands for the base mounts. """
-    out = [f'einfo "Mounting base mounts, version: {__version__}"']
-    for mount in self['mounts'].values():
-        if mount.get('base_mount'):
-            out += _to_mount_cmd(self, mount, check_mount=True)
-    out.append('mkdir -p /run/vars')
+    out = [mount for mount in self['mounts'].values() if mount.get('base_mount')]
+    out += ['mkdir -p /run/vars',
+            f'einfo "Mounting base mounts, version: {__version__}"']
     return out
 
 
