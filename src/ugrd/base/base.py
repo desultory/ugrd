@@ -118,20 +118,15 @@ def readvar(self) -> str:
 # To feel more at home
 def einfo(self) -> str:
     """ Returns a bash function like einfo. """
-    return ['einfo() {',
-            '    if [ "$(readvar QUIET)" ]; then',
-            '        return',
-            '    fi',
-            r'    echo -e "\e[1;32m*\e[0m ${*}" >&2',
-            '}']
+    return ['if [ "$(readvar QUIET)" ]; then',
+            '    return',
+            'fi']
 
 
 def ewarn(self) -> str:
     """ Returns a bash function like ewarn. """
-    return ['ewarn() {',
-            '    if [ "$QUIET" == "1" ]; then',
-            '        return',
-            '    fi',
-            r'    echo -e "\e[1;33m*\e[0m ${*}" >&2',
-            '}']
+    return ['if [ "$(readvar QUIET)" ]; then',
+            '    return',
+            'fi',
+            r'echo -e "\e[1;33m*\e[0m ${*}" >&2']
 
