@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '3.8.3'
+__version__ = '3.8.4'
 
 from importlib.metadata import version
 from pathlib import Path
@@ -107,7 +107,10 @@ def do_switch_root(self) -> str:
 
 def setvar(self) -> str:
     """ Returns a bash function that sets a variable in /run/vars/{name}. """
-    return 'echo "$2" > "/run/vars/${1}"'
+    return ['if [ "$(readvar DEBUG)" == "1" ]; then',
+            '    edebug "Setting $1 to $2"',
+            'fi',
+            'echo "$2" > "/run/vars/${1}"']
 
 
 def readvar(self) -> str:
