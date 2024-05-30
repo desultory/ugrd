@@ -494,7 +494,7 @@ def _mount_fail(self) -> list[str]:
             r'einfo "Mounts:\n$(mount)"',
             'if [ "$(readvar RECOVERY_SHELL)" == "1" ]; then',
             '    einfo "Entering recovery shell"',
-            '    exec bash',
+            '    bash -l',
             'fi',
             'prompt_user "Press enter to restart init."',
             'if [ "$$" -eq 1 ]; then',

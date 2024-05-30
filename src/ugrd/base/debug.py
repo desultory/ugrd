@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "1.2.0"
+__version__ = "1.2.1"
 
 from zenlib.util import check_dict
 
@@ -11,7 +11,7 @@ def start_shell(self) -> str:
             '    return',
             'fi',
             'einfo "Starting debug shell"',
-            'bash']
+            'bash -l']
 
 
 @check_dict('start_shell', value=True, message="Not enabling the debug shell, as the start_shell option is not set.")
