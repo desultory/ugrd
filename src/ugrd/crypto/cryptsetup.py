@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.9.0'
+__version__ = '2.0.0'
 
 from zenlib.util import check_dict
 
@@ -281,6 +281,11 @@ def crypt_init(self) -> list[str]:
                     f'    ewarn "Failed to open device using keys: {name}"']
             out += [f'    {bash_line}' for bash_line in open_crypt_device(self, name, new_params)]
             out += ['fi']
+        # Check that the device was successfully opened
+        out += [f'cryptsetup status {name}',
+                'if [ $? -ne 0 ]; then',
+                f'    rd_fail "Failed to open cryptsetup device: {name}"',
+                'fi']
     return out
 
 

@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.1.1'
+__version__ = '4.2.0'
 
 from importlib.metadata import version
 from pathlib import Path
@@ -85,10 +85,7 @@ def do_switch_root(self) -> str:
             'fi',
             'echo "Checking root mount: $(readvar MOUNTS_ROOT_TARGET)"',
             'if ! grep -q " $(readvar MOUNTS_ROOT_TARGET) " /proc/mounts ; then',
-            '    ewarn "Root mount not found at: $(readvar MOUNTS_ROOT_TARGET)"',
-            r'    einfo "Current block devices:\n$(blkid)"',
-            '    prompt_user "Press enter to restart UGRD."',
-            '    exec /init',
+            '    rd_fail "Root not found at: $(readvar MOUNTS_ROOT_TARGET)"',
             'elif [ ! -e $(readvar SWITCH_ROOT_TARGET)$(readvar INIT_TARGET) ] ; then',
             '    ewarn "$(readvar INIT_TARGET) not found at: $(readvar SWITCH_ROOT_TARGET)"',
             r'    einfo "Target root contents:\n$(ls -l $(readvar SWITCH_ROOT_TARGET))"',
@@ -96,8 +93,7 @@ def do_switch_root(self) -> str:
             '        einfo "Switching root to: $(readvar SWITCH_ROOT_TARGET) $(readvar INIT_TARGET)"',
             '        exec switch_root "$(readvar SWITCH_ROOT_TARGET)" "$(readvar INIT_TARGET)"',
             '    fi',
-            '    prompt_user "Press enter to restart UGRD."',
-            '    exec /init',
+            '    rd_fail "Unable to find init."',
             'else',
             f'    einfo "Completed UGRD v{version("ugrd")}."',
             '    einfo "Switching root to: $(readvar SWITCH_ROOT_TARGET) $(readvar INIT_TARGET)"',
@@ -127,7 +123,7 @@ def rd_fail(self) -> list[str]:
             'else',
             '    ewarn "PID is not 1, exiting: $$"',
             '    exit',
-	   'fi']
+            'fi']
 
 
 def setvar(self) -> str:
