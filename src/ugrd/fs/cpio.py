@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.8.2'
+__version__ = '2.8.3'
 
 
 from pycpio import PyCPIO
@@ -22,7 +22,7 @@ def get_cpio_filename(self) -> str:
         if self.get('kmod_init'):
             out_file = f"ugrd-{self['kernel_version']}.cpio"
         else:
-            out_file = f"ugrd-{self['version']}.cpio"
+            out_file = "ugrd.cpio"
 
         if compression_type := self['cpio_compression']:
             if compression_type.lower() != 'false':  # The variable is a string, so we need to check for the string 'false'
