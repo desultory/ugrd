@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.2.2'
+__version__ = '4.3.0'
 
 from pathlib import Path
 from zenlib.util import check_dict, pretty_print
@@ -140,7 +140,7 @@ def _to_mount_cmd(self, mount: dict) -> str:
     if mount_type := mount.get('type'):
         mount_command += f" -t {mount_type}"
 
-    mount_command += f" || _mount_fail 'failed to mount: {mount['destination']}'"
+    mount_command += f" || rd_fail 'Failed to mount: {mount['destination']}'"
 
     out += [f"    {mount_command}",
             'else',
@@ -391,7 +391,7 @@ def mount_base(self) -> list[str]:
         if mount.get('base_mount'):
             out += _to_mount_cmd(self, mount)
     out += ['mkdir -p /run/vars',
-            f'einfo "Mounting base mounts, version: {__version__}"']
+            f'einfo "Mounted base mounts, version: {__version__}"']
     return out
 
 
@@ -425,7 +425,7 @@ def mount_fstab(self) -> list[str]:
         else:
             out += ['prompt_user "Press enter once devices have settled."']
 
-    out += ["mount -a || _mount_fail 'failed to mount fstab'"]
+    out += ["mount -a || rd_fail 'Failed to mount fstab'"]
     return out
 
 
@@ -479,30 +479,4 @@ def export_mount_info(self) -> None:
             f'setvar MOUNTS_ROOT_SOURCE "{_get_mount_str(self, self["mounts"]["root"])}"',
             f'setvar MOUNTS_ROOT_TYPE "{self["mounts"]["root"].get("type", "auto")}"',
             f'setvar MOUNTS_ROOT_OPTIONS "{",".join(self["mounts"]["root"]["options"])}"']
-
-
-def _mount_fail(self) -> list[str]:
-    """ Generates init lines to run if the mount fails. """
-    return ['if [ -n "$1" ]; then',
-            '    ewarn "Mount failed: $1"',
-            'else',
-            '    ewarn "Mount failed"',
-            'fi',
-            'prompt_user "Press enter to display debug info."',
-            r'einfo "Loaded modules:\n$(cat /proc/modules)"',
-            r'einfo "Block devices:\n$(blkid)"',
-            r'einfo "Mounts:\n$(mount)"',
-            'if [ "$(readvar RECOVERY_SHELL)" == "1" ]; then',
-            '    einfo "Entering recovery shell"',
-            '    bash -l',
-            'fi',
-            'prompt_user "Press enter to restart init."',
-            'if [ "$$" -eq 1 ]; then',
-            '    einfo "Restarting init"',
-            '    exec /init ; exit',
-            'else',
-            '    ewarn "PID is not 1, exiting: $$"',
-            '    exit',
-            'fi']
-
 

@@ -105,6 +105,31 @@ def do_switch_root(self) -> str:
             "fi"]
 
 
+def rd_fail(self) -> list[str]:
+    """ Function for when the initramfs fails to function. """
+    return ['if [ -n "$1" ]; then',
+            '    ewarn "Mount failed: $1"',
+            'else',
+            '    ewarn "Mount failed"',
+            'fi',
+            'prompt_user "Press enter to display debug info."',
+            r'einfo "Loaded modules:\n$(cat /proc/modules)"',
+            r'einfo "Block devices:\n$(blkid)"',
+            r'einfo "Mounts:\n$(mount)"',
+            'if [ "$(readvar RECOVERY_SHELL)" == "1" ]; then',
+            '    einfo "Entering recovery shell"',
+            '    bash -l',
+            'fi',
+            'prompt_user "Press enter to restart init."',
+            'if [ "$$" -eq 1 ]; then',
+            '    einfo "Restarting init"',
+            '    exec /init ; exit',
+            'else',
+            '    ewarn "PID is not 1, exiting: $$"',
+            '    exit',
+	   'fi']
+
+
 def setvar(self) -> str:
     """ Returns a bash function that sets a variable in /run/vars/{name}. """
     return ['if check_var debug; then',

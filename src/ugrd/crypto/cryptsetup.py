@@ -155,7 +155,7 @@ def get_crypt_sources(self) -> list[str]:
         source_cmd = f'export CRYPTSETUP_SOURCE_{name}=$(blkid --match-token "$SOURCE_TOKEN_{name}" --match-tag PARTUUID --output device)'
 
         check_command = [f'if [ -z "$CRYPTSETUP_SOURCE_{name}" ]; then',
-                         f'    _mount_fail "Unable to resolve device source for {name}"',
+                         f'    rd_fail "Unable to resolve device source for {name}"',
                          'else',
                          f'    einfo "Resolved device source: $CRYPTSETUP_SOURCE_{name}"',
                          'fi']

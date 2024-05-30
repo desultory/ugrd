@@ -38,9 +38,6 @@ late_fstab = "/etc/fstab.late"
 [imports.init_mount_late]
 "ugrd.fs.mounts" = [ "mount_late" ]
 
-[imports.functions]
-"ugrd.fs.mounts" = [ "_mount_fail" ]
-
 [custom_parameters]
 mounts = "dict"  # Add the mounts property, used to define the mounts to be made in the fstab
 late_mounts = "dict"  # Like mounts, but run after the root is mounted
