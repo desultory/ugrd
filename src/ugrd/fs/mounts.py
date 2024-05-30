@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.3.0'
+__version__ = '4.3.1'
 
 from pathlib import Path
 from zenlib.util import check_dict, pretty_print
@@ -224,7 +224,7 @@ def get_dm_info(self) -> dict:
 
     if not Path('/sys/devices/virtual/block').exists():
         self['autodetect_root_dm'] = False
-        self.logger.warning("No virtaul block devices found, disabling device mapper autodetection.")
+        self.logger.warning("No virtual block devices found, disabling device mapper autodetection.")
         return
 
     for dm_device in (Path('/sys/devices/virtual/block').iterdir()):
