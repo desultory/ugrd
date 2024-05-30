@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.2.1'
+__version__ = '4.2.2'
 
 from pathlib import Path
 from zenlib.util import check_dict, pretty_print
@@ -489,16 +489,16 @@ def _mount_fail(self) -> list[str]:
             'else',
             '    ewarn "Mount failed"',
             'fi',
-            r'ewarn "\n\nPress enter to display debug info.\n\n"',
+            r'ewarn "Press enter to display debug info.\n"',
             'read -sr',
             r'einfo "Loaded modules:\n$(cat /proc/modules)"',
             r'einfo "Block devices:\n$(blkid)"',
             r'einfo "Mounts:\n$(mount)"',
-            'if [ "$(readvar RECOVERY)" == "1" ]; then',
+            'if [ "$(readvar RECOVERY_SHELL)" == "1" ]; then',
             '    einfo "Entering recovery shell"',
             '    exec bash',
             'fi',
-            r'ewarn "\n\nPress enter to restart init.\n\n"',
+            r'ewarn "Press enter to restart init.\n"',
             'read -sr',
             'if [ "$$" -eq 1 ]; then',
             '    einfo "Restarting init"',
