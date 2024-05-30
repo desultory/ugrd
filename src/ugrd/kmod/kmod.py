@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.6.2'
+__version__ = '2.6.3'
 
 from pathlib import Path
 from subprocess import run
@@ -203,13 +203,16 @@ def _process_kmod_dependencies(self, kmod: str) -> None:
             if modinfo := self['_kmod_modinfo'].get(dependency):
                 if modinfo['filename'] != '(builtin)':  # But if it's ignored because it's built-in, that's fine
                     raise DependencyResolutionError("[%s] Kernel module dependency is in ignore list: %s" % (kmod, dependency))
+        if dependency in self['kernel_modules']:
+            self.logger.debug("[%s] Dependency is already in kernel_modules: %s" % (kmod, dependency))
+            continue
         self.logger.debug("[%s] Processing dependency: %s" % (kmod, dependency))
+        self['kernel_modules'] = dependency
         try:
             _process_kmod_dependencies(self, dependency)
         except BuiltinModuleError as e:
             self.logger.debug(e)
             continue
-        self['kernel_modules'] = dependency
 
     if self['_kmod_modinfo'][kmod]['filename'] == '(builtin)':
         raise BuiltinModuleError("Not adding built-in module to dependencies: %s" % kmod)
