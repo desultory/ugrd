@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.8.3'
+__version__ = '2.9.0'
 
 
 from pycpio import PyCPIO
@@ -65,21 +65,20 @@ def make_cpio(self) -> None:
 def _process_out_file(self, out_file):
     """ Processes the out_file configuration option. """
     from pathlib import Path
+
     if Path(out_file).is_dir():
         self.logger.info("Specified out_file is a directory, setting out_dir: %s" % out_file)
         self['out_dir'] = out_file
         return
 
-    if Path(out_file).parent.is_dir():
-        self['out_dir'] = Path(out_file).parent
-        self.logger.info("Resolved out_dir to: %s" % self['out_dir'])
-        out_file = Path(out_file).name
-
     if out_file.startswith('./'):
-        from pathlib import Path
         self.logger.debug("Relative out_file path detected: %s" % out_file)
         self['out_dir'] = Path('.').resolve()
         self.logger.info("Resolved out_dir to: %s" % self['out_dir'])
         out_file = Path(out_file[2:])
+    elif Path(out_file).parent.is_dir() and str(Path(out_file).parent) != '.':
+        self['out_dir'] = Path(out_file).parent
+        self.logger.info("Resolved out_dir to: %s" % self['out_dir'])
+        out_file = Path(out_file).name
 
     dict.__setitem__(self, 'out_file', out_file)
