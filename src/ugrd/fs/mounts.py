@@ -497,7 +497,7 @@ def _mount_fail(self) -> list[str]:
             'blkid',
             r'einfo -e "\nMounts:"',
             'mount',
-            'if [ readvar RECOVERY -eq 1 ]; then',
+            'if [ "$(readvar RECOVERY)" -eq "1" ]; then',
             '    einfo "Entering recovery shell"',
             '    exec bash',
             'fi',
