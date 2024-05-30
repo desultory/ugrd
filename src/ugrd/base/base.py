@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.1.0'
+__version__ = '4.1.1'
 
 from importlib.metadata import version
 from pathlib import Path
@@ -86,12 +86,12 @@ def do_switch_root(self) -> str:
             'echo "Checking root mount: $(readvar MOUNTS_ROOT_TARGET)"',
             'if ! grep -q " $(readvar MOUNTS_ROOT_TARGET) " /proc/mounts ; then',
             '    ewarn "Root mount not found at: $(readvar MOUNTS_ROOT_TARGET)"',
-            r'    einfo -e "Current block devices:\n$(blkid)"',
+            r'    einfo "Current block devices:\n$(blkid)"',
             '    prompt_user "Press enter to restart UGRD."',
             '    exec /init',
             'elif [ ! -e $(readvar SWITCH_ROOT_TARGET)$(readvar INIT_TARGET) ] ; then',
             '    ewarn "$(readvar INIT_TARGET) not found at: $(readvar SWITCH_ROOT_TARGET)"',
-            r'    einfo -e "Target root contents:\n$(ls -l $(readvar SWITCH_ROOT_TARGET))"',
+            r'    einfo "Target root contents:\n$(ls -l $(readvar SWITCH_ROOT_TARGET))"',
             '    if _find_init ; then',
             '        einfo "Switching root to: $(readvar SWITCH_ROOT_TARGET) $(readvar INIT_TARGET)"',
             '        exec switch_root "$(readvar SWITCH_ROOT_TARGET)" "$(readvar INIT_TARGET)"',
