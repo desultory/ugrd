@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.0.0'
+__version__ = '4.0.1'
 
 from importlib.metadata import version
 from pathlib import Path
@@ -110,7 +110,7 @@ def setvar(self) -> str:
     return ['if check_var debug; then',
             '    edebug "Setting $1 to $2"',
             'fi',
-            'echo "$2" > "/run/vars/${1}"']
+            'echo -n "$2" > "/run/vars/${1}"']
 
 
 def readvar(self) -> str:
