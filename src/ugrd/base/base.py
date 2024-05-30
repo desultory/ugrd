@@ -147,7 +147,7 @@ def edebug(self) -> str:
             'if [ "$(readvar debug)" != "1" ]; then',
             '    return',
             'fi',
-            r'echo -e "\e[1;34m*\e[0m ${*}"'
+            r'echo -e "\e[1;34m *\e[0m ${*}"'
             ]
 
 
@@ -156,7 +156,7 @@ def einfo(self) -> str:
     return ['if check_var quiet; then',
             '    return',
             'fi',
-            r'echo -e "\e[1;32m*\e[0m ${*}"'
+            r'echo -e "\e[1;32m *\e[0m ${*}"'
             ]
 
 
@@ -165,5 +165,5 @@ def ewarn(self) -> str:
     return ['if check_var quiet; then',
             '    return',
             'fi',
-            r'echo -e "\e[1;33m*\e[0m ${*}"']
+            r'echo -e "\e[1;33m *\e[0m ${*}"']
 
