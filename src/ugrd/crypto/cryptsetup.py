@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.0.0'
+__version__ = '2.0.1'
 
 from zenlib.util import check_dict
 
@@ -199,7 +199,7 @@ def open_crypt_key(self, name: str, parameters: dict) -> tuple[list[str], str]:
     key_path = f"/run/vars/key_{name}"
 
     out = [f"    einfo 'Attempting to open luks key for {name}'"]
-    out += [f"    {parameters['key_command']} {key_path}"]
+    out += [f'    {parameters["key_command"]} "{key_path}"']
 
     return out, key_path
 

@@ -168,7 +168,7 @@ def prompt_user(self) -> str:
     return ['prompt=${1:-"Press enter to continue."}',
             r'echo -e "\e[1;35m *\e[0m $prompt"',
             'if [ -n "$2" ]; then',
-            '    read -t $2 -rs',
+            '    read -t "$2" -rs',
             'else',
             '    read -rs',
             'fi']
