@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.2.0'
+__version__ = '4.2.1'
 
 from importlib.metadata import version
 from pathlib import Path
@@ -80,7 +80,7 @@ def do_switch_root(self) -> str:
     If not, it restarts UGRD.
     """
     return ['if [ $$ -ne 1 ] ; then',
-            '    ewarn "Cannot switch_root from PID: $$, exiting."',
+            '    eerror "Cannot switch_root from PID: $$, exiting."',
             '    exit 1',
             'fi',
             'echo "Checking root mount: $(readvar MOUNTS_ROOT_TARGET)"',
@@ -104,14 +104,14 @@ def do_switch_root(self) -> str:
 def rd_fail(self) -> list[str]:
     """ Function for when the initramfs fails to function. """
     return ['if [ -n "$1" ]; then',
-            '    ewarn "Mount failed: $1"',
+            '    eerror "Failure: $1"',
             'else',
-            '    ewarn "Mount failed"',
+            '    eerror "UGRD failed."',
             'fi',
             'prompt_user "Press enter to display debug info."',
-            r'einfo "Loaded modules:\n$(cat /proc/modules)"',
-            r'einfo "Block devices:\n$(blkid)"',
-            r'einfo "Mounts:\n$(mount)"',
+            r'eerror "Loaded modules:\n$(cat /proc/modules)"',
+            r'eerror "Block devices:\n$(blkid)"',
+            r'eerror "Mounts:\n$(mount)"',
             'if [ "$(readvar RECOVERY_SHELL)" == "1" ]; then',
             '    einfo "Entering recovery shell"',
             '    bash -l',
@@ -202,4 +202,10 @@ def ewarn(self) -> str:
             '    return',
             'fi',
             r'echo -e "\e[1;33m *\e[0m ${*}"']
+
+
+def eerror(self) -> str:
+    """ Returns a bash function like eerror. """
+    return r'echo -e "\e[1;31m *\e[0m ${*}"'
+
 
