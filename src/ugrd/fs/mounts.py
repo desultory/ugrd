@@ -420,11 +420,10 @@ def mount_fstab(self) -> list[str]:
     out = []
     # Only wait if root_wait is specified
     if self.get('mount_wait'):
-        out += [r'echo -e "\n\n\nPress enter once devices have settled.\n\n\n"']
         if timeout := self.get('mount_timeout'):
-            out += [f"read -sr -t {timeout}"]
+            out += ['prompt_user "Press enter once devices have settled." %s' % timeout]
         else:
-            out += ["read -sr"]
+            out += ['prompt_user "Press enter once devices have settled."']
 
     out += ["mount -a || _mount_fail 'failed to mount fstab'"]
     return out
@@ -489,8 +488,7 @@ def _mount_fail(self) -> list[str]:
             'else',
             '    ewarn "Mount failed"',
             'fi',
-            r'ewarn "Press enter to display debug info.\n"',
-            'read -sr',
+            'prompt_user "Press enter to display debug info."',
             r'einfo "Loaded modules:\n$(cat /proc/modules)"',
             r'einfo "Block devices:\n$(blkid)"',
             r'einfo "Mounts:\n$(mount)"',
@@ -498,8 +496,7 @@ def _mount_fail(self) -> list[str]:
             '    einfo "Entering recovery shell"',
             '    exec bash',
             'fi',
-            r'ewarn "Press enter to restart init.\n"',
-            'read -sr',
+            'prompt_user "Press enter to restart init."',
             'if [ "$$" -eq 1 ]; then',
             '    einfo "Restarting init"',
             '    exec /init ; exit',

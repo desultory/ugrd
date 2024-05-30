@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.0.1'
+__version__ = '4.1.0'
 
 from importlib.metadata import version
 from pathlib import Path
@@ -87,7 +87,7 @@ def do_switch_root(self) -> str:
             'if ! grep -q " $(readvar MOUNTS_ROOT_TARGET) " /proc/mounts ; then',
             '    ewarn "Root mount not found at: $(readvar MOUNTS_ROOT_TARGET)"',
             r'    einfo -e "Current block devices:\n$(blkid)"',
-            '    read -p "Press enter to restart UGRD."',
+            '    prompt_user "Press enter to restart UGRD."',
             '    exec /init',
             'elif [ ! -e $(readvar SWITCH_ROOT_TARGET)$(readvar INIT_TARGET) ] ; then',
             '    ewarn "$(readvar INIT_TARGET) not found at: $(readvar SWITCH_ROOT_TARGET)"',
@@ -96,7 +96,7 @@ def do_switch_root(self) -> str:
             '        einfo "Switching root to: $(readvar SWITCH_ROOT_TARGET) $(readvar INIT_TARGET)"',
             '        exec switch_root "$(readvar SWITCH_ROOT_TARGET)" "$(readvar INIT_TARGET)"',
             '    fi',
-            '    read -p "Press enter to restart UGRD."',
+            '    prompt_user "Press enter to restart UGRD."',
             '    exec /init',
             'else',
             f'    einfo "Completed UGRD v{version("ugrd")}."',
@@ -136,6 +136,21 @@ def check_var(self) -> str:
             '    return 0',
             'fi',
             'return 1']
+
+
+def prompt_user(self) -> str:
+    """
+    Returns a bash function that pauses until the user presses enter.
+    The first argument is the prompt message.
+    The second argument is the timeout in seconds.
+    """
+    return ['prompt=${1:-"Press enter to continue."}',
+            r'echo -e "\e[1;35m *\e[0m $prompt"',
+            'if [ -n "$2" ]; then',
+            '    read -t $2 -rs',
+            'else',
+            '    read -rs',
+            'fi']
 
 
 # To feel more at home

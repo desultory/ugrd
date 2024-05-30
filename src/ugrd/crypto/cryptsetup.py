@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.8.0'
+__version__ = '1.9.0'
 
 from zenlib.util import check_dict
 
@@ -209,8 +209,7 @@ def open_crypt_device(self, name: str, parameters: dict) -> list[str]:
     self.logger.debug("[%s] Processing cryptsetup volume: %s" % (name, parameters))
     retries = parameters['retries']
 
-    out = [f"echo -e '\\n\\nPress enter to unlock device: {name}\\n'",
-           'read -sr']
+    out = [f"prompt_user 'Press enter to unlock device: {name}'"]
     out += [f"for ((i = 1; i <= {retries}; i++)); do"]
 
     # When there is a key command, read from the named pipe and use that as the key
@@ -248,7 +247,7 @@ def open_crypt_device(self, name: str, parameters: dict) -> list[str]:
             f'        ewarn "Failed to open device: {name} ($i / {retries})"']
     # Halt if the autoretry is disabled
     if not self['cryptsetup_autoretry']:
-        out += ['        read -sr -p "Press enter to retry"']
+        out += ['        prompt_user "Press enter to retry"']
     # Add the reset command if it exists
     if reset_command := parameters.get('reset_command'):
         out += ['        einfo "Running key reset command"',
