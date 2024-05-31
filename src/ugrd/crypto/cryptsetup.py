@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.0.1'
+__version__ = '2.1.0'
 
 from zenlib.util import check_dict
 
@@ -217,14 +217,14 @@ def open_crypt_device(self, name: str, parameters: dict) -> list[str]:
         self.logger.debug("[%s] Using key command: %s" % (name, parameters['key_command']))
         out_line, key_name = open_crypt_key(self, name, parameters)
         out += out_line
-        cryptsetup_command = f'    cryptsetup open --key-file {key_name}'
+        cryptsetup_command = f'cryptsetup open --key-file {key_name}'
     elif 'key_file' in parameters:
         self.logger.debug("[%s] Using key file: %s" % (name, parameters['key_file']))
         _validate_crypysetup_key(self, parameters)
-        cryptsetup_command = f'    cryptsetup open --key-file {parameters["key_file"]}'
+        cryptsetup_command = f'cryptsetup open --key-file {parameters["key_file"]}'
     else:
         # Set tries to 1 since it runs in the loop
-        cryptsetup_command = '    cryptsetup open --tries 1'
+        cryptsetup_command = 'cryptsetup open --tries 1'
 
     # Add the header file if it exists
     if header_file := parameters.get('header_file'):
@@ -236,11 +236,10 @@ def open_crypt_device(self, name: str, parameters: dict) -> list[str]:
         self.logger.warning("Using --allow-discards can be a security risk.")
 
     # Add the variable for the source device and mapped name
-    cryptsetup_command += f' $CRYPTSETUP_SOURCE_{name} {name}'
-    out += [cryptsetup_command]
+    cryptsetup_command += f' "$CRYPTSETUP_SOURCE_{name}" {name}'
 
     # Check if the device was successfully opened
-    out += ['    if [ $? -eq 0 ]; then',
+    out += [f'    if {cryptsetup_command}; then',
             f'        einfo "Successfully opened device: {name}"',
             '        break',
             '    else',
@@ -263,8 +262,7 @@ def crypt_init(self) -> list[str]:
     out = [r'einfo "Unlocking LUKS volumes, ugrd.cryptsetup version: %s"' % __version__]
     for name, parameters in self['cryptsetup'].items():
         # Check if the volume is already open, if so, skip it
-        out += [f'cryptsetup status {name} > /dev/null 2>&1',
-                'if [ $? -eq 0 ]; then',
+        out += [f'if cryptsetup status {name} > /dev/null 2>&1; then',
                 f'    ewarn "Device already open: {name}"',
                 '    return',
                 'fi']
@@ -276,14 +274,12 @@ def crypt_init(self) -> list[str]:
                     new_params.pop(parameter)
                 except KeyError:
                     pass
-            out += [f'cryptsetup status {name}',
-                    'if [ $? -ne 0 ]; then',
+            out += [f'if ! cryptsetup status {name} > /dev/null 2>&1; then',
                     f'    ewarn "Failed to open device using keys: {name}"']
             out += [f'    {bash_line}' for bash_line in open_crypt_device(self, name, new_params)]
             out += ['fi']
         # Check that the device was successfully opened
-        out += [f'cryptsetup status {name}',
-                'if [ $? -ne 0 ]; then',
+        out += [f'if ! cryptsetup status {name} > /dev/null 2>&1; then',
                 f'    rd_fail "Failed to open cryptsetup device: {name}"',
                 'fi']
     return out
