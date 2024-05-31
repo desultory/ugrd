@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.1.0'
+__version__ = '2.1.1'
 
 
 CMDLINE_BOOLS = ['quiet', 'debug', 'recovery']
@@ -11,7 +11,7 @@ def parse_cmdline_bool(self) -> str:
     Returns a bash script to parse a boolean value from /proc/cmdline
     The only argument is the name of the variable to be read/set
     """
-    return r'setvar "$1" "$(grep -qE \"(^|\s)$1(\s|$)\" /proc/cmdline && echo 1 || echo 0)"'
+    return r'setvar "$1" "$(grep -qE "(^|\s)$1(\s|$)" /proc/cmdline && echo 1 || echo 0)"'
 
 
 def parse_cmdline_str(self) -> str:

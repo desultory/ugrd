@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.3.1'
+__version__ = '4.3.2'
 
 from importlib.metadata import version
 from pathlib import Path
@@ -148,13 +148,13 @@ def check_var(self) -> str:
     Returns a bash function that checks the value of a variable.
     if it's not set, tries to read the cmdline.
     """
-    return ['if [ -z "$(readvar $1)" ]; then',
+    return ['if [ -z "$(readvar "$1")" ]; then',
             '    if [ -e /proc/cmdline ]; then',
-            r'        return $(grep -qE "(^|\s)$1(\s|$)" /proc/cmdline)',
+            r'        return "$(grep -qE "(^|\s)$1(\s|$)" /proc/cmdline)"',
             '    fi',
             '    return 1',
             'fi',
-            'if [ "$(readvar $1)" == "1" ]; then',
+            'if [ "$(readvar "$1")" == "1" ]; then',
             '    return 0',
             'fi',
             'return 1']
