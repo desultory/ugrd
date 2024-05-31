@@ -148,8 +148,9 @@ def check_var(self) -> str:
     Returns a bash function that checks the value of a variable.
     if it's not set, tries to read the cmdline.
     """
-    return ['if [ -z "$(readvar "$1")" ]; then',
-            r'    if grep -qE "(^|\s)$1(\s|$)" /proc/cmdline; then',
+    return ['if [ -z "$(readvar "$1")" ]; then',  # preferably the variable is set, because this is slower
+            r'''    cmdline=$(awk -F '--' '{print $1} /proc/cmdline')''',  # Get everything before '--'
+            r'    if grep -qE "(^|\s)$1(\s|$)" <<< "$cmdline"; then',
             '        return 0',
             '    fi',
             '    return 1',
