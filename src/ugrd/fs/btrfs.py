@@ -1,4 +1,4 @@
-__version__ = '1.7.1'
+__version__ = '1.7.2'
 __author__ = 'desultory'
 
 
@@ -59,7 +59,7 @@ def _process_subvol_selector(self, subvol_selector: bool) -> None:
 
 def btrfs_scan(self) -> str:
     """ scan for new btrfs devices. """
-    return "btrfs device scan"
+    return "einfo $(btrfs device scan)"
 
 
 @check_dict('subvol_selector', value=False, log_level=20, message="subvol_selector enabled, skipping.")
