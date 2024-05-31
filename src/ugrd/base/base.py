@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.2.1'
+__version__ = '4.2.2'
 
 from importlib.metadata import version
 from pathlib import Path
@@ -68,7 +68,7 @@ def _find_init(self) -> str:
             '        return',
             '    fi',
             'done',
-            'echo "Unable to find init."',
+            'eerror "Unable to find init."',
             'return 1']
 
 
@@ -83,7 +83,7 @@ def do_switch_root(self) -> str:
             '    eerror "Cannot switch_root from PID: $$, exiting."',
             '    exit 1',
             'fi',
-            'echo "Checking root mount: $(readvar MOUNTS_ROOT_TARGET)"',
+            'einfo "Checking root mount: $(readvar MOUNTS_ROOT_TARGET)"',
             'if ! grep -q " $(readvar MOUNTS_ROOT_TARGET) " /proc/mounts ; then',
             '    rd_fail "Root not found at: $(readvar MOUNTS_ROOT_TARGET)"',
             'elif [ ! -e $(readvar SWITCH_ROOT_TARGET)$(readvar INIT_TARGET) ] ; then',
