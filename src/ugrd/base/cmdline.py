@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.1.3'
+__version__ = '2.1.4'
 
 
 CMDLINE_BOOLS = ['quiet', 'debug', 'recovery']
@@ -51,7 +51,7 @@ def mount_cmdline_root(self) -> str:
             'roottype="$(readvar roottype auto)"',
             '''rootflags="$(readvar rootflags 'defaults,ro')"''',
             'einfo "Mounting root partition based on /proc/cmdline: $root -t $roottype -o $rootflags"',
-            'if mount "$root" "$(readvar MOUNTS_ROOT_TARGET)" -t "$roottype" -o "$rootflags"; then',
+            'if ! mount "$root" "$(readvar MOUNTS_ROOT_TARGET)" -t "$roottype" -o "$rootflags"; then',
             '    eerror "Failed to mount the root partition using /proc/cmdline: $root -t $roottype -o $rootflags"',
             '    mount_root',
             'fi']
