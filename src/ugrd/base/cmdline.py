@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.0.0'
+__version__ = '2.0.1'
 
 
 CMDLINE_BOOLS = ['quiet', 'debug', 'recovery']
@@ -19,7 +19,10 @@ def parse_cmdline_str(self) -> str:
     Returns a bash script to parse a string value from /proc/cmdline
     The only argument is the name of the variable to be read/set
     """
-    return r'setvar $1 $(grep -oP "(?<=$1=)[^\s]+" /proc/cmdline)'
+    return [r'val=$(grep -oP "(?<=$1=)[^\s]+" /proc/cmdline)',
+            'if [ -n "$val" ]; then',
+            '    setvar $1 $val',
+            'fi']
 
 
 def parse_cmdline(self) -> str:
