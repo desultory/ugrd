@@ -168,7 +168,7 @@ class InitramfsGenerator(GeneratorHelpers):
         self.run_hook('functions', force_include=True)
 
         init.extend(self.run_init_hook('init_pre'))
-        init += [f'echo "Starting UGRD v{__version__}"']
+        init += [f'einfo "Starting UGRD v{__version__}"']
 
         if self['imports'].get('custom_init') and self.get('_custom_init_file'):
             init += ["\n\n# !!custom_init"]
