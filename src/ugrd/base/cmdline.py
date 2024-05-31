@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.0.1'
+__version__ = '2.0.2'
 
 
 CMDLINE_BOOLS = ['quiet', 'debug', 'recovery']
@@ -29,11 +29,11 @@ def parse_cmdline(self) -> str:
     """ Returns bash script to parse /proc/cmdline """
     return [r'''cmdline=$(cat /proc/cmdline | awk -F '--' '{print $1}')''',  # Get everything before '--'
             r'''setvar INIT_ARGS "$(cat /proc/cmdline | awk -F '--' '{print $2}')"''',  # Get everything after '--'
-            f'for bool in "{" ".join(CMDLINE_BOOLS)}"; do',
+            f'''for bool in {" ".join([f'"{bool}"' for bool in CMDLINE_BOOLS])}; do''',
             '    edebug "Parsing cmdline bool: $bool"',
             '    parse_cmdline_bool $bool',
             'done',
-            f'for string in "{" ".join(CMDLINE_STRINGS)}"; do',
+            f'''for string in {" ".join([f'"{string}"' for string in CMDLINE_STRINGS])}; do''',
             '    edebug "Parsing cmdline string: $string"',
             '    parse_cmdline_str $string',
             'done',
