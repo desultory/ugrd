@@ -5,7 +5,8 @@
 "ugrd.base.cmdline" = [ "mount_cmdline_root" ]
 
 [imports.functions]
-"ugrd.fs.mounts" = [ "mount_root" ]
+"ugrd.fs.mounts" = [  "mount_root" ]
+"ugrd.base.cmdline" = [ "parse_cmdline_bool", "parse_cmdline_str" ]
 
 [masks]
 init_mount = "mount_root"
