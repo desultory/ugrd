@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.0.3'
+__version__ = '2.1.0'
 
 
 CMDLINE_BOOLS = ['quiet', 'debug', 'recovery']
@@ -48,8 +48,8 @@ def mount_cmdline_root(self) -> str:
             '    mount_root',
             '    return',
             'fi',
-            'roottype=${$(readvar roottype):-auto}',
-            'rootflags=${$(readvar rootflags):-defaults,ro}',
+            'roottype="$(readvar roottype auto)"',
+            '''rootflags="$(readvar rootflags 'defaults,ro')"''',
             'einfo "Mounting root partition based on /proc/cmdline: $root -t $roottype -o $rootflags"',
             'mount $root $MOUNTS_ROOT_TARGET -t $roottype -o $rootflags',
             'if [ $? -ne 0 ]; then',
