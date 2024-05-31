@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.2.2'
+__version__ = '4.3.0'
 
 from importlib.metadata import version
 from pathlib import Path
@@ -137,9 +137,10 @@ def setvar(self) -> str:
 def readvar(self) -> str:
     """
     Returns a bash function that reads a variable from /run/vars/{name}.
-    If the variable is not found, it returns an empty string.
+    The second arg can be a default value.
+    If no default is supplied, and the variable is not found, it returns an empty string.
     """
-    return 'cat "/run/vars/${1}" 2>/dev/null || echo ""'
+    return 'cat "/run/vars/${1}" 2>/dev/null || echo "${2}"'
 
 
 def check_var(self) -> str:
