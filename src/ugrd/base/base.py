@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.3.0'
+__version__ = '4.3.1'
 
 from importlib.metadata import version
 from pathlib import Path
@@ -86,9 +86,9 @@ def do_switch_root(self) -> str:
             'einfo "Checking root mount: $(readvar MOUNTS_ROOT_TARGET)"',
             'if ! grep -q " $(readvar MOUNTS_ROOT_TARGET) " /proc/mounts ; then',
             '    rd_fail "Root not found at: $(readvar MOUNTS_ROOT_TARGET)"',
-            'elif [ ! -e $(readvar SWITCH_ROOT_TARGET)$(readvar INIT_TARGET) ] ; then',
+            'elif [ ! -e "$(readvar SWITCH_ROOT_TARGET)$(readvar INIT_TARGET)" ] ; then',
             '    ewarn "$(readvar INIT_TARGET) not found at: $(readvar SWITCH_ROOT_TARGET)"',
-            r'    einfo "Target root contents:\n$(ls -l $(readvar SWITCH_ROOT_TARGET))"',
+            r'    einfo "Target root contents:\n$(ls -l \"$(readvar SWITCH_ROOT_TARGET)\")"',
             '    if _find_init ; then',
             '        einfo "Switching root to: $(readvar SWITCH_ROOT_TARGET) $(readvar INIT_TARGET)"',
             '        exec switch_root "$(readvar SWITCH_ROOT_TARGET)" "$(readvar INIT_TARGET)"',
