@@ -163,7 +163,7 @@ class InitramfsGenerator(GeneratorHelpers):
         self.logger.info("Running init generator functions")
 
         init = [self['shebang']]
-        init += [f'echo "Starting UGRD v{__version__}"']
+        init += [f'einfo "Starting UGRD v{__version__}"']
 
         # Run all included functions, so they get included
         self.run_hook('functions', force_include=True)
@@ -187,7 +187,7 @@ class InitramfsGenerator(GeneratorHelpers):
             self._write('/etc/profile', self.generate_profile(), 0o755)
             self.logger.info("Included functions: %s" % ', '.join(list(self.included_functions.keys())))
             if self['imports'].get('custom_init'):
-                custom_init.insert(2, f"echo 'Starting custom init, UGRD v{__version__}'")
+                custom_init.insert(2, f"einfo 'Starting custom init, UGRD v{__version__}'")
 
         if self.get('_custom_init_file'):
             self._write(self['_custom_init_file'], custom_init, 0o755)
