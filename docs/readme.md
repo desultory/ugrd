@@ -75,7 +75,7 @@ If the required kernel module is not built into the kernel, and the filesystem i
 
 [Installation](./installation.md)
 
-[Runtime usage](./runtime_usage.md)
+[Runtime usage](./runtime_usage.md#Runtime-usage)
 
 
 ## Configuration
