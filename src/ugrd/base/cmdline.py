@@ -1,9 +1,9 @@
 __author__ = 'desultory'
-__version__ = '2.1.4'
+__version__ = '2.2.0'
 
 
 CMDLINE_BOOLS = ['quiet', 'debug', 'recovery']
-CMDLINE_STRINGS = ['root', 'roottype', 'rootflags']
+CMDLINE_STRINGS = ['root', 'roottype', 'rootflags', 'rootdelay']
 
 
 def parse_cmdline_bool(self) -> str:

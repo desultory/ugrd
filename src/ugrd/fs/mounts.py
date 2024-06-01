@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.3.1'
+__version__ = '4.4.0'
 
 from pathlib import Path
 from zenlib.util import check_dict, pretty_print
@@ -421,9 +421,14 @@ def mount_fstab(self) -> list[str]:
     # Only wait if root_wait is specified
     if self.get('mount_wait'):
         if timeout := self.get('mount_timeout'):
-            out += ['prompt_user "Press enter once devices have settled." %s' % timeout]
+            out.append("timeout=readvar rootdelay %s" % timeout)
         else:
-            out += ['prompt_user "Press enter once devices have settled."']
+            out.append("timeout=readvar rootdelay")
+    out += ['if [ -z "$timeout" ]; then',
+            '    prompt_user "Press enter once devices have settled."',
+            'else',
+            '    prompt_user "Press enter once devices have settled." "$timeout"',
+            'fi']
 
     out += ["mount -a || rd_fail 'Failed to mount fstab'"]
     return out
