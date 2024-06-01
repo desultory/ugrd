@@ -108,7 +108,7 @@ def rd_restart(self) -> str:
             '    exec /init ; exit',
             'else',
             '    ewarn "PID is not 1, exiting: $$"',
-            '    exit',
+            '    exit 1',
             'fi']
 
 
