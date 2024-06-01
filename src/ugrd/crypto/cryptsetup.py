@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.1.0'
+__version__ = '2.2.0'
 
 from zenlib.util import check_dict
 
@@ -187,23 +187,6 @@ def _validate_crypysetup_key(self, key_paramters: dict) -> None:
         key_copy = parent
 
 
-def open_crypt_key(self, name: str, parameters: dict) -> tuple[list[str], str]:
-    """
-    Returns a tuple of bash lines and the path to the key file
-    Returns bash lines to open a luks key and output it to specified key file
-    """
-    if parameters.get('key_file'):
-        _validate_crypysetup_key(self, parameters)
-    else:
-        raise ValueError("Key file must be specified for cryptsetup mount: %s" % name)
-    key_path = f"/run/vars/key_{name}"
-
-    out = [f"    einfo 'Attempting to open luks key for {name}'"]
-    out += [f'    {parameters["key_command"]} "{key_path}"']
-
-    return out, key_path
-
-
 def open_crypt_device(self, name: str, parameters: dict) -> list[str]:
     """ Returns a bash script to open a cryptsetup device. """
     self.logger.debug("[%s] Processing cryptsetup volume: %s" % (name, parameters))
@@ -215,9 +198,9 @@ def open_crypt_device(self, name: str, parameters: dict) -> list[str]:
     # When there is a key command, read from the named pipe and use that as the key
     if 'key_command' in parameters:
         self.logger.debug("[%s] Using key command: %s" % (name, parameters['key_command']))
-        out_line, key_name = open_crypt_key(self, name, parameters)
-        out += out_line
-        cryptsetup_command = f'cryptsetup open --key-file {key_name}'
+        out += [f"    einfo 'Attempting to open LUKS key: {parameters['key_file']}'",
+                f"    edebug 'Using key command: {parameters['key_command']}'"]
+        cryptsetup_command = f'{parameters["key_command"]} | cryptsetup open --key-file -'
     elif 'key_file' in parameters:
         self.logger.debug("[%s] Using key file: %s" % (name, parameters['key_file']))
         _validate_crypysetup_key(self, parameters)
