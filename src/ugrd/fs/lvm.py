@@ -15,7 +15,6 @@ def _process_lvm_multi(self, mapped_name: str, config: dict) -> None:
 def init_lvm(self) -> None:
     """ Returns bash lines to initialize LVM """
     return ['einfo "Initializing LVM, module version %s"' % __version__,
-            'einfo "$(pvscan)"',
             'einfo "$(vgchange -ay)"',
             'einfo "$(vgscan --mknodes)"',
             'einfo "$(lvscan)"']
