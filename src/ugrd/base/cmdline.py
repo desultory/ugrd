@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.2.1'
+__version__ = '2.2.2'
 
 
 CMDLINE_BOOLS = ['quiet', 'debug', 'recovery']
@@ -11,7 +11,8 @@ def parse_cmdline_bool(self) -> str:
     Returns a bash script to parse a boolean value from /proc/cmdline
     The only argument is the name of the variable to be read/set
     """
-    return r'setvar "$1" "$(grep -qE "(^|\s)$1(\s|$)" /proc/cmdline && echo 1 || echo 0)"'
+    return ['edebug "Parsing cmdline bool: $1"',
+            r'setvar "$1" "$(grep -qE "(^|\s)$1(\s|$)" /proc/cmdline && echo 1 || echo 0)"']
 
 
 def parse_cmdline_str(self) -> str:
@@ -19,8 +20,10 @@ def parse_cmdline_str(self) -> str:
     Returns a bash script to parse a string value from /proc/cmdline
     The only argument is the name of the variable to be read/set
     """
-    return [r'val=$(grep -oP "(?<=$1=)[^\s]+" /proc/cmdline)',
+    return ['edebug "Parsing cmdline string: $1"',
+            r'val=$(grep -oP "(?<=$1=)[^\s]+" /proc/cmdline)',
             'if [ -n "$val" ]; then',
+            '    edebug "Parsed $1: $val"',
             '    setvar "$1" "$val"',
             'fi']
 
@@ -30,11 +33,9 @@ def parse_cmdline(self) -> str:
     return [r'''cmdline=$(awk -F '--' '{print $1}' /proc/cmdline)''',  # Get everything before '--'
             r'''setvar INIT_ARGS "$(awk -F '--' '{print $2}' /proc/cmdline)"''',  # Get everything after '--'
             f'''for bool in {" ".join([f'"{bool}"' for bool in CMDLINE_BOOLS])}; do''',
-            '    edebug "Parsing cmdline bool: $bool"',
-            '    parse_cmdline_bool $bool',
+            '    parse_cmdline_bool "$bool"',
             'done',
             f'''for string in {" ".join([f'"{string}"' for string in CMDLINE_STRINGS])}; do''',
-            '    edebug "Parsing cmdline string: $string"',
             '    parse_cmdline_str "$string"',
             'done',
             'einfo "Parsed cmdline: $cmdline"']
