@@ -18,7 +18,9 @@ autodetect_init = true
 "ugrd.base.base" = [ "export_init_target", "do_switch_root" ]
 
 [imports.functions]
-"ugrd.base.base" = [ "check_var", "setvar", "readvar", "prompt_user", "edebug", "einfo", "ewarn", "eerror", "rd_fail", "_find_init" ]
+"ugrd.base.base" = [ "check_var", "setvar", "readvar", "prompt_user",
+                     "edebug", "einfo", "ewarn", "eerror",
+		     "rd_fail", "rd_restart", "_find_init" ]
 
 [custom_parameters]
 init_target = "Path"  # Specifies the location of the system init file

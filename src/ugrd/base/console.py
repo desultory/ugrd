@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "1.0.1"
+__version__ = "1.1.0"
 
 
 def custom_init(self) -> str:
@@ -27,12 +27,11 @@ def console_init(self) -> str:
     out_str = f"agetty --autologin root --login-program {self['_custom_init_file']}"
 
     console_type = console.get('type', 'tty')
-
     if console_type != 'tty':
         # This differs from usage in the man page but seems to work?
         out_str += f" --local-line {console['baud']}"
 
-    out_str += f" {name} {console_type}"
+    out_str += f" {name} {console_type} || rd_restart"
 
     return out_str
 

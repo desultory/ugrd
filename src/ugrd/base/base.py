@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.3.4'
+__version__ = '4.4.0'
 
 from importlib.metadata import version
 from pathlib import Path
@@ -101,6 +101,17 @@ def do_switch_root(self) -> str:
             "fi"]
 
 
+def rd_restart(self) -> str:
+    """ Restart the initramfs, exit if not PID 1, otherwise exec /init. """
+    return ['if [ "$$" -eq 1 ]; then',
+            '    einfo "Restarting init"',
+            '    exec /init ; exit',
+            'else',
+            '    ewarn "PID is not 1, exiting: $$"',
+            '    exit',
+            'fi']
+
+
 def rd_fail(self) -> list[str]:
     """ Function for when the initramfs fails to function. """
     return ['if [ -n "$1" ]; then',
@@ -117,13 +128,7 @@ def rd_fail(self) -> list[str]:
             '    bash -l',
             'fi',
             'prompt_user "Press enter to restart init."',
-            'if [ "$$" -eq 1 ]; then',
-            '    einfo "Restarting init"',
-            '    exec /init ; exit',
-            'else',
-            '    ewarn "PID is not 1, exiting: $$"',
-            '    exit',
-            'fi']
+            'rd_restart']
 
 
 def setvar(self) -> str:
