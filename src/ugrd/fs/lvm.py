@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.1.1'
+__version__ = '1.2.0'
 
 from zenlib.util import check_dict
 
@@ -16,5 +16,5 @@ def init_lvm(self) -> None:
     """ Returns bash lines to initialize LVM """
     return ['einfo "Initializing LVM, module version %s"' % __version__,
             'einfo "$(vgchange -ay)"',
-            'einfo "$(vgscan --mknodes)"',
-            'einfo "$(lvscan)"']
+            'einfo "$(lvscan)"',
+            'einfo "$(vgscan --mknodes)"']
