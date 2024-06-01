@@ -2,7 +2,7 @@ __author__ = 'desultory'
 __version__ = '2.2.2'
 
 
-CMDLINE_BOOLS = ['quiet', 'debug', 'recovery']
+CMDLINE_BOOLS = ['quiet', 'debug', 'recovery', 'rootwait']
 CMDLINE_STRINGS = ['root', 'roottype', 'rootflags', 'rootdelay']
 
 
