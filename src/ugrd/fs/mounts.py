@@ -419,7 +419,7 @@ def mount_fstab(self) -> list[str]:
     """ Generates the init line for mounting the fstab. """
     out = []
     if timeout := self.get('mount_timeout'):  # Set the timeout, using the defined timeout as the default
-        out.append('timeout=$(readvar rootdelay) %s' % timeout)
+        out.append('timeout=$(readvar rootdelay %s)' % timeout)
     else:
         out.append('timeout=$(readvar rootdelay)')
     if rootwait := self.get('mount_wait'):  # Set the rootwait bool, using the defined rootwait as the default
@@ -428,11 +428,11 @@ def mount_fstab(self) -> list[str]:
         out.append('rootwait=$(readvar rootwait)')
 
     out += ['if [ -z "$timeout" ]; then',  # If timeout is not set, prompt the user -
-            '    if [ -n "$rootiwat" ]; then',  # only if rootwait is set
+            '    if [ "$rootwait" ]; then',  # only if rootwait is set
             '        prompt_user "Press enter once devices have settled."',
             '    fi',
             'else',
-            '    prompt_user "Press enter once devices have settled. [$timeout]" "$timeout"',
+            '    prompt_user "Press enter once devices have settled. [${timeout}]" "$timeout"',
             'fi']
 
     out += ["mount -a || rd_fail 'Failed to mount fstab'"]

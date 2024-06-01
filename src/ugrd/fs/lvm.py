@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.1.0'
+__version__ = '1.1.1'
 
 from zenlib.util import check_dict
 
@@ -18,4 +18,4 @@ def init_lvm(self) -> None:
             'einfo "$(pvscan)"',
             'einfo "$(vgscan0)"',
             'einfo "$(vgchange -ay)"',
-            'einfo "$(lvscan)']
+            'einfo "$(lvscan)"']
