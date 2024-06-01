@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.2.0'
+__version__ = '2.2.1'
 
 
 CMDLINE_BOOLS = ['quiet', 'debug', 'recovery']
@@ -35,7 +35,7 @@ def parse_cmdline(self) -> str:
             'done',
             f'''for string in {" ".join([f'"{string}"' for string in CMDLINE_STRINGS])}; do''',
             '    edebug "Parsing cmdline string: $string"',
-            '    parse_cmdline_str $string',
+            '    parse_cmdline_str "$string"',
             'done',
             'einfo "Parsed cmdline: $cmdline"']
 
