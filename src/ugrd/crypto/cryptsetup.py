@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.2.0'
+__version__ = '2.2.1'
 
 from zenlib.util import check_dict
 
@@ -99,12 +99,22 @@ def _process_cryptsetup_multi(self, mapped_name: str, config: dict) -> None:
     self['cryptsetup'][mapped_name] = config
 
 
-def _validate_luks_source(self, source_info: dict, cryptsetup_info: dict) -> None:
+@check_dict('validate', value=True, log_level=30, message="Skipping LUKS source validation.")
+def _validate_luks_source(self, mapped_name: str) -> None:
     """ Checks that a LUKS source device is valid """
-    if not source_info['uuid'].startswith('CRYPT-LUKS'):
-        raise ValueError("Device is not a crypt device: %s" % source_info)
+    for _dm_info in self['_dm_info'].values():
+        if _dm_info['name'] == mapped_name:
+            dm_info = _dm_info
+            break
+    else:
+        raise ValueError("No device mapper information found for: %s" % mapped_name)
 
-    slave_source = source_info['slaves'][0]
+    cryptsetup_info = self['cryptsetup'][mapped_name]
+
+    if not dm_info['uuid'].startswith('CRYPT-LUKS'):
+        raise ValueError("Device is not a crypt device: %s" % dm_info)
+
+    slave_source = dm_info['slaves'][0]
 
     try:
         blkid_info = self['_blkid_info'][f'/dev/{slave_source}']
@@ -114,10 +124,11 @@ def _validate_luks_source(self, source_info: dict, cryptsetup_info: dict) -> Non
     for token_type in ['partuuid', 'uuid']:
         if cryptsetup_token := cryptsetup_info.get(token_type):
             if blkid_info.get(token_type) != cryptsetup_token:
-                raise ValueError("LUKS %s mismatch, found '%s', expected: %s" % (token_type, cryptsetup_token, blkid_info[token_type]))
+                raise ValueError("[%s] LUKS %s mismatch, found '%s', expected: %s" %
+                                 (mapped_name, token_type, cryptsetup_token, blkid_info[token_type]))
             break
     else:
-        raise ValueError("Unable to validate LUKS source: %s" % source_info)
+        raise ValueError("[%s] Unable to validate LUKS source: %s" % (mapped_name, cryptsetup_info))
 
 
 def get_crypt_sources(self) -> list[str]:
@@ -143,13 +154,7 @@ def get_crypt_sources(self) -> list[str]:
 
         self.logger.debug("[%s] Created block device identifier token: %s" % (name, token))
         # Check that it's actually a LUKS device
-        if self['validate']:  # Check that it's actually a LUKS device
-            for dm_info in self['_dm_info'].values():
-                if dm_info['name'] == name:
-                    _validate_luks_source(self, dm_info, parameters)
-                    break
-            else:
-                raise ValueError("No device mapper information found for: %s" % name)
+        _validate_luks_source(self, name)
         # Add a blkid command to get the source device in the initramfs, only match if the device has a partuuid
         out.append(f"export SOURCE_TOKEN_{name}='{token[0]}={token[1]}'")
         source_cmd = f'export CRYPTSETUP_SOURCE_{name}=$(blkid --match-token "$SOURCE_TOKEN_{name}" --match-tag PARTUUID --output device)'
