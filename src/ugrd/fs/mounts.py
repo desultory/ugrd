@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.4.3'
+__version__ = '4.4.4'
 
 from pathlib import Path
 from zenlib.util import check_dict, pretty_print
@@ -176,9 +176,9 @@ def generate_fstab(self, mount_class="mounts", filename="/etc/fstab") -> None:
             try:
                 self.logger.debug("[%s] Adding fstab entry for: %s" % (mount_class, mount_name))
                 fstab_info.append(_to_fstab_entry(self, mount_info))
-            except KeyError as e:
-                self.logger.warning("[%s] Failed to add fstab entry for: %s" % (mount_class, mount_name))
-                self.logger.warning("Required mount parameter not set: %s" % e)
+            except KeyError:
+                self.logger.warning("System mount info:\n%s" % pretty_print(self['_mounts']))
+                raise ValueError("[%s] Failed to add fstab entry for: %s" % (mount_class, mount_name))
 
     if len(fstab_info) > 1:
         self._write(filename, fstab_info)
