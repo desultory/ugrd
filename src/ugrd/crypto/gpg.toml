@@ -1,7 +1,7 @@
 modules = [ "ugrd.base.console", "ugrd.crypto.cryptsetup" ]
 
 binaries = [ "/usr/bin/gpg", "/usr/bin/gpg-agent", "/usr/bin/gpgconf", "/usr/bin/gpg-connect-agent", "/usr/bin/pinentry-tty"]
-opt_dependencies = [ '/usr/libexec/keyboxd' ]  # Pull keyboxd in as an optional dependency
+opt_dependencies = [ '/usr/libexec/keyboxd', '/usr/bin/dirmngr' ]  # Pull keyboxd in as an optional dependency
 
 
 [cryptsetup_key_types.gpg]
