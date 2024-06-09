@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '3.3.0'
+__version__ = '3.3.1'
 
 from pathlib import Path
 from typing import Union
@@ -309,7 +309,7 @@ def _process_nodes_multi(self, name: str, config: dict) -> None:
         raise ValueError("[%s] No minor specified" % name)
 
     if 'path' not in config:
-        config['path'] = f"/dev/{name}"
+        config['path'] = f"dev/{name}"
         self.logger.debug("[%s] No path specified, assuming: %s" % (name, config['path']))
 
     if 'mode' not in config:
