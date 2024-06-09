@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '3.2.0'
+__version__ = '3.3.0'
 
 from pathlib import Path
 from typing import Union
@@ -140,6 +140,27 @@ def deploy_nodes(self) -> None:
             raise e
 
 
+@check_dict('find_libgcc', value=True, log_level=20, message="Skipping libgcc_s dependency resolution.")
+def find_libgcc(self) -> None:
+    """
+    Finds libgcc.so, adds a 'dependencies' item for it.
+    Adds the parent directory to 'library_paths'
+    """
+    from pathlib import Path
+
+    try:
+        ldconfig = self._run(['ldconfig', '-p']).stdout.decode().split("\n")
+    except RuntimeError:
+        return self.logger.critical("Unable to run ldconfig -p, if GCC is being used, this is fatal!")
+
+    libgcc = [lib for lib in ldconfig if 'libgcc_s' in lib and '(libc6,' in lib][0]
+    source_path = Path(libgcc.partition('=> ')[-1])
+    self.logger.info("Source path for libgcc_s: %s" % source_path)
+
+    self['dependencies'] = source_path
+    self['library_paths'] = str(source_path.parent)
+
+
 def _process_paths_multi(self, path: Union[Path, str]) -> None:
     """
     Converts the input to a Path if it is not one.
@@ -161,8 +182,7 @@ def _process_paths_multi(self, path: Union[Path, str]) -> None:
 def _process_binaries_multi(self, binary: str) -> None:
     """ Processes binaries into the binaries list, adding dependencies along the way. """
     if binary in self['binaries']:
-        self.logger.debug("Binary already in binaries list, skipping: %s" % binary)
-        return
+        return self.logger.debug("Binary already in binaries list, skipping: %s" % binary)
 
     # Check if there is an import function that collides with the name of the binary
     if funcs := self['imports'].get('functions'):
