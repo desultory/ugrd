@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.2.2'
+__version__ = '2.3.0'
 
 from zenlib.util import check_dict
 
@@ -197,7 +197,7 @@ def open_crypt_device(self, name: str, parameters: dict) -> list[str]:
     self.logger.debug("[%s] Processing cryptsetup volume: %s" % (name, parameters))
     retries = parameters['retries']
 
-    out = [f"prompt_user 'Press enter to unlock device: {name}'"]
+    out = [f"prompt_user 'Press enter to unlock device: {name}'"] if self['cryptsetup_prompt'] else []
     out += [f"for ((i = 1; i <= {retries}; i++)); do"]
 
     # When there is a key command, read from the named pipe and use that as the key
