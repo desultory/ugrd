@@ -29,6 +29,10 @@ def main():
                  {'flags': ['--no-autodetect-root'], 'action': 'store_false', 'help': 'do not autodetect the root partition', 'dest': 'autodetect_root'},
                  {'flags': ['--autodetect-root-luks'], 'action': 'store_true', 'help': 'autodetect LUKS volumes under the root partition'},
                  {'flags': ['--no-autodetect-root-luks'], 'action': 'store_false', 'help': 'do not autodetect root LUKS volumes', 'dest': 'autodetect_root_luks'},
+                 {'flags': ['--autodetect-root-lvm'], 'action': 'store_true', 'help': 'autodetect LVM volumes'},
+                 {'flags': ['--no-autodetect-root-lvm'], 'action': 'store_false', 'help': 'do not autodetect LVM volumes', 'dest': 'autodetect_root_lvm'},
+                 {'flags': ['--autodetect-root-dm'], 'action': 'store_true', 'help': 'autodetect DM (LUKS/LVM) root partitions'},
+                 {'flags': ['--no-autodetect-root-dm'], 'action': 'store_false', 'help': 'do not autodetect root DM volumes', 'dest': 'autodetect_root_dm'},
                  {'flags': ['--print-config'], 'action': 'store_true', 'help': 'print the final config dict'},
                  {'flags': ['--print-init'], 'action': 'store_true', 'help': 'print the final init structure'},
                  {'flags': ['out_file'], 'action': 'store', 'help': 'set the output image location', 'nargs': '?'}]
