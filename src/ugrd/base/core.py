@@ -1,10 +1,10 @@
 __author__ = 'desultory'
-__version__ = '3.1.0'
+__version__ = '3.2.0'
 
 from pathlib import Path
 from typing import Union
 
-from zenlib.util import check_dict
+from zenlib.util import check_dict, NoDupFlatList
 
 
 @check_dict('clean', value=True, log_level=30, message="Skipping cleaning build directory")
@@ -327,19 +327,11 @@ def _process_file_owner(self, owner: Union[str, int]) -> None:
 
 def _process_masks_multi(self, runlevel: str, function: str) -> None:
     """ Processes a mask definition. """
-    self.logger.debug("[%s] Adding mask: %s" % (runlevel, function))
+    if runlevel not in self['masks']:
+        self.logger.debug("Creating new mask: %s" % runlevel)
+        self['masks'][runlevel] = NoDupFlatList(looggger=self.logger, _log_init=False)
+    self.logger.info("[%s] Adding mask: %s" % (runlevel, function))
     self['masks'][runlevel] = function
-
-    if runlevel not in self['imports']:
-        self.logger.warning("[%s] Masked runlevel not found in imports, skipping deletion: %s" % (runlevel, function))
-    else:
-        for func in self['imports'][runlevel]:
-            if func.__name__ == function:
-                self['imports'][runlevel].remove(func)
-                self.logger.info("[%s] Removing function from runlevel: %s" % (runlevel, function))
-                break
-        else:
-            self.logger.warning("[%s] Function not found in runlevel, skipping deletion: %s" % (runlevel, function))
 
 
 def _process_hostonly(self, hostonly: bool) -> None:

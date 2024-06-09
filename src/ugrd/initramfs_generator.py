@@ -111,6 +111,10 @@ class InitramfsGenerator(GeneratorHelpers):
         """ Runs a hook for imported functions. """
         out = []
         for function in self['imports'].get(hook, []):
+            # Check that the function is not masked
+            if function.__name__ in self['masks'].get(hook, []):
+                self.logger.warning("[%s] Skipping masked function: %s" % (hook, function.__name__))
+                continue
             if function_output := self.run_func(function, *args, **kwargs):
                 out.append(function_output)
         return out
