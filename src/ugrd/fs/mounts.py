@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.5.0'
+__version__ = '4.5.1'
 
 from pathlib import Path
 from zenlib.util import check_dict, pretty_print
@@ -195,7 +195,11 @@ def get_mounts_info(self) -> None:
 
 
 def get_blkid_info(self, device=None) -> str:
-    """ Gets the blkid info for all devices. """
+    """
+    Gets the blkid info for all devices if no device is passed.
+    Gets the blkid info for the passed device if a device is passed.
+    The info is stored in self['_blkid_info'].
+    """
     from re import search
     if device:
         blkid_output = self._run(['blkid', device]).stdout.decode().strip()
@@ -221,7 +225,10 @@ def get_blkid_info(self, device=None) -> str:
 
 
 def get_dm_info(self) -> dict:
-    """ Populates the device mapper info. """
+    """
+    Populates the device mapper info.
+    Disables device mapper autodetection if no virtual block devices are found.
+    """
     if self.get('_dm_info'):
         self.logger.debug("Device mapper info already set.")
         return
@@ -369,6 +376,7 @@ def autodetect_root(self) -> None:
         self.logger.warning("Root mount source already set: %s", pretty_print(self['mounts']['root']))
         return
 
+    # Sometimes the root device listed in '/proc/mounts' differs from the blkid info
     root_dev = self['_mounts']['/']['device']
     if root_dev not in self['_blkid_info']:
         get_blkid_info(self, root_dev)
