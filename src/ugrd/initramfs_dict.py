@@ -1,6 +1,6 @@
 
 __author__ = "desultory"
-__version__ = "1.4.0"
+__version__ = "1.4.1"
 
 from tomllib import load, TOMLDecodeError
 from pathlib import Path
@@ -46,9 +46,7 @@ class InitramfsConfigDict(dict):
 
     def __setitem__(self, key: str, value) -> None:
         # If the type is registered, use the appropriate update function
-        if key in self.builtin_parameters:
-            return self.handle_parameter(key, value)
-        elif key in self['custom_parameters']:
+        if any(key in d for d in (self.builtin_parameters, self['custom_parameters'])):
             return self.handle_parameter(key, value)
         else:
             self.logger.debug("[%s] Unable to determine expected type, valid builtin types: %s" % (key, self.builtin_parameters.keys()))
@@ -73,10 +71,11 @@ class InitramfsConfigDict(dict):
         else:
             raise KeyError("Parameter not registered: %s" % key)
 
-        if hasattr(self, f"_process_{key}"):
+        if hasattr(self, f"_process_{key}"):  # The builtin function is decorated and can handle plural
             self.logger.log(5, "[%s] Using builtin setitem: %s" % (key, f"_process_{key}"))
             return getattr(self, f"_process_{key}")(value)
 
+        # Don't use masked processing functions for custom values, fall back to standard setters
         def check_mask(import_name: str) -> bool:
             """ Checks if the funnction is masked. """
             return import_name in self.get('masks', [])
@@ -95,11 +94,11 @@ class InitramfsConfigDict(dict):
                 self.logger.log(5, "[%s] Using custom plural setitem: %s" % (key, func.__name__))
                 return handle_plural(func)(self, value)
 
-        if expected_type in (list, NoDupFlatList):
+        if expected_type in (list, NoDupFlatList):  # Adppend to lists, don't replace
             self.logger.log(5, "Using list setitem for: %s" % key)
             return self[key].append(value)
 
-        if expected_type == dict:
+        if expected_type == dict:  # Create new keys, update existing
             if key not in self:
                 self.logger.log(5, "Setting dict '%s' to: %s" % (key, value))
                 return super().__setitem__(key, value)
@@ -108,7 +107,7 @@ class InitramfsConfigDict(dict):
                 return self[key].update(value)
 
         self.logger.debug("Setting custom parameter: %s" % key)
-        super().__setitem__(key, expected_type(value))
+        super().__setitem__(key, expected_type(value))  # For everything else, simply set it
 
     @handle_plural
     def _process_custom_parameters(self, parameter_name: str, parameter_type: type) -> None:
