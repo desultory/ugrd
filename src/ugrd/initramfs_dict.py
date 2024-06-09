@@ -1,6 +1,6 @@
 
 __author__ = "desultory"
-__version__ = "1.3.1"
+__version__ = "1.4.0"
 
 from tomllib import load, TOMLDecodeError
 from pathlib import Path
@@ -46,29 +46,10 @@ class InitramfsConfigDict(dict):
 
     def __setitem__(self, key: str, value) -> None:
         # If the type is registered, use the appropriate update function
-        if expected_type := self.builtin_parameters.get(key, self['custom_parameters'].get(key)):
-            self.logger.log(5, "[%s] Expected type: %s" % (key, expected_type))
-            if hasattr(self, f"_process_{key}"):
-                self.logger.log(5, "[%s] Using builtin setitem: %s" % (key, f"_process_{key}"))
-                getattr(self, f"_process_{key}")(value)
-            elif func := self['custom_processing'].get(f"_process_{key}"):
-                self.logger.log(5, "[%s] Using custom setitem: %s" % (key, func.__name__))
-                func(self, value)
-            elif func := self['custom_processing'].get(f"_process_{key}_multi"):
-                self.logger.log(5, "[%s] Using custom plural setitem: %s" % (key, func.__name__))
-                handle_plural(func)(self, value)
-            elif expected_type in (list, NoDupFlatList):
-                self.logger.log(5, "Using list setitem for: %s" % key)
-                self[key].append(value)
-            elif expected_type == dict:
-                if key not in self:
-                    self.logger.log(5, "Setting dict '%s' to: %s" % (key, value))
-                    super().__setitem__(key, value)
-                else:
-                    self.logger.log(5, "Updating dict '%s' with: %s" % (key, value))
-                    self[key].update(value)
-            else:
-                super().__setitem__(key, expected_type(value))
+        if key in self.builtin_parameters:
+            return self.handle_parameter(key, value)
+        elif key in self['custom_parameters']:
+            return self.handle_parameter(key, value)
         else:
             self.logger.debug("[%s] Unable to determine expected type, valid builtin types: %s" % (key, self.builtin_parameters.keys()))
             self.logger.debug("[%s] Custom types: %s" % (key, self['custom_parameters'].keys()))
@@ -78,6 +59,56 @@ class InitramfsConfigDict(dict):
                 if key not in self['_processing']:
                     self['_processing'][key] = Queue()
                 self['_processing'][key].put(value)
+
+    def handle_parameter(self, key: str, value) -> None:
+        """
+        Handles a config parameter, setting the value and processing it if the type is known.
+        Raises a KeyError if the parameter is not registered.
+        """
+        # Get the expected type, first searching builtin_parameters, then custom_parameters
+        for d in (self.builtin_parameters, self['custom_parameters']):
+            expected_type = d.get(key)
+            if expected_type:
+                break
+        else:
+            raise KeyError("Parameter not registered: %s" % key)
+
+        if hasattr(self, f"_process_{key}"):
+            self.logger.log(5, "[%s] Using builtin setitem: %s" % (key, f"_process_{key}"))
+            return getattr(self, f"_process_{key}")(value)
+
+        def check_mask(import_name: str) -> bool:
+            """ Checks if the funnction is masked. """
+            return import_name in self.get('masks', [])
+
+        if func := self['custom_processing'].get(f"_process_{key}"):
+            if check_mask(func.__name__):
+                self.logger.debug("Skipping masked function: %s" % func.__name__)
+            else:
+                self.logger.log(5, "[%s] Using custom setitem: %s" % (key, func.__name__))
+                return func(self, value)
+
+        if func := self['custom_processing'].get(f"_process_{key}_multi"):
+            if check_mask(func.__name__):
+                self.logger.debug("Skipping masked function: %s" % func.__name__)
+            else:
+                self.logger.log(5, "[%s] Using custom plural setitem: %s" % (key, func.__name__))
+                return handle_plural(func)(self, value)
+
+        if expected_type in (list, NoDupFlatList):
+            self.logger.log(5, "Using list setitem for: %s" % key)
+            return self[key].append(value)
+
+        if expected_type == dict:
+            if key not in self:
+                self.logger.log(5, "Setting dict '%s' to: %s" % (key, value))
+                return super().__setitem__(key, value)
+            else:
+                self.logger.log(5, "Updating dict '%s' with: %s" % (key, value))
+                return self[key].update(value)
+
+        self.logger.debug("Setting custom parameter: %s" % key)
+        super().__setitem__(key, expected_type(value))
 
     @handle_plural
     def _process_custom_parameters(self, parameter_name: str, parameter_type: type) -> None:
@@ -90,18 +121,19 @@ class InitramfsConfigDict(dict):
         self['custom_parameters'][parameter_name] = eval(parameter_type)
         self.logger.debug("Registered custom parameter '%s' with type: %s" % (parameter_name, parameter_type))
 
-        if parameter_type == "NoDupFlatList":
-            super().__setitem__(parameter_name, NoDupFlatList(no_warn=True, log_bump=5, logger=self.logger, _log_init=False))
-        elif parameter_type in ("list", "dict"):
-            super().__setitem__(parameter_name, eval(parameter_type)())
-        elif parameter_type == "bool":
-            super().__setitem__(parameter_name, False)
-        elif parameter_type == "int":
-            super().__setitem__(parameter_name, 0)
-        elif parameter_type == "float":
-            super().__setitem__(parameter_name, 0.0)
-        else:
-            self.logger.debug("Leaving '%s' as None" % parameter_name)
+        match parameter_type:
+            case "NoDupFlatList":
+                super().__setitem__(parameter_name, NoDupFlatList(no_warn=True, log_bump=5, logger=self.logger, _log_init=False))
+            case "list" | "dict":
+                super().__setitem__(parameter_name, eval(parameter_type)())
+            case "bool":
+                super().__setitem__(parameter_name, False)
+            case "int":
+                super().__setitem__(parameter_name, 0)
+            case "float":
+                super().__setitem__(parameter_name, 0.0)
+            case _:  # For strings and things, don't init them so they are None
+                self.logger.debug("Leaving '%s' as None" % parameter_name)
 
         if parameter_name in self['_processing']:
             self.logger.debug("Processing queued values for '%s'" % parameter_name)
@@ -216,20 +248,10 @@ class InitramfsConfigDict(dict):
         # Append the module to the list of loaded modules, avoid recursion
         self['modules'].append(module)
 
-    def verify_mask(self) -> None:
-        """ Processes masked imports. """
-        for mask_hook, mask_items in self['masks'].items():
-            if runlevel := self['imports'].get(mask_hook):
-                for function in runlevel.copy():
-                    if function.__name__ in mask_items:
-                        runlevel.remove(function)
-                        self.logger.warning("[%s] Masking import: %s" % (mask_hook, function.__name__))
-
     def validate(self) -> None:
         """ Validate config """
         if self['_processing']:
             self.logger.critical("Unprocessed config values: %s" % ', '.join(list(self['_processing'].keys())))
-        self.verify_mask()
         self['validated'] = True
 
     def __str__(self) -> str:
