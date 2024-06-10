@@ -8,6 +8,7 @@ kernel_modules = [ "dm_mod" ]
 
 cryptsetup_retries = 5
 cryptsetup_autoretry = true
+cryptsetup_prompt = true
 
 [imports.config_processing]
 "ugrd.crypto.cryptsetup" = [ "_process_cryptsetup_multi", "_process_cryptsetup_key_types_multi" ]
