@@ -10,7 +10,7 @@ autodetect_init = true
 [imports.config_processing]
 "ugrd.base.base" = [ "_process_init_target", "_process_autodetect_init" ]
 
-[imports.init_early]
+[imports.init_pre]
 "ugrd.base.base" = [ "export_exports" ]
 
 [imports.init_final]
