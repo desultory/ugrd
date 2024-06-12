@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.5.1'
+__version__ = '4.5.2'
 
 from pathlib import Path
 from zenlib.util import check_dict, pretty_print
@@ -417,7 +417,7 @@ def mount_base(self) -> list[str]:
 @check_dict('late_mounts', not_empty=True, log_level=20, message="Skipping late mounts, late_mounts is empty.")
 def mount_late(self) -> list[str]:
     """ Generates mount commands for the late mounts. """
-    target_dir = self['mounts']['root']['destination']
+    target_dir = str(self['mounts']['root']['destination'])
     out = [f'einfo "Mounting late mounts at {target_dir}: {" ,".join(self["late_mounts"].keys())}"']
     for mount in self['late_mounts'].values():
         if not str(mount['destination']).startswith(target_dir):
