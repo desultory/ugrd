@@ -34,16 +34,11 @@ def _process_autodetect_init(self, state) -> None:
         raise FileNotFoundError('init_target is not specified and coud not be detected.')
 
 
-def export_exports(self) -> str:
-    """ Runs setvar for all exports. """
-    return [f'setvar {key} "{value}"' for key, value in self['exports'].items()]
-
-
 def _find_init(self) -> str:
     """ Returns bash to find the init_target. """
     return ['for init_path in "/sbin/init" "/bin/init" "/init"; do',
-            '    if [ -e "$(readvar SWITCH_ROOT_TARGET)$init_path" ] ; then',
-            '        einfo "Found init at: $(readvar SWITCH_ROOT_TARGET)$init_path"',
+            '    if [ -e "$(readvar MOUNTS_ROOT_TARGET)$init_path" ] ; then',
+            '        einfo "Found init at: $(readvar MOUNTS_ROOT_TARGET)$init_path"',
             '        setvar INIT_TARGET "$init_path"',
             '        return',
             '    fi',
@@ -66,18 +61,18 @@ def do_switch_root(self) -> str:
             'einfo "Checking root mount: $(readvar MOUNTS_ROOT_TARGET)"',
             'if ! grep -q " $(readvar MOUNTS_ROOT_TARGET) " /proc/mounts ; then',
             '    rd_fail "Root not found at: $(readvar MOUNTS_ROOT_TARGET)"',
-            'elif [ ! -e "$(readvar SWITCH_ROOT_TARGET)$(readvar INIT_TARGET)" ] ; then',
-            '    ewarn "$(readvar INIT_TARGET) not found at: $(readvar SWITCH_ROOT_TARGET)"',
-            r'    einfo "Target root contents:\n$(ls -l "$(readvar SWITCH_ROOT_TARGET)")"',
+            'elif [ ! -e "$(readvar MOUNTS_ROOT_TARGET)$(readvar INIT_TARGET)" ] ; then',
+            '    ewarn "$(readvar INIT_TARGET) not found at: $(readvar MOUNTS_ROOT_TARGET)"',
+            r'    einfo "Target root contents:\n$(ls -l "$(readvar MOUNTS_ROOT_TARGET)")"',
             '    if _find_init ; then',
-            '        einfo "Switching root to: $(readvar SWITCH_ROOT_TARGET) $(readvar INIT_TARGET)"',
-            '        exec switch_root "$(readvar SWITCH_ROOT_TARGET)" "$(readvar INIT_TARGET)"',
+            '        einfo "Switching root to: $(readvar MOUNTS_ROOT_TARGET) $(readvar INIT_TARGET)"',
+            '        exec switch_root "$(readvar MOUNTS_ROOT_TARGET)" "$(readvar INIT_TARGET)"',
             '    fi',
             '    rd_fail "Unable to find init."',
             'else',
             f'    einfo "Completed UGRD v{version("ugrd")}."',
-            '    einfo "Switching root to: $(readvar SWITCH_ROOT_TARGET) $(readvar INIT_TARGET)"',
-            '    exec switch_root "$(readvar SWITCH_ROOT_TARGET)" "$(readvar INIT_TARGET)"',
+            '    einfo "Switching root to: $(readvar MOUNTS_ROOT_TARGET) $(readvar INIT_TARGET)"',
+            '    exec switch_root "$(readvar MOUNTS_ROOT_TARGET)" "$(readvar INIT_TARGET)"',
             "fi"]
 
 

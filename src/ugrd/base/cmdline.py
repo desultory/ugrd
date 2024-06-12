@@ -56,3 +56,8 @@ def mount_cmdline_root(self) -> str:
             '    eerror "Failed to mount the root partition using /proc/cmdline: $root -t $roottype -o $rootflags"',
             '    mount_root',
             'fi']
+
+
+def export_exports(self) -> list:
+    """ Returns a bash script exporting all exports defined in the exports key. """
+    return [f'setvar {key} "{value}"' for key, value in self['exports'].items()]

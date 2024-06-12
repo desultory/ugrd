@@ -1,5 +1,5 @@
 [imports.init_pre]
-"ugrd.base.cmdline" = [ "parse_cmdline" ]
+"ugrd.base.cmdline" = [ "export_exports", "parse_cmdline" ]
 
 [imports.init_mount]
 "ugrd.base.cmdline" = [ "mount_cmdline_root" ]
@@ -8,4 +8,5 @@
 "ugrd.base.cmdline" = [ "parse_cmdline_bool", "parse_cmdline_str" ]
 
 [custom_parameters]
+exports = "dict"  # Add the exports property, used to specify the exports for the init script
 _init_mount = "NoDupFlatList" # List contaning functions which were removed from imports.int_mount by refactor_mounts

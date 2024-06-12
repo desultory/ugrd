@@ -10,9 +10,6 @@ autodetect_init = true
 [imports.config_processing]
 "ugrd.base.base" = [ "_process_init_target", "_process_autodetect_init" ]
 
-[imports.init_pre]
-"ugrd.base.base" = [ "export_exports" ]
-
 [imports.init_final]
 "ugrd.base.base" = [ "do_switch_root" ]
 
@@ -25,4 +22,3 @@ autodetect_init = true
 init_target = "Path"  # Specifies the location of the system init file
 autodetect_init = "bool"  # If set to true, the init_target will be autodetected based on the system's init system
 shebang = "str"  # Add the shebang property, used because this is a bash script
-exports = "dict"  # Add the exports property, used to specify the exports for the init script
