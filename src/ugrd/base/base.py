@@ -18,7 +18,7 @@ def _process_init_target(self, target: Path) -> None:
     if not isinstance(target, Path):
         target = Path(target).resolve()
     dict.__setitem__(self, 'init_target', target)
-    self['exports']['init_target'] = self['init_target']
+    self['exports']['init'] = self['init_target']
     _validate_init_target(self)
 
 
@@ -41,7 +41,7 @@ def _find_init(self) -> str:
     return ['for init_path in "/sbin/init" "/bin/init" "/init"; do',
             '    if [ -e "$(readvar MOUNTS_ROOT_TARGET)$init_path" ] ; then',
             '        einfo "Found init at: $(readvar MOUNTS_ROOT_TARGET)$init_path"',
-            '        setvar INIT_TARGET "$init_path"',
+            '        setvar init "$init_path"',
             '        return',
             '    fi',
             'done',
@@ -60,7 +60,7 @@ def do_switch_root(self) -> str:
             '    eerror "Cannot switch_root from PID: $$, exiting."',
             '    exit 1',
             'fi',
-            'init_target=$(readvar INIT_TARGET) || rd_fail "init_target not set."',  # should be set, if unset, checks fail
+            'init_target=$(readvar init) || rd_fail "init_target not set."',  # should be set, if unset, checks fail
             'einfo "Checking root mount: $(readvar MOUNTS_ROOT_TARGET)"',
             'if ! grep -q " $(readvar MOUNTS_ROOT_TARGET) " /proc/mounts ; then',
             '    rd_fail "Root not found at: $(readvar MOUNTS_ROOT_TARGET)"',
@@ -68,8 +68,8 @@ def do_switch_root(self) -> str:
             '    ewarn "$init_target not found at: $(readvar MOUNTS_ROOT_TARGET)"',
             r'    einfo "Target root contents:\n$(ls -l "$(readvar MOUNTS_ROOT_TARGET)")"',
             '    if _find_init ; then',  # This redefineds the var, so readvar instaed of using $init_target
-            '        einfo "Switching root to: $(readvar MOUNTS_ROOT_TARGET) $(readvar INIT_TARGET)"',
-            '        exec switch_root "$(readvar MOUNTS_ROOT_TARGET)" "$(readvar INIT_TARGET)"',
+            '        einfo "Switching root to: $(readvar MOUNTS_ROOT_TARGET) $(readvar init)"',
+            '        exec switch_root "$(readvar MOUNTS_ROOT_TARGET)" "$(readvar init)"',
             '    fi',
             '    rd_fail "Unable to find init."',
             'else',
