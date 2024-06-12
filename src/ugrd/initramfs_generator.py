@@ -122,7 +122,7 @@ class InitramfsGenerator(GeneratorHelpers):
     def run_init_hook(self, level: str) -> list[str]:
         """ Runs the specified init hook, returning the output. """
         if runlevel := self.run_hook(level):
-            out = ['\n\n# Begin %s' % level]
+            out = ['\n# Begin %s' % level]
             out += runlevel
             return out
         else:
@@ -175,7 +175,7 @@ class InitramfsGenerator(GeneratorHelpers):
         init += [f'einfo "Starting UGRD v{__version__}"']
 
         if self['imports'].get('custom_init') and self.get('_custom_init_file'):
-            init += ["\n\n# !!custom_init"]
+            init += ["\n# !!custom_init"]
             init_line, custom_init = self['imports']['custom_init'](self)
             if isinstance(init_line, str):
                 init.append(init_line)
