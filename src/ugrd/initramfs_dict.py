@@ -136,6 +136,8 @@ class InitramfsConfigDict(dict):
             case _:  # For strings and things, don't init them so they are None
                 self.logger.debug("Leaving '%s' as None" % parameter_name)
 
+        self._process_unprocessed(parameter_name)
+
     def _process_unprocessed(self, parameter_name: str) -> None:
         """ Processes queued values for a parameter. """
         if parameter_name not in self['_processing']:
@@ -234,14 +236,16 @@ class InitramfsConfigDict(dict):
             except TOMLDecodeError as e:
                 raise TOMLDecodeError("Unable to load module config: %s" % module) from e
 
-        processing_imports = ['imports', 'custom_parameters']  # Register custom_paramters, process improts first
-        for import_type in processing_imports:
-            if import_type in module_config:
-                self[import_type] = module_config[import_type]
-                self.logger.debug("[%s] Registered %s: %s" % (module, import_type, module_config[import_type]))
+        if imports := module_config.get('imports'):
+            self.logger.debug("[%s] Processing imports: %s" % (module, imports))
+            self['imports'] = imports
+
+        if custom_parameters := module_config.get('custom_parameters'):
+            self.logger.debug("[%s] Processing custom parameters: %s" % (module, custom_parameters))
+            self['custom_parameters'] = custom_parameters
 
         for name, value in module_config.items():  # Process config values, in order they are defined
-            if name in processing_imports:
+            if name in ['imports', 'custom_parameters']:
                 self.logger.log(5, "[%s] Skipping '%s'" % (module, name))
                 continue
             self.logger.debug("[%s] Setting '%s' to: %s" % (module, name, value))
