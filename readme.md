@@ -202,7 +202,6 @@ Modules write to a shared config dict that is accessible by other modules.
 * `init_target` Set the init target for `switch_root`.
 * `autodetect_init` (true) Automatically set the init target based `which init`.
 * `shebang` (#!/bin/bash) sets the shebang on the init script.
-* `switch_root_target` Sets the `switch_root` target, sets the default for the root mount destination.
 
 
 #### base.core
