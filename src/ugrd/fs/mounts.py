@@ -11,15 +11,18 @@ MOUNT_PARAMETERS = ['destination', 'source', 'type', 'options', 'base_mount', 'r
 
 def _validate_mount_config(self, mount_name: str, mount_config) -> None:
     """ Validate the mount config. """
-    if any(source_type in mount_config for source_type in SOURCE_TYPES):
-        self.logger.debug("[%s] Found source type: %s" % (mount_name, mount_config))
-    elif 'source' not in mount_config and mount_name != 'root':  # Don't require source for the root mount, it is defined empty
-        raise ValueError("[%s] No source type found in mount: %s" % (mount_name, mount_config))
+    for source_type in SOURCE_TYPES:
+        if source_type in mount_config:
+            self.logger.debug("[%s] Validated source type: %s" % (mount_name, mount_config))
+            break
+    else:  # If no source type is found, raise an error, unless it's the root mount
+        if source_type not in mount_config and mount_name != 'root':
+            raise ValueError("[%s] No source type found in mount: %s" % (mount_name, mount_config))
 
     for parameter, value in mount_config.copy().items():
         self.logger.debug("[%s] Validating parameter: %s" % (mount_name, parameter))
         if parameter == 'source' and isinstance(value, dict):
-            self.logger.warning("source dict is deprecated, please define the source type directly")
+            self.logger.warning("source dict is deprecated, please define the source type directly.")
             self.logger.info("Simply define the source type directly in the mount config, instead of using the 'source' dict.")
             # Break if the source type is valid
             for source_type in SOURCE_TYPES:
@@ -414,7 +417,7 @@ def mount_base(self) -> list[str]:
 @check_dict('late_mounts', not_empty=True, log_level=20, message="Skipping late mounts, late_mounts is empty.")
 def mount_late(self) -> list[str]:
     """ Generates mount commands for the late mounts. """
-    target_dir = self['mounts']['root']['destination'] if not self['switch_root_target'] else self['switch_root_target']
+    target_dir = self['mounts']['root']['destination']
     out = [f'einfo "Mounting late mounts at {target_dir}: {" ,".join(self["late_mounts"].keys())}"']
     for mount in self['late_mounts'].values():
         if not str(mount['destination']).startswith(target_dir):
@@ -501,8 +504,8 @@ def mount_root(self) -> str:
 
 def export_mount_info(self) -> None:
     """ Exports mount info based on the config to /run/MOUNTS_ROOT_{option} """
-    return [f'setvar MOUNTS_ROOT_TARGET "{self["mounts"]["root"]["destination"]}"',
-            f'setvar MOUNTS_ROOT_SOURCE "{_get_mount_str(self, self["mounts"]["root"])}"',
-            f'setvar MOUNTS_ROOT_TYPE "{self["mounts"]["root"].get("type", "auto")}"',
-            f'setvar MOUNTS_ROOT_OPTIONS "{",".join(self["mounts"]["root"]["options"])}"']
+    self['exports']['MOUNTS_ROOT_TARGET'] = self['mounts']['root']['destination']
+    self['exports']['MOUNTS_ROOT_SOURCE'] = _get_mount_str(self, self['mounts']['root'])
+    self['exports']['MOUNTS_ROOT_TYPE'] = self['mounts']['root'].get('type', 'auto')
+    self['exports']['MOUNTS_ROOT_OPTIONS'] = ','.join(self['mounts']['root']['options'])
 

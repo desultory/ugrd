@@ -230,19 +230,18 @@ class InitramfsConfigDict(dict):
             except TOMLDecodeError as e:
                 raise TOMLDecodeError("Unable to load module config: %s" % module) from e
 
-        # First import all variabled, then import processing functions/imports in order
-        processing_imports = ['imports', 'custom_parameters']
-        for name, value in module_config.items():
+        processing_imports = ['imports', 'custom_parameters']  # Register custom_paramters, process improts first
+        for import_type in processing_imports:
+            if import_type in module_config:
+                self[import_type] = module_config[import_type]
+                self.logger.debug("[%s] Registered %s: %s" % (module, import_type, self[import_type]))
+
+        for name, value in module_config.items():  # Process config values, in order they are defined
             if name in processing_imports:
                 self.logger.log(5, "[%s] Skipping '%s'" % (module, name))
                 continue
             self.logger.debug("[%s] Setting '%s' to: %s" % (module, name, value))
             self[name] = value
-
-        for import_type in processing_imports:
-            if import_type in module_config:
-                self[import_type] = module_config[import_type]
-                self.logger.debug("[%s] Registered %s: %s" % (module, import_type, self[import_type]))
 
         # Append the module to the list of loaded modules, avoid recursion
         self['modules'].append(module)

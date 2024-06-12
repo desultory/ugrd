@@ -11,23 +11,13 @@ from zenlib.util import check_dict
 def _validate_init_target(self) -> None:
     if not self['init_target'].exists():
         raise FileNotFoundError('init_target not found at: %s', self['init_target'])
+    self['exports']['init_target'] = self['init_target']
 
 
 def _process_init_target(self, target: Path) -> None:
     if not isinstance(target, Path):
         target = Path(target).resolve()
     dict.__setitem__(self, 'init_target', target)
-
-
-def _process_switch_root_target(self, target) -> None:
-    """ Processes the switch_root_target variable. Adds it to the paths. """
-    dict.__setitem__(self, 'switch_root_target', target)
-    self['paths'] = target
-    if self['mounts']['root']['destination'] != target:
-        if str(self['mounts']['root']['destination']) != '/root':
-            self.logger.warning("Root mount target set to '%s', updating to match switch root target: %s" %
-                                (self['mounts']['root']['destination'], target))
-        self['mounts']['root']['destination'] = target
 
 
 @check_dict('init_target', unset=True, message='init_target already set.')
@@ -44,19 +34,9 @@ def _process_autodetect_init(self, state) -> None:
         raise FileNotFoundError('init_target is not specified and coud not be detected.')
 
 
-def export_switchroot_target(self) -> str:
-    """ Returns bash to export the switch_root_target variable to SWITCH_ROOT_TARGET. """
-    if self['switch_root_target'] != str(self['mounts']['root']['destination']):
-        self.logger.warning("Switch root/root mount mismatch; Root mount target set to '%s', switch root target is: %s" %
-                            (self['mounts']['root']['destination'], self['switch_root_target']))
-        self['mounts']['root']['destination'] = self['switch_root_target']
-    return f'setvar SWITCH_ROOT_TARGET "{self["switch_root_target"]}"'
-
-
-def export_init_target(self) -> str:
-    """ Returns bash to export the init_target variable to MOUNTS_ROOT_TARGET. """
-    _validate_init_target(self)
-    return f'setvar INIT_TARGET "{self["init_target"]}"'
+def export_exports(self) -> str:
+    """ Runs setvar for all exports. """
+    return '\n'.join([f'setvar {key} "{value}"' for key, value in self['exports'].items()])
 
 
 def _find_init(self) -> str:

@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.3.0'
+__version__ = '2.4.0'
 
 from zenlib.util import check_dict
 
@@ -131,42 +131,58 @@ def _validate_luks_source(self, mapped_name: str) -> None:
         raise ValueError("[%s] Unable to validate LUKS source: %s" % (mapped_name, cryptsetup_info))
 
 
-def get_crypt_sources(self) -> list[str]:
+def export_crypt_sources(self) -> list[str]:
     """
-    Goes through each cryptsetup device
-    Creates a bash command to get the source device
-    Exports the command as an environment variable in the format:
-        CRYPTSETUP_SOURCE_{name}=`device`
+    Validates the cryptsetup configuration.
+    Adds the cryptsetup source and token to the exports.
+    Sets the token to the partuuid or uuid if it exists.
+    Sets the SOURCE when using a path.
+    Only allows using the path if validation is disabled.
     """
-    out = []
     for name, parameters in self['cryptsetup'].items():
-        if parameters.get('path') and not self['validate']:
-            self.logger.warning("Using device paths is unreliable and can result in boot failures.")
-            out += [f"export CRYPTSETUP_SOURCE_{name}={parameters.get('path')}"]
-            continue
-        elif not parameters.get('partuuid') and not parameters.get('uuid') and parameters.get('path'):
+        _validate_luks_source(self, name)
+        if parameters.get('path'):
+            if not self['validate']:
+                self.logger.warning("Using device paths is unreliable and can result in boot failures. Consider using partuuid.")
+                self['exports']['CRYPTSETUP_SOURCE_%s' % name] = parameters['path']
+                self.logger.info("Set CRYPTSETUP_SOURCE_%s: %s" % (name, parameters.get('path')))
+                continue
             raise ValueError("Validation must be disabled to use device paths with the cryptsetup module.")
+        elif not parameters.get('partuuid') and not parameters.get('uuid') and parameters.get('path'):
+            raise ValueError("Device source for cryptsetup mount must be specified: %s" % name)
 
-        try:
-            token = ('PARTUUID', parameters['partuuid']) if parameters.get('partuuid') else ('UUID', parameters['uuid'])
-        except KeyError:
+        for token_type in ['partuuid', 'uuid']:
+            if token := parameters.get(token_type):
+                self['exports']['CRYPTSETUP_TOKEN_%s' % name] = f"{token_type.upper()}={token}"
+                self.logger.debug("Set CRYPTSETUP_TOKEN_%s: %s=%s" % (name, token_type.upper(), token))
+                break
+        else:
             raise ValueError("A partuuid or uuid must be specified for cryptsetup mount: %s" % name)
 
-        self.logger.debug("[%s] Created block device identifier token: %s" % (name, token))
-        # Check that it's actually a LUKS device
-        _validate_luks_source(self, name)
-        # Add a blkid command to get the source device in the initramfs, only match if the device has a partuuid
-        out.append(f"export SOURCE_TOKEN_{name}='{token[0]}={token[1]}'")
-        source_cmd = f'export CRYPTSETUP_SOURCE_{name}=$(blkid --match-token "$SOURCE_TOKEN_{name}" --match-tag PARTUUID --output device)'
 
-        check_command = [f'if [ -z "$CRYPTSETUP_SOURCE_{name}" ]; then',
-                         f'    rd_fail "Unable to resolve device source for {name}"',
-                         'else',
-                         f'    einfo "Resolved device source: $CRYPTSETUP_SOURCE_{name}"',
-                         'fi']
-
-        out += [f"einfo 'Attempting to get device path for {name}'", source_cmd, *check_command]
-    return out
+def get_crypt_dev(self) -> list[str]:
+    """
+    Gets the device path for a particular cryptsetup device at runtime.
+    First attempts to read CRYPTSETUP_SOURCE_{name} if it exists.
+    If it doesn't exist, or the device is not found, it will attempt to resolve the device using the token.
+    If that doesn't exist, it will fail.
+    """
+    return ['source_dev="$(readvar CRYPTSETUP_SOURCE_"$1")"',
+            'source_token="$(readvar CRYPTSETUP_TOKEN_"$1")"',
+            'if [ -n "$source_dev" ]; then',
+            '    if [ -e "$source_dev" ]; then',
+            '        echo "$source_dev"',
+            '        return',
+            '    fi',
+            'fi',
+            'if [ -n "$source_token" ]; then',
+            '    source_dev=$(blkid --match-token "$source_token" --output device)',
+            '    if [ -n "$source_dev" ]; then',
+            '        echo "$source_dev"',
+            '        return',
+            '    fi',
+            'fi',
+            'rd_fail "Failed to resolve device source for cryptsetup mount: $1"']
 
 
 @check_dict('validate', value=True, log_level=30, message="Skipping cryptsetup key validation.")
@@ -224,7 +240,7 @@ def open_crypt_device(self, name: str, parameters: dict) -> list[str]:
         self.logger.warning("Using --allow-discards can be a security risk.")
 
     # Add the variable for the source device and mapped name
-    cryptsetup_command += f' "$CRYPTSETUP_SOURCE_{name}" {name}'
+    cryptsetup_command += f' "$(get_crypt_dev {name})" {name}'
 
     # Check if the device was successfully opened
     out += [f'    if {cryptsetup_command}; then',

@@ -20,6 +20,9 @@ late_fstab = "/etc/fstab.late"
 [imports.build_pre]
 "ugrd.fs.mounts" = [ "get_mounts_info", "get_dm_info", "get_blkid_info", "autodetect_root", "autodetect_root_dm" ]
 
+[imports.build_tasks]
+"ugrd.fs.mounts" = [ "export_mount_info" ]
+
 [imports.build_final]
 "ugrd.fs.mounts" = [ "generate_fstab" ]
 
@@ -27,7 +30,7 @@ late_fstab = "/etc/fstab.late"
 "ugrd.fs.mounts" = [ "mount_base" ]
 
 [imports.init_early]
-"ugrd.fs.mounts" = [ "export_mount_info", "mount_fstab" ]
+"ugrd.fs.mounts" = [ "mount_fstab" ]
 
 [imports.init_main]
 "ugrd.fs.mounts" = [ "remake_mountpoints" ]
@@ -56,6 +59,7 @@ _blkid_info = "dict"  # The blkid information
 # Define the base of the root mount
 [mounts.root]
 options = ['ro']
+destination = "/mnt/root"
 
 # Define the default mounts
 # The format is mounts.mount where the mount is the name of the mount
