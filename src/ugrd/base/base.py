@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.5.0'
+__version__ = '4.5.2'
 
 from importlib.metadata import version
 from pathlib import Path
@@ -8,16 +8,18 @@ from zenlib.util import check_dict
 
 
 @check_dict('validate', value=True)
+@check_dict('hostonly', value=True)
 def _validate_init_target(self) -> None:
     if not self['init_target'].exists():
         raise FileNotFoundError('init_target not found at: %s', self['init_target'])
-    self['exports']['init_target'] = self['init_target']
 
 
 def _process_init_target(self, target: Path) -> None:
     if not isinstance(target, Path):
         target = Path(target).resolve()
     dict.__setitem__(self, 'init_target', target)
+    self['exports']['init_target'] = self['init_target']
+    _validate_init_target(self)
 
 
 @check_dict('init_target', unset=True, message='init_target already set.')
@@ -58,21 +60,22 @@ def do_switch_root(self) -> str:
             '    eerror "Cannot switch_root from PID: $$, exiting."',
             '    exit 1',
             'fi',
+            'init_target=$(readvar INIT_TARGET) || rd_fail "init_target not set."',  # should be set, if unset, checks fail
             'einfo "Checking root mount: $(readvar MOUNTS_ROOT_TARGET)"',
             'if ! grep -q " $(readvar MOUNTS_ROOT_TARGET) " /proc/mounts ; then',
             '    rd_fail "Root not found at: $(readvar MOUNTS_ROOT_TARGET)"',
-            'elif [ ! -e "$(readvar MOUNTS_ROOT_TARGET)$(readvar INIT_TARGET)" ] ; then',
-            '    ewarn "$(readvar INIT_TARGET) not found at: $(readvar MOUNTS_ROOT_TARGET)"',
+            'elif [ ! -e "$(readvar MOUNTS_ROOT_TARGET)${init_target}" ] ; then',
+            '    ewarn "$init_target not found at: $(readvar MOUNTS_ROOT_TARGET)"',
             r'    einfo "Target root contents:\n$(ls -l "$(readvar MOUNTS_ROOT_TARGET)")"',
-            '    if _find_init ; then',
+            '    if _find_init ; then',  # This redefineds the var, so readvar instaed of using $init_target
             '        einfo "Switching root to: $(readvar MOUNTS_ROOT_TARGET) $(readvar INIT_TARGET)"',
             '        exec switch_root "$(readvar MOUNTS_ROOT_TARGET)" "$(readvar INIT_TARGET)"',
             '    fi',
             '    rd_fail "Unable to find init."',
             'else',
             f'    einfo "Completed UGRD v{version("ugrd")}."',
-            '    einfo "Switching root to: $(readvar MOUNTS_ROOT_TARGET) $(readvar INIT_TARGET)"',
-            '    exec switch_root "$(readvar MOUNTS_ROOT_TARGET)" "$(readvar INIT_TARGET)"',
+            '    einfo "Switching root to: $(readvar MOUNTS_ROOT_TARGET) $init_target"',
+            '    exec switch_root "$(readvar MOUNTS_ROOT_TARGET)" "$init_target"',
             "fi"]
 
 
