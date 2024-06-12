@@ -1,6 +1,6 @@
 
 __author__ = "desultory"
-__version__ = "1.5.0"
+__version__ = "1.5.1"
 
 from tomllib import load, TOMLDecodeError
 from pathlib import Path
@@ -142,14 +142,14 @@ class InitramfsConfigDict(dict):
             self.logger.log(5, "No queued values for: %s" % parameter_name)
             return
 
-        while not self['_processing'][parameter_name].empty():
-            value = self['_processing'][parameter_name].get()
+        value_queue = self['_processing'].pop(parameter_name)
+        while not value_queue.empty():
+            value = value_queue.get()
             if self['validated']:  # Log at info level if the config has been validated
                 self.logger.info("[%s] Processing queued value: %s" % (parameter_name, value))
             else:
                 self.logger.debug("[%s] Processing queued value: %s" % (parameter_name, value))
             self[parameter_name] = value
-        self['_processing'].pop(parameter_name)
 
     @handle_plural
     def _process_imports(self, import_type: str, import_value: dict) -> None:
@@ -205,7 +205,7 @@ class InitramfsConfigDict(dict):
                 for function in function_list:
                     self['custom_processing'][function.__name__] = function
                     self.logger.debug("Registered config processing function: %s" % function.__name__)
-                    self._process_unprocessed(function.__name__)
+                    self._process_unprocessed(function.__name__.removeprefix('_process_'))
 
     @handle_plural
     def _process_modules(self, module: str) -> None:
