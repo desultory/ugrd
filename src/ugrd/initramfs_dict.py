@@ -136,8 +136,6 @@ class InitramfsConfigDict(dict):
             case _:  # For strings and things, don't init them so they are None
                 self.logger.debug("Leaving '%s' as None" % parameter_name)
 
-        self._process_unprocessed(parameter_name)
-
     def _process_unprocessed(self, parameter_name: str) -> None:
         """ Processes queued values for a parameter. """
         if parameter_name not in self['_processing']:
@@ -240,7 +238,8 @@ class InitramfsConfigDict(dict):
             self.logger.debug("[%s] Processing imports: %s" % (module, imports))
             self['imports'] = imports
 
-        if custom_parameters := module_config.get('custom_parameters'):
+        custom_parameters = module_config.get('custom_parameters', {})
+        if custom_parameters:
             self.logger.debug("[%s] Processing custom parameters: %s" % (module, custom_parameters))
             self['custom_parameters'] = custom_parameters
 
@@ -250,6 +249,10 @@ class InitramfsConfigDict(dict):
                 continue
             self.logger.debug("[%s] Setting '%s' to: %s" % (module, name, value))
             self[name] = value
+
+        # If custom paramters were added, process unprocessed values
+        for custom_parameter in custom_parameters:
+            self._process_unprocessed(custom_parameter)
 
         # Append the module to the list of loaded modules, avoid recursion
         self['modules'].append(module)
