@@ -1,6 +1,6 @@
 
 __author__ = "desultory"
-__version__ = "1.4.1"
+__version__ = "1.4.2"
 
 from tomllib import load, TOMLDecodeError
 from pathlib import Path
@@ -154,7 +154,7 @@ class InitramfsConfigDict(dict):
         self.logger.debug("Processing imports of type: %s" % import_type)
 
         for module_name, function_names in import_value.items():
-            self.logger.debug("Importing module: %s" % module_name)
+            self.logger.debug("[%s] Importing module functions : %s" % (module_name, function_names))
 
             try:
                 module = import_module(module_name)
