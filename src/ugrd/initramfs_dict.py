@@ -1,6 +1,6 @@
 
 __author__ = "desultory"
-__version__ = "1.4.2"
+__version__ = "1.5.0"
 
 from tomllib import load, TOMLDecodeError
 from pathlib import Path
@@ -29,7 +29,7 @@ class InitramfsConfigDict(dict):
                           'custom_processing': dict,  # Custom processing functions which will be run to validate and process parameters
                           '_processing': dict}  # A dict of queues containing parameters which have been set before the type was known
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, NO_BASE=False, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Define the default parameters
         for parameter, default_type in self.builtin_parameters.items():
@@ -37,6 +37,8 @@ class InitramfsConfigDict(dict):
                 super().__setitem__(parameter, default_type(no_warn=True, log_bump=5, logger=self.logger, _log_init=False))
             else:
                 super().__setitem__(parameter, default_type())
+        if not NO_BASE:
+            self['modules'] = 'ugrd.base.base'
 
     def import_args(self, args: dict) -> None:
         """ Imports data from an argument dict. """
@@ -134,16 +136,20 @@ class InitramfsConfigDict(dict):
             case _:  # For strings and things, don't init them so they are None
                 self.logger.debug("Leaving '%s' as None" % parameter_name)
 
-        if parameter_name in self['_processing']:
-            self.logger.debug("Processing queued values for '%s'" % parameter_name)
-            while not self['_processing'][parameter_name].empty():
-                value = self['_processing'][parameter_name].get()
-                if self['validated']:
-                    self.logger.info("Processing queued value for '%s': %s" % (parameter_name, value))
-                else:
-                    self.logger.debug("Processing queued value for '%s': %s" % (parameter_name, value))
-                self[parameter_name] = value
-            self['_processing'].pop(parameter_name)
+    def _process_unprocessed(self, parameter_name: str) -> None:
+        """ Processes queued values for a parameter. """
+        if parameter_name not in self['_processing']:
+            self.logger.log(5, "No queued values for: %s" % parameter_name)
+            return
+
+        while not self['_processing'][parameter_name].empty():
+            value = self['_processing'][parameter_name].get()
+            if self['validated']:  # Log at info level if the config has been validated
+                self.logger.info("[%s] Processing queued value: %s" % (parameter_name, value))
+            else:
+                self.logger.debug("[%s] Processing queued value: %s" % (parameter_name, value))
+            self[parameter_name] = value
+        self['_processing'].pop(parameter_name)
 
     @handle_plural
     def _process_imports(self, import_type: str, import_value: dict) -> None:
@@ -151,11 +157,8 @@ class InitramfsConfigDict(dict):
         from importlib import import_module
         from importlib.util import spec_from_file_location, module_from_spec
 
-        self.logger.debug("Processing imports of type: %s" % import_type)
-
         for module_name, function_names in import_value.items():
-            self.logger.debug("[%s] Importing module functions : %s" % (module_name, function_names))
-
+            self.logger.debug("[%s]<%s> Importing module functions : %s" % (module_name, import_type, function_names))
             try:
                 module = import_module(module_name)
             except ModuleNotFoundError as e:
@@ -202,6 +205,7 @@ class InitramfsConfigDict(dict):
                 for function in function_list:
                     self['custom_processing'][function.__name__] = function
                     self.logger.debug("Registered config processing function: %s" % function.__name__)
+                    self._process_unprocessed(function.__name__)
 
     @handle_plural
     def _process_modules(self, module: str) -> None:
@@ -234,7 +238,7 @@ class InitramfsConfigDict(dict):
         for import_type in processing_imports:
             if import_type in module_config:
                 self[import_type] = module_config[import_type]
-                self.logger.debug("[%s] Registered %s: %s" % (module, import_type, self[import_type]))
+                self.logger.debug("[%s] Registered %s: %s" % (module, import_type, module_config[import_type]))
 
         for name, value in module_config.items():  # Process config values, in order they are defined
             if name in processing_imports:

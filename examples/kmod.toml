@@ -1,7 +1,6 @@
 # This config module will simply pull/load kmods
 
 modules = [
-  "ugrd.base.base",
   "ugrd.kmod.nosound",
   "ugrd.kmod.novideo",
   "ugrd.kmod.nonetwork",

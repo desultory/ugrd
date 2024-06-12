@@ -5,7 +5,6 @@
 
 
 modules = [
-  "ugrd.base.base",
 #  "ugrd.base.console", # implied by gpg
   "ugrd.crypto.gpg",
 ]

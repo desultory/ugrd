@@ -3,7 +3,6 @@
 # Don't pull sound, video, or network kmods
 
 modules = [
-  "ugrd.base.base",
   "ugrd.crypto.cryptsetup",
   "ugrd.kmod.nosound",
   "ugrd.kmod.novideo",

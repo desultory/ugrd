@@ -1,7 +1,6 @@
 # Example config for using a keymap
 
 modules = [
-  "ugrd.base.base",
   "ugrd.kmod.vm",
   "ugrd.base.keymap",
 ]

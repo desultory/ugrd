@@ -3,7 +3,6 @@
 # The kmod novideo, nosound, and nonetwork modules are pulled to help minmize pulled modules.
 
 modules = [
-  "ugrd.base.base",
   "ugrd.kmod.novideo",
   "ugrd.kmod.nosound",
   "ugrd.kmod.nonetwork",

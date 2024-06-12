@@ -4,7 +4,6 @@
 # It will try to process the cmdline and mount the rootfs based on the root= parameter
 
 modules = [
-  "ugrd.base.base",
   "ugrd.kmod.standard_mask",
 #  "ugrd.crypto.cryptsetup", # This is included by the gpg module
 #  "ugrd.crypto.gpg", # This is included by the smartcard module

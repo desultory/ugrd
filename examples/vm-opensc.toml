@@ -2,7 +2,6 @@
 # Commented config will  decrypt the volume with UUID "38a5c4d2-f5af-404a-a663-d789e443a40c", mapping it to /dev/mapper/root
 
 modules = [
-  "ugrd.base.base",
   "ugrd.base.debug",
   "ugrd.kmod.vm",
   "ugrd.crypto.opensc",
