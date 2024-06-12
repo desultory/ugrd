@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.4.0'
+__version__ = '4.5.0'
 
 from importlib.metadata import version
 from pathlib import Path
@@ -36,7 +36,7 @@ def _process_autodetect_init(self, state) -> None:
 
 def export_exports(self) -> str:
     """ Runs setvar for all exports. """
-    return '\n'.join([f'setvar {key} "{value}"' for key, value in self['exports'].items()])
+    return [f'setvar {key} "{value}"' for key, value in self['exports'].items()]
 
 
 def _find_init(self) -> str:
