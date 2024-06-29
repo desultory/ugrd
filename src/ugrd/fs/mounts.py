@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.5.2'
+__version__ = '4.6.2'
 
 from pathlib import Path
 from zenlib.util import check_dict, pretty_print
@@ -225,6 +225,30 @@ def get_blkid_info(self, device=None) -> str:
             raise ValueError("[%s] Failed to parse blkid info: %s" % (device, info))
 
     self.logger.debug("Blkid info: %s" % pretty_print(self['_blkid_info']))
+
+
+@check_dict('autodetect_init_mount', value=True, log_level=10, message="Skipping init mount autodetection, autodetect_init_mount is not set.")
+@check_dict('hostonly', value=True, log_level=30, message="Skipping init mount autodetection, hostonly mode is disabled.")
+def autodetect_init_mount(self, parent=None) -> None:
+    """ Checks the parent directories of init_target, if the path is a mountpoint, add it to late_mounts. """
+    if not parent:
+        parent = self['init_target'].parent
+    if parent == Path('/'):
+        return
+    if str(parent) in self['_mounts']:
+        self.logger.info("Detected init mount: %s" % parent)
+        mount_name = str(parent).removeprefix('/')
+        mount_dest = str(parent)
+        mount_device = self['_mounts'][str(parent)]['device']
+        mount_type = self['_mounts'][str(parent)]['fstype']
+        mount_options = self['_mounts'][str(parent)]['options']
+        blkid_info = self['_blkid_info'][mount_device]
+        mount_source_type, mount_source = _get_mount_source_type(self, blkid_info, with_val=True)
+        self['late_mounts'][mount_name] = {'destination': mount_dest,
+                                           mount_source_type: mount_source,
+                                           'type': mount_type,
+                                           'options': mount_options}
+    autodetect_init_mount(self, parent.parent)
 
 
 def get_dm_info(self) -> dict:
