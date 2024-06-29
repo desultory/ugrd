@@ -67,6 +67,7 @@ The following root filesystems have been tested:
 * EXT4
 * XFS
 * FAT32
+* NILFS2
 
 If the required kernel module is not built into the kernel, and the filesystem is not listed above, the kernel module may need to be included in `kmod_init`.
 
