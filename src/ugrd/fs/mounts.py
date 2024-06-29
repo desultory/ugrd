@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.6.2'
+__version__ = '4.6.3'
 
 from pathlib import Path
 from zenlib.util import check_dict, pretty_print
@@ -77,7 +77,6 @@ def _process_mount(self, mount_name: str, mount_config, mount_class="mounts") ->
             self['kmod_init'] = mount_type
         elif mount_type == 'nilfs2':
             self['binaries'] = 'mount.nilfs2'
-
         elif mount_type == 'btrfs':
             if 'ugrd.fs.btrfs' not in self['modules']:
                 self.logger.info("Auto-enabling module: btrfs")
