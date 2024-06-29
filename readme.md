@@ -33,6 +33,7 @@ The original goal of this project was to create an initramfs suitable for decryp
 * Auto-detection and validation of the root mount using `/proc/mounts`
 * Auto-detection and validation of LUKS root mounts
 * Auto-detection and validation of the btrfs subvolume used for the root mount, if present
+* Auto-detection of mountpoints for the system init.
 * Dynamic BTRFS subvolume selection at boot time using `subvol_selector`
 * Auto-detection of kernel modules using `lspci` and `lsmod`
 * Reading the `root` and `rootflags` parameters from the kernel commandline
@@ -339,6 +340,7 @@ Similarly `ugrd.kmod.novideo` `nonetwork`, and `nosound` exist to ignore video, 
 
 `autodetect_root` (true) Set the root mount parameter based on the current root label or uuid.
 `autodetect_root_luks` (true) Attempt to automatically configure LUKS mounts for the root device.
+`autodetect_init_mount'` (true) Automatically detect the mountpoint for the init binary, and add it to `late_mounts`.
 
 #### ugrd.fs.mounts
 
