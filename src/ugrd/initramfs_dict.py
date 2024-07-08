@@ -1,6 +1,6 @@
 
 __author__ = "desultory"
-__version__ = "1.5.1"
+__version__ = "1.5.2"
 
 from tomllib import load, TOMLDecodeError
 from pathlib import Path
@@ -247,7 +247,7 @@ class InitramfsConfigDict(dict):
             if name in ['imports', 'custom_parameters']:
                 self.logger.log(5, "[%s] Skipping '%s'" % (module, name))
                 continue
-            self.logger.debug("[%s] Setting '%s' to: %s" % (module, name, value))
+            self.logger.debug("[%s] (%s) Setting value: %s" % (module, name, value))
             self[name] = value
 
         # If custom paramters were added, process unprocessed values

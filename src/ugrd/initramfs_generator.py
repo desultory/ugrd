@@ -44,7 +44,7 @@ class InitramfsGenerator(GeneratorHelpers):
 
         # Process into the config dict, it should handle parsing
         for config, value in raw_config.items():
-            self.logger.debug("Processing config key: %s" % config)
+            self.logger.debug("[%s] (%s) Processing config value: %s" % (config_file.name, config, value))
             self[config] = value
 
         self.logger.debug("Loaded config:\n%s" % self.config_dict)
