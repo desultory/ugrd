@@ -142,6 +142,7 @@ def autodetect_modules(self) -> None:
         self.logger.warning("No kernel modules were autodetected.")
 
 
+@check_dict('no_kmod', value=False, log_level=30, message="no_kmod is set, skipping.")
 def get_kernel_metadata(self) -> None:
     """ Gets metadata for all kernel modules. """
     if not self.get('kernel_version'):
@@ -158,6 +159,7 @@ def get_kernel_metadata(self) -> None:
 
 
 @check_dict('kmod_init', not_empty=True, message="kmod_init is not set, skipping.", log_level=30)
+@check_dict('no_kmod', value=False, log_level=30, message="no_kmod is set, skipping.")
 def process_module_metadata(self) -> None:
     """ Adds kernel module metadata files to dependencies."""
     module_path = Path('/lib/modules/') / self['kernel_version']
@@ -224,6 +226,7 @@ def _process_kmod_dependencies(self, kmod: str) -> None:
     _add_kmod_firmware(self, kmod)
 
 
+@check_dict('no_kmod', value=False, log_level=30, message="no_kmod is set, skipping.")
 def process_ignored_module(self, module: str) -> None:
     """ Processes an ignored module. """
     self.logger.debug("Removing kernel module from all lists: %s", module)
