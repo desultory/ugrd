@@ -33,6 +33,7 @@ def main():
                  {'flags': ['--no-autodetect-root-lvm'], 'action': 'store_false', 'help': 'do not autodetect LVM volumes', 'dest': 'autodetect_root_lvm'},
                  {'flags': ['--autodetect-root-dm'], 'action': 'store_true', 'help': 'autodetect DM (LUKS/LVM) root partitions'},
                  {'flags': ['--no-autodetect-root-dm'], 'action': 'store_false', 'help': 'do not autodetect root DM volumes', 'dest': 'autodetect_root_dm'},
+                 {'flags': ['--no-kmod'], 'action': 'store_true', 'help': 'Disable kernel modules entirely'},
                  {'flags': ['--print-config'], 'action': 'store_true', 'help': 'print the final config dict'},
                  {'flags': ['--print-init'], 'action': 'store_true', 'help': 'print the final init structure'},
                  {'flags': ['out_file'], 'action': 'store', 'help': 'set the output image location', 'nargs': '?'}]
