@@ -328,6 +328,7 @@ The following parameters can be used to change the kernel module pulling and ini
 * `kernel_modules` - Kernel modules to pull into the initramfs. These modules will not be `modprobe`'d automatically.
 * `kmod_ignore` - Kernel modules to ignore. Modules which depend on ignored modules will also be ignored.
 * `kmod_ignore_softdeps` (false) Ignore softdeps when checking kernel module dependencies.
+* `no_kmod` (false) Disable kernel modules entirely.
 
 #### Kernel module helpers
 
