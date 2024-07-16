@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.7.0'
+__version__ = '2.8.0'
 
 from pathlib import Path
 from subprocess import run
@@ -142,7 +142,6 @@ def autodetect_modules(self) -> None:
         self.logger.warning("No kernel modules were autodetected.")
 
 
-@check_dict('no_kmod', value=False, log_level=30, message="no_kmod is set, skipping.")
 def get_kernel_metadata(self) -> None:
     """ Gets metadata for all kernel modules. """
     if not self.get('kernel_version'):
@@ -155,7 +154,10 @@ def get_kernel_metadata(self) -> None:
         self.logger.info(f"Using detected kernel version: {self['kernel_version']}")
 
     if not (Path('/lib/modules') / self['kernel_version']).exists():
-        raise DependencyResolutionError(f"Kernel module directory does not exist for kernel: {self['kernel_version']}")
+        if self['no_kmod']:
+            self.logger.warning("Kernel module directory does not exist, but no_kmod is set.")
+        else:
+            raise DependencyResolutionError(f"Kernel module directory does not exist for kernel: {self['kernel_version']}")
 
 
 @check_dict('kmod_init', not_empty=True, message="kmod_init is not set, skipping.", log_level=30)
