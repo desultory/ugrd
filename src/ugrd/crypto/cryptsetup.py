@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.4.0'
+__version__ = '2.4.1'
 
 from zenlib.util import check_dict
 
@@ -55,6 +55,29 @@ def _get_device_path_from_token(self, token: tuple[str, str]) -> str:
     return device_path
 
 
+@check_dict('validate', value=True, log_level=30, message="Skipping cryptsetup key validation.")
+def _validate_crypysetup_key(self, key_paramters: dict) -> None:
+    """ Validates the cryptsetup key """
+    if key_paramters.get('include_key'):
+        self.logger.info("Skipping key validation for included key.")
+        return
+
+    from pathlib import Path
+    key_path = Path(key_paramters['key_file'])
+
+    if not key_path.is_file():
+        raise FileNotFoundError("Key file not found: %s" % key_path)
+
+    key_copy = key_path
+    while parent := key_copy.parent:
+        if parent == Path('/'):
+            raise ValueError("No mount is defined for external key file: %s" % key_path)
+        if str(parent).lstrip('/') in self['mounts']:
+            self.logger.debug("Found mount for key file: %s" % parent)
+            break
+        key_copy = parent
+
+
 def _validate_cryptsetup_config(self, mapped_name: str, config: dict) -> None:
     self.logger.log(5, "[%s] Validating cryptsetup configuration: %s" % (mapped_name, config))
     for parameter in config:
@@ -69,6 +92,9 @@ def _validate_cryptsetup_config(self, mapped_name: str, config: dict) -> None:
     elif not any([config.get('partuuid'), config.get('uuid'), config.get('path')]):
         if not self['autodetect_root_luks']:
             raise ValueError("A device uuid, partuuid, or path must be specified for cryptsetup mount: %s" % mapped_name)
+
+    if config.get('key_file'):
+        _validate_crypysetup_key(self, config)
 
 
 def _process_cryptsetup_multi(self, mapped_name: str, config: dict) -> None:
@@ -185,29 +211,6 @@ def get_crypt_dev(self) -> list[str]:
             'rd_fail "Failed to resolve device source for cryptsetup mount: $1"']
 
 
-@check_dict('validate', value=True, log_level=30, message="Skipping cryptsetup key validation.")
-def _validate_crypysetup_key(self, key_paramters: dict) -> None:
-    """ Validates the cryptsetup key """
-    if key_paramters.get('include_key'):
-        self.logger.info("Skipping key validation for included key.")
-        return
-
-    from pathlib import Path
-    key_path = Path(key_paramters['key_file'])
-
-    if not key_path.is_file():
-        raise FileNotFoundError("Key file not found: %s" % key_path)
-
-    key_copy = key_path
-    while parent := key_copy.parent:
-        if parent == Path('/'):
-            raise ValueError("No mount is defined for external key file: %s" % key_path)
-        if str(parent).lstrip('/') in self['mounts']:
-            self.logger.debug("Found mount for key file: %s" % parent)
-            break
-        key_copy = parent
-
-
 def open_crypt_device(self, name: str, parameters: dict) -> list[str]:
     """ Returns a bash script to open a cryptsetup device. """
     self.logger.debug("[%s] Processing cryptsetup volume: %s" % (name, parameters))
@@ -224,7 +227,6 @@ def open_crypt_device(self, name: str, parameters: dict) -> list[str]:
         cryptsetup_command = f'{parameters["key_command"]} | cryptsetup open --key-file -'
     elif 'key_file' in parameters:
         self.logger.debug("[%s] Using key file: %s" % (name, parameters['key_file']))
-        _validate_crypysetup_key(self, parameters)
         cryptsetup_command = f'cryptsetup open --key-file {parameters["key_file"]}'
     else:
         # Set tries to 1 since it runs in the loop
