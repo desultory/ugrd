@@ -1,11 +1,6 @@
 __version__ = "0.1.0"
 
 
-def test_init(self):
-    """ Test init function. """
-    return "echo DONE"
-
-
 def make_test_image(self):
     """ Creates a test image from the build dir """
 

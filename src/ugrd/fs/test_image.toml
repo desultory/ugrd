@@ -3,14 +3,13 @@ modules = ['ugrd.fs.cpio']
 shebang = "#!/bin/bash"
 test_image_size = 16
 
+banner = "echo DONE; exit 0"
+
 [masks]
 pack = "make_cpio"
 
 [imports.pack]
 "ugrd.fs.test_image" = ["make_test_image"]
-
-[imports.init_main]
-"ugrd.fs.test_image" = ["test_init"]
 
 [custom_parameters]
 shebang = "str"  # Add the shebang property, because the test mode disables the base module
