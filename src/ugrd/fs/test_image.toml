@@ -1,7 +1,10 @@
-#[masks]
-#pack = "make_cpio"
+modules = ['ugrd.fs.cpio']
 
 shebang = "#!/bin/bash"
+test_image_size = 16
+
+[masks]
+pack = "make_cpio"
 
 [imports.pack]
 "ugrd.fs.test_image" = ["make_test_image"]
@@ -11,4 +14,4 @@ shebang = "#!/bin/bash"
 
 [custom_parameters]
 shebang = "str"  # Add the shebang property, because the test mode disables the base module
-out_file = "str"  # Define the out file
+test_image_size = "int"  # Define the size of the test image in MiB

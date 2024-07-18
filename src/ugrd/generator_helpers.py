@@ -4,7 +4,7 @@ from subprocess import run, CompletedProcess
 
 from zenlib.util import pretty_print
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 __author__ = "desultory"
 
 
@@ -144,8 +144,9 @@ class GeneratorHelpers:
 
     def _run(self, args: list[str]) -> CompletedProcess:
         """ Runs a command, returns the CompletedProcess object """
-        self.logger.debug("Running command: %s" % ' '.join(args))
-        cmd = run(args, capture_output=True)
+        cmd_args = [str(arg) for arg in args]
+        self.logger.debug("Running command: %s" % ' '.join(cmd_args))
+        cmd = run(cmd_args, capture_output=True)
         if cmd.returncode != 0:
             self.logger.error("Failed to run command: %s" % cmd.args)
             self.logger.error("Command output: %s" % cmd.stdout.decode())

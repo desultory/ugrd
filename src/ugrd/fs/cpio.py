@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '3.0.0'
+__version__ = '3.0.1'
 
 
 from pycpio import PyCPIO
@@ -28,7 +28,7 @@ def get_archive_path(self) -> str:
             if compression_type.lower() != 'false':  # The variable is a string, so we need to check for the string 'false'
                 out_file += f".{compression_type}"
 
-    self['_cpio_out_path'] = self.out_dir / out_file
+    self['_archive_out_path'] = self.out_dir / out_file
 
 
 def make_cpio(self) -> None:
@@ -47,7 +47,7 @@ def make_cpio(self) -> None:
             self.logger.debug("Adding CPIO node: %s" % node)
             cpio.add_chardev(name=node['path'], mode=node['mode'], major=node['major'], minor=node['minor'])
 
-    out_cpio = self['_cpio_out_path']
+    out_cpio = self['_archive_out_path']
 
     if not out_cpio.parent.exists():
         self._mkdir(out_cpio.parent)
@@ -82,5 +82,7 @@ def _process_out_file(self, out_file):
         self['out_dir'] = Path(out_file).parent
         self.logger.info("Resolved out_dir to: %s" % self['out_dir'])
         out_file = Path(out_file).name
+    else:
+        out_file = Path(out_file)
 
     dict.__setitem__(self, 'out_file', out_file)
