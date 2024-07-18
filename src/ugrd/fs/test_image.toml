@@ -15,3 +15,4 @@ pack = "make_cpio"
 [custom_parameters]
 shebang = "str"  # Add the shebang property, because the test mode disables the base module
 test_image_size = "int"  # Define the size of the test image in MiB
+mounts = "dict"  # We only need the mounts dict, not the whole module
