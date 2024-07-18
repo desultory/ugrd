@@ -1,6 +1,6 @@
 
 __author__ = "desultory"
-__version__ = "1.5.2"
+__version__ = "1.7.0"
 
 from tomllib import load, TOMLDecodeError
 from pathlib import Path
@@ -39,11 +39,16 @@ class InitramfsConfigDict(dict):
                 super().__setitem__(parameter, default_type())
         if not NO_BASE:
             self['modules'] = 'ugrd.base.base'
+        else:
+            self['modules'] = 'ugrd.base.core'
 
     def import_args(self, args: dict) -> None:
         """ Imports data from an argument dict. """
         for arg, value in args.items():
             self.logger.info("Importing argument '%s' with value: %s" % (arg, value))
+            if arg == 'modules':
+                for module in value.split(','):
+                    self[arg] = module
             self[arg] = value
 
     def __setitem__(self, key: str, value) -> None:
@@ -119,6 +124,7 @@ class InitramfsConfigDict(dict):
 
         If the parameter is in the processing queue, process the queued values.
         """
+        from pycpio import PyCPIO
         self['custom_parameters'][parameter_name] = eval(parameter_type)
         self.logger.debug("Registered custom parameter '%s' with type: %s" % (parameter_name, parameter_type))
 
@@ -133,6 +139,8 @@ class InitramfsConfigDict(dict):
                 super().__setitem__(parameter_name, 0)
             case "float":
                 super().__setitem__(parameter_name, 0.0)
+            case "PyCPIO":
+                super().__setitem__(parameter_name, PyCPIO(logger=self.logger, _log_init=False, _log_bump=10))
             case _:  # For strings and things, don't init them so they are None
                 self.logger.debug("Leaving '%s' as None" % parameter_name)
 

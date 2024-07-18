@@ -17,7 +17,7 @@ __author__ = "desultory"
 class InitramfsGenerator(GeneratorHelpers):
     def __init__(self, config='/etc/ugrd/config.toml', *args, **kwargs):
         self.config_filename = config
-        self.config_dict = InitramfsConfigDict(logger=self.logger)
+        self.config_dict = InitramfsConfigDict(NO_BASE=kwargs.pop('NO_BASE', False), logger=self.logger)
 
         # Used for functions that are added to the bash source file
         self.included_functions = {}
@@ -28,7 +28,10 @@ class InitramfsGenerator(GeneratorHelpers):
         # init_pre and init_final are run as part of generate_initramfs_main
         self.init_types = ['init_debug', 'init_early', 'init_main', 'init_late', 'init_premount', 'init_mount', 'init_mount_late', 'init_cleanup']
 
-        self.load_config()
+        if config:
+            self.load_config()
+        else:
+            self.logger.warning("No config file specified, using the base config")
         self.config_dict.import_args(kwargs)
         self.config_dict.validate()
 
@@ -127,6 +130,7 @@ class InitramfsGenerator(GeneratorHelpers):
             return out
         else:
             self.logger.debug("No output for init level: %s" % level)
+            return []
 
     def generate_profile(self) -> None:
         """ Generates the bash profile file based on self.included_functions. """

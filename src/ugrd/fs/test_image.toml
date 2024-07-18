@@ -1,0 +1,14 @@
+#[masks]
+#pack = "make_cpio"
+
+shebang = "#!/bin/bash"
+
+[imports.pack]
+"ugrd.fs.test_image" = ["make_test_image"]
+
+[imports.init_main]
+"ugrd.fs.test_image" = ["test_init"]
+
+[custom_parameters]
+shebang = "str"  # Add the shebang property, because the test mode disables the base module
+out_file = "str"  # Define the out file
