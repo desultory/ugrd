@@ -47,6 +47,11 @@ def main():
     kwargs.pop('print_init', None)  # This is not a valid kwarg for InitramfsGenerator
     test = kwargs.pop('test', False)
 
+    if test:
+        logger.warning("TEST MODE ENABLED")
+        logger.info("Disabling DM autodetection")
+        kwargs['autodetect_root_dm'] = False
+
     logger.debug(f"Using the following kwargs: {kwargs}")
     generator = InitramfsGenerator(**kwargs)
 
