@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.4.2'
+__version__ = '2.4.3'
 
 from zenlib.util import check_dict
 
@@ -38,6 +38,7 @@ def _process_cryptsetup_key_types_multi(self, key_type: str, config: dict) -> No
         self['cryptsetup_key_types'][key_type] = config
 
 
+@check_dict('cryptsetup_keyfile_validation', value=True, log_level=30, message="Skipping cryptsetup keyfile validation.")
 @check_dict('validate', value=True, log_level=30, message="Skipping cryptsetup key validation.")
 def _validate_crypysetup_key(self, key_paramters: dict) -> None:
     """ Validates the cryptsetup key """
