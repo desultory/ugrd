@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.4.3'
+__version__ = '2.5.0'
 
 from zenlib.util import check_dict
 
@@ -38,7 +38,6 @@ def _process_cryptsetup_key_types_multi(self, key_type: str, config: dict) -> No
         self['cryptsetup_key_types'][key_type] = config
 
 
-@check_dict('cryptsetup_keyfile_validation', value=True, log_level=30, message="Skipping cryptsetup keyfile validation.")
 @check_dict('validate', value=True, log_level=30, message="Skipping cryptsetup key validation.")
 def _validate_crypysetup_key(self, key_paramters: dict) -> None:
     """ Validates the cryptsetup key """
@@ -50,12 +49,18 @@ def _validate_crypysetup_key(self, key_paramters: dict) -> None:
     key_path = Path(key_paramters['key_file'])
 
     if not key_path.is_file():
-        raise FileNotFoundError("Key file not found: %s" % key_path)
+        if self['cryptsetup_keyfile_validation']:
+            raise FileNotFoundError("Key file not found: %s" % key_path)
+        else:
+            return self.logger.error("Key file not found: %s" % key_path)
 
     key_copy = key_path
     while parent := key_copy.parent:
         if parent == Path('/'):
-            raise ValueError("No mount is defined for external key file: %s" % key_path)
+            if self['cryptsetup_keyfile_validation']:
+                raise ValueError("No mount is defined for external key file: %s" % key_path)
+            else:
+                return self.logger.critical("No mount is defined for external key file: %s" % key_path)
         if str(parent).lstrip('/') in self['mounts']:
             self.logger.debug("Found mount for key file: %s" % parent)
             break
