@@ -354,7 +354,7 @@ Similarly `ugrd.kmod.novideo` `nonetwork`, and `nosound` exist to ignore video, 
 
 `mounts`: A dictionary containing entries for mounts, with their associated config.
 
-`mounts.root` is predefined to have a destination of `/mnt/root` and defines the root filesystem mount, used by `switch_root`.
+`mounts.root` is predefined to have a destination of `/target_rootfs` and defines the root filesystem mount, used by `switch_root`.
 
 Each mount has the following available parameters:
 
@@ -413,7 +413,7 @@ Importing this module will run `btrfs device scan` and pull btrfs modules.
 * `subvol_selector` (false) The root subvolume will be selected at runtime based on existing subvolumes. Overridden by `root_subvol`.
 * `autodetect_root_subvol` (true) Autodetect the root subvolume, unless `root_subvol` or `subvol_selector` is set. Depends on `hostonly`.
 * `root_subvol` - Set the desired root subvolume.
-* `_base_mount_path` (/mnt/root_base) Sets where the subvolume selector mounts the base filesytem to scan for subvolumes.
+* `_base_mount_path` (/root_base) Sets where the subvolume selector mounts the base filesytem to scan for subvolumes.
 
 ### Cryptographic modules
 

@@ -61,7 +61,7 @@ _blkid_info = "dict"  # The blkid information
 # Define the base of the root mount
 [mounts.root]
 options = ['ro']
-destination = "/mnt/root"
+destination = "/target_rootfs"
 
 # Define the default mounts
 # The format is mounts.mount where the mount is the name of the mount
