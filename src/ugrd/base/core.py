@@ -1,13 +1,13 @@
 __author__ = 'desultory'
-__version__ = '3.3.1'
+__version__ = '3.4.0'
 
 from pathlib import Path
 from typing import Union
 
-from zenlib.util import check_dict, NoDupFlatList
+from zenlib.util import contains, unset, NoDupFlatList
 
 
-@check_dict('clean', value=True, log_level=30, message="Skipping cleaning build directory")
+@contains('clean', "Skipping cleaning build directory", log_level=30)
 def clean_build_dir(self) -> None:
     """ Cleans the build directory. """
     from shutil import rmtree
@@ -119,7 +119,7 @@ def deploy_symlinks(self) -> None:
         self._symlink(symlink_parameters['source'], symlink_parameters['target'])
 
 
-@check_dict('mknod_cpio', value=False, log_level=20, message="Skipping real device node creation with mknod, as mknod_cpio is specified.")
+@unset('mknod_cpio', "Skipping real device node creation with mknod, as mknod_cpio is not specified.", log_level=20)
 def deploy_nodes(self) -> None:
     """ Generates specified device nodes. """
     from os import makedev, mknod
@@ -140,7 +140,7 @@ def deploy_nodes(self) -> None:
             raise e
 
 
-@check_dict('find_libgcc', value=True, log_level=20, message="Skipping libgcc_s dependency resolution.")
+@contains('find_libgcc', "Skipping libgcc_s dependency resolution", log_level=20)
 def find_libgcc(self) -> None:
     """
     Finds libgcc.so, adds a 'dependencies' item for it.
