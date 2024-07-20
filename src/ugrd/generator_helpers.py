@@ -149,7 +149,7 @@ class GeneratorHelpers:
         try:
             cmd = run(cmd_args, capture_output=True, timeout=timeout)
         except TimeoutExpired as e:
-            raise RuntimeError("[%d] Command timed out: %s" % (timeout, [str(arg) for arg in cmd_args])) from e
+            raise RuntimeError("[%ds] Command timed out: %s" % (timeout, [str(arg) for arg in cmd_args])) from e
 
         if cmd.returncode != 0:
             self.logger.error("Failed to run command: %s" % cmd.args)
