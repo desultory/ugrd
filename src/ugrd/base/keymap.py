@@ -1,7 +1,5 @@
 __author__ = 'desultory'
-__version__ = '0.2.1'
-
-from zenlib.util import check_dict
+__version__ = '0.3.0'
 
 
 def _find_keymap_include(self, base_path, included_file, no_recurse=False):
@@ -71,9 +69,9 @@ def _process_keymap_file(self, keymap_file: str) -> str:
     dict.__setitem__(self, 'keymap_file', keymap_file.replace('.gz', ''))
 
 
-@check_dict('keymap_file', raise_exception=True, message="keymap_file must be set to use the keymap module")
 def set_keymap(self) -> str:
     """ Sets the specified keymap. """
+    self._dict_contains('keymap_file', message="keymap_file must be set to use the keymap module", raise_exception=True)
     return [f'einfo "Setting keymap: {self["keymap_file"]}"',
             f'loadkeys {self["keymap_file"]}']
 
