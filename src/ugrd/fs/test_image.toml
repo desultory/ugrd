@@ -1,9 +1,13 @@
 modules = ['ugrd.fs.cpio']
+paths = ['dev', 'sys', 'proc']
+
+
+binaries = ['halt', 'shutdown', 'ls', 'top', 'ps']
 
 shebang = "#!/bin/bash"
 test_image_size = 16
 
-banner = "echo DONE; exit 0"
+banner = 'echo "SUCCESS"'
 
 [masks]
 pack = "make_cpio"
