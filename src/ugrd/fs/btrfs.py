@@ -1,8 +1,8 @@
-__version__ = '1.7.3'
+__version__ = '1.8.0'
 __author__ = 'desultory'
 
 
-from zenlib.util import check_dict
+from zenlib.util import contains, unset
 
 
 class SubvolNotFound(Exception):
@@ -25,8 +25,8 @@ def _get_mount_subvol(self, mountpoint: str) -> list:
     raise SubvolNotFound("No subvolume detected.")
 
 
-@check_dict('validate', value=True, message="Validate is not set, skipping root subvolume validation.")
-@check_dict('root_subvol', not_empty=True, message="root_subvol is not set, skipping validation.")
+@contains('validate', "Validate is not set, skipping root subvolume validation.")
+@contains('root_subvol', "root_subvol is not set, skipping validation.")
 def _validate_root_subvol(self) -> None:
     """ Validates the root subvolume. """
     try:
@@ -62,10 +62,10 @@ def btrfs_scan(self) -> str:
     return 'einfo "$(btrfs device scan)"'
 
 
-@check_dict('subvol_selector', value=False, log_level=20, message="subvol_selector enabled, skipping.")
-@check_dict('autodetect_root_subvol', value=True, message="autodetect_root_subvol not enabled, skipping.")
-@check_dict('root_subvol', unset=True, message="root_subvol is set, skipping.")
-@check_dict('hostonly', value=True, message="hostonly is not set, skipping.")
+@unset('subvol_selector', message="subvol_selector is set, skipping.", log_level=20)
+@contains('autodetect_root_subvol', "autodetect_root_subvol is not enabled, skipping.", log_level=30)
+@unset('root_subvol', message="root_subvol is set, skipping.")
+@contains('hostonly', "hostonly is not enabled, skipping.", log_level=30)
 def autodetect_root_subvol(self):
     """ Detects the root subvolume. """
     try:
@@ -78,8 +78,8 @@ def autodetect_root_subvol(self):
         self.logger.debug("Root mount is not using a subvolume.")
 
 
-@check_dict('subvol_selector', value=True, message="subvol_selector not enabled, skipping")
-@check_dict('root_subvol', unset=True, message="root_subvol is set, skipping.")
+@contains('subvol_selector', message="subvol_selector is not set, skipping.")
+@unset('root_subvol', message="root_subvol is set, skipping.")
 def select_subvol(self) -> str:
     """ Returns a bash script to list subvolumes on the root volume. """
     # TODO: Figure out a way to make the case prompt more standard
@@ -106,7 +106,7 @@ def select_subvol(self) -> str:
             f"umount -l {self['_base_mount_path']}"]
 
 
-@check_dict('root_subvol', not_empty=True, message="root_subvol is not set, skipping.")
+@contains('root_subvol', message="root_subvol is not set, skipping.")
 def set_root_subvol(self) -> str:
     """ Adds the root_subvol to the root_mount options. """
     _validate_root_subvol(self)
