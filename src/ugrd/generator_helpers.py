@@ -1,10 +1,10 @@
 from typing import Union
 from pathlib import Path
-from subprocess import run, CompletedProcess
+from subprocess import run, CompletedProcess, TimeoutExpired
 
 from zenlib.util import pretty_print
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 __author__ = "desultory"
 
 
@@ -142,10 +142,15 @@ class GeneratorHelpers:
         self.logger.debug("Creating symlink: %s -> %s" % (target, source))
         symlink(source, target)
 
-    def _run(self, args: list[str]) -> CompletedProcess:
+    def _run(self, args: list[str], timeout=15) -> CompletedProcess:
         """ Runs a command, returns the CompletedProcess object """
-        self.logger.debug("Running command: %s" % ' '.join(args))
-        cmd = run(args, capture_output=True)
+        cmd_args = [str(arg) for arg in args]
+        self.logger.debug("Running command: %s" % ' '.join(cmd_args))
+        try:
+            cmd = run(cmd_args, capture_output=True, timeout=timeout)
+        except TimeoutExpired as e:
+            raise RuntimeError("[%ds] Command timed out: %s" % (timeout, [str(arg) for arg in cmd_args])) from e
+
         if cmd.returncode != 0:
             self.logger.error("Failed to run command: %s" % cmd.args)
             self.logger.error("Command output: %s" % cmd.stdout.decode())

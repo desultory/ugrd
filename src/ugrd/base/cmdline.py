@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.2.3'
+__version__ = '2.3.0'
 
 
 CMDLINE_BOOLS = ['quiet', 'debug', 'recovery', 'rootwait']
@@ -60,4 +60,9 @@ def mount_cmdline_root(self) -> str:
 
 def export_exports(self) -> list:
     """ Returns a bash script exporting all exports defined in the exports key. """
+    from importlib.metadata import version, PackageNotFoundError
+    try:
+        self['exports']['VERSION'] = version(__package__)
+    except PackageNotFoundError:
+        self['exports']['VERSION'] = 9999
     return [f'setvar {key} "{value}"' for key, value in self['exports'].items()]

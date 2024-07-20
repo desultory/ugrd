@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from ugrd.initramfs_generator import InitramfsGenerator
+from ugrd.initramfs_tester import InitramfsTester
 from zenlib.util import get_kwargs_from_args, get_args_n_logger
 
 
@@ -8,6 +9,7 @@ def main():
     arguments = [{'flags': ['--build-logging'], 'action': 'store_true', 'help': 'enable additional build logging'},
                  {'flags': ['--no-build-logging'], 'action': 'store_false', 'help': 'disable additional build logging', 'dest': 'build_logging'},
                  {'flags': ['-c', '--config'], 'action': 'store', 'help': 'set the config file location'},
+                 {'flags': ['-m', '--modules'], 'action': 'store', 'help': 'Define config modules to load, comma separated'},
                  {'flags': ['--kernel-version', '--kver'], 'action': 'store', 'help': 'set the kernel version'},
                  {'flags': ['--clean'], 'action': 'store_true', 'help': 'clean the build directory at runtime'},
                  {'flags': ['--no-clean'], 'action': 'store_false', 'help': 'disable build directory cleaning', 'dest': 'clean'},
@@ -33,15 +35,24 @@ def main():
                  {'flags': ['--no-autodetect-root-lvm'], 'action': 'store_false', 'help': 'do not autodetect LVM volumes', 'dest': 'autodetect_root_lvm'},
                  {'flags': ['--autodetect-root-dm'], 'action': 'store_true', 'help': 'autodetect DM (LUKS/LVM) root partitions'},
                  {'flags': ['--no-autodetect-root-dm'], 'action': 'store_false', 'help': 'do not autodetect root DM volumes', 'dest': 'autodetect_root_dm'},
-                 {'flags': ['--no-kmod'], 'action': 'store_true', 'help': 'Disable kernel modules entirely'},
+                 {'flags': ['--no-kmod'], 'action': 'store_true', 'help': 'Allow images to be built without kmods/kernel info'},
                  {'flags': ['--print-config'], 'action': 'store_true', 'help': 'print the final config dict'},
                  {'flags': ['--print-init'], 'action': 'store_true', 'help': 'print the final init structure'},
+                 {'flags': {'--test'}, 'action': 'store_true', 'help': 'Tests the image with qemu'},
+                 {'flags': {'--test-kernel'}, 'action': 'store', 'help': 'Tests the image with qemu using a specific kernel file.'},
                  {'flags': ['out_file'], 'action': 'store', 'help': 'set the output image location', 'nargs': '?'}]
 
     args, logger = get_args_n_logger(package=__package__, description='MicrogRAM disk initramfs generator', arguments=arguments, drop_default=True)
     kwargs = get_kwargs_from_args(args, logger=logger)
     kwargs.pop('print_config', None)  # This is not a valid kwarg for InitramfsGenerator
     kwargs.pop('print_init', None)  # This is not a valid kwarg for InitramfsGenerator
+    test = kwargs.pop('test', False)
+    test_kernel = kwargs.pop('test_kernel', None)
+
+    if test:
+        logger.warning("TEST MODE ENABLED")
+        logger.info("Disabling DM autodetection")
+        kwargs['autodetect_root_dm'] = False
 
     logger.debug(f"Using the following kwargs: {kwargs}")
     generator = InitramfsGenerator(**kwargs)
@@ -64,6 +75,10 @@ def main():
             print(runlevel + ":")
             for func in generator.imports[runlevel]:
                 print(f"    {func.__name__}")
+
+    if test:
+        tester = InitramfsTester(generator, test_kernel=test_kernel, logger=logger, _log_init=False)
+        tester.test()
 
 
 if __name__ == '__main__':

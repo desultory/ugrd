@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.9.0'
+__version__ = '3.0.1'
 
 
 from pycpio import PyCPIO
@@ -14,8 +14,8 @@ def check_cpio(self, cpio: PyCPIO) -> None:
             self.logger.debug("Dependency found in CPIO: %s" % dep)
 
 
-def get_cpio_filename(self) -> str:
-    """ Generates a CPIO filename based on the current configuration. """
+def get_archive_path(self) -> str:
+    """ Determines the filename for the output CPIO archive based on the current configuration. """
     if out_file := self.get('out_file'):
         self.logger.info("Using specified out_file: %s" % out_file)
     else:
@@ -28,15 +28,17 @@ def get_cpio_filename(self) -> str:
             if compression_type.lower() != 'false':  # The variable is a string, so we need to check for the string 'false'
                 out_file += f".{compression_type}"
 
-    return self.out_dir / out_file
+    self['_archive_out_path'] = self.out_dir / out_file
 
 
 def make_cpio(self) -> None:
     """
-    Creates a CPIO archive from the build directory and writes it to the output directory.
+    Populates the CPIO archive using the build directory,
+    writes it to the output file, and rotates the output file if necessary.
+    Creates device nodes in the CPIO archive if the mknod_cpio option is set.
     Raises FileNotFoundError if the output directory does not exist.
     """
-    cpio = PyCPIO(logger=self.logger, _log_bump=10)
+    cpio = self._cpio_archive
     cpio.append_recursive(self.build_dir, relative=True)
     check_cpio(self, cpio)
 
@@ -45,7 +47,7 @@ def make_cpio(self) -> None:
             self.logger.debug("Adding CPIO node: %s" % node)
             cpio.add_chardev(name=node['path'], mode=node['mode'], major=node['major'], minor=node['minor'])
 
-    out_cpio = get_cpio_filename(self)
+    out_cpio = self['_archive_out_path']
 
     if not out_cpio.parent.exists():
         self._mkdir(out_cpio.parent)
@@ -80,5 +82,7 @@ def _process_out_file(self, out_file):
         self['out_dir'] = Path(out_file).parent
         self.logger.info("Resolved out_dir to: %s" % self['out_dir'])
         out_file = Path(out_file).name
+    else:
+        out_file = Path(out_file)
 
     dict.__setitem__(self, 'out_file', out_file)

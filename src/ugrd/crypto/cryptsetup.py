@@ -67,6 +67,7 @@ def _validate_crypysetup_key(self, key_paramters: dict) -> None:
         key_copy = parent
 
 
+@check_dict('validate', value=True, log_level=30, message="Skipping cryptsetup configuration validation.")
 def _validate_cryptsetup_config(self, mapped_name: str, config: dict) -> None:
     self.logger.log(5, "[%s] Validating cryptsetup configuration: %s" % (mapped_name, config))
     for parameter in config:
