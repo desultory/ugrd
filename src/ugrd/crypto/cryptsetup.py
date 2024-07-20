@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.4.2'
+__version__ = '2.5.0'
 
 from zenlib.util import check_dict
 
@@ -49,12 +49,18 @@ def _validate_crypysetup_key(self, key_paramters: dict) -> None:
     key_path = Path(key_paramters['key_file'])
 
     if not key_path.is_file():
-        raise FileNotFoundError("Key file not found: %s" % key_path)
+        if self['cryptsetup_keyfile_validation']:
+            raise FileNotFoundError("Key file not found: %s" % key_path)
+        else:
+            return self.logger.error("Key file not found: %s" % key_path)
 
     key_copy = key_path
     while parent := key_copy.parent:
         if parent == Path('/'):
-            raise ValueError("No mount is defined for external key file: %s" % key_path)
+            if self['cryptsetup_keyfile_validation']:
+                raise ValueError("No mount is defined for external key file: %s" % key_path)
+            else:
+                return self.logger.critical("No mount is defined for external key file: %s" % key_path)
         if str(parent).lstrip('/') in self['mounts']:
             self.logger.debug("Found mount for key file: %s" % parent)
             break

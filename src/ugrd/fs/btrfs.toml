@@ -1,7 +1,7 @@
 binaries = [ "btrfs" ]
 kmod_init = "btrfs"
 
-_base_mount_path = "/mnt/root_base"
+_base_mount_path = "/root_base"
 subvol_selector = false
 autodetect_root_subvol = true
 
