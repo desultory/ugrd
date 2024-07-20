@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.4.1'
+__version__ = '2.4.2'
 
 from zenlib.util import check_dict
 
@@ -36,23 +36,6 @@ def _process_cryptsetup_key_types_multi(self, key_type: str, config: dict) -> No
         if 'key_command' not in config:
             raise ValueError("Missing key_command for key type: %s" % key_type)
         self['cryptsetup_key_types'][key_type] = config
-
-
-def _get_device_path_from_token(self, token: tuple[str, str]) -> str:
-    """ Returns the device path for a given a token, using the blkid command """
-    from subprocess import run
-
-    token_str = f"{token[0]}={token[1]}"
-    self.logger.debug("Attempting to resolve device path using token: %s" % token_str)
-
-    cmd = run(['blkid', '--match-token', token_str, '--output', 'device'], capture_output=True)
-    if cmd.returncode != 0:
-        self.logger.warning("If building for another system, validation must be disabled.")
-        raise ValueError("Unable to resolve device path using token: %s" % token_str)
-
-    device_path = cmd.stdout.decode().strip()
-    self.logger.debug("Resolved device path: %s" % device_path)
-    return device_path
 
 
 @check_dict('validate', value=True, log_level=30, message="Skipping cryptsetup key validation.")
