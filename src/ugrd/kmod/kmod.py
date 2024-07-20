@@ -1,10 +1,10 @@
 __author__ = 'desultory'
-__version__ = '2.8.0'
+__version__ = '2.9.0'
 
 from pathlib import Path
 from subprocess import run
 
-from zenlib.util import check_dict
+from zenlib.util import check_dict, contains, unset
 
 
 MODULE_METADATA_FILES = ['modules.alias', 'modules.alias.bin', 'modules.builtin', 'modules.builtin.alias.bin', 'modules.builtin.bin', 'modules.builtin.modinfo',
@@ -95,7 +95,7 @@ def _get_kmod_info(self, module: str):
     self['_kmod_modinfo'][module] = module_info
 
 
-@check_dict('kmod_autodetect_lspci', value=True, message="kmod_autodetect_lspci is not set, skipping.")
+@contains('kmod_autodetect_lspci', "kmod_autodetect_lspci is not enabled, skipping.")
 def _autodetect_modules_lspci(self) -> None:
     """ Gets the name of all kernel modules being used by hardware visible in lspci -k. """
     try:
@@ -116,7 +116,7 @@ def _autodetect_modules_lspci(self) -> None:
                 self['_kmod_auto'] = module.strip()
 
 
-@check_dict('kmod_autodetect_lsmod', value=True, message="kmod_autodetect_lsmod is not set, skipping.")
+@contains('kmod_autodetect_lsmod', "kmod_autodetect_lsmod is not enabled, skipping.")
 def _autodetect_modules_lsmod(self) -> list[str]:
     """ Gets the name of all currently used kernel modules. """
     from platform import uname
@@ -128,7 +128,8 @@ def _autodetect_modules_lsmod(self) -> list[str]:
             self['_kmod_auto'] = module.split()[0]
 
 
-@check_dict('hostonly', value=True, log_level=30, message="hostonly is not set, skipping.")
+@unset('no_kmod', "no_kmod is enabled, skipping.", log_level=30)
+@contains('hostonly', "hostonly is not enabled, skipping.", log_level=30)
 def autodetect_modules(self) -> None:
     """ Autodetects kernel modules from lsmod and/or lspci -k. """
     if not self['kmod_autodetect_lsmod'] and not self['kmod_autodetect_lspci']:
@@ -160,8 +161,8 @@ def get_kernel_metadata(self) -> None:
             raise DependencyResolutionError(f"Kernel module directory does not exist for kernel: {self['kernel_version']}")
 
 
-@check_dict('kmod_init', not_empty=True, message="kmod_init is not set, skipping.", log_level=30)
-@check_dict('no_kmod', value=False, log_level=30, message="no_kmod is set, skipping.")
+@contains('kmod_init', "kmod_init is empty, skipping.", log_level=30)
+@unset('no_kmod', "no_kmod is enabled, skipping.", log_level=30)
 def process_module_metadata(self) -> None:
     """ Adds kernel module metadata files to dependencies."""
     module_path = Path('/lib/modules/') / self['kernel_version']
@@ -228,7 +229,6 @@ def _process_kmod_dependencies(self, kmod: str) -> None:
     _add_kmod_firmware(self, kmod)
 
 
-@check_dict('no_kmod', value=False, log_level=30, message="no_kmod is set, skipping.")
 def process_ignored_module(self, module: str) -> None:
     """ Processes an ignored module. """
     self.logger.debug("Removing kernel module from all lists: %s", module)
@@ -283,7 +283,7 @@ def process_modules(self) -> None:
         self['kmod_ignore'] = kmod
 
 
-@check_dict('kmod_init', not_empty=True, message="No kernel modules to load", log_level=30)
+@contains('kmod_init', "No kernel modules to load.", log_level=30)
 def load_modules(self) -> None:
     """ Creates a bash script which loads all kernel modules in kmod_init. """
     self.logger.info("Init kernel modules: %s" % ', '.join(self['kmod_init']))
