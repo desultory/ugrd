@@ -70,15 +70,12 @@ class InitramfsGenerator(GeneratorHelpers):
     def build(self) -> None:
         """ Builds the initramfs. """
         self.logger.info("Building initramfs")
-        self.build_structure()
+        for hook in self.build_tasks:
+            self.logger.debug("Running build hook: %s" % hook)
+            self.run_hook(hook)
         self.generate_init()
         self.run_hook('build_final')
         self.pack_build()
-
-    def build_structure(self) -> None:
-        """ builds the initramfs structure. """
-        for hook in self.build_tasks:
-            self.run_hook(hook)
 
     def run_func(self, function, force_include=False) -> list[str]:
         """ Runs a function, If force_include is set, forces the function to be included in the bash source file. """

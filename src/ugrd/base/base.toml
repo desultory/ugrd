@@ -10,6 +10,9 @@ autodetect_init = true
 [imports.config_processing]
 "ugrd.base.base" = [ "_process_init_target", "_process_autodetect_init" ]
 
+[imports.build_pre]
+"ugrd.base.base" = [ "autodetect_init" ]
+
 [imports.init_final]
 "ugrd.base.base" = [ "do_switch_root" ]
 

@@ -1,8 +1,8 @@
 __author__ = 'desultory'
-__version__ = '4.6.3'
+__version__ = '4.7.0'
 
 from pathlib import Path
-from zenlib.util import check_dict, pretty_print
+from zenlib.util import contains, pretty_print
 
 BLKID_FIELDS = ['uuid', 'partuuid', 'label', 'type']
 SOURCE_TYPES = ['uuid', 'partuuid', 'label', 'path']
@@ -229,8 +229,9 @@ def get_blkid_info(self, device=None) -> str:
     self.logger.debug("Blkid info: %s" % pretty_print(self['_blkid_info']))
 
 
-@check_dict('autodetect_init_mount', value=True, log_level=10, message="Skipping init mount autodetection, autodetect_init_mount is not set.")
-@check_dict('hostonly', value=True, log_level=30, message="Skipping init mount autodetection, hostonly mode is disabled.")
+@contains('init_target', 'init_target must be set', raise_exception=True)
+@contains('autodeetct_init_mount', 'Skipping init mount autodetection, autodetect_init_mount is disabled.', log_level=30)
+@contains('hostonly', 'Skipping init mount autodetection, hostonly mode is disabled.', log_level=30)
 def autodetect_init_mount(self, parent=None) -> None:
     """ Checks the parent directories of init_target, if the path is a mountpoint, add it to late_mounts. """
     if not parent:
@@ -283,7 +284,7 @@ def get_dm_info(self) -> dict:
         self.logger.debug("No device mapper devices found.")
 
 
-@check_dict('hostonly', value=True, log_level=30, message="Skipping device mapper autodetection, hostonly mode is disabled.")
+@contains('hostonly', "Skipping device mapper autodetection, hostonly mode is disabled.", log_level=30)
 def _autodetect_dm(self, mountpoint) -> None:
     """
     Autodetects device mapper config given a device.
@@ -336,14 +337,14 @@ def _autodetect_dm(self, mountpoint) -> None:
         raise RuntimeError("Unknown device mapper device type: %s" % dm_info.get('type'))
 
 
-@check_dict('autodetect_root_dm', value=True, log_level=10, message="Skipping device mapper autodetection, autodetect_root_dm is not set.")
-@check_dict('hostonly', value=True, log_level=30, message="Skipping device mapper autodetection, hostonly mode is disabled.")
+@contains('autodetect_root_dm', "Skipping device mapper autodetection, autodetect_root_dm is disabled.", log_level=30)
+@contains('hostonly', "Skipping device mapper autodetection, hostonly mode is disabled.", log_level=30)
 def autodetect_root_dm(self) -> None:
     _autodetect_dm(self, '/')
 
 
-@check_dict('autodetect_root_lvm', value=True, log_level=10, message="Skipping LVM autodetection, autodetect_root_lvm is not set.")
-@check_dict('hostonly', value=True, log_level=30, message="Skipping LVM autodetection, hostonly mode is disabled.")
+@contains('autodetect_root_lvm', "Skipping LVM autodetection, autodetect_root_lvm is disabled.", log_level=20)
+@contains('hostonly', "Skipping LVM autodetection, hostonly mode is disabled.", log_level=30)
 def autodetect_root_lvm(self, mount_loc, dm_num, dm_info) -> None:
     """ Autodetects LVM mounts and sets the lvm config. """
     if 'ugrd.fs.lvm' not in self['modules']:
@@ -361,8 +362,8 @@ def autodetect_root_lvm(self, mount_loc, dm_num, dm_info) -> None:
         _autodetect_dm(self, '/dev/' + slave)
 
 
-@check_dict('autodetect_root_luks', value=True, log_level=10, message="Skipping LUKS autodetection, autodetect_root_luks is not set.")
-@check_dict('hostonly', value=True, log_level=30, message="Skipping LUKS autodetection, hostonly mode is disabled.")
+@contains('autodetect_root_luks', "Skipping LUKS autodetection, autodetect_root_luks is disabled.", log_level=30)
+@contains('hostonly', "Skipping LUKS autodetection, hostonly mode is disabled.", log_level=30)
 def autodetect_luks(self, mount_loc, dm_num, dm_info) -> None:
     """ Autodetects LUKS mounts and sets the cryptsetup config. """
     if 'ugrd.crypto.cryptsetup' not in self['modules']:
@@ -397,8 +398,8 @@ def autodetect_luks(self, mount_loc, dm_num, dm_info) -> None:
                      (mount_loc.name, self._dm_info[dm_num]['name'], dm_num, pretty_print(self['cryptsetup'])))
 
 
-@check_dict('autodetect_root', value=True, log_level=20, message="Skipping root autodetection, autodetect_root is disabled.")
-@check_dict('hostonly', value=True, log_level=30, message="Skipping root autodetection, hostonly mode is disabled.")
+@contains('autodetect_root', "Skipping root autodetection, autodetect_root is disabled.", log_level=30)
+@contains('hostonly', "Skipping root autodetection, hostonly mode is disabled.", log_level=30)
 def autodetect_root(self) -> None:
     """ Sets self['mounts']['root']'s source based on the host mount. """
     if any(source_type in self['mounts']['root'] for source_type in SOURCE_TYPES):
@@ -440,7 +441,7 @@ def mount_base(self) -> list[str]:
     return out
 
 
-@check_dict('late_mounts', not_empty=True, log_level=20, message="Skipping late mounts, late_mounts is empty.")
+@contains('late_mounts', "Skipping late mounts, late_mounts is empty.", log_level=30)
 def mount_late(self) -> list[str]:
     """ Generates mount commands for the late mounts. """
     target_dir = str(self['mounts']['root']['destination'])
@@ -484,8 +485,7 @@ def mount_fstab(self) -> list[str]:
     return out
 
 
-@check_dict('validate', value=True, log_level=30, return_val=True, message="Skipping host mount validation, validation is disabled.")
-@check_dict('hostonly', value=True, log_level=30, return_val=True, message="Skipping host mount validation, hostonly mode is enabled.")
+@contains('validate', "Skipping host mount validation, validation is disabled.", log_level=30)
 def _validate_host_mount(self, mount, destination_path=None) -> bool:
     """ Checks if a defined mount exists on the host. """
     mount_type, mount_val = _get_mount_source_type(self, mount, with_val=True)

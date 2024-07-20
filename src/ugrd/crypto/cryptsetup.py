@@ -1,7 +1,7 @@
 __author__ = 'desultory'
 __version__ = '2.5.0'
 
-from zenlib.util import check_dict
+from zenlib.util import check_dict, contains
 
 
 _module_name = 'ugrd.crypto.cryptsetup'
@@ -38,7 +38,7 @@ def _process_cryptsetup_key_types_multi(self, key_type: str, config: dict) -> No
         self['cryptsetup_key_types'][key_type] = config
 
 
-@check_dict('validate', value=True, log_level=30, message="Skipping cryptsetup key validation.")
+@contains('validate', "Skipping cryptsetup keyfile validation.", log_level=30)
 def _validate_crypysetup_key(self, key_paramters: dict) -> None:
     """ Validates the cryptsetup key """
     if key_paramters.get('include_key'):
@@ -67,7 +67,7 @@ def _validate_crypysetup_key(self, key_paramters: dict) -> None:
         key_copy = parent
 
 
-@check_dict('validate', value=True, log_level=30, message="Skipping cryptsetup configuration validation.")
+@contains('validate', "Skipping cryptsetup configuration validation.", log_level=30)
 def _validate_cryptsetup_config(self, mapped_name: str, config: dict) -> None:
     self.logger.log(5, "[%s] Validating cryptsetup configuration: %s" % (mapped_name, config))
     for parameter in config:
@@ -115,7 +115,7 @@ def _process_cryptsetup_multi(self, mapped_name: str, config: dict) -> None:
     self['cryptsetup'][mapped_name] = config
 
 
-@check_dict('validate', value=True, log_level=30, message="Skipping LUKS source validation.")
+@contains('validate', "Skipping cryptsetup configuration validation.", log_level=30)
 def _validate_luks_source(self, mapped_name: str) -> None:
     """ Checks that a LUKS source device is valid """
     for _dm_info in self['_dm_info'].values():
