@@ -16,7 +16,9 @@ class InitramfsTester:
         self.logger.info("Testing initramfs image: %s", self.initrd_generator['_archive_out_path'])
         self.logger.info("Using rootfs: %s", self.target_fs['_archive_out_path'])
         self.logger.info("Using kernel: %s", self.target_fs['test_kernel'])
+        self.run_vm()
 
+    def get_qemu_args(self):
         qemu_args = {'-m': self.target_fs['test_memory'],
                      '-cpu': self.target_fs['test_cpu'],
                      '-kernel': self.target_fs['test_kernel'],
@@ -30,7 +32,17 @@ class InitramfsTester:
         for k, v in qemu_args.items():
             arglist.append(k)
             arglist.append(v)
-        results = self.target_fs._run(arglist)
+        return arglist
+
+    def run_vm(self):
+        arglist = self.get_qemu_args()
+        self.logger.info("Running QEMU with args: %s", ' '.join([str(arg) for arg in arglist]))
+
+        try:
+            results = self.target_fs._run(arglist, timeout=self.target_fs['test_timeout'])
+        except RuntimeError as e:
+            return self.logger.critical("QEMU failed: %s", e)
+
         stdout = results.stdout.decode('utf-8').split('\r\n')
         self.logger.debug("QEMU stdout: %s", stdout)
         if self.target_fs['test_flag'] in stdout:

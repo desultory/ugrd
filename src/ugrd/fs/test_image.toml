@@ -11,6 +11,7 @@ test_memory = '256M'
 test_cpu = 'host'
 test_cmdline = 'console=ttyS0,115200 panic=1'
 test_flag = "UGRD TEST SUCCESSFUL"
+test_timeout = 15
 
 [masks]
 pack = "make_cpio"
@@ -31,5 +32,5 @@ test_cpu = "str"  # Define the CPU to use for the test image (passed to qemu)
 qemu_arch = "str"  # Define the qemu arch (added to the qemu-system- command)
 mounts = "dict"  # We only need the mounts dict, not the whole module
 test_flag = "str"  # Define the success flag used to determine if the test was successful
-
+test_timeout = "int"  # Define the timeout for the test
 
