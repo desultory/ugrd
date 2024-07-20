@@ -18,7 +18,7 @@ class InitramfsTester:
         self.logger.info("Using kernel: %s", self.target_fs['test_kernel'])
 
         qemu_args = {'-m': self.target_fs['test_memory'],
-                     '-cpu': 'host',
+                     '-cpu': self.target_fs['test_cpu'],
                      '-kernel': self.target_fs['test_kernel'],
                      '-initrd': self.initrd_generator['_archive_out_path'],
                      '-serial': 'mon:stdio',
