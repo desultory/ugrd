@@ -1,6 +1,8 @@
 __author__ = "desultory"
 __version__ = "1.3.0"
 
+from zenlib.util import contains
+
 
 def start_shell(self) -> str:
     """ Start a bash shell at the start of the initramfs. """
@@ -12,7 +14,7 @@ def start_shell(self) -> str:
             'bash -l']
 
 
+@contains('start_shell', 'Not enabling the debug shell, as the start_shell option is not set.', log_level=30)
 def enable_debug(self) -> str:
     """ Enable debug mode. """
-    self._dict_contains('start_shell', message="Not enabling the debug shell, as the start_shell option is not set.", log_level=30)
     return "setvar debug 1"

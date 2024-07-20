@@ -7,11 +7,11 @@ from pathlib import Path
 from queue import Queue
 
 from zenlib.logging import loggify
-from zenlib.util import handle_plural, pretty_print, NoDupFlatList, DictCheck
+from zenlib.util import handle_plural, pretty_print, NoDupFlatList
 
 
 @loggify
-class InitramfsConfigDict(dict, DictCheck):
+class InitramfsConfigDict(dict):
     """
     Dict for containing config for the InitramfsGenerator
 
