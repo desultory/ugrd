@@ -1,4 +1,4 @@
-__version__ = '1.8.0'
+__version__ = '1.8.1'
 __author__ = 'desultory'
 
 
@@ -25,16 +25,17 @@ def _get_mount_subvol(self, mountpoint: str) -> list:
     raise SubvolNotFound("No subvolume detected.")
 
 
-@contains('validate', "Validate is not set, skipping root subvolume validation.")
-@contains('root_subvol', "root_subvol is not set, skipping validation.")
+@contains('validate', "validate is not enabled, skipping root subvolume validation.")
 def _validate_root_subvol(self) -> None:
     """ Validates the root subvolume. """
     try:
         detected_subvol = _get_mount_subvol(self, '/')
     except SubvolNotFound:
-        raise ValueError("Current root mount is not using a subvolume, but root_subvol is set: %s" % self['root_subvol'])
+        if self['root_subvol']:
+            raise ValueError("Current root mount is not using a subvolume, but root_subvol is set: %s" % self['root_subvol'])
     except SubvolIsRoot:
-        raise ValueError("Current root mount is not using a subvolume, but root_subvol is set: %s" % self['root_subvol'])
+        if self['root_subvol'] != '/':
+            raise ValueError("Current root mount is not using a subvolume, but root_subvol is set: %s" % self['root_subvol'])
 
     if self['root_subvol'] != detected_subvol:
         raise ValueError("[%s] Root subvolume does not match detected subvolume: %s" % (self['root_subvol'], detected_subvol))
@@ -62,7 +63,7 @@ def btrfs_scan(self) -> str:
     return 'einfo "$(btrfs device scan)"'
 
 
-@unset('subvol_selector', message="subvol_selector is set, skipping.", log_level=20)
+@unset('subvol_selector', message="subvol_selector is enabled, skipping.", log_level=20)
 @contains('autodetect_root_subvol', "autodetect_root_subvol is not enabled, skipping.", log_level=30)
 @unset('root_subvol', message="root_subvol is set, skipping.")
 @contains('hostonly', "hostonly is not enabled, skipping.", log_level=30)
@@ -78,7 +79,7 @@ def autodetect_root_subvol(self):
         self.logger.debug("Root mount is not using a subvolume.")
 
 
-@contains('subvol_selector', message="subvol_selector is not set, skipping.")
+@contains('subvol_selector', message="subvol_selector is not enabled, skipping.")
 @unset('root_subvol', message="root_subvol is set, skipping.")
 def select_subvol(self) -> str:
     """ Returns a bash script to list subvolumes on the root volume. """
