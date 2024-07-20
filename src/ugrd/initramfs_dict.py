@@ -1,17 +1,17 @@
 
 __author__ = "desultory"
-__version__ = "1.7.0"
+__version__ = "1.8.0"
 
 from tomllib import load, TOMLDecodeError
 from pathlib import Path
 from queue import Queue
 
 from zenlib.logging import loggify
-from zenlib.util import handle_plural, pretty_print, NoDupFlatList
+from zenlib.util import handle_plural, pretty_print, NoDupFlatList, DictCheck
 
 
 @loggify
-class InitramfsConfigDict(dict):
+class InitramfsConfigDict(dict, DictCheck):
     """
     Dict for containing config for the InitramfsGenerator
 

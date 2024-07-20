@@ -1,7 +1,7 @@
 from tomllib import load
 
 from zenlib.logging import loggify
-from zenlib.util import pretty_print
+from zenlib.util import pretty_print, DictCheck
 
 from ugrd.initramfs_dict import InitramfsConfigDict
 
@@ -11,7 +11,7 @@ __author__ = "desultory"
 
 
 @loggify
-class InitramfsGenerator(GeneratorHelpers):
+class InitramfsGenerator(GeneratorHelpers, DictCheck):
     def __init__(self, config='/etc/ugrd/config.toml', *args, **kwargs):
         self.config_filename = config
         self.config_dict = InitramfsConfigDict(NO_BASE=kwargs.pop('NO_BASE', False), logger=self.logger)
