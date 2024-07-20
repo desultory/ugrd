@@ -12,32 +12,32 @@ class InitramfsTester:
         self.target_fs = InitramfsGenerator(logger=self.logger, test_kernel=test_kernel, validate=False, build_dir=test_dir, config=None, modules='ugrd.fs.test_image', NO_BASE=True, out_dir=initrd_generator.out_dir, out_file='ugrd-test-rootfs', mounts=initrd_generator['mounts'])
 
     def test(self):
-        print(self.target_fs.__dict__)
-        if not self.target_fs['test_kernel']:
-            raise ValueError("No 'test_kernel' specfied.")
-
-        if not self.target_fs['test_kernel'].exists():
-            raise ValueError("Kernel does not exist: %s" % self.target_fs['test_kernel'])
-
         self.target_fs.build()
         self.logger.info("Testing initramfs image: %s", self.initrd_generator['_archive_out_path'])
         self.logger.info("Using rootfs: %s", self.target_fs['_archive_out_path'])
         self.logger.info("Using kernel: %s", self.target_fs['test_kernel'])
 
-        qemu_args = {'-m': '512M',
+        qemu_args = {'-m': self.target_fs['test_memory'],
                      '-cpu': 'host',
                      '-kernel': self.target_fs['test_kernel'],
                      '-initrd': self.initrd_generator['_archive_out_path'],
                      '-serial': 'mon:stdio',
-                     '-append': 'console=ttyS0,115200 panic=1',
+                     '-append': self.target_fs['test_cmdline'],
                      '-drive': 'file=%s,format=raw' % self.target_fs['_archive_out_path']}
         qemu_bools = ['-nographic', '-no-reboot', '-enable-kvm']
 
-        arglist = ['qemu-system-x86_64'] + qemu_bools
+        arglist = [f"qemu-system-{self.target_fs['qemu_arch']}"] + qemu_bools
         for k, v in qemu_args.items():
             arglist.append(k)
             arglist.append(v)
-        self.logger.info(self.target_fs._run(arglist))
+        results = self.target_fs._run(arglist)
+        stdout = results.stdout.decode('utf-8').split('\r\n')
+        self.logger.debug("QEMU stdout: %s", stdout)
+        if self.target_fs['test_flag'] in stdout:
+            self.logger.info("Test passed.")
+        else:
+            self.logger.error("Test failed.")
+            self.logger.error("QEMU stdout: %s", stdout)
 
 
 
