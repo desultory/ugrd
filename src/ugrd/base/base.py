@@ -22,7 +22,7 @@ def _process_init_target(self, target: Path) -> None:
     _validate_init_target(self)
 
 
-@check_dict('init_target', unset=True, message='init_target already set.')
+@check_dict('init_target', unset=True, log_level=30, message='init_target already set.')
 def _process_autodetect_init(self, state) -> None:
     from shutil import which
     dict.__setitem__(self, 'autodetect_init', state)

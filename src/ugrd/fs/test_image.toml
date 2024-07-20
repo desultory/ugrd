@@ -3,7 +3,6 @@ paths = ['dev', 'sys', 'proc']
 
 
 binaries = ['halt', 'shutdown', 'ls', 'top', 'ps']
-
 shebang = "#!/bin/bash"
 test_image_size = 16
 
@@ -17,5 +16,6 @@ pack = "make_cpio"
 
 [custom_parameters]
 shebang = "str"  # Add the shebang property, because the test mode disables the base module
+test_kernel = "Path"  # Define the kernel to use for the test image
 test_image_size = "int"  # Define the size of the test image in MiB
 mounts = "dict"  # We only need the mounts dict, not the whole module

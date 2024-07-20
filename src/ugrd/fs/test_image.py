@@ -1,8 +1,12 @@
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 
 def make_test_image(self):
     """ Creates a test image from the build dir """
+    if not self.get('test_kernel'):
+        raise ValueError("No test kernel specified")
+    elif not self['test_kernel'].exists():
+        raise FileNotFoundError("Test kernel not found: %s" % self['test_kernel'])
 
     self.logger.info("Creating test image from: %s" % self.build_dir.resolve())
 

@@ -39,6 +39,7 @@ def main():
                  {'flags': ['--print-config'], 'action': 'store_true', 'help': 'print the final config dict'},
                  {'flags': ['--print-init'], 'action': 'store_true', 'help': 'print the final init structure'},
                  {'flags': {'--test'}, 'action': 'store_true', 'help': 'Tests the image with qemu'},
+                 {'flags': {'--test-kernel'}, 'action': 'store', 'help': 'Tests the image with qemu using a specific kernel file.'},
                  {'flags': ['out_file'], 'action': 'store', 'help': 'set the output image location', 'nargs': '?'}]
 
     args, logger = get_args_n_logger(package=__package__, description='MicrogRAM disk initramfs generator', arguments=arguments, drop_default=True)
@@ -46,6 +47,7 @@ def main():
     kwargs.pop('print_config', None)  # This is not a valid kwarg for InitramfsGenerator
     kwargs.pop('print_init', None)  # This is not a valid kwarg for InitramfsGenerator
     test = kwargs.pop('test', False)
+    test_kernel = kwargs.pop('test_kernel', None)
 
     if test:
         logger.warning("TEST MODE ENABLED")
@@ -75,7 +77,7 @@ def main():
                 print(f"    {func.__name__}")
 
     if test:
-        tester = InitramfsTester(generator, logger=logger, _log_init=False)
+        tester = InitramfsTester(generator, test_kernel=test_kernel, logger=logger, _log_init=False)
         tester.test()
 
 
