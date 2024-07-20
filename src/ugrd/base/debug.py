@@ -1,7 +1,5 @@
 __author__ = "desultory"
-__version__ = "1.2.1"
-
-from zenlib.util import check_dict
+__version__ = "1.3.0"
 
 
 def start_shell(self) -> str:
@@ -14,7 +12,7 @@ def start_shell(self) -> str:
             'bash -l']
 
 
-@check_dict('start_shell', value=True, message="Not enabling the debug shell, as the start_shell option is not set.")
 def enable_debug(self) -> str:
     """ Enable debug mode. """
+    self._dict_contains('start_shell', message="Not enabling the debug shell, as the start_shell option is not set.", log_level=30)
     return "setvar debug 1"
