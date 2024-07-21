@@ -251,6 +251,7 @@ def process_ignored_modules(self) -> None:
         process_ignored_module(self, module)
 
 
+@unset('no_kmod', "no_kmod is enabled, skipping.", log_level=30)
 def process_modules(self) -> None:
     """ Processes all kernel modules, adding dependencies to the initramfs. """
     self.logger.debug("Processing kernel modules: %s" % self['kernel_modules'])
