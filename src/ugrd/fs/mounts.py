@@ -523,6 +523,8 @@ def _validate_host_mount(self, mount, destination_path=None) -> bool:
 
     # Using the mount path, get relevant hsot mount info
     host_source_dev = self['_mounts'][destination_path]['device']
+    if mount == 'root' and self['resolve_root_dev']:
+        host_source_dev = _resolve_root_dev(self)
     host_mount_options = self['_mounts'][destination_path]['options']
     for option in mount.get('options', []):
         if option == 'ro' and destination_path == '/':
