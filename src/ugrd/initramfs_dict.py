@@ -141,8 +141,13 @@ class InitramfsConfigDict(dict):
                 super().__setitem__(parameter_name, 0.0)
             case "PyCPIO":
                 super().__setitem__(parameter_name, PyCPIO(logger=self.logger, _log_init=False, _log_bump=10))
+            case "str":
+                super().__setitem__(parameter_name, "")
+            case "Path":
+                super().__setitem__(parameter_name, Path())
             case _:  # For strings and things, don't init them so they are None
-                self.logger.debug("Leaving '%s' as None" % parameter_name)
+                self.logger.warning("Leaving '%s' as None" % parameter_name)
+                super().__setitem__(parameter_name, None)
 
     def _process_unprocessed(self, parameter_name: str) -> None:
         """ Processes queued values for a parameter. """

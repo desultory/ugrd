@@ -1,16 +1,16 @@
 __author__ = 'desultory'
-__version__ = '4.6.0'
+__version__ = '4.6.1'
 
 from importlib.metadata import version
 from pathlib import Path
 
-from zenlib.util import contains, unset
+from zenlib.util import contains
 
 
 @contains('hostonly')
 def _validate_init_target(self) -> None:
     if not self['init_target'].exists():
-        raise FileNotFoundError('init_target not found at: %s', self['init_target'])
+        raise FileNotFoundError('init_target not found at: %s' % self['init_target'])
 
 
 def _process_init_target(self, target: Path) -> None:
@@ -21,12 +21,12 @@ def _process_init_target(self, target: Path) -> None:
     _validate_init_target(self)
 
 
-@unset('init_target', 'init_target is already set, skipping autodetection.', log_level=30)
+@contains('init_target', 'init_target is already set, skipping autodetection.', log_level=30)
 def _process_autodetect_init(self, state) -> None:
     dict.__setitem__(self, 'autodetect_init', state)
 
 
-@contains('autodetect_init')
+@contains('autodetect_init', log_level=30)
 def autodetect_init(self) -> None:
     """ Autodetects the init_target. """
     from shutil import which
