@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.3.0'
+__version__ = '2.3.1'
 
 
 CMDLINE_BOOLS = ['quiet', 'debug', 'recovery', 'rootwait']
@@ -62,7 +62,7 @@ def export_exports(self) -> list:
     """ Returns a bash script exporting all exports defined in the exports key. """
     from importlib.metadata import version, PackageNotFoundError
     try:
-        self['exports']['VERSION'] = version(__package__)
+        self['exports']['VERSION'] = version(__package__.split('.')[0])
     except PackageNotFoundError:
         self['exports']['VERSION'] = 9999
     return [f'setvar {key} "{value}"' for key, value in self['exports'].items()]
