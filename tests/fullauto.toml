@@ -14,6 +14,7 @@ cpio_compression = false
 
 autodetect_root_dm = false
 
+resolve_root_dev = true
 
 # Optionally supply a kernel version, uses the current kernel version if not specified
 #kernel_version = "6.1.53-gentoo-dist"
