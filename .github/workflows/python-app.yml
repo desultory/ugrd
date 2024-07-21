@@ -34,7 +34,7 @@ jobs:
     - name: Install python deps
       run: |
         python -m venv venv
-        venv/bin/pip install --upgrade pip'
+        venv/bin/pip install --upgrade pip
         venv/bin/pip install ./zenlib
         venv/bin/pip install ./pycpio
         venv/bin/pip install .
