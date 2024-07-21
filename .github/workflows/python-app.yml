@@ -39,4 +39,4 @@ jobs:
     - name: Test fullauto.toml
       run: |
         ls /boot
-        ugrd -c tests/fullauto.toml
+        sudo ugrd -c tests/fullauto.toml
