@@ -30,13 +30,14 @@ jobs:
         
     - name: Install dependencies
       run: |
-        sudo python -m pip install --upgrade pip
+        sudo -s PATH=$PATH
+        python -m pip install --upgrade pip
         git clone https://github.com/desultory/zenlib
         git clone https://github.com/desultory/pycpio
-        sudo pip install --break ./zenlib
-        sudo pip install --break ./pycpio
-        sudo pip install --break .
+        pip install --break ./zenlib
+        pip install --break ./pycpio
+        pip install --break .
     - name: Test fullauto.toml
       run: |
         ls /boot
-        sudo ugrd -c tests/fullauto.toml
+        ugrd -c tests/fullauto.toml
