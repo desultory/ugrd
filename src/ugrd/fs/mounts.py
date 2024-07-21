@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.8.0'
+__version__ = '4.9.0'
 
 from pathlib import Path
 from zenlib.util import contains, pretty_print
@@ -412,6 +412,11 @@ def autodetect_root(self) -> None:
 
     # Sometimes the root device listed in '/proc/mounts' differs from the blkid info
     root_dev = self['_mounts']['/']['device']
+    if self['resolve_root_dev']:
+        resolved_root_dev = Path(root_dev).resolve()
+        if root_dev != resolved_root_dev:
+            self.logger.info("Resolved root device: %s -> %s" % (root_dev, resolved_root_dev))
+            root_dev = resolved_root_dev
     if root_dev not in self['_blkid_info']:
         get_blkid_info(self, root_dev)
 
