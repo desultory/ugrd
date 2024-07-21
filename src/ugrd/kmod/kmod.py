@@ -1,10 +1,10 @@
 __author__ = 'desultory'
-__version__ = '2.9.0'
+__version__ = '2.9.1'
 
 from pathlib import Path
 from subprocess import run
 
-from zenlib.util import check_dict, contains, unset
+from zenlib.util import contains, unset
 
 
 MODULE_METADATA_FILES = ['modules.alias', 'modules.alias.bin', 'modules.builtin', 'modules.builtin.alias.bin', 'modules.builtin.bin', 'modules.builtin.modinfo',
@@ -53,12 +53,13 @@ def _process__kmod_auto_multi(self, module: str) -> None:
     self['_kmod_auto'].append(module)
 
 
-@check_dict('_kmod_modinfo', contains=True, unset=True, value_arg=1, log_level=5)
 def _get_kmod_info(self, module: str):
     """
     Runs modinfo on a kernel module, parses the output and stored the results in self['_kmod_modinfo'].
     !!! Should be run after metadata is processed so the kver is set properly !!!
     """
+    if module in self['_kmod_modinfo']:
+        return self.logger.debug("[%s] Module info already exists." % module)
     args = ['modinfo', module, '--set-version', self['kernel_version']]
 
     try:
@@ -173,9 +174,11 @@ def process_module_metadata(self) -> None:
         self['dependencies'] = meta_file_path
 
 
-@check_dict('_kmod_modinfo', contains=True, value_arg=1, raise_exception=True)
 def _add_kmod_firmware(self, kmod: str) -> None:
     """ Adds firmware files for the specified kernel module to the initramfs. """
+    if kmod not in self['_kmod_modinfo']:
+        raise DependencyResolutionError("Kernel module info does not exist: %s" % kmod)
+
     if self['_kmod_modinfo'][kmod].get('firmware') and not self['kmod_pull_firmware']:
         self.logger.warning("[%s] Kernel module has firmware files, but kmod_pull_firmware is not set." % kmod)
 
