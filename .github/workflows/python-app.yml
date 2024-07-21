@@ -30,7 +30,7 @@ jobs:
     - name: Install system deps
       run: |
         sudo apt update
-        sudo apt install -y pax-utils
+        sudo apt install -y pax-utils qemu-system-x86
     - name: Install python deps
       run: |
         python -m venv venv
@@ -41,4 +41,4 @@ jobs:
     - name: Test fullauto.toml
       run: |
         ls /boot
-        sudo venv/bin/ugrd -c tests/fullauto.toml
+        sudo venv/bin/ugrd -c tests/fullauto.toml --test-kernel /boot/vmlinuz-6.5.0-1023-azure
