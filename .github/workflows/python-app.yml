@@ -19,23 +19,24 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+    - name: Obtain dependencies
+      run: |
+        git clone https://github.com/desultory/zenlib
+        git clone https://github.com/desultory/pycpio
     - name: Set up Python 3.11
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v5
       with:
         python-version: "3.11"
+        cache: "venv"
+      run: |
+        python -m pip install --upgrade pip
+        pip install ./zenlib
+        pip install ./pycpio
+        pip install .
     - name: Install system deps
       run: |
         sudo apt update
         sudo apt install -y pax-utils
-        
-    - name: Install dependencies
-      run: |
-        sudo PATH=$PATH python -m pip install --upgrade pip
-        git clone https://github.com/desultory/zenlib
-        git clone https://github.com/desultory/pycpio
-        sudo PATH=$PATH pip install --break ./zenlib
-        sudo PATH=$PATH pip install --break ./pycpio
-        sudo PATH=$PATH pip install --break .
     - name: Test fullauto.toml
       run: |
         ls /boot
