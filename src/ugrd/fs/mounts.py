@@ -1,16 +1,20 @@
 __author__ = 'desultory'
-__version__ = '4.7.0'
+__version__ = '4.8.0'
 
 from pathlib import Path
 from zenlib.util import contains, pretty_print
 
 BLKID_FIELDS = ['uuid', 'partuuid', 'label', 'type']
 SOURCE_TYPES = ['uuid', 'partuuid', 'label', 'path']
-MOUNT_PARAMETERS = ['destination', 'source', 'type', 'options', 'base_mount', 'remake_mountpoint', *SOURCE_TYPES]
+MOUNT_PARAMETERS = ['destination', 'source', 'type', 'options', 'no_validate', 'base_mount', 'remake_mountpoint', *SOURCE_TYPES]
 
 
+@contains('validate', "Skipping mount validation, validation is disabled.", log_level=30)
 def _validate_mount_config(self, mount_name: str, mount_config) -> None:
     """ Validate the mount config. """
+    if mount_config.get('no_validate'):
+        return self.logger.warning("Skipping mount validation: %s" % mount_name)
+
     for source_type in SOURCE_TYPES:
         if source_type in mount_config:
             self.logger.debug("[%s] Validated source type: %s" % (mount_name, mount_config))
@@ -488,6 +492,9 @@ def mount_fstab(self) -> list[str]:
 @contains('validate', "Skipping host mount validation, validation is disabled.", log_level=30)
 def _validate_host_mount(self, mount, destination_path=None) -> bool:
     """ Checks if a defined mount exists on the host. """
+    if mount.get('no_validate'):
+        return self.logger.warning("Skipping host mount validation for config:\n%s" % pretty_print(mount))
+
     mount_type, mount_val = _get_mount_source_type(self, mount, with_val=True)
     # If a destination path is passed, like for /, use that instead of the mount's destination
     destination_path = str(mount['destination']) if destination_path is None else destination_path

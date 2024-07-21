@@ -370,6 +370,7 @@ Each mount has the following available parameters:
 * `options` A list of options to add to the mount.
 * `base_mount` (false) Mounts with a mount command during `init_pre` instead of using `mount -a` in `init_main`.
 * `remake_mountpoint` (false) Recreate the mountpoint with mkdir before the `mount -a` is called. This is useful for `/dev/pty`.
+* `no_validate` (false) Disables validation for the mount.
 
 The most minimal mount entry that can be created must have a name, which will be used as the `destination`, and a source type.
 
