@@ -1,7 +1,7 @@
 __author__ = 'desultory'
-__version__ = '2.5.0'
+__version__ = '2.5.1'
 
-from zenlib.util import check_dict
+from zenlib.util import contains
 
 
 _module_name = 'ugrd.crypto.cryptsetup'
@@ -9,9 +9,11 @@ _module_name = 'ugrd.crypto.cryptsetup'
 CRYPTSETUP_PARAMETERS = ['key_type', 'partuuid', 'uuid', 'path', 'key_file', 'header_file', 'retries', 'key_command', 'reset_command', 'try_nokey', 'include_key']
 
 
-@check_dict('cryptsetup', value_arg=1, return_arg=2, contains=True)  # Check if the mapped name is defined
 def _merge_cryptsetup(self, mapped_name: str, config: dict) -> None:
     """ Merges the cryptsetup configuration """
+    if mapped_name not in self['cryptsetup']:
+        return config
+
     self.logger.log(5, "Existing cryptsetup configuration: %s" % self['cryptsetup'][mapped_name])
     self.logger.debug("[%s] Merging cryptsetup configuration: %s" % (mapped_name, config))
     return dict(self['cryptsetup'][mapped_name], **config)
@@ -38,7 +40,7 @@ def _process_cryptsetup_key_types_multi(self, key_type: str, config: dict) -> No
         self['cryptsetup_key_types'][key_type] = config
 
 
-@check_dict('validate', value=True, log_level=30, message="Skipping cryptsetup key validation.")
+@contains('validate', "Skipping cryptsetup keyfile validation.", log_level=30)
 def _validate_crypysetup_key(self, key_paramters: dict) -> None:
     """ Validates the cryptsetup key """
     if key_paramters.get('include_key'):
@@ -67,7 +69,7 @@ def _validate_crypysetup_key(self, key_paramters: dict) -> None:
         key_copy = parent
 
 
-@check_dict('validate', value=True, log_level=30, message="Skipping cryptsetup configuration validation.")
+@contains('validate', "Skipping cryptsetup configuration validation.", log_level=30)
 def _validate_cryptsetup_config(self, mapped_name: str, config: dict) -> None:
     self.logger.log(5, "[%s] Validating cryptsetup configuration: %s" % (mapped_name, config))
     for parameter in config:
@@ -115,7 +117,7 @@ def _process_cryptsetup_multi(self, mapped_name: str, config: dict) -> None:
     self['cryptsetup'][mapped_name] = config
 
 
-@check_dict('validate', value=True, log_level=30, message="Skipping LUKS source validation.")
+@contains('validate', "Skipping cryptsetup configuration validation.", log_level=30)
 def _validate_luks_source(self, mapped_name: str) -> None:
     """ Checks that a LUKS source device is valid """
     for _dm_info in self['_dm_info'].values():

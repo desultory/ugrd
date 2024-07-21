@@ -4,7 +4,7 @@ from subprocess import run, CompletedProcess, TimeoutExpired
 
 from zenlib.util import pretty_print
 
-__version__ = "1.1.0"
+__version__ = "1.1.1"
 __author__ = "desultory"
 
 
@@ -138,6 +138,15 @@ class GeneratorHelpers:
         if not target.parent.is_dir():
             self.logger.debug("Parent directory for '%s' does not exist: %s" % (target.name, target.parent))
             self._mkdir(target.parent)
+
+        if target.is_symlink():
+            if target.resolve() == source:
+                return self.logger.debug("Symlink already exists: %s -> %s" % (target, source))
+            elif self.clean:
+                self.logger.warning("Deleting symlink: %s" % target)
+                target.unlink()
+            else:
+                raise RuntimeError("Symlink already exists: %s -> %s" % (target, target.resolve()))
 
         self.logger.debug("Creating symlink: %s -> %s" % (target, source))
         symlink(source, target)

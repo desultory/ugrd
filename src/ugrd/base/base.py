@@ -1,17 +1,16 @@
 __author__ = 'desultory'
-__version__ = '4.5.2'
+__version__ = '4.6.1'
 
 from importlib.metadata import version
 from pathlib import Path
 
-from zenlib.util import check_dict
+from zenlib.util import contains
 
 
-@check_dict('validate', value=True)
-@check_dict('hostonly', value=True)
+@contains('hostonly')
 def _validate_init_target(self) -> None:
     if not self['init_target'].exists():
-        raise FileNotFoundError('init_target not found at: %s', self['init_target'])
+        raise FileNotFoundError('init_target not found at: %s' % self['init_target'])
 
 
 def _process_init_target(self, target: Path) -> None:
@@ -22,18 +21,20 @@ def _process_init_target(self, target: Path) -> None:
     _validate_init_target(self)
 
 
-@check_dict('init_target', unset=True, message='init_target already set.')
+@contains('init_target', 'init_target is already set, skipping autodetection.', log_level=30)
 def _process_autodetect_init(self, state) -> None:
-    from shutil import which
     dict.__setitem__(self, 'autodetect_init', state)
-    if not state:
-        return
 
+
+@contains('autodetect_init', log_level=30)
+def autodetect_init(self) -> None:
+    """ Autodetects the init_target. """
+    from shutil import which
     if init := which('init'):
         self.logger.info('Detected init at: %s', init)
         self['init_target'] = init
     else:
-        raise FileNotFoundError('init_target is not specified and coud not be detected.')
+        raise FileNotFoundError('init_target is not specified and could not be detected.')
 
 
 def _find_init(self) -> str:
@@ -49,7 +50,7 @@ def _find_init(self) -> str:
             'return 1']
 
 
-@check_dict('init_target', not_empty=True, raise_exception=True, message='init_target must be set.')
+@contains('init_target', 'init_target must be set.', raise_exception=True)
 def do_switch_root(self) -> str:
     """
     Should be the final statement, switches root.

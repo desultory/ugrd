@@ -19,10 +19,10 @@ late_fstab = "/etc/fstab.late"
 "ugrd.fs.mounts" = [ "_process_mounts_multi", "_process_late_mounts_multi", "_process_mount_timeout" ]
 
 [imports.build_pre]
-"ugrd.fs.mounts" = [ "get_mounts_info", "get_dm_info", "get_blkid_info", "autodetect_root", "autodetect_root_dm", "autodetect_init_mount" ]
+"ugrd.fs.mounts" = [ "get_mounts_info", "get_dm_info", "get_blkid_info", "autodetect_root", "autodetect_root_dm" ]
 
 [imports.build_tasks]
-"ugrd.fs.mounts" = [ "export_mount_info" ]
+"ugrd.fs.mounts" = [ "autodetect_init_mount", "export_mount_info" ]
 
 [imports.build_final]
 "ugrd.fs.mounts" = [ "generate_fstab" ]
