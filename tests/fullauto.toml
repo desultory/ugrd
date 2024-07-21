@@ -1,6 +1,7 @@
 # NOP
 
 modules = [
+  "ugrd.base.test",
   "ugrd.kmod.standard_mask",
 ]
 
@@ -9,6 +10,10 @@ out_dir = "/tmp/initramfs_test"
 
 kernel_version = "6.6.35-gentoo-dist"
 test_kernel = "/boot/vmlinuz-6.6.35-gentoo-dist"
+cpio_compression = false
+
+autodetect_root_dm = false
+
 
 # Optionally supply a kernel version, uses the current kernel version if not specified
 #kernel_version = "6.1.53-gentoo-dist"
