@@ -74,6 +74,8 @@ class InitramfsConfigDict(dict):
         for d in (self.builtin_parameters, self['custom_parameters']):
             expected_type = d.get(key)
             if expected_type:
+                if expected_type.__name__ == "InitramfsGenerator":
+                    return super().__setitem__(key, value)
                 break
         else:
             raise KeyError("Parameter not registered: %s" % key)
@@ -125,6 +127,8 @@ class InitramfsConfigDict(dict):
         If the parameter is in the processing queue, process the queued values.
         """
         from pycpio import PyCPIO
+        from .initramfs_generator import InitramfsGenerator
+
         self['custom_parameters'][parameter_name] = eval(parameter_type)
         self.logger.debug("Registered custom parameter '%s' with type: %s" % (parameter_name, parameter_type))
 
@@ -139,12 +143,12 @@ class InitramfsConfigDict(dict):
                 super().__setitem__(parameter_name, 0)
             case "float":
                 super().__setitem__(parameter_name, 0.0)
-            case "PyCPIO":
-                super().__setitem__(parameter_name, PyCPIO(logger=self.logger, _log_init=False, _log_bump=10))
             case "str":
                 super().__setitem__(parameter_name, "")
             case "Path":
                 super().__setitem__(parameter_name, Path())
+            case "PyCPIO":
+                super().__setitem__(parameter_name, PyCPIO(logger=self.logger, _log_init=False, _log_bump=10))
             case _:  # For strings and things, don't init them so they are None
                 self.logger.warning("Leaving '%s' as None" % parameter_name)
                 super().__setitem__(parameter_name, None)

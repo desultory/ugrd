@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 from ugrd.initramfs_generator import InitramfsGenerator
-from ugrd.initramfs_tester import InitramfsTester
 from zenlib.util import get_kwargs_from_args, get_args_n_logger
 
 
@@ -47,12 +46,12 @@ def main():
     kwargs.pop('print_config', None)  # This is not a valid kwarg for InitramfsGenerator
     kwargs.pop('print_init', None)  # This is not a valid kwarg for InitramfsGenerator
     test = kwargs.pop('test', False)
-    test_kernel = kwargs.pop('test_kernel', None)
 
     if test:
         logger.warning("TEST MODE ENABLED")
         logger.info("Disabling DM autodetection")
         kwargs['autodetect_root_dm'] = False
+        kwargs['modules'] = 'ugrd.base.test'
 
     logger.debug(f"Using the following kwargs: {kwargs}")
     generator = InitramfsGenerator(**kwargs)
@@ -75,10 +74,6 @@ def main():
             print(runlevel + ":")
             for func in generator.imports[runlevel]:
                 print(f"    {func.__name__}")
-
-    if test:
-        tester = InitramfsTester(generator, test_kernel=test_kernel, logger=logger, _log_init=False)
-        tester.test()
 
 
 if __name__ == '__main__':

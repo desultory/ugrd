@@ -1,12 +1,7 @@
 __version__ = "0.3.0"
 
 
-def init_test_vars(self):
-    if not self.get('test_kernel'):
-        raise ValueError("No test kernel specified")
-    elif not self['test_kernel'].exists():
-        raise FileNotFoundError("Test kernel not found: %s" % self['test_kernel'])
-
+def init_banner(self):
     self['banner'] = f"echo {self['test_flag']}"
 
 

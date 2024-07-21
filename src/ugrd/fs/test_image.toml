@@ -1,36 +1,23 @@
 modules = ['ugrd.fs.cpio']
 paths = ['dev', 'sys', 'proc']
 
-
-binaries = ['halt', 'shutdown', 'ls', 'top', 'ps']
+test_image_size = 16
+test_flag = "UGRD TEST SUCCESSFUL"
 shebang = "#!/bin/bash"
 
-qemu_arch = 'x86_64'
-test_image_size = 16
-test_memory = '256M'
-test_cpu = 'host'
-test_cmdline = 'console=ttyS0,115200 panic=1'
-test_flag = "UGRD TEST SUCCESSFUL"
-test_timeout = 15
 
 [masks]
 pack = "make_cpio"
 
 [imports.build_pre]
-"ugrd.fs.test_image" = ["init_test_vars"]
+"ugrd.fs.test_image" = ["init_banner"]
 
 [imports.pack]
 "ugrd.fs.test_image" = ["make_test_image"]
 
 [custom_parameters]
-shebang = "str"  # Add the shebang property, because the test mode disables the base module
-test_kernel = "Path"  # Define the kernel to use for the test image
-test_cmdline = "str"  # Define the kernel command line for the test image
-test_image_size = "int"  # Define the size of the test image in MiB
-test_memory = "str"  # Define the amount of memory to use for the test image (passed to qemu)
-test_cpu = "str"  # Define the CPU to use for the test image (passed to qemu)
-qemu_arch = "str"  # Define the qemu arch (added to the qemu-system- command)
+shebang = "str"  # Add the shebang property, because the test mode disables the base moduleo
 mounts = "dict"  # We only need the mounts dict, not the whole module
+test_image_size = "int"  # Define the size of the test image in MiB
 test_flag = "str"  # Define the success flag used to determine if the test was successful
-test_timeout = "int"  # Define the timeout for the test
 

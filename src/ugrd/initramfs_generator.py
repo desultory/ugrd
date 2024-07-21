@@ -76,6 +76,7 @@ class InitramfsGenerator(GeneratorHelpers):
         self.generate_init()
         self.run_hook('build_final')
         self.pack_build()
+        self.run_tests()
 
     def run_func(self, function, force_include=False) -> list[str]:
         """ Runs a function, If force_include is set, forces the function to be included in the bash source file. """
@@ -205,4 +206,15 @@ class InitramfsGenerator(GeneratorHelpers):
             self.run_hook('pack')
         else:
             self.logger.warning("No pack functions specified, the final build is present in: %s" % self.build_dir)
+
+    def run_tests(self) -> None:
+        """ Runs tests if defined in self['imports']['tests']. """
+        if test_output := self.run_hook('tests'):
+            self.logger.info("Completed tests:\n%s", test_output)
+        else:
+            self.logger.debug("No tests executed.")
+
+
+
+
 
