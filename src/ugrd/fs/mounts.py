@@ -288,6 +288,11 @@ def get_dm_info(self) -> dict:
         self.logger.debug("No device mapper devices found.")
 
 
+def _get_device_id(device: str) -> str:
+    """ Gets the device id from the device path. """
+    return Path(device).stat().st_rdev >> 8, Path(device).stat().st_rdev & 0xFF
+
+
 @contains('hostonly', "Skipping device mapper autodetection, hostonly mode is disabled.", log_level=30)
 def _autodetect_dm(self, mountpoint) -> None:
     """
@@ -308,7 +313,7 @@ def _autodetect_dm(self, mountpoint) -> None:
 
     self.logger.info("Detected a device mapper mount: %s" % source_device)
     source_device = Path(source_device)
-    major, minor = source_device.stat().st_rdev >> 8, source_device.stat().st_rdev & 0xFF
+    major, minor = _get_device_id(source_device)
     self.logger.debug("[%s] Major: %s, Minor: %s" % (source_device, major, minor))
 
     for name, info in self['_dm_info'].items():
@@ -402,6 +407,21 @@ def autodetect_luks(self, mount_loc, dm_num, dm_info) -> None:
                      (mount_loc.name, self._dm_info[dm_num]['name'], dm_num, pretty_print(self['cryptsetup'])))
 
 
+def _resolve_root_dev(self) -> None:
+    """
+    Resolves the root device, if possible.
+    Useful for cases where the device in blkid differs from the device in /proc/mounts.
+    """
+    major, minor = _get_device_id(self['_mounts']['/']['device'])
+    for device in self['_blkid_info']:
+        check_major, check_minor = _get_device_id(device)
+        if (major, minor) == (check_major, check_minor):
+            self.logger.info("Resolved root device: %s -> %s" % (self['_mounts']['/']['device'], device))
+            return device
+    self.logger.warning("Failed to resolve root device: %s" % self['_mounts']['/']['device'])
+    return self['_mounts']['/']['device']
+
+
 @contains('autodetect_root', "Skipping root autodetection, autodetect_root is disabled.", log_level=30)
 @contains('hostonly', "Skipping root autodetection, hostonly mode is disabled.", log_level=30)
 def autodetect_root(self) -> None:
@@ -413,10 +433,7 @@ def autodetect_root(self) -> None:
     # Sometimes the root device listed in '/proc/mounts' differs from the blkid info
     root_dev = self['_mounts']['/']['device']
     if self['resolve_root_dev']:
-        resolved_root_dev = Path(root_dev).resolve()
-        if root_dev != resolved_root_dev:
-            self.logger.info("Resolved root device: %s -> %s" % (root_dev, resolved_root_dev))
-            root_dev = resolved_root_dev
+        root_dev = _resolve_root_dev(self)
     if root_dev not in self['_blkid_info']:
         get_blkid_info(self, root_dev)
 
