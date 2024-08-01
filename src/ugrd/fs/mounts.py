@@ -85,7 +85,7 @@ def _process_mount(self, mount_name: str, mount_config, mount_class="mounts") ->
             if 'ugrd.fs.btrfs' not in self['modules']:
                 self.logger.info("Auto-enabling module: btrfs")
                 self['modules'] = 'ugrd.fs.btrfs'
-        elif mount_type not in ['proc', 'sysfs', 'devtmpfs', 'tmpfs']:
+        elif mount_type not in ['proc', 'sysfs', 'devtmpfs', 'tmpfs', 'devpts']:
             self.logger.warning("Unknown mount type: %s" % mount_type)
 
     self[mount_class][mount_name] = mount_config

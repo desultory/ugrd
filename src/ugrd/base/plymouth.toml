@@ -1,16 +1,23 @@
-
 binaries = ['plymouthd', 'plymouth']
 
-paths = ['/run/plymouth']
+
+[imports.config_processing]
+"ugrd.base.plymouth" = [ "_process_plymouth_config" ]
 
 [mounts.devpts]
 type = "devpts"
 destination = "/dev/pts"
-source = "/dev/pts"
+options = ['nosuid', 'noexec', 'gid=5', 'mode=0620']
+path = "/dev/pts"
 remake_mountpoint = true
+no_validate = true
 
 [imports.build_pre]
-"ugrd.base.plymouth" = [ "populate_initrd" ]
+"ugrd.base.plymouth" = [ "find_plymouth_config" ]
 
 [imports.init_main]
 "ugrd.base.plymouth" = [ "start_plymouth" ]
+
+[custom_parameters]
+plymouth_config = "Path"  # Path to the plymouth configuration file
+plymouth_theme = "str"  # Name of the plymouth theme to use

@@ -31,10 +31,7 @@ late_fstab = "/etc/fstab.late"
 "ugrd.fs.mounts" = [ "mount_base" ]
 
 [imports.init_early]
-"ugrd.fs.mounts" = [ "mount_fstab" ]
-
-[imports.init_main]
-"ugrd.fs.mounts" = [ "remake_mountpoints" ]
+"ugrd.fs.mounts" = [ "remake_mountpoints", "mount_fstab" ]
 
 [imports.functions]
 "ugrd.fs.mounts" = [ "mount_root" ]
