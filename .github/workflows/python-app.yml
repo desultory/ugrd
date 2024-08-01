@@ -41,4 +41,4 @@ jobs:
     - name: Test fullauto.toml
       run: |
         ls /boot
-        sudo venv/bin/ugrd -c tests/fullauto.toml --test-kernel /boot/vmlinuz-6.5.0-1024-azure
+        sudo venv/bin/ugrd -c tests/fullauto.toml
