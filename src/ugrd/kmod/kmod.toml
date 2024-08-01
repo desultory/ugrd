@@ -1,6 +1,7 @@
 binaries = [ "modprobe" ]
 
 kmod_pull_firmware = true
+kmod_decompress_firmware = true
 
 [custom_parameters]
 _kmod_removed = "NoDupFlatList"  # Meant to be used internally, defines kernel modules which have been ignored at runtime
@@ -9,6 +10,7 @@ _kmod_auto = "NoDupFlatList"  # Used internally, defines kernel modules which ha
 kernel_version = "str"  # Kernel version to use for the initramfs
 kmod_ignore = "NoDupFlatList"  # Kernel modules to ignore when loading
 kmod_pull_firmware = "bool"  # Whether or not to pull firmware for kernel modules
+kmod_decompress_firmware = "bool"  # Whether or not to decompress firmware
 kmod_ignore_softdeps = "bool"  # Whether or not softdeps are ignored
 kmod_autodetect_lsmod = "bool"  # Whether or not to automatically pull currently loaded kernel modules
 kmod_autodetect_lspci = "bool"  # Whether or not to automatically pull kernel modules from lspci -k

@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '3.4.0'
+__version__ = '3.5.0'
 
 from pathlib import Path
 from typing import Union
@@ -91,18 +91,32 @@ def deploy_dependencies(self) -> None:
         self._copy(dependency)
 
 
+def deploy_xz_dependencies(self) -> None:
+    """ Decompresses all xz dependencies into the build directory. """
+    from lzma import decompress
+    for xz_dependency in self['xz_dependencies']:
+        self.logger.debug("[xz] Decompressing: %s" % xz_dependency)
+        out_path = self._get_build_path(str(xz_dependency).replace('.xz', ''))
+        if not out_path.parent.is_dir():
+            self.logger.debug("Creating parent directory: %s" % out_path.parent)
+            self._mkdir(out_path.parent)
+        with out_path.open('wb') as out_file:
+            out_file.write(decompress(xz_dependency.read_bytes()))
+            self.logger.info("[xz] Decompressed '%s' to: %s" % (xz_dependency, out_path))
+
+
 def deploy_gz_dependencies(self) -> None:
     """ Decompresses all gzip dependencies into the build directory. """
     from gzip import decompress
     for gz_dependency in self['gz_dependencies']:
-        self.logger.debug("Decompressing: %s" % gz_dependency)
+        self.logger.debug("[gz] Decompressing: %s" % gz_dependency)
         out_path = self._get_build_path(str(gz_dependency).replace('.gz', ''))
         if not out_path.parent.is_dir():
             self.logger.debug("Creating parent directory: %s" % out_path.parent)
             self._mkdir(out_path.parent)
         with out_path.open('wb') as out_file:
             out_file.write(decompress(gz_dependency.read_bytes()))
-            self.logger.info("Decompressed '%s' to: %s" % (gz_dependency, out_path))
+            self.logger.info("[gz] Decompressed '%s' to: %s" % (gz_dependency, out_path))
 
 
 def deploy_copies(self) -> None:
@@ -237,6 +251,23 @@ def _process_opt_dependencies_multi(self, dependency: Union[Path, str]) -> None:
     except FileNotFoundError as e:
         self.logger.warning("Optional dependency not found, skipping: %s" % dependency)
         self.logger.debug(e)
+
+
+def _process_xz_dependencies_multi(self, dependency: Union[Path, str]) -> None:
+    """
+    Checks that the file is a xz file, and adds it to the xz dependencies list.
+    !! Resolves symlinks implicitly !!
+    """
+    if not isinstance(dependency, Path):
+        dependency = Path(dependency)
+
+    if not dependency.exists():
+        raise FileNotFoundError("XZ dependency does not exist: %s" % dependency)
+
+    if dependency.suffix != '.xz':
+        self.logger.warning("XZ dependency missing xz extension: %s" % dependency)
+
+    self['xz_dependencies'].append(dependency)
 
 
 def _process_gz_dependencies_multi(self, dependency: Union[Path, str]) -> None:

@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.9.1'
+__version__ = '2.10.0'
 
 from pathlib import Path
 from subprocess import run
@@ -186,13 +186,23 @@ def _add_kmod_firmware(self, kmod: str) -> None:
         return
 
     for firmware in self['_kmod_modinfo'][kmod]['firmware']:
-        firmware_path = Path('/lib/firmware') / firmware
-        if not firmware_path.exists():
+        _add_firmware_dep(self, kmod, firmware)
+
+
+def _add_firmware_dep(self, kmod: str, firmware: str) -> None:
+    """ Adds a kernel module firmware file to the initramfs dependencies. """
+    firmware_path = Path('/lib/firmware') / firmware
+    if not firmware_path.exists():
+        if firmware_path.with_suffix(firmware_path.suffix + '.xz').exists():
+            firmware_path = firmware_path.with_suffix(firmware_path.suffix + '.xz')
+            if self['kmod_decompress_firmware']:  # otherise, just add it like a normal dependency
+                self['xz_dependencies'] = firmware_path
+                return self.logger.debug("[%s] Found xz compressed firmware file: %s" % (kmod, firmware_path))
+        else:
             # Really, this should be a huge error, but with xhci_pci, it wants some renesas firmware that's not in linux-firmware and doesn't seem to matter
-            self.logger.error("[%s] Firmware file does not exist: %s" % (kmod, firmware_path))
-            continue
-        self.logger.debug("[%s] Adding firmware file to dependencies: %s" % (kmod, firmware_path))
-        self['dependencies'] = firmware_path
+            return self.logger.error("[%s] Firmware file does not exist: %s" % (kmod, firmware_path))
+    self.logger.debug("[%s] Adding firmware file to dependencies: %s" % (kmod, firmware_path))
+    self['dependencies'] = firmware_path
 
 
 def _process_kmod_dependencies(self, kmod: str) -> None:
