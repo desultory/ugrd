@@ -1,14 +1,23 @@
-__version__ = "0.2.0"
+from zenlib.util import unset
+
+__version__ = "0.3.0"
 
 
 COPY_CONFIG = ['mounts', 'test_image_size', 'test_flag', 'out_dir', 'clean']
 
 
-def init_test_vars(self):
-    if not self.get("test_kernel"):
-        raise ValueError("test_kernel not set")
+@unset('test_kernel')
+def find_kernel_path(self):
+    from pathlib import Path
+    self.logger.info("Trying to find the kernel path for: %s", self['kernel_version'])
+    kernel_path = Path('/boot/vmlinuz-%s' % self['kernel_version'])
+    self['test_kernel'] = kernel_path
     if not self['test_kernel'].exists():
         raise FileNotFoundError("Test kernel not found: %s" % self['test_kernel'])
+
+
+def init_test_vars(self):
+    find_kernel_path(self)
 
 
 def get_qemu_cmd_args(self):
