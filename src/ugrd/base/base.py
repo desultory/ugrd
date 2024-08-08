@@ -1,10 +1,10 @@
 __author__ = 'desultory'
-__version__ = '4.6.1'
+__version__ = '4.6.2'
 
 from importlib.metadata import version
 from pathlib import Path
 
-from zenlib.util import contains
+from zenlib.util import contains, unset
 
 
 @contains('hostonly')
@@ -21,7 +21,7 @@ def _process_init_target(self, target: Path) -> None:
     _validate_init_target(self)
 
 
-@contains('init_target', 'init_target is already set, skipping autodetection.', log_level=30)
+@unset('init_target', 'init_target is already set, skipping autodetection.', log_level=30)
 def _process_autodetect_init(self, state) -> None:
     dict.__setitem__(self, 'autodetect_init', state)
 
