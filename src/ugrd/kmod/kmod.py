@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.10.0'
+__version__ = '2.11.0'
 
 from pathlib import Path
 from subprocess import run
@@ -144,6 +144,48 @@ def autodetect_modules(self) -> None:
         self.logger.warning("No kernel modules were autodetected.")
 
 
+def _normalize_kconfig_option(self, option: str) -> str:
+    """ Normalizes a kernel config option. """
+    option = option.upper()
+    if not option.startswith('CONFIG_'):
+        option = 'CONFIG_' + option
+    return option
+
+
+@contains('_kernel_config_file', "Cannot check config, kernel config file not found.")
+def _check_kernel_config(self, option: str):
+    """
+    Checks if an option is set in the kernel config file.
+    Checks that the line starts with the option, and is set to 'y' or 'm'.
+    If a match is found, return the line, otherwise return None
+    """
+    option = _normalize_kconfig_option(self, option)
+    with open(self['_kernel_config_file'], 'r') as f:
+        for line in f.readlines():
+            if line.startswith(option):
+                if line.split('=')[1].strip()[0] in ['y', 'm']:
+                    self.logger.debug("Kernel config option is set: %s" % option)
+                    return line
+                else:
+                    return self.logger.debug("Kernel config option is not set: %s" % option)
+    self.logger.debug("Kernel config option not found: %s" % option)
+
+
+def find_kernel_config(self) -> None:
+    """ Tries to find the kernel config file associated with the current kernel version. """
+    build_dir = self['_kmod_dir'] / 'build'
+    source_dir = self['_kmod_dir'] / 'source'
+    for d in [build_dir, source_dir]:
+        if d.exists():
+            config_file = d / '.config'
+            if config_file.exists():
+                self.logger.info("Found kernel config file: %s" % config_file)
+                self['_kernel_config_file'] = config_file
+                break
+    else:
+        self.logger.warning("Kernel config file not found.")
+
+
 def get_kernel_metadata(self) -> None:
     """ Gets metadata for all kernel modules. """
     if not self.get('kernel_version'):
@@ -155,20 +197,21 @@ def get_kernel_metadata(self) -> None:
         self['kernel_version'] = cmd.stdout.decode('utf-8').strip()
         self.logger.info(f"Using detected kernel version: {self['kernel_version']}")
 
-    if not (Path('/lib/modules') / self['kernel_version']).exists():
-        if self['no_kmod']:
+    self['_kmod_dir'] = Path('/lib/modules') / self['kernel_version']
+    if not self['_kmod_dir'].exists():
+        if self['no_kmod']:  # Just warn if no_kmod is set
             self.logger.warning("Kernel module directory does not exist, but no_kmod is set.")
         else:
             raise DependencyResolutionError(f"Kernel module directory does not exist for kernel: {self['kernel_version']}")
+    find_kernel_config(self)  # Used to check kernel config options
 
 
 @contains('kmod_init', "kmod_init is empty, skipping.", log_level=30)
 @unset('no_kmod', "no_kmod is enabled, skipping.", log_level=30)
 def process_module_metadata(self) -> None:
     """ Adds kernel module metadata files to dependencies."""
-    module_path = Path('/lib/modules/') / self['kernel_version']
     for meta_file in MODULE_METADATA_FILES:
-        meta_file_path = module_path / meta_file
+        meta_file_path = self['_kmod_dir'] / meta_file
 
         self.logger.debug("[%s] Adding kernel module metadata files to dependencies: %s" % (self['kernel_version'], meta_file_path))
         self['dependencies'] = meta_file_path
@@ -238,8 +281,16 @@ def _process_kmod_dependencies(self, kmod: str) -> None:
     if self['_kmod_modinfo'][kmod]['filename'] == '(builtin)':
         raise BuiltinModuleError("Not adding built-in module to dependencies: %s" % kmod)
 
-    self['dependencies'] = self['_kmod_modinfo'][kmod]['filename']
     _add_kmod_firmware(self, kmod)
+
+    filename = self['_kmod_modinfo'][kmod]['filename']
+    if filename.endswith('.ko'):
+        self['dependencies'] = filename
+    elif filename.endswith('.ko.xz'):
+        self['xz_dependencies'] = filename
+    else:
+        self.logger.warning("[%s] Unknown kmod extension: %s" % (kmod, filename))
+        self['dependencies'] = filename
 
 
 def process_ignored_module(self, module: str) -> None:
