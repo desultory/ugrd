@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '3.5.0'
+__version__ = '3.6.0'
 
 from pathlib import Path
 from typing import Union
@@ -220,16 +220,23 @@ def _process_binaries_multi(self, binary: str) -> None:
     self['binaries'].append(binary)
 
 
-def _process_dependencies_multi(self, dependency: Union[Path, str]) -> None:
-    """
-    Converts the input to a Path if it is not one, checks if it exists.
-    If the dependency is a symlink, resolve it and add it to the symlinks list.
-    """
+def _validate_dependency(self, dependency: Union[Path, str]) -> None:
+    """ Performas basic validation and normalization for dependencies. """
     if not isinstance(dependency, Path):
         dependency = Path(dependency)
 
     if not dependency.exists():
         raise FileNotFoundError("Dependency does not exist: %s" % dependency)
+
+    return dependency
+
+
+def _process_dependencies_multi(self, dependency: Union[Path, str]) -> None:
+    """
+    Converts the input to a Path if it is not one, checks if it exists.
+    If the dependency is a symlink, resolve it and add it to the symlinks list.
+    """
+    dependency = _validate_dependency(self, dependency)
 
     if dependency.is_symlink():
         if self['symlinks'].get(f'_auto_{dependency.name}'):
@@ -240,7 +247,7 @@ def _process_dependencies_multi(self, dependency: Union[Path, str]) -> None:
             self['symlinks'][f'_auto_{dependency.name}'] = {'source': resolved_path, 'target': dependency}
             dependency = resolved_path
 
-    self.logger.debug("Adding dependency: %s" % dependency)
+    self.logger.debug("Added dependency: %s" % dependency)
     self['dependencies'].append(dependency)
 
 
@@ -258,15 +265,9 @@ def _process_xz_dependencies_multi(self, dependency: Union[Path, str]) -> None:
     Checks that the file is a xz file, and adds it to the xz dependencies list.
     !! Resolves symlinks implicitly !!
     """
-    if not isinstance(dependency, Path):
-        dependency = Path(dependency)
-
-    if not dependency.exists():
-        raise FileNotFoundError("XZ dependency does not exist: %s" % dependency)
-
+    dependency = _validate_dependency(self, dependency)
     if dependency.suffix != '.xz':
         self.logger.warning("XZ dependency missing xz extension: %s" % dependency)
-
     self['xz_dependencies'].append(dependency)
 
 
@@ -275,15 +276,9 @@ def _process_gz_dependencies_multi(self, dependency: Union[Path, str]) -> None:
     Checks that the file is a gz file, and adds it to the gz dependencies list.
     !! Resolves symlinks implicitly !!
     """
-    if not isinstance(dependency, Path):
-        dependency = Path(dependency)
-
-    if not dependency.exists():
-        raise FileNotFoundError("GZIP dependency does not exist: %s" % dependency)
-
+    dependency = _validate_dependency(self, dependency)
     if dependency.suffix != '.gz':
-        self.logger.warning("GZIP dependency missing gzip extension: %s" % dependency)
-
+        self.logger.warning("GZIP dependency missing gz extension: %s" % dependency)
     self['gz_dependencies'].append(dependency)
 
 

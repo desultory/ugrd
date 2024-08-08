@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.11.0'
+__version__ = '2.11.1'
 
 from pathlib import Path
 from subprocess import run
@@ -288,6 +288,8 @@ def _process_kmod_dependencies(self, kmod: str) -> None:
         self['dependencies'] = filename
     elif filename.endswith('.ko.xz'):
         self['xz_dependencies'] = filename
+    elif filename.endswith('.ko.gz'):
+        self['gz_dependencies'] = filename
     else:
         self.logger.warning("[%s] Unknown kmod extension: %s" % (kmod, filename))
         self['dependencies'] = filename
