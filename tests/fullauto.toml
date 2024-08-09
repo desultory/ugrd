@@ -1,6 +1,7 @@
 # NOP
 
 modules = [
+  "ugrd.base.check",
   "ugrd.base.test",
   "ugrd.kmod.standard_mask",
 ]
