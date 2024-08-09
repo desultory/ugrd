@@ -1,4 +1,4 @@
-__version__ = '0.1.0'
+__version__ = '0.1.1'
 
 from zenlib.util import contains
 
@@ -17,7 +17,6 @@ def check_included_funcs(self):
 
 def check_in_file(self):
     """ Runs all 'check_in_file' checks. """
-    self.logger.critical(self['check_in_file'])
     for file, lines in self['check_in_file'].items():
         _check_in_file(self, file, lines)
 
@@ -30,8 +29,6 @@ def _check_in_file(self, file, lines):
 
     with open(file, 'r') as f:
         file_lines = f.readlines()
-
-    self.logger.critical(file_lines)
 
     for check_line in lines:
         if check_line not in file_lines:
