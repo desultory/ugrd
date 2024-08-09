@@ -1,10 +1,11 @@
-__version__ = '0.1.1'
+__version__ = '0.1.2'
 
 from zenlib.util import contains
 
 
 def run_checks(self):
     """Run all checks."""
+    self.logger.info('Running checks')
     check_included_funcs(self)
     check_in_file(self)
 
