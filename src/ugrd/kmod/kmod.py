@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.12.0'
+__version__ = '2.12.1'
 
 from pathlib import Path
 from subprocess import run
@@ -220,7 +220,8 @@ def process_module_metadata(self) -> None:
 @unset('no_kmod', "no_kmod is enabled, skipping.", log_level=30)
 def regen_kmod_metadata(self) -> None:
     """ Regenerates kernel module metadata files using depmod. """
-    self._run(['depmod', '-b', self['build_dir'], '-o', self['build_dir']])
+    self.logger.info("Regenerating kernel module metadata files.")
+    self._run(['depmod', '--basedir', self['build_dir'], '--outdir', self['build_dir'], self['kernel_version']])
 
 
 def _add_kmod_firmware(self, kmod: str) -> None:
