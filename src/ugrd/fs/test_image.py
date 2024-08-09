@@ -1,4 +1,4 @@
-__version__ = "0.4.0"
+__version__ = "0.4.1"
 
 from zenlib.util import contains
 
@@ -6,7 +6,6 @@ from zenlib.util import contains
 @contains('test_flag', 'A test flag must be set to create a test image', raise_exception=True)
 def init_banner(self):
     """ Initialize the test image banner, set a random flag if not set. """
-    self.logger.info("Test flag: %s" % self['test_flag'])
     self['banner'] = f"echo {self['test_flag']}"
 
 

@@ -66,8 +66,10 @@ def make_test_image(self):
 def test_image(self):
     qemu_cmd = get_qemu_cmd_args(self)
     self.logger.info("Testing initramfs image: %s", self['_archive_out_path'])
+    self.logger.debug("Test config:\n%s", self._test_rootfs)
     self.logger.info("Test kernel: %s", self['test_kernel'])
     self.logger.info("Test rootfs: %s", self['_test_rootfs']['_archive_out_path'])
+    self.logger.info("Test flag: %s", self['test_flag'])
     self.logger.info("QEMU command: %s", self['_qemu_cmd'])
 
     try:

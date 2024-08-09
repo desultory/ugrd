@@ -198,7 +198,7 @@ class InitramfsGenerator(GeneratorHelpers):
             self._write(self['_custom_init_file'], custom_init, 0o755)
 
         self._write('init', init, 0o755)
-        self.logger.debug("Final config:\n%s" % pretty_print(self.config_dict))
+        self.logger.debug("Final config:\n%s" % self)
 
     def pack_build(self) -> None:
         """ Packs the initramfs based on self['imports']['pack']."""
@@ -214,6 +214,8 @@ class InitramfsGenerator(GeneratorHelpers):
         else:
             self.logger.debug("No tests executed.")
 
+    def __str__(self) -> str:
+        return str(pretty_print(self.config_dict))
 
 
 
