@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.11.1'
+__version__ = '2.12.0'
 
 from pathlib import Path
 from subprocess import run
@@ -7,8 +7,7 @@ from subprocess import run
 from zenlib.util import contains, unset
 
 
-MODULE_METADATA_FILES = ['modules.alias', 'modules.alias.bin', 'modules.builtin', 'modules.builtin.alias.bin', 'modules.builtin.bin', 'modules.builtin.modinfo',
-                         'modules.dep', 'modules.dep.bin', 'modules.devname', 'modules.order', 'modules.softdep', 'modules.symbols', 'modules.symbols.bin']
+MODULE_METADATA_FILES = ['modules.order', 'modules.builtin', 'modules.builtin.modinfo']
 
 
 class DependencyResolutionError(Exception):
@@ -215,6 +214,13 @@ def process_module_metadata(self) -> None:
 
         self.logger.debug("[%s] Adding kernel module metadata files to dependencies: %s" % (self['kernel_version'], meta_file_path))
         self['dependencies'] = meta_file_path
+
+
+@contains('kmod_init', "kmod_init is empty, skipping.", log_level=30)
+@unset('no_kmod', "no_kmod is enabled, skipping.", log_level=30)
+def regen_kmod_metadata(self) -> None:
+    """ Regenerates kernel module metadata files using depmod. """
+    self._run(['depmod', '-b', self['build_dir'], '-o', self['build_dir']])
 
 
 def _add_kmod_firmware(self, kmod: str) -> None:
