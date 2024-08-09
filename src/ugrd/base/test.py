@@ -1,6 +1,6 @@
-from zenlib.util import unset
+__version__ = "0.4.0"
 
-__version__ = "0.3.0"
+from zenlib.util import unset
 
 
 COPY_CONFIG = ['mounts', 'test_image_size', 'test_flag', 'out_dir', 'clean']
@@ -17,7 +17,10 @@ def find_kernel_path(self):
 
 
 def init_test_vars(self):
+    from uuid import uuid4
     find_kernel_path(self)
+    if not self['test_flag']:
+        self['test_flag'] = uuid4()
 
 
 def get_qemu_cmd_args(self):

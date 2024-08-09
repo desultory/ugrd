@@ -2,9 +2,7 @@ modules = ['ugrd.fs.cpio']
 paths = ['dev', 'sys', 'proc']
 
 test_image_size = 16
-test_flag = "UGRD TEST SUCCESSFUL"
 shebang = "#!/bin/bash"
-
 
 [masks]
 pack = "make_cpio"
