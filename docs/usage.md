@@ -32,9 +32,9 @@ It can be forced at runtime with `--validate` and disabled with `--no-validate`.
 
 ## Build logging
 
-Verbose information about what what is being moved into the initramfs build directory can be enabled by setting `build_logging` to `true`.
+To enable verbose logging of what is being moved into the initramfs build directory, set `build_logging` to `true`, or enable it at runtime with `--build-logging`.
 
-`_build_log_level` can be manually set to any log level. It is incremented by 10 when `build_logging` is enabled, with a minimum of 20.
+This option will bump the log level of build operations to at least `INFO` (20).
 
 This can be enabled at runtime with `--build-logging` or disabled with `--no-build-logging`
 
