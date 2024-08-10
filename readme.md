@@ -13,9 +13,9 @@ Generated images are as static and secure as possible, only including components
 
 µgRD itself is pure python, and uses the `pycpio` library to generate the CPIO archive.
 
-The final environment will be left in `build_dir` where it can be examined or repacked.
+The final build environment is left in the specified `build_dir`, where it can be examined or repacked.
 
-Unless validation is diabled, µgRD attemts to validate most configuration against the host system, and will raise warnings or exceptions if the configuration is invalid.
+Unless validation is disabled, µgRD attemts to validate most configuration against the host system, raising exceptions or logging warnings warnings if the configuration is invalid.
 
 ## Project goal and features
 
