@@ -300,8 +300,6 @@ key_file = "/boot/luks.gpg"
 key_type = "gpg"
 ```
 
-#####
-
 Cryptsetup global config:
 
 * `cryptsetup_key_type` - Sets the default `key_type` for all cryptsetup entries. 
@@ -374,69 +372,3 @@ init_final = ['mount_root']
 
 This will mask the `mount_root` function pulled by the base module, if another mount function is being used.
 
-#### config_processing
-
-These imports are very special, they can be used to change how parameters are parsed by the internal `config_dict`.
-
-A good example of this is in `base.py`:
-
-```
-def _process_mounts_multi(self, key, mount_config):
-    """
-    Processes the passed mounts into fstab mount objects
-    under 'mounts'
-    """
-    if 'destination' not in mount_config:
-        mount_config['destination'] = f"/{key}"  # prepend a slash
-
-    try:
-        self['mounts'][key] = FstabMount(**mount_config)
-        self['paths'].append(mount_config['destination'])
-    except ValueError as e:
-        self.logger.error("Unable to process mount: %s" % key)
-        self.logger.error(e)
-```
-
-This module manages mount management, and loads new mounts into fstab objects, also defined in the base module.
-
-The name of `config_prcessing` functions is very important, it must be formatted like `_process_{name}` where the name is the root variable name in the yaml config.
-
-If the function name has `_multi` at the end, it will be called using the `handle_plural` function, iterating over passed lists/dicts automatically.
-
-A new root varaible named `oops` could be defined, and a function `_process_oops` could be created and imported, raising an error when this vlaue is found, for example.
-
-This module is loaded in the imports section of the `base.yaml` file:
-
-```
-[imports.config_processing]
-"ugrd.fs.mounts" = [ "_process_mounts_multi" ]
-```
-
-#### Imports
-
-UGRD allows functions to be imported from modules using the `imports` dict.
-
-This is primarily used to run additional functions at build time, add init functions, and add library functions.
-
-##### build_pre
-
-`build_pre` contains build tasks which are run at the very start of the build, such as build directory cleaning and additional config processing.
-
-##### build_tasks
-
-`build_tasks` are functions which will be executed after `build_pre`, such as dependency pulling.
-
-##### build_late
-
-`build_late` functions are executed after the init has been generated.
-
-##### pack
-
-Packing facts, such as CPIO generation can be defined in the `pack` import.
-
-The `cpio` module imports the `make_cpio_list` packing function with:
-
-```
-[imports.pack]
-"ugrd.fs.cpio" = [ "make_cpio" ]
-```

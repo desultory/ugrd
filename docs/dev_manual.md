@@ -118,4 +118,43 @@ The `cpio` module imports the `make_cpio_list` packing function with:
 [imports.pack]
 "ugrd.fs.cpio" = [ "make_cpio" ]
 ```
+## Config processing
+
+config_processing imports are differnt from typical imports. They are configured similarly, with a dict of module names and functions to import.
+
+They run automatically whenever associated config values are modified at runtime, and can act as validators or for automatic processing.
+
+A good example of this is in `base.py`:
+
+```
+def _process_mounts_multi(self, key, mount_config):
+    """
+    Processes the passed mounts into fstab mount objects
+    under 'mounts'
+    """
+    if 'destination' not in mount_config:
+        mount_config['destination'] = f"/{key}"  # prepend a slash
+
+    try:
+        self['mounts'][key] = FstabMount(**mount_config)
+        self['paths'].append(mount_config['destination'])
+    except ValueError as e:
+        self.logger.error("Unable to process mount: %s" % key)
+        self.logger.error(e)
+```
+
+This module manages mount management, and loads new mounts into fstab objects, also defined in the base module.
+
+The name of `config_prcessing` functions is very important, it must be formatted like `_process_{name}` where the name is the root variable name in the yaml config.
+
+If the function name has `_multi` at the end, it will be called using the `handle_plural` function, iterating over passed lists/dicts automatically.
+
+A new root varaible named `oops` could be defined, and a function `_process_oops` could be created and imported, raising an error when this vlaue is found, for example.
+
+This module is loaded in the imports section of the `base.yaml` file:
+
+```
+[imports.config_processing]
+"ugrd.fs.mounts" = [ "_process_mounts_multi" ]
+```
 
