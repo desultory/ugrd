@@ -6,7 +6,7 @@
 
 [configuration](configuration.md)
 
-[bootloader configuration](bootloader_configuration.md)
+[bootloader configuration](bootloader_config.md)
 
 # Usage
 
