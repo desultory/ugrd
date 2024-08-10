@@ -1,19 +1,20 @@
-
 # Installation
 
-[installation.md](installation)
+[installation](installation.md)
 
 # Configuration
 
-[configuration.md](configuration)
-[bootloader_configuration.md](bootloader_configuration)
+[configuration](configuration.md)
+
+[bootloader configuration](bootloader_configuration.md)
 
 # Usage
 
-[usage.md](usage)
-[runtime_usage.md](runtime_usage)
+[usage](usage.md)
+
+[runtime usage](runtime_usage.md)
 
 # Dev manual
 
-[dev_manual.md](dev_manual)
+[dev_manual](dev_manual.md)
 
