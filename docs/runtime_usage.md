@@ -1,22 +1,13 @@
-## Runtime usage
+# Runtime usage
 
-`ugrd` runs the `init` script generated in the build dir with `bash -l` by default.
+`ugrd` runs the `init` script generated in the build dir. In cases where `agetty` is needed, all but basic initialization and the final switch_root are performed in `init_main.sh`.
 
-Required functions are sourced from `/etc/profile`.
+UGRD should prompt for relevant input or warn if devices are missing at runtime.
 
-Unless `quiet` is passed as a kernel parameter, UGRD will print information as it initialized.
-
-In cases where user input is required, a magenta prompt will be displayed.
-
-### custom_init
-
-When a `custom_init` is being used, the majority of the initialization process is handled within that custom script, and it will be exited in the event of a failure.
+> If UGRD does not print its version after the kernel calls /init, the `ugrd.base.console` module may need to be enabled to start an agetty session.
 
 ### Failure recovery
 
-If the `recovery` kernel parameter is passed, UGRD will drop to a shell when there is a failure.
+In the event of a failure, modules will either fail through, or re-exec the init script.
 
-This shell can be used to debug issues, or manually setup mounts and rewrite config vars.
-
-Once required changes have been made, the `exit` command will continue the boot process.
-
+The `recovery` cmdline arg will allow a shell to be spawned in the event of a failure. This is useful for debugging.

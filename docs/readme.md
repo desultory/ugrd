@@ -1,104 +1,42 @@
-# µgRD
-
-> Microgram Ramdisk is a framework used to generate ramdisks using TOML definitions and python functions
-
-## Design
-
-UGRD is designed to generate a custom initramfs environment to boot the system that built it.
-
-Generated images are as static and secure as possible, only including components and features required to mount the root and switch to it.
-
-The final environment will be left in `build_dir` where it can be explored or modified.
-
-The created images are mostly static, defined by the config used to generate the image. In cases where behavior is determined at runtime,
-modules aim to restrict user input and fail by restarting the init process. This allows for some error handling, while ensuring the boot process
-is relatively restricted.
-
-ugrd attempts to validate passed config, and raise warnings/exceptions indicating potential issues before it leaves the user in a broken boot environment.
-
-> A debug shell can be enabled with the debug module, otherwise, the user will not have shell access at runtime.
-
-## Project goal and features
-
-The original goal of this project was to create an initramfs suitable for decrypting a LUKS root filesyem with a smartcard, currently it supports the following:
-
-* Basic configuration validation in `validate` mode
-* OpenPGP Smartcards (YubiKey)
-* GPG encrypted LUKS keyfiles
-* LUKS with detatched headers
-* LVM support (under LUKS)
-* Cryptsetup re-attempts and alternative unlock methods
-  - Allows for late insertion of a smartcard
-  - Can fail back to plain password entry
-* Auto-detection and validation of the root mount using `/proc/mounts`
-* Auto-detection and validation of LUKS root mounts
-* Auto-detection and validation of the btrfs subvolume used for the root mount, if present
-* Dynamic BTRFS subvolume selection at boot time using `subvol_selector`
-* Auto-detection of kernel modules using `lspci` and `lsmod`
-* Reading the `root` and `rootflags` parameters from the kernel commandline
-  - Falls back to host mount config if cmdline mount parameters fail
-* Key entry over serial
-* Automatic CPIO generation (PyCPIO)
-  - Device nodes are created within the CPIO only, so true root privileges are not required
-  - Hardlinks are automatically created for files with matching SHA256 hashes
-  - Automatic xz compression
-* ZSH and BASH autocompletion for the ugrd command
-* Similar usage/arguments as Dracut
-
-### Operating system support
-
-UGRD was designed to work with Gentoo, but has been tested on:
-
-* Garuda linux
-* Debian 12
-
-### Architecture support
-
-UGRD is primarily tested on x86_64, but has been tested on arm64.
-
-### Filesystem support
-
-If userspace tools are not required to mount a the root filesystem, ugrd can be used with any filesystem supported by the kernel.
-
-The following root filesystems have been tested:
-
-* BTRFS
-* EXT4
-* XFS
-* FAT32
-
-If the required kernel module is not built into the kernel, and the filesystem is not listed above, the kernel module may need to be included in `kmod_init`.
-
-> The example config has `kmod_autodetect_lsmod` enabled which should automatically pull in the required modules, unless the active kernel differs from the build kernel.
-
-[Usage](./usage.md)
-
-[Installation](./installation.md)
-
-[Runtime usage](./runtime_usage.md#Runtime-usage)
-
-
-## Configuration
+# Configuration
 
 At runtime, ugrd will try to read `/etc/ugrd/config.toml` for configuration options unless another file is specified.
 
-### Base modules
+There is very little to configure in the base image, unless you are just interested in specifying a few required kmods/files to be pulled into the initramfs.
+
+Modules may be imported to extend the functionality of the build system and resulting image. Many modules are automatically included whn their features are used.
+
+## Modules
+
+The modules config directive should contain a list with names specifying the path of which will be loaded, such as `ugrd.base.base`, `ugrd.base.console` or `ugrd.crypto.crypsetup`.
+
+External modules can be defined in `/var/lib/ugrd`.
+
+When a module is loaded, `initramfs_dict.py` will try to load the toml file for that module, parsing it in the same manner `config.yaml` is parsed.
+
+The order in which modules/directives are loaded is very important!
+
+Within modules, all config values are imported, then processed according to the order of the `custon_parameters` list.
+
+Modules can load other modules using the `modules` directive, be careful considering loading orders.
+
+`_module_name` can be set within a module for logging purposes, it is verified to be accurate when imported but optional.
+
+## Base modules
 
 Several basic modules are provided for actions such as mounts, config processing, and other basic parameters.
 
 Modules write to a shared config dict that is accessible by other modules.
 
-#### base.base
+### base.base
 
 > The main module, mostly pulls basic binaries and pulls the `core`, `mounts`, and `cpio` module.
 
 * `init_target` Set the init target for `switch_root`.
 * `autodetect_init` (true) Automatically set the init target based `which init`.
 * `shebang` (#!/bin/bash) sets the shebang on the init script.
-* `switch_root_target` Sets the `switch_root` target, sets the default for the root mount destination.
 
-
-#### base.core
+### base.core
 
 * `build_dir` (/tmp/initramfs) Defines where the build will take place.
 * `out_dir` (/tmp/initramfs_out) Defines where packed files will be placed.
@@ -110,63 +48,9 @@ Modules write to a shared config dict that is accessible by other modules.
 * `binaries` - A list used to define programs to be pulled into the initrams. `which` is used to find the path of added entries, and `lddtree` is used to resolve dependendies.
 * `paths` - A list of directores to create in the `build_dir`. They do not need a leading `/`.
 
-##### Build logging
-
-Verbose information about what what is being moved into the initramfs build directory can be enabled by setting `build_logging` to `true`.
-
-`_build_log_level` can be manually set to any log level. It is incremented by 10 when `build_logging` is enabled, with a minimum of 20.
-
-This can be enabled at runtime with `--build-logging` or disabled with `--no-build-logging`
-
-The output can be logged to a file instead of stdout by specifying a log file with `--log-file`
-
-#### base.cmdline
+### base.cmdline
 
 If used, this module will override the `mount_root` function and attempt to mount the root based on the passed cmdline parameters.
-
-##### symlink creation
-
-Symlinks are defined in the `symlinks` dict. Each entry must have a name, `source` and `target`:
-
-```
-[symlinks.pinentry]
-source = "/usr/bin/pinentry-tty"
-target = "/usr/bin/pinentry"
-```
-
-##### Copying files to a different destination
-
-Using the `dependencies` list will pull files into the initramfs using the same path on the host system.
-
-To copy files to a different path:
-
-```
-[copies.my_key]
-source = "/home/larry/.gnupg/pubkey.gpg"
-destination = "/etc/ugrd/pub.gpg"
-```
-
-##### Device node creation
-
-Device nodes can be created by defining them in the `nodes` dict using the following keys:
-
-* `mode` (0o600) the device node, in octal.
-* `path` (/dev/node name) the path to create the node at.
-* `major` - Major value.
-* `minor` - Minor value.
-
-Example:
-
-```
-[nodes.console]
-mode = 0o644
-major = 5
-minor = 1
-```
-
-Creates `/dev/console` with permissions `0o644`
-
-> Using `mknod_cpio` from `ugrd.fs.cpio` will not create the device nodes in the build dir, but within the CPIO archive
 
 #### base.console
 
@@ -220,6 +104,7 @@ The following parameters can be used to change the kernel module pulling and ini
 * `kernel_modules` - Kernel modules to pull into the initramfs. These modules will not be `modprobe`'d automatically.
 * `kmod_ignore` - Kernel modules to ignore. Modules which depend on ignored modules will also be ignored.
 * `kmod_ignore_softdeps` (false) Ignore softdeps when checking kernel module dependencies.
+* `no_kmod` (false) Disable kernel modules entirely.
 
 #### Kernel module helpers
 
@@ -233,12 +118,13 @@ Similarly `ugrd.kmod.novideo` `nonetwork`, and `nosound` exist to ignore video, 
 
 `autodetect_root` (true) Set the root mount parameter based on the current root label or uuid.
 `autodetect_root_luks` (true) Attempt to automatically configure LUKS mounts for the root device.
+`autodetect_init_mount'` (true) Automatically detect the mountpoint for the init binary, and add it to `late_mounts`.
 
 #### ugrd.fs.mounts
 
 `mounts`: A dictionary containing entries for mounts, with their associated config.
 
-`mounts.root` is predefined to have a destination of `/mnt/root` and defines the root filesystem mount, used by `switch_root`.
+`mounts.root` is predefined to have a destination of `/target_rootfs` and defines the root filesystem mount, used by `switch_root`.
 
 Each mount has the following available parameters:
 
@@ -254,6 +140,7 @@ Each mount has the following available parameters:
 * `options` A list of options to add to the mount.
 * `base_mount` (false) Mounts with a mount command during `init_pre` instead of using `mount -a` in `init_main`.
 * `remake_mountpoint` (false) Recreate the mountpoint with mkdir before the `mount -a` is called. This is useful for `/dev/pty`.
+* `no_validate` (false) Disables validation for the mount.
 
 The most minimal mount entry that can be created must have a name, which will be used as the `destination`, and a source type.
 
@@ -297,7 +184,57 @@ Importing this module will run `btrfs device scan` and pull btrfs modules.
 * `subvol_selector` (false) The root subvolume will be selected at runtime based on existing subvolumes. Overridden by `root_subvol`.
 * `autodetect_root_subvol` (true) Autodetect the root subvolume, unless `root_subvol` or `subvol_selector` is set. Depends on `hostonly`.
 * `root_subvol` - Set the desired root subvolume.
-* `_base_mount_path` (/mnt/root_base) Sets where the subvolume selector mounts the base filesytem to scan for subvolumes.
+* `_base_mount_path` (/root_base) Sets where the subvolume selector mounts the base filesytem to scan for subvolumes.
+
+#### symlink creation
+
+Symlinks are defined in the `symlinks` dict. Each entry must have a name, `source` and `target`:
+
+```
+[symlinks.pinentry]
+source = "/usr/bin/pinentry-tty"
+target = "/usr/bin/pinentry"
+```
+
+#### Copying files
+
+Using the `dependencies` list will pull files into the initramfs using the same path on the host system.
+
+```
+dependencies = [ "/etc/ugrd/testfile" ]
+```
+
+#### Copying files to a different destination
+
+To copy files to a different path:
+
+```
+[copies.my_key]
+source = "/home/larry/.gnupg/pubkey.gpg"
+destination = "/etc/ugrd/pub.gpg"
+```
+
+##### Device node creation
+
+Device nodes can be created by defining them in the `nodes` dict using the following keys:
+
+* `mode` (0o600) the device node, in octal.
+* `path` (/dev/node name) the path to create the node at.
+* `major` - Major value.
+* `minor` - Minor value.
+
+Example:
+
+```
+[nodes.console]
+mode = 0o644
+major = 5
+minor = 1
+```
+
+Creates `/dev/console` with permissions `0o644`
+
+> Using `mknod_cpio` from `ugrd.fs.cpio` will not create the device nodes in the build dir, but within the CPIO archive
 
 ### Cryptographic modules
 
@@ -369,8 +306,10 @@ Cryptsetup global config:
 
 * `cryptsetup_key_type` - Sets the default `key_type` for all cryptsetup entries. 
 * `cryptsetup_retries` (5) The default number of times to try to unlock a device.
+* `cryptsetup_prompt` (false) Whether or not to prompt the user to press enter before attempting to unlock a device.
 * `cryptsetup_autoretry` (false) Whether or not to automatically retry mount attempts.
 * `cryptsetup_trim` (false) Whether or not to pass `--allow-discards` to cryptsetup (reduces security).
+* `cryptsetup_keyfile_validation` (true) Whether or not to validate that keyfiles should exist at runtime.
 
 ##### Key type definitions
 
@@ -394,22 +333,6 @@ When used with:
 key_type = "gpg"
 key_file = "/boot/luks.gpg"
 ```
-
-## Modules
-
-The modules config directive should contain a list with names specifying the path of which will be loaded, such as `ugrd.base.base`, `ugrd.base.console` or `ugrd.crypto.crypsetup`.
-
-External modules can be defined in `/var/lib/ugrd`.
-
-When a module is loaded, `initramfs_dict.py` will try to load the toml file for that module, parsing it in the same manner `config.yaml` is parsed.
-
-The order in which modules/directives are loaded is very important!
-
-Within modules, all config values are imported, then processed according to the order of the `custon_parameters` list.
-
-Modules can load other modules using the `modules` directive, be careful considering loading orders.
-
-`_module_name` can be set within a module for logging purposes, it is verified to be accurate when imported but optional.
 
 #### imports
 
@@ -516,86 +439,4 @@ The `cpio` module imports the `make_cpio_list` packing function with:
 ```
 [imports.pack]
 "ugrd.fs.cpio" = [ "make_cpio" ]
-```
-
-##### funcs
-
-Functions can be added to `imports.funcs` to force the output to be added to `init_funcs.sh`.
-
-##### init hooks
-
-By default, the specified init hooks are:
-* `init_pre` - Where the base initramfs environment is set up, such as creating a devtmpfs.
-* `init_debug` - Where a shell is started if `start_shell` is enabled in the debug module.
-* `init_early` - Where early actions such as checking for device paths, mounting the fstab take place.
-* `init_main` - Most important initramfs activities should take place here.
-* `init_late` - Space for additional checks, stuff that should run later in the init process.
-* `init_premount` - Where filesystem related commands such as `btrfs device scan` can run.
-* `init_mount` - Where the root filesystem mount takes place
-* `init_mount_late` - Where late mount actions such as mounting paths under the root filesystem can take place.
-* `init_cleanup` - Currently unused, where cleanup before `switch_root` should take place.
-* `init_final` - Where `switch_root` is executed.
-
-> These hooks are defined under the `init_types` list in the `InitramfsGenerator` object.
-
-When the init scripts are generated, functions under dicts in the config defined by the names in this list will be called to generate the init scripts.
-
-Init functions should return a string or list of strings that contain shell lines to be added to the `init` file.
-
-The `InitramfsGenerator.generate_init_main()` function (often called from `self`) can be used to output all init hook levels but `init_pre` and `init_final`.
-
-A general overview of the procedure used for generating the init is to write the chosen `shebang`, then every init hook. The `custom_init` import can be used for more advanced confugrations, such as running another script in `agetty`.
-
-##### custom_init
-
-To change how everything but `init_pre` and `init_file` are handled at runtime, `custom_init` can be used.
-
-The `console` module uses the `custom_init` hook to change the init creation procedure.
-
-Like with the typical flow, it starts by creating the base `init` file with the shebang and `init_pre` portions. Once this is done, execution is handed off to all fucntions present in the `custom_init` imports.
-
-Finally, like the standard init build, the `init_final` is written to the main `init` file.
-
-```
-[imports.custom_init]
-"ugrd.base.console" = [ "custom_init" ]
-```
-
-The `custom_init` function should return a tuple with the line used to call the custom init file, and the contents of it.
-
-
-```
-def custom_init(self) -> str:
-    """
-    init override for the console module.
-    Write the main init runlevels to self._custom_init_file.
-    Returns the output of console_init which is the command to start agetty.
-    """
-    custom_init_contents = [self['shebang'],
-                            f"# Console module version v{__version__}",
-                            *self.generate_init_main()]
-
-    return console_init(self), custom_init_contents
-
-
-def console_init(self) -> str:
-    """
-    Start agetty on the primary console.
-    Tell it to execute teh _custom_init_file
-    If the console is a serial port, set the baud rate.
-    """
-    name = self['primary_console']
-    console = self['console'][name]
-
-    out_str = f"agetty --autologin root --login-program {self['_custom_init_file']}"
-
-    console_type = console.get('type', 'tty')
-
-    if console_type != 'tty':
-        # This differs from usage in the man page but seems to work?
-        out_str += f" --local-line {console['baud']}"
-
-    out_str += f" {name} {console_type}"
-
-    return out_str
 ```
