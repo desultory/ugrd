@@ -1,3 +1,6 @@
+![ubuntu](https://github.com/desultory/ugrd/actions/workflows/ubuntu.yml/badge.svg)
+
+
 # µgRD
 
 > Microgram Ramdisk is a framework used to generate ramdisks using TOML definitions and python functions
