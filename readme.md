@@ -46,7 +46,11 @@ Currently the following features are supported:
 * ZSH and BASH autocompletion for the `ugrd` command
 * Similar usage/arguments as Dracut
 
-### Operating system support
+## Support
+
+µgRD is designed to be as portable as possible, but has only been tested on a limited number of systems.
+
+### Operating systems
 
 µgRD was designed to work with Gentoo, but has been tested on:
 
@@ -54,11 +58,7 @@ Currently the following features are supported:
 * Debian 12
 * Ubuntu 22.04
 
-### Architecture support
-
-µgRD is primarily designed and tested against `x86_64`, but has been tested on `arm64`.
-
-### Filesystem support
+### Filesystems
 
 If userspace tools are not required to mount a the root filesystem, µgRD can be used with any filesystem supported by the kernel.
 
@@ -74,9 +74,11 @@ If the required kernel module is not built into the kernel, and the filesystem i
 
 > The example config has `kmod_autodetect_lsmod` enabled which should automatically pull in the required modules, unless the active kernel differs from the build kernel.
 
+### Architectures
+
+µgRD is primarily designed and tested against `x86_64`, but has been tested on `arm64`.
+
 ## Docs
 
 Additional documentation can be found in the [docs](docs) directory.
-
-
 
