@@ -73,3 +73,10 @@ The following root filesystems have been tested:
 If the required kernel module is not built into the kernel, and the filesystem is not listed above, the kernel module may need to be included in `kmod_init`.
 
 > The example config has `kmod_autodetect_lsmod` enabled which should automatically pull in the required modules, unless the active kernel differs from the build kernel.
+
+## Docs
+
+Additional documentation can be found in the [docs](docs) directory.
+
+
+
