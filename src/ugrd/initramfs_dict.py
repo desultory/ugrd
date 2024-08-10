@@ -1,4 +1,3 @@
-
 __author__ = "desultory"
 __version__ = "1.8.0"
 
@@ -13,14 +12,16 @@ from zenlib.util import handle_plural, pretty_print, NoDupFlatList
 @loggify
 class InitramfsConfigDict(dict):
     """
-    Dict for containing config for the InitramfsGenerator
+    Dict for ugrd config
 
-    IMPORTANT:
+    IMPORTANT!!!:
         This dict does not act like a normal dict, setitem is designed to append when the overrides are used
         Default parameters are defined in builtin_parameters
 
-    If a new parameter is added, and it's not a known type, an exception will be raised.
-    If that paramter name starts with an underscore, it will be added to a queue for later processing.
+    By default ugrd.base.base is loaded, which is a very minimal config.
+    If NO_BASE is set to True, ugrd.base.core is loaded instead, which contains absolute essentials.
+
+    If parameters which are not registerd are set, they are added to the processing queue and processed when the type is known.
     """
     builtin_parameters = {'modules': NoDupFlatList,  # A list of the names of modules which have been loaded, mostly used for dependency checking
                           'imports': dict,  # A dict of functions to be imported into the initramfs, under their respective hooks
