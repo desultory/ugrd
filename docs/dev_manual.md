@@ -10,12 +10,23 @@ Python functions can be added imported into `init` and `build` runlevels to exec
 
 UGRD allows python functions to be imported from modules using the `imports` dict.
 
-There are two primary categories for imports, `build` and `init`.
+`imports` entries have a key which is the name of the hook to import into, and a value which is a dict of module names and lists of functions to import.
 
-`pack` and `test` imports can also be used, but are mostly reserved for image packing and testing.
+### Import types
 
-Imports are defined in the toml file, with the hook name as the key name.
-Within each hook, key names should be the module import path, and the value should be a list of functions to import.
+There are two primary categories for imports, `build` and `init`. Build imports are used to mutate the config and build the base structure of the initramfs, while init imports are used to generate the init scripts.
+
+`config_processing` imports are used to automatically process config values when they are modified at runtime.
+
+The `pack` import is primarly used for packing the CPIO archive.
+
+The `checks` import is used for static checks, such as ensuring required files are included in the CPIO and have reasonbale contents.
+
+The `test` import is used for testing the initramfs, and is mostly used by the `test` module for QEMU wrapping.
+
+### Importing functions
+
+Functions are imported from modules by specifying the hook they are to be added to in the `imports` dict, with the module name as the key and a list of functions to import as the value.
 
 For example, the `generate_fstab` function is added to the `build_tasks` book from the `ugrd.fs.mounts` module with:
 
@@ -24,23 +35,23 @@ For example, the `generate_fstab` function is added to the `build_tasks` book fr
 "ugrd.fs.mounts" = [ "generate_fstab" ]
 ```
 
-### Build imports
+## Build imports
 
 Build imports are used to mutate config and build the base structure of the initramfs.
 
-##### build_pre
+### build_pre
 
 `build_pre` contains build tasks which are run at the very start of the build, such as build directory cleaning and additional config processing.
 
-##### build_tasks
+### build_tasks
 
 `build_tasks` are functions which will be executed after `build_pre`, such as dependency pulling.
 
-##### build_late
+### build_late
 
 `build_late` functions are executed after the init has been generated.
 
-### Init imports
+## Init imports
 
 By default, the following init hooks are available:
 * `init_pre` - Where the base initramfs environment is set up; basic mounts are initialized and the kernel cmdline is read.
@@ -64,7 +75,7 @@ The `InitramfsGenerator.generate_init_main()` function (often called from `self`
 
 A general overview of the procedure used for generating the init is to write the chosen `shebang`, then every init hook. The `custom_init` import can be used for more advanced confugrations, such as running another script in `agetty`.
 
-#### custom_init
+### custom_init
 
 To change how everything but `init_pre` and `init_file` are handled at runtime, `custom_init` can be used.
 
@@ -118,7 +129,7 @@ def console_init(self) -> str:
     return out_str
 ```
 
-### pack
+## pack
 
 Packing functions, such as CPIO generation can be defined in the `pack` import.
 
@@ -130,9 +141,11 @@ The `cpio` module imports the `make_cpio_list` packing function with:
 ```
 ## Config processing
 
-config_processing imports are differnt from typical imports. They are configured similarly, with a dict of module names and functions to import.
+`config_processing` imports are different from typical imports. They are configured similarly, with a dict of module names and functions to import.
 
-They run automatically whenever associated config values are modified at runtime, and can act as validators or for automatic processing.
+Instead of running once at a particular build level, `config_processing` functions are run whenever a config value is modified at runtime.
+
+This can be used to validate config values, or to automatically process them.
 
 A good example of this is in `base.py`:
 
