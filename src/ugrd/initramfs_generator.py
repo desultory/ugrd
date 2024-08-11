@@ -76,6 +76,7 @@ class InitramfsGenerator(GeneratorHelpers):
         self.generate_init()
         self.run_hook('build_final')
         self.pack_build()
+        self.run_checks()
         self.run_tests()
 
     def run_func(self, function, force_include=False) -> list[str]:
@@ -206,6 +207,15 @@ class InitramfsGenerator(GeneratorHelpers):
             self.run_hook('pack')
         else:
             self.logger.warning("No pack functions specified, the final build is present in: %s" % self.build_dir)
+
+    def run_checks(self) -> None:
+        """ Runs checks if defined in self['imports']['checks']. """
+        if check_output := self.run_hook('checks'):
+            self.logger.info("Completed checks.")
+            for check in check_output:
+                self.logger.debug(check)
+        else:
+            self.logger.warning("No checks executed.")
 
     def run_tests(self) -> None:
         """ Runs tests if defined in self['imports']['tests']. """
