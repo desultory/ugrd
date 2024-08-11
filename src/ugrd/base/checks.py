@@ -1,25 +1,21 @@
-__version__ = '0.1.2'
+__version__ = '0.2.0'
 
 from zenlib.util import contains
-
-
-def run_checks(self):
-    """Run all checks."""
-    self.logger.info('Running checks')
-    check_included_funcs(self)
-    check_in_file(self)
 
 
 @contains('check_included_funcs', 'Skipping included funcs check', log_level=30)
 def check_included_funcs(self):
     bash_func_names = [func + '() {\n' for func in self.included_functions]
     _check_in_file(self, '/etc/profile', bash_func_names)
+    return "Included functions check passed"
 
 
+@contains('check_in_file', 'Skipping in file check')
 def check_in_file(self):
     """ Runs all 'check_in_file' checks. """
     for file, lines in self['check_in_file'].items():
         _check_in_file(self, file, lines)
+    return "All 'check_in_file' checks passed"
 
 
 def _check_in_file(self, file, lines):

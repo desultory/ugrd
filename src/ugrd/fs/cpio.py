@@ -1,17 +1,44 @@
 __author__ = 'desultory'
-__version__ = '3.0.1'
+__version__ = '3.2.0'
 
 
-from pycpio import PyCPIO
-
-
-def check_cpio(self, cpio: PyCPIO) -> None:
+def check_cpio_deps(self) -> None:
     """ Checks that all dependenceis are in the generated CPIO file. """
     for dep in self['dependencies']:
-        if str(dep) not in cpio.entries:
-            raise FileNotFoundError("Dependency not found in CPIO: %s" % dep)
-        else:
-            self.logger.debug("Dependency found in CPIO: %s" % dep)
+        _check_in_cpio(self, dep)
+    return "All dependencies found in CPIO."
+
+
+def check_cpio_funcs(self) -> None:
+    """ Checks that all included functions are in the profile included in the generated CPIO file. """
+    bash_func_names = [func + '() {' for func in self.included_functions]
+    _check_in_cpio(self, 'etc/profile', bash_func_names)
+
+
+def check_in_cpio(self) -> None:
+    """ Checks that all required files and lines are in the generated CPIO file. """
+    for file, lines in self['check_in_cpio'].items():
+        self._check_in_cpio(file, lines)
+    return "All files and lines found in CPIO."
+
+
+def _check_in_cpio(self, file, lines=[]):
+    """ Checks that the file is in the CPIO archive, and it contains the specified lines. """
+    cpio = self._cpio_archive
+    file = str(file).lstrip('/')  # Normalize as it may be a path
+    if file not in cpio.entries:
+        raise FileNotFoundError("File not found in CPIO: %s" % file)
+    else:
+        self.logger.debug("File found in CPIO: %s" % file)
+
+    if lines:
+        entry_data = cpio.entries[file].data.decode().splitlines()
+        for line in lines:
+            if line not in entry_data:
+                raise FileNotFoundError("Line not found in CPIO: %s" % line)
+            else:
+                self.logger.debug("Line found in CPIO: %s" % line)
+    return "File and lines found in CPIO."
 
 
 def get_archive_path(self) -> str:
@@ -40,7 +67,6 @@ def make_cpio(self) -> None:
     """
     cpio = self._cpio_archive
     cpio.append_recursive(self.build_dir, relative=True)
-    check_cpio(self, cpio)
 
     if self.get('mknod_cpio'):
         for node in self['nodes'].values():
