@@ -1,7 +1,11 @@
 __author__ = 'desultory'
-__version__ = '3.2.0'
+__version__ = '3.3.0'
 
 
+from zenlib.util import contains
+
+
+@contains('check_cpio')
 def check_cpio_deps(self) -> None:
     """ Checks that all dependenceis are in the generated CPIO file. """
     for dep in self['dependencies']:
@@ -9,12 +13,15 @@ def check_cpio_deps(self) -> None:
     return "All dependencies found in CPIO."
 
 
+@contains('check_cpio')
 def check_cpio_funcs(self) -> None:
     """ Checks that all included functions are in the profile included in the generated CPIO file. """
     bash_func_names = [func + '() {' for func in self.included_functions]
     _check_in_cpio(self, 'etc/profile', bash_func_names)
 
 
+@contains('check_in_cpio')
+@contains('check_cpio')
 def check_in_cpio(self) -> None:
     """ Checks that all required files and lines are in the generated CPIO file. """
     for file, lines in self['check_in_cpio'].items():
