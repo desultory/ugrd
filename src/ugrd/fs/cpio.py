@@ -27,6 +27,7 @@ def _check_in_cpio(self, file, lines=[]):
     cpio = self._cpio_archive
     file = str(file).lstrip('/')  # Normalize as it may be a path
     if file not in cpio.entries:
+        self.logger.warning("CPIO entries:\n%s" % '\n'.join(cpio.entries.keys()))
         raise FileNotFoundError("File not found in CPIO: %s" % file)
     else:
         self.logger.debug("File found in CPIO: %s" % file)
