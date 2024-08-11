@@ -1,8 +1,10 @@
-modules = ['ugrd.fs.cpio']
+modules = ['ugrd.fs.cpio']  # needed for out_file and get_archive_path
 paths = ['dev', 'sys', 'proc']
 
 test_image_size = 16
 shebang = "#!/bin/bash"
+
+check_cpio = false
 
 [masks]
 pack = "make_cpio"

@@ -1,4 +1,4 @@
-__version__ = "0.4.0"
+__version__ = "0.4.1"
 
 from zenlib.util import unset
 
@@ -59,7 +59,12 @@ def make_test_image(self):
               **{key: self[key] for key in COPY_CONFIG}}
 
     target_fs = InitramfsGenerator(**kwargs)
-    target_fs.build()
+    try:
+        target_fs.build()
+    except (FileNotFoundError, RuntimeError) as e:
+        self.logger.error("Test image configuration:\n%s", target_fs)
+        raise RuntimeError("Failed to build test rootfs: %s" % e)
+
     self['_test_rootfs'] = target_fs
 
 
