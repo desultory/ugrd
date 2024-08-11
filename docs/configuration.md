@@ -332,34 +332,6 @@ key_type = "gpg"
 key_file = "/boot/luks.gpg"
 ```
 
-#### imports
-
-The most powerful part of a module is the `imports` directive.
-
-Imports are used to hook into the general processing scheme, and become part of the main `InitramfsGenerator` object.
-
-Portions are loaded into the InitramfsGenerator's `config_dict` which is an `InitramfsConfigDict`
-
-`imports` are defined like:
-
-```
-[imports.<hook>]
-"module_dir.module_name" = [ "function_to_inject" ]
-```
-
-For example:
-
-```
-[imports.build_tasks]
-"ugrd.fs.mounts" = [ "generate_fstab" ]
-```
-
-Is used in the base module to make the initramfs generator generate a fstab durinf the `build_tasks` phase.
-
-Imported functions have access to the entire `self` scope, giving them full control of whatever other modules are loaded when they are executed, and the capability to dynamically create new functions.
-
-This script should be executed as root, to have access to all files and libraries required to boot, so special care should be taken when loading and creating modules. 
-
 #### masks
 
 To mask an import used by another module, the mask parameter can be used:
