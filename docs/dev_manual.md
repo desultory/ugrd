@@ -14,6 +14,16 @@ There are two primary categories for imports, `build` and `init`.
 
 `pack` and `test` imports can also be used, but are mostly reserved for image packing and testing.
 
+Imports are defined in the toml file, with the hook name as the key name.
+Within each hook, key names should be the module import path, and the value should be a list of functions to import.
+
+For example, the `generate_fstab` function is added to the `build_tasks` book from the `ugrd.fs.mounts` module with:
+
+```
+[imports.build_tasks]
+"ugrd.fs.mounts" = [ "generate_fstab" ]
+```
+
 ### Build imports
 
 Build imports are used to mutate config and build the base structure of the initramfs.
@@ -30,14 +40,14 @@ Build imports are used to mutate config and build the base structure of the init
 
 `build_late` functions are executed after the init has been generated.
 
-### init hooks
+### Init imports
 
-By default, the specified init hooks are:
-* `init_pre` - Where the base initramfs environment is set up, such as creating a devtmpfs.
+By default, the following init hooks are available:
+* `init_pre` - Where the base initramfs environment is set up; basic mounts are initialized and the kernel cmdline is read.
 * `init_debug` - Where a shell is started if `start_shell` is enabled in the debug module.
 * `init_early` - Where early actions such as checking for device paths, mounting the fstab take place.
 * `init_main` - Most important initramfs activities should take place here.
-* `init_late` - Space for additional checks, stuff that should run later in the init process.
+* `init_late` - Space for late initramfs actions, such as activating LVM volumes.
 * `init_premount` - Where filesystem related commands such as `btrfs device scan` can run.
 * `init_mount` - Where the root filesystem mount takes place
 * `init_mount_late` - Where late mount actions such as mounting paths under the root filesystem can take place.
