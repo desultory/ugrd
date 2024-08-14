@@ -7,7 +7,6 @@ paths = ['/run/plymouth']
 type = "devpts"
 destination = "/dev/pts"
 source = "/dev/pts"
-remake_mountpoint = true
 
 [imports.build_pre]
 "ugrd.base.plymouth" = [ "populate_initrd" ]

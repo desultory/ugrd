@@ -1,12 +1,12 @@
 __author__ = 'desultory'
-__version__ = '4.9.1'
+__version__ = '4.9.2'
 
 from pathlib import Path
 from zenlib.util import contains, pretty_print
 
 BLKID_FIELDS = ['uuid', 'partuuid', 'label', 'type']
 SOURCE_TYPES = ['uuid', 'partuuid', 'label', 'path']
-MOUNT_PARAMETERS = ['destination', 'source', 'type', 'options', 'no_validate', 'base_mount', 'remake_mountpoint', *SOURCE_TYPES]
+MOUNT_PARAMETERS = ['destination', 'source', 'type', 'options', 'no_validate', 'base_mount', *SOURCE_TYPES]
 
 
 @contains('validate', "Skipping mount validation, validation is disabled.", log_level=30)
@@ -457,7 +457,10 @@ def autodetect_root(self) -> None:
 
 
 def mount_base(self) -> list[str]:
-    """ Generates mount commands for the base mounts. """
+    """
+    Generates mount commands for the base mounts.
+    Must be run before variables are used, as it creates the /run/vars directory.
+    """
     out = []
     for mount in self['mounts'].values():
         if mount.get('base_mount'):
@@ -477,14 +480,6 @@ def mount_late(self) -> list[str]:
             mount['destination'] = Path(target_dir, str(mount['destination']).removeprefix('/'))
         out += _to_mount_cmd(self, mount)
     return out
-
-
-def remake_mountpoints(self) -> list[str]:
-    """ Remakes mountpoints, especially useful when mounting over something like /dev. """
-    cmds = [f"mkdir --parents {mount['destination']}" for mount in self['mounts'].values() if mount.get('remake_mountpoint')]
-    if cmds:
-        self['binaries'] += 'mkdir'
-        return cmds
 
 
 def mount_fstab(self) -> list[str]:
