@@ -4,7 +4,7 @@ from subprocess import run, CompletedProcess, TimeoutExpired
 
 from zenlib.util import pretty_print
 
-__version__ = "1.1.1"
+__version__ = "1.2.0"
 __author__ = "desultory"
 
 
@@ -21,7 +21,7 @@ class GeneratorHelpers:
             return self.build_dir / path
 
     def _mkdir(self, path: Path) -> None:
-        """ Creates a directory, chowns it as self['_file_owner_uid'] """
+        """ Creates a directory within the build directory."""
         from os.path import isdir
         from os import mkdir
 
@@ -42,25 +42,9 @@ class GeneratorHelpers:
         else:
             self.logger.debug("Directory already exists: %s" % path_dir)
 
-        self._chown(path_dir)
-
-    def _chown(self, path: Path) -> None:
-        """ Chowns a file or directory as self['_file_owner_uid'] """
-        from os import chown
-
-        if path.owner() == self['_file_owner_uid'] and path.group() == self['_file_owner_uid']:
-            self.logger.debug("File '%s' already owned by: %s" % (path, self['_file_owner_uid']))
-            return
-
-        chown(path, self['_file_owner_uid'], self['_file_owner_uid'])
-        if path.is_dir():
-            self.logger.debug("[%s] Set directory owner: %s" % (path, self['_file_owner_uid']))
-        else:
-            self.logger.debug("[%s] Set file owner: %s" % (path, self['_file_owner_uid']))
-
     def _write(self, file_name: Union[Path, str], contents: list[str], chmod_mask=0o644, in_build_dir=True) -> None:
         """
-        Writes a file and owns it as self['_file_owner_uid']
+        Writes a file within the build directory.
         Sets the passed chmod_mask.
         If the first line is a shebang, bash -n is run on the file.
         """
@@ -96,10 +80,8 @@ class GeneratorHelpers:
         chmod(file_path, chmod_mask)
         self.logger.debug("[%s] Set file permissions: %s" % (file_path, chmod_mask))
 
-        self._chown(file_path)
-
     def _copy(self, source: Union[Path, str], dest=None) -> None:
-        """ Copies a file, chowns it as self['_file_owner_uid'] """
+        """ Copies a file into the initramfs build directory. """
         from shutil import copy2
 
         if not isinstance(source, Path):
@@ -123,8 +105,6 @@ class GeneratorHelpers:
 
         self.logger.log(self['_build_log_level'], "Copying '%s' to '%s'" % (source, dest_path))
         copy2(source, dest_path)
-
-        self._chown(dest_path)
 
     def _symlink(self, source: Union[Path, str], target: Union[Path, str]) -> None:
         """ Creates a symlink """
