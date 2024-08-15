@@ -1,4 +1,4 @@
-__version__ = "0.4.1"
+__version__ = "0.5.0"
 
 from zenlib.util import unset
 
@@ -92,4 +92,10 @@ def test_image(self):
         self.logger.error("Test failed")
         self.logger.error("QEMU stdout:\n%s", stdout)
 
+    # Get the time of the kernel panic
+    for line in stdout:
+        if line.endswith('exitcode=0x00000000'):
+            panic_time = line.split(']')[0][1:].strip()
+            return self.logger.info("Test took: %s", panic_time)
+    self.logger.warning("Unable to determine test duration from panic message.")
 
