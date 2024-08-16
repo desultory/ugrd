@@ -9,12 +9,12 @@ while read -r option description; do
 done <<< "$(ugrd --dump_args)"
 
 args=("-c[config file location]:config file:_files"
-	"--config[config file location]:config file:_files"
-	"--kernel-version[set the kernel version]:kernel version:_files -W /lib/modules -/"
-	"--kver[set the kernel version]:kernel version:_files -W /lib/modules -/"
-	"--log-file[specify the log file]"
-	"--log-level[specify the log level]"
-	"*:file:_files -/")
+      "--config[config file location]:config file:_files"
+      "--kernel-version[set the kernel version]:kernel version:_files -W /lib/modules -/"
+      "--kver[set the kernel version]:kernel version:_files -W /lib/modules -/"
+      "--log-file[specify the log file]:log file:_files"
+      "--log-level[specify the log level]:log level:(0 5 10 20 30 40 50)"
+      "*:file:_files")
 
 args+=($base_args[@])
 
