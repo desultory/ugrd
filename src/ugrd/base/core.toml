@@ -1,4 +1,3 @@
-file_owner = "portage"
 build_dir = "/tmp/initramfs"
 _build_log_level = 10
 out_dir = "/tmp/initramfs_out"
@@ -26,7 +25,6 @@ minor = 1
 		     "_process_gz_dependencies_multi",
 		     "_process_copies_multi",
 		     "_process_symlinks_multi",
-		     "_process_file_owner",
 		     "_process_nodes_multi",
 		     "_process_paths_multi",
 		     "_process_masks_multi",
@@ -52,7 +50,6 @@ minor = 1
 [custom_parameters]
 hostonly = "bool"  # If true, the initramfs will be built specifically for the host building it
 validate = "bool"  # If true, the configuration of the initramfs will be validated against the host
-_file_owner_uid = "int"  # Add the _file_owner_uid property, used to store the uid of the file owner
 _custom_init_file = "str"  # Add the _custom_init_file propety, used to set where the custom init file is located
 build_dir = "Path"  # The directory where the initramfs is built
 build_logging = "bool" # If true, additional build information will be logged to the console
@@ -72,6 +69,4 @@ masks = "dict"  # Imports to be masked in the initramfs
 out_dir = "Path"  # The directory where the initramfs is packed/output. If no packer is used, this is the final output directory.
 old_count = "int"  # The number of times to cycle old files before deleting
 clean = "bool"  # Add the clean property, used to define if the mounts should be cleaned up after boot
-file_owner = "str"  # Add the file_owner property, used to define who should own the copied initramfs files
 banner = "str"  # Banner string to be printed at the start of init
-

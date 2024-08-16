@@ -346,31 +346,6 @@ def _process_nodes_multi(self, name: str, config: dict) -> None:
     self['nodes'][name] = config
 
 
-def _process_file_owner(self, owner: Union[str, int]) -> None:
-    """
-    Processes the passed file owner into a uid.
-    If the owner is a string, it is assumed to be a username and the uid is looked up.
-    If the owner is an int, it is assumed to be a uid and is used directly.
-    """
-    from pwd import getpwnam
-
-    if isinstance(owner, str):
-        try:
-            self.logger.debug("Processing file owner: %s" % owner)
-            owner = getpwnam(owner).pw_uid
-            self.logger.info("Resolved uid: %s" % owner)
-        except KeyError:
-            self.logger.error("Unable to find uid for user: %s" % owner)
-            self.logger.warning("Setting file owner to 0 (root)")
-            owner = 0
-    elif not isinstance(owner, int):
-        self.logger.error("Unable to process file owner: %s" % owner)
-        raise ValueError("Invalid type passed for file owner: %s" % type(owner))
-
-    self['_file_owner_uid'] = owner
-    dict.__setitem__(self, 'file_owner', owner)
-
-
 def _process_masks_multi(self, runlevel: str, function: str) -> None:
     """ Processes a mask definition. """
     if runlevel not in self['masks']:
