@@ -1,5 +1,5 @@
 ![ubuntu](https://github.com/desultory/ugrd/actions/workflows/ubuntu.yml/badge.svg)
-
+![PyCPIO](https://github.com/desultory/pycpio/actions/workflows/unit_tests.yml/badge.svg)
 
 # µgRD
 
