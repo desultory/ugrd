@@ -39,4 +39,4 @@ jobs:
     - name: Test fullauto.toml
       run: |
         ls /boot
-        sudo venv/bin/ugrd -c tests/fullauto.toml
+        sudo venv/bin/python -m unittest discover tests
