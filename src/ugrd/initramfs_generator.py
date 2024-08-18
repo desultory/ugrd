@@ -4,10 +4,7 @@ from zenlib.logging import loggify
 from zenlib.util import pretty_print
 
 from ugrd.initramfs_dict import InitramfsConfigDict
-
 from .generator_helpers import GeneratorHelpers
-
-__author__ = "desultory"
 
 
 @loggify
@@ -25,9 +22,11 @@ class InitramfsGenerator(GeneratorHelpers):
         # init_pre and init_final are run as part of generate_initramfs_main
         self.init_types = ['init_debug', 'init_early', 'init_main', 'init_late', 'init_premount', 'init_mount', 'init_mount_late', 'init_cleanup']
 
+        # Passed kwargs must be imported early, so they will be processed against the base configuration
         self.config_dict.import_args(kwargs)
-        if config:
+        if config:  # Then user configuration is loaded over the base configuration, clobbering kwargs
             self.load_config()
+            self.config_dict.import_args(kwargs)  # Re-import kwargs (cmdline params) to apply them over the config
         else:
             self.logger.warning("No config file specified, using the base config")
         self.config_dict.validate()
