@@ -8,7 +8,7 @@ from zenlib.logging import loggify
 @loggify
 class TestCpio(TestCase):
     def test_fullauto(self):
-        generator = InitramfsGenerator(logger=self.logger, config='fullauto.toml')
+        generator = InitramfsGenerator(logger=self.logger, config='tests/fullauto.toml')
         generator.build()
 
 
