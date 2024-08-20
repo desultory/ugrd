@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "2.0.0"
+__version__ = "2.0.1"
 
 from tomllib import load, TOMLDecodeError
 from pathlib import Path
@@ -77,7 +77,8 @@ class InitramfsConfigDict(UserDict):
             expected_type = d.get(key)
             if expected_type:
                 if expected_type.__name__ == "InitramfsGenerator":
-                    return self.data[key].update(value)
+                    self.data[key] = value
+                    return self.logger.debug("Setting InitramfsGenerator: %s" % key)
                 break
         else:
             raise KeyError("Parameter not registered: %s" % key)
