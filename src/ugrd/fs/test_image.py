@@ -1,4 +1,4 @@
-__version__ = "0.5.1"
+__version__ = "0.5.2"
 
 from zenlib.util import contains
 
@@ -25,7 +25,7 @@ def make_test_image(self):
             f.write(b"\0" * self.test_image_size * 2 ** 20)
         self._run(['mkfs', '-t', rootfs_type, '-d', build_dir, '-U', rootfs_uuid, '-F', archive_out_path])
     elif rootfs_type == 'btrfs':
-        self._run(['mkfs', '-t', rootfs_type, '--rootdir', build_dir, '-U', rootfs_uuid, archive_out_path])
+        self._run(['mkfs', '-t', rootfs_type, '-f', '--rootdir', build_dir, '-U', rootfs_uuid, archive_out_path])
     else:
         raise Exception("Unsupported test rootfs type: %s" % rootfs_type)
 
