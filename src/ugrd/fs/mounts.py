@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.10.1'
+__version__ = '4.10.2'
 
 from pathlib import Path
 from zenlib.util import contains, pretty_print
@@ -470,7 +470,7 @@ def mount_base(self) -> list[str]:
     return out
 
 
-@contains('late_mounts', "Skipping late mounts, late_mounts is empty.", log_level=30)
+@contains('late_mounts', "Skipping late mounts, late_mounts is empty.")
 def mount_late(self) -> list[str]:
     """ Generates mount commands for the late mounts. """
     target_dir = str(self['mounts']['root']['destination'])

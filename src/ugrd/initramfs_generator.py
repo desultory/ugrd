@@ -1,4 +1,4 @@
-from tomllib import load
+from tomllib import load, TOMLDecodeError
 
 from zenlib.logging import loggify
 from zenlib.util import pretty_print
@@ -10,7 +10,6 @@ from .generator_helpers import GeneratorHelpers
 @loggify
 class InitramfsGenerator(GeneratorHelpers):
     def __init__(self, config='/etc/ugrd/config.toml', *args, **kwargs):
-        self.config_filename = config
         self.config_dict = InitramfsConfigDict(NO_BASE=kwargs.pop('NO_BASE', False), logger=self.logger)
 
         # Used for functions that are added to the bash source file
@@ -24,20 +23,25 @@ class InitramfsGenerator(GeneratorHelpers):
 
         # Passed kwargs must be imported early, so they will be processed against the base configuration
         self.config_dict.import_args(kwargs)
-        if config:  # Then user configuration is loaded over the base configuration, clobbering kwargs
-            self.load_config()
+        try:
+            self.load_config(config)  # The user config is loaded over the base config, clobbering kwargs
             self.config_dict.import_args(kwargs)  # Re-import kwargs (cmdline params) to apply them over the config
-        else:
-            self.logger.warning("No config file specified, using the base config")
+        except FileNotFoundError:
+            self.logger.warning("[%s] Config file not found, using the base config." % config)
+        except TOMLDecodeError as e:
+            raise ValueError("[%s] Error decoding config file: %s" % (config, e))
         self.config_dict.validate()
 
-    def load_config(self) -> None:
+    def load_config(self, config_filename) -> None:
         """
         Loads the config from the specified toml file.
         Populates self.config_dict with the config.
         Ensures that the required parameters are present.
         """
-        with open(self.config_filename, 'rb') as config_file:
+        if not config_filename:
+            raise FileNotFoundError("Config file not specified.")
+
+        with open(config_filename, 'rb') as config_file:
             self.logger.info("Loading config file: %s" % config_file.name)
             raw_config = load(config_file)
 
