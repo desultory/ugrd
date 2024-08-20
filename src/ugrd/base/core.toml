@@ -19,6 +19,7 @@ minor = 1
 
 [imports.config_processing]
 "ugrd.base.core" = [ "_process_build_logging",
+		     "_process_out_file",
 		     "_process_binaries_multi",
 		     "_process_dependencies_multi",
 		     "_process_opt_dependencies_multi",
@@ -69,6 +70,7 @@ nodes = "dict"  # Nodes dict, defines the device nodes to be created
 paths = "NoDupFlatList"  # Paths to be created in the initramfs
 masks = "dict"  # Imports to be masked in the initramfs
 out_dir = "Path"  # The directory where the initramfs is packed/output. If no packer is used, this is the final output directory.
+out_file = "str"  # The name of the output file, if absolute, overrids out dir with the path, and sets out_file to the filename
 old_count = "int"  # The number of times to cycle old files before deleting
 clean = "bool"  # Add the clean property, used to define if the mounts should be cleaned up after boot
 banner = "str"  # Banner string to be printed at the start of init

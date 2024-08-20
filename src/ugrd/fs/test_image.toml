@@ -1,4 +1,4 @@
-modules = ['ugrd.fs.cpio']  # needed for out_file and get_archive_path
+modules = ['ugrd.fs.cpio']  # get_archive_path
 paths = ['dev', 'sys', 'proc']
 
 test_image_size = 16
@@ -16,7 +16,7 @@ pack = "make_cpio"
 "ugrd.fs.test_image" = ["make_test_image"]
 
 [custom_parameters]
-shebang = "str"  # Add the shebang property, because the test mode disables the base moduleo
+shebang = "str"  # Add the shebang property, because the test mode disables the base module
 mounts = "dict"  # We only need the mounts dict, not the whole module
 test_image_size = "int"  # Define the size of the test image in MiB
 test_flag = "str"  # Define the success flag used to determine if the test was successful

@@ -179,6 +179,28 @@ def find_libgcc(self) -> None:
     self['library_paths'] = str(source_path.parent)
 
 
+def _process_out_file(self, out_file):
+    """ Processes the out_file configuration option. """
+    if Path(out_file).is_dir():
+        self.logger.info("Specified out_file is a directory, setting out_dir: %s" % out_file)
+        self['out_dir'] = out_file
+        return
+
+    if out_file.startswith('./'):
+        self.logger.debug("Relative out_file path detected: %s" % out_file)
+        self['out_dir'] = Path('.').resolve()
+        self.logger.info("Resolved out_dir to: %s" % self['out_dir'])
+        out_file = Path(out_file[2:])
+    elif Path(out_file).parent.is_dir() and str(Path(out_file).parent) != '.':
+        self['out_dir'] = Path(out_file).parent
+        self.logger.info("Resolved out_dir to: %s" % self['out_dir'])
+        out_file = Path(out_file).name
+    else:
+        out_file = Path(out_file)
+
+    self.data['out_file'] = out_file
+
+
 def _process_paths_multi(self, path: Union[Path, str]) -> None:
     """
     Converts the input to a Path if it is not one.
