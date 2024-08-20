@@ -205,7 +205,7 @@ def get_kernel_metadata(self) -> None:
     find_kernel_config(self)  # Used to check kernel config options
 
 
-@contains('kmod_init', "kmod_init is empty, skipping.", log_level=30)
+@contains('kmod_init', "kmod_init is empty, skipping.")
 @unset('no_kmod', "no_kmod is enabled, skipping.", log_level=30)
 def process_module_metadata(self) -> None:
     """ Adds kernel module metadata files to dependencies."""
@@ -216,7 +216,7 @@ def process_module_metadata(self) -> None:
         self['dependencies'] = meta_file_path
 
 
-@contains('kmod_init', "kmod_init is empty, skipping.", log_level=30)
+@contains('kmod_init', "kmod_init is empty, skipping.")
 @unset('no_kmod', "no_kmod is enabled, skipping.", log_level=30)
 def regen_kmod_metadata(self) -> None:
     """ Regenerates kernel module metadata files using depmod. """

@@ -1,4 +1,4 @@
-from tomllib import load
+from tomllib import load, TOMLDecodeError
 
 from zenlib.logging import loggify
 from zenlib.util import pretty_print
@@ -28,8 +28,8 @@ class InitramfsGenerator(GeneratorHelpers):
             self.config_dict.import_args(kwargs)  # Re-import kwargs (cmdline params) to apply them over the config
         except FileNotFoundError:
             self.logger.warning("[%s] Config file not found, using the base config." % config)
-        except ValueError:
-            self.logger.warning("No config file specified, using the base config.")
+        except TOMLDecodeError as e:
+            raise ValueError("[%s] Error decoding config file: %s" % (config, e))
         self.config_dict.validate()
 
     def load_config(self, config_filename) -> None:
@@ -39,7 +39,7 @@ class InitramfsGenerator(GeneratorHelpers):
         Ensures that the required parameters are present.
         """
         if not config_filename:
-            raise ValueError("Config file not specified.")
+            raise FileNotFoundError("Config file not specified.")
 
         with open(config_filename, 'rb') as config_file:
             self.logger.info("Loading config file: %s" % config_file.name)
