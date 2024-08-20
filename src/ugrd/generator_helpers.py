@@ -4,7 +4,7 @@ from subprocess import run, CompletedProcess, TimeoutExpired
 
 from zenlib.util import pretty_print
 
-__version__ = "1.3.1"
+__version__ = "1.3.2"
 __author__ = "desultory"
 
 
@@ -149,9 +149,9 @@ class GeneratorHelpers:
 
         if cmd.returncode != 0:
             self.logger.error("Failed to run command: %s" % ' '.join(cmd.args))
-            self.logger.error("Command output: %s" % cmd.stdout.decode())
-            self.logger.error("Command error: %s" % cmd.stderr.decode())
-            raise RuntimeError("Failed to run command: %s" % cmd.args)
+            self.logger.error("Command output:\n%s" % cmd.stdout.decode())
+            self.logger.error("Command error:\n%s" % cmd.stderr.decode())
+            raise RuntimeError("Failed to run command: %s" % ' '.join(cmd.args))
 
         return cmd
 
