@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "2.0.1"
+__version__ = "2.0.2"
 
 from tomllib import load, TOMLDecodeError
 from pathlib import Path
@@ -48,7 +48,7 @@ class InitramfsConfigDict(UserDict):
         """ Imports data from an argument dict. """
         for arg, value in args.items():
             self.logger.info("Importing argument '%s' with value: %s" % (arg, value))
-            if arg == 'modules':
+            if arg == 'modules':  # allow loading modules by name from the command line
                 for module in value.split(','):
                     self[arg] = module
             self[arg] = value
@@ -79,7 +79,7 @@ class InitramfsConfigDict(UserDict):
                 if expected_type.__name__ == "InitramfsGenerator":
                     self.data[key] = value
                     return self.logger.debug("Setting InitramfsGenerator: %s" % key)
-                break
+                break  # Break and raise an exception if the type is not found
         else:
             raise KeyError("Parameter not registered: %s" % key)
 
@@ -106,7 +106,7 @@ class InitramfsConfigDict(UserDict):
                 self.logger.log(5, "[%s] Using custom plural setitem: %s" % (key, func.__name__))
                 return handle_plural(func)(self, value)
 
-        if expected_type in (list, NoDupFlatList):  # Adppend to lists, don't replace
+        if expected_type in (list, NoDupFlatList):  # Append to lists, don't replace
             self.logger.log(5, "Using list setitem for: %s" % key)
             return self[key].append(value)
 
