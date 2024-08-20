@@ -40,6 +40,7 @@ Modules write to a shared config dict that is accessible by other modules.
 
 * `build_dir` (/tmp/initramfs) Defines where the build will take place.
 * `out_dir` (/tmp/initramfs_out) Defines where packed files will be placed.
+* `out_file` Sets the name of the output file, under `out_dir` unless a path is defined.
 * `clean` (true) forces the build dir to be cleaned on each run.
 * `hostonly` (true) Builds the initramfs for the current host, if disabled, validation is automatically disabled.
 * `validate` (true) adds additional checks to verify the initramfs will work on the build host.
@@ -164,7 +165,6 @@ label = "extra"
 
 This module handles CPIO creation.
 
-* `out_file` Sets the name of the output file, under `out_dir` unless a path is defined.
 * `mknod_cpio` (true) Only create device nodes within the CPIO.
 * `cpio_compression` (xz) Sets the compression method for the CPIO file.
 * `cpio_rotate` (true) Rotates old CPIO files, keeping `old_count` number of old files.
