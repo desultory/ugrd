@@ -1,9 +1,12 @@
-__version__ = "0.5.0"
+__version__ = "0.5.2"
 
 from zenlib.util import unset
 
 
-COPY_CONFIG = ['mounts', 'test_image_size', 'test_flag', 'out_dir', 'clean', 'basedir']
+COPY_CONFIG = [
+    'mounts', 'out_dir', 'basedir', 'clean',
+    'test_image_size', 'test_flag'
+]
 
 
 @unset('test_kernel')
@@ -82,8 +85,7 @@ def test_image(self):
     try:
         results = self._run(qemu_cmd, timeout=self['test_timeout'])
     except RuntimeError as e:
-        self.logger.error("Test failed: %s", e)
-        return False
+        raise RuntimeError("QEMU test failed: %s" % e)
 
     stdout = results.stdout.decode('utf-8').split('\r\n')
     self.logger.debug("QEMU output: %s", stdout)
