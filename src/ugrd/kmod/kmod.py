@@ -221,7 +221,8 @@ def process_module_metadata(self) -> None:
 def regen_kmod_metadata(self) -> None:
     """ Regenerates kernel module metadata files using depmod. """
     self.logger.info("Regenerating kernel module metadata files.")
-    self._run(['depmod', '--basedir', self['build_dir'], '--outdir', self['build_dir'], self['kernel_version']])
+    build_dir = self._get_build_path('/')
+    self._run(['depmod', '--basedir', build_dir, '--outdir', build_dir, self['kernel_version']])
 
 
 def _add_kmod_firmware(self, kmod: str) -> None:

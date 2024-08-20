@@ -1,5 +1,5 @@
 test_rootfs_name = 'ugrd-test-rootfs'
-test_rootfs_build_dir = '/tmp/initramfs_test_rootfs'
+test_rootfs_build_dir = 'initramfs_test_rootfs'
 test_image_size = 16
 
 test_memory = '256M'

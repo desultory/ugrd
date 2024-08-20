@@ -6,7 +6,7 @@ modules = [
 ]
 
 # The initramfs will be built in /tmp/initramfs if "build_dir" is not specified not specified
-out_dir = "/tmp/initramfs_test"
+out_dir = "initramfs_test"
 
 #kernel_version = "6.6.35-gentoo-dist"
 #test_kernel = "/boot/vmlinuz-6.6.35-gentoo-dist"

@@ -4,26 +4,37 @@ from subprocess import run, CompletedProcess, TimeoutExpired
 
 from zenlib.util import pretty_print
 
-__version__ = "1.2.0"
+__version__ = "1.3.0"
 __author__ = "desultory"
+
+
+def get_subpath(path: Path, subpath: Union[Path, str]) -> Path:
+    """ Returns the subpath of a path. """
+    if not isinstance(subpath, Path):
+        subpath = Path(subpath)
+
+    if subpath.is_absolute():
+        return path / subpath.relative_to('/')
+    else:
+        return path / subpath
 
 
 class GeneratorHelpers:
     """ Mixin class for the InitramfsGenerator class. """
     def _get_build_path(self, path: Union[Path, str]) -> Path:
-        """ Returns the build path. """
-        if not isinstance(path, Path):
-            path = Path(path)
+        """ Returns the path relative to the build directory, under the basedir. """
+        return self._get_out_path(get_subpath(self.build_dir, path))
 
-        if path.is_absolute():
-            return self.build_dir / path.relative_to('/')
-        else:
-            return self.build_dir / path
+    def _get_out_path(self, path: Union[Path, str]) -> Path:
+        """ Gets the path relative to the basedir. """
+        return get_subpath(self.basedir, path)
 
-    def _mkdir(self, path: Path) -> None:
+    def _mkdir(self, path: Path, resolve_build=True) -> None:
         """ Creates a directory within the build directory."""
         from os.path import isdir
         from os import mkdir
+        if resolve_build:
+            path = self._get_build_path(path)
 
         self.logger.log(5, "Creating directory: %s" % path)
         if path.is_dir():
@@ -34,7 +45,7 @@ class GeneratorHelpers:
 
         if not isdir(path_dir.parent):
             self.logger.debug("Parent directory does not exist: %s" % path_dir.parent)
-            self._mkdir(path_dir.parent)
+            self._mkdir(path_dir.parent, resolve_build=False)
 
         if not isdir(path_dir):
             mkdir(path)
@@ -42,22 +53,18 @@ class GeneratorHelpers:
         else:
             self.logger.debug("Directory already exists: %s" % path_dir)
 
-    def _write(self, file_name: Union[Path, str], contents: list[str], chmod_mask=0o644, in_build_dir=True) -> None:
+    def _write(self, file_name: Union[Path, str], contents: list[str], chmod_mask=0o644) -> None:
         """
         Writes a file within the build directory.
         Sets the passed chmod_mask.
         If the first line is a shebang, bash -n is run on the file.
         """
         from os import chmod
-
-        if in_build_dir:
-            file_path = self._get_build_path(file_name)
-        else:
-            file_path = Path(file_name)
+        file_path = self._get_build_path(file_name)
 
         if not file_path.parent.is_dir():
             self.logger.debug("Parent directory for '%s' does not exist: %s" % (file_path.name, file_path))
-            self._mkdir(file_path.parent)
+            self._mkdir(file_path.parent, resolve_build=False)
 
         if file_path.is_file():
             self.logger.warning("File already exists: %s" % file_path)
@@ -94,8 +101,8 @@ class GeneratorHelpers:
         dest_path = self._get_build_path(dest)
 
         if not dest_path.parent.is_dir():
-            self.logger.debug("Parent directory for '%s' does not exist: %s" % (dest_path.name, dest.parent))
-            self._mkdir(dest_path.parent)
+            self.logger.debug("Parent directory for '%s' does not exist: %s" % (dest_path.name, dest_path.parent))
+            self._mkdir(dest_path.parent, resolve_build=False)
 
         if dest_path.is_file():
             self.logger.warning("File already exists: %s" % dest_path)
@@ -117,7 +124,7 @@ class GeneratorHelpers:
 
         if not target.parent.is_dir():
             self.logger.debug("Parent directory for '%s' does not exist: %s" % (target.name, target.parent))
-            self._mkdir(target.parent)
+            self._mkdir(target.parent, resolve_build=False)
 
         if target.is_symlink():
             if target.resolve() == source:

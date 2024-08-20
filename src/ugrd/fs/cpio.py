@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '3.3.0'
+__version__ = '3.4.0'
 
 
 from zenlib.util import contains
@@ -74,17 +74,17 @@ def make_cpio(self) -> None:
     Raises FileNotFoundError if the output directory does not exist.
     """
     cpio = self._cpio_archive
-    cpio.append_recursive(self.build_dir, relative=True)
+    cpio.append_recursive(self._get_build_path('/'), relative=True)
 
     if self.get('mknod_cpio'):
         for node in self['nodes'].values():
             self.logger.debug("Adding CPIO node: %s" % node)
             cpio.add_chardev(name=node['path'], mode=node['mode'], major=node['major'], minor=node['minor'])
 
-    out_cpio = self['_archive_out_path']
+    out_cpio = self._get_out_path(self['_archive_out_path'])
 
     if not out_cpio.parent.exists():
-        self._mkdir(out_cpio.parent)
+        self._mkdir(out_cpio.parent, resolve_build=False)
 
     if out_cpio.exists():
         if self['cpio_rotate']:

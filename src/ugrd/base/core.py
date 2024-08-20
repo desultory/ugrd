@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '3.6.0'
+__version__ = '3.7.0'
 
 from pathlib import Path
 from typing import Union
@@ -7,29 +7,32 @@ from typing import Union
 from zenlib.util import contains, unset, NoDupFlatList
 
 
+def detect_tmpdir(self) -> None:
+    """ Reads TMPDIR from the environment, sets it as the temporary directory. """
+    from os import environ
+    if tmpdir := environ.get('TMPDIR'):
+        self.logger.info("Detected TMPDIR: %s" % tmpdir)
+        self['basedir'] = Path(tmpdir)
+
+
 @contains('clean', "Skipping cleaning build directory", log_level=30)
 def clean_build_dir(self) -> None:
     """ Cleans the build directory. """
     from shutil import rmtree
 
-    if self.build_dir.is_dir():
-        self.logger.warning("Cleaning build directory: %s" % self.build_dir)
-        rmtree(self.build_dir)
+    build_dir = self._get_build_path('/')
+
+    if build_dir.is_dir():
+        self.logger.warning("Cleaning build directory: %s" % build_dir)
+        rmtree(build_dir)
     else:
-        self.logger.info("Build directory does not exist, skipping cleaning: %s" % self.build_dir)
+        self.logger.info("Build directory does not exist, skipping cleaning: %s" % build_dir)
 
 
 def generate_structure(self) -> None:
     """ Generates the initramfs directory structure. """
-    if not self.build_dir.is_dir():
-        self._mkdir(self.build_dir)
-
     for subdir in set(self['paths']):
-        # Get the relative path of each path, create the directory in the build dir
-        subdir_relative_path = subdir.relative_to(subdir.anchor)
-        target_dir = self.build_dir / subdir_relative_path
-
-        self._mkdir(target_dir)
+        self._mkdir(subdir)
 
 
 def calculate_dependencies(self, binary: str) -> list[Path]:
@@ -67,14 +70,15 @@ def calculate_dependencies(self, binary: str) -> list[Path]:
 def check_usr(self) -> None:
     """ Checks for /bin and /sbin in the build directory.
     If the are not present, it will symlink them to /usr/bin and /usr/sbin. """
+    build_dir = self._get_build_path('/')
 
-    if not (self.build_dir / 'bin').is_dir():
-        if (self.build_dir / 'usr/bin').is_dir():
+    if not (build_dir / 'bin').is_dir():
+        if (build_dir / 'usr/bin').is_dir():
             self._symlink('/usr/bin', '/bin/')
         else:
             raise RuntimeError("Neither /bin nor /usr/bin exist in the build directory")
 
-    if not (self.build_dir / 'sbin').is_dir() and (self.build_dir / 'usr/sbin').is_dir():
+    if not (build_dir / 'sbin').is_dir() and (build_dir / 'usr/sbin').is_dir():
         self._symlink('/usr/sbin', '/sbin/')
 
 
@@ -142,7 +146,7 @@ def deploy_nodes(self) -> None:
     for node, config in self['nodes'].items():
         node_path_abs = Path(config['path'])
 
-        node_path = self.build_dir / node_path_abs.relative_to(node_path_abs.anchor)
+        node_path = self._get_build_path('/') / node_path_abs.relative_to(node_path_abs.anchor)
         node_mode = S_IFCHR | config['mode']
 
         try:

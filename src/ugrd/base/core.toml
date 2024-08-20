@@ -1,6 +1,7 @@
-build_dir = "/tmp/initramfs"
+basedir = "/tmp"
+build_dir = "initramfs_build"
 _build_log_level = 10
-out_dir = "/tmp/initramfs_out"
+out_dir = "initramfs_out"
 clean = true
 find_libgcc = true
 hostonly = true
@@ -33,7 +34,7 @@ minor = 1
 		   ]
 
 [imports.build_pre]
-"ugrd.base.core" = [ "clean_build_dir", "find_libgcc" ]
+"ugrd.base.core" = [ "detect_tmpdir", "clean_build_dir", "find_libgcc" ]
 
 [imports.build_tasks]
 "ugrd.base.core" = [ "generate_structure",
@@ -51,6 +52,7 @@ minor = 1
 hostonly = "bool"  # If true, the initramfs will be built specifically for the host building it
 validate = "bool"  # If true, the configuration of the initramfs will be validated against the host
 _custom_init_file = "str"  # Add the _custom_init_file propety, used to set where the custom init file is located
+basedir = "Path"  # The base directory to use as the base for output files
 build_dir = "Path"  # The directory where the initramfs is built
 build_logging = "bool" # If true, additional build information will be logged to the console
 _build_log_level = "int"  # The level of logging to use for the build log, set to 10 by default and incremeted by if build_log is true (min 20)

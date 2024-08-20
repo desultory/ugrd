@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.10.0'
+__version__ = '4.10.1'
 
 from pathlib import Path
 from zenlib.util import contains, pretty_print
@@ -226,8 +226,6 @@ def get_blkid_info(self, device=None) -> str:
         for field in BLKID_FIELDS:
             if match := search(f' {field.upper()}="(.+?)"', info):
                 self['_blkid_info'][dev][field] = match.group(1)
-            else:
-                self.logger.warning("[%s] Failed to parse blkid field: %s" % (dev, field))
 
     if device and not self['_blkid_info'][device]:
         raise ValueError("[%s] Failed to parse blkid info: %s" % (device, info))
