@@ -1,4 +1,4 @@
-__version__ = "0.5.0"
+__version__ = "0.5.1"
 
 from zenlib.util import contains
 
@@ -15,15 +15,14 @@ def make_test_image(self):
     self.logger.info("Creating test image from: %s" % build_dir)
     archive_out_path = self._get_out_path(self._archive_out_path)
 
-    # Create the test image file, flll with 0s
-    with open(archive_out_path, "wb") as f:
-        self.logger.info("Creating test image file: %s" % f.name)
-        f.write(b"\0" * self.test_image_size * 2 ** 20)
-
     rootfs_uuid = self['mounts']['root']['uuid']
     rootfs_type = self['mounts']['root']['type']
 
     if rootfs_type == 'ext4':
+        # Create the test image file, flll with 0s
+        with open(archive_out_path, "wb") as f:
+            self.logger.info("Creating test image file: %s" % f.name)
+            f.write(b"\0" * self.test_image_size * 2 ** 20)
         self._run(['mkfs', '-t', rootfs_type, '-d', build_dir, '-U', rootfs_uuid, '-F', archive_out_path])
     elif rootfs_type == 'btrfs':
         self._run(['mkfs', '-t', rootfs_type, '--rootdir', build_dir, '-U', rootfs_uuid, archive_out_path])
