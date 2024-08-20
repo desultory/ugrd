@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '0.3.0'
+__version__ = '0.3.1'
 
 from zenlib.util import contains
 
@@ -68,7 +68,7 @@ def _add_keymap_file(self, keymap_file: str) -> str:
 def _process_keymap_file(self, keymap_file: str) -> str:
     """ Sets the keymap file, adding it to the list of files to be copied to the new root. """
     _add_keymap_file(self, keymap_file)
-    dict.__setitem__(self, 'keymap_file', keymap_file.replace('.gz', ''))
+    self.data['keymap_file'] = keymap_file.replace('.gz', '')
 
 
 @contains('keymap_file', "keymap_file must be set to use the keymap module", raise_exception=True)

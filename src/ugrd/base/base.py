@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.6.2'
+__version__ = '4.6.3'
 
 from importlib.metadata import version
 from pathlib import Path
@@ -16,14 +16,14 @@ def _validate_init_target(self) -> None:
 def _process_init_target(self, target: Path) -> None:
     if not isinstance(target, Path):
         target = Path(target).resolve()
-    dict.__setitem__(self, 'init_target', target)
+    self.data['init_target'] = target
     self['exports']['init'] = self['init_target']
     _validate_init_target(self)
 
 
 @unset('init_target', 'init_target is already set, skipping autodetection.', log_level=30)
 def _process_autodetect_init(self, state) -> None:
-    dict.__setitem__(self, 'autodetect_init', state)
+    self.data['autodetect_init'] = state
 
 
 @contains('autodetect_init', log_level=30)
