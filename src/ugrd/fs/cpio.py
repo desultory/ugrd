@@ -119,4 +119,4 @@ def _process_out_file(self, out_file):
     else:
         out_file = Path(out_file)
 
-    dict.__setitem__(self, 'out_file', out_file)
+    self.data['out_file'] = out_file

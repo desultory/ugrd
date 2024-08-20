@@ -1,16 +1,17 @@
 __author__ = "desultory"
-__version__ = "1.8.0"
+__version__ = "2.0.0"
 
 from tomllib import load, TOMLDecodeError
 from pathlib import Path
 from queue import Queue
+from collections import UserDict
 
 from zenlib.logging import loggify
 from zenlib.util import handle_plural, pretty_print, NoDupFlatList
 
 
 @loggify
-class InitramfsConfigDict(dict):
+class InitramfsConfigDict(UserDict):
     """
     Dict for ugrd config
 
@@ -35,9 +36,9 @@ class InitramfsConfigDict(dict):
         # Define the default parameters
         for parameter, default_type in self.builtin_parameters.items():
             if default_type == NoDupFlatList:
-                super().__setitem__(parameter, default_type(no_warn=True, log_bump=5, logger=self.logger, _log_init=False))
+                self.data[parameter] = default_type(no_warn=True, log_bump=5, logger=self.logger, _log_init=False)
             else:
-                super().__setitem__(parameter, default_type())
+                self.data[parameter] = default_type()
         if not NO_BASE:
             self['modules'] = 'ugrd.base.base'
         else:
@@ -76,7 +77,7 @@ class InitramfsConfigDict(dict):
             expected_type = d.get(key)
             if expected_type:
                 if expected_type.__name__ == "InitramfsGenerator":
-                    return super().__setitem__(key, value)
+                    return self.data[key].update(value)
                 break
         else:
             raise KeyError("Parameter not registered: %s" % key)
@@ -117,7 +118,7 @@ class InitramfsConfigDict(dict):
                 return self[key].update(value)
 
         self.logger.debug("Setting custom parameter: %s" % key)
-        super().__setitem__(key, expected_type(value))  # For everything else, simply set it
+        self.data[key] = expected_type(value)  # For everything else, simply set it
 
     @handle_plural
     def _process_custom_parameters(self, parameter_name: str, parameter_type: type) -> None:
@@ -135,24 +136,24 @@ class InitramfsConfigDict(dict):
 
         match parameter_type:
             case "NoDupFlatList":
-                super().__setitem__(parameter_name, NoDupFlatList(no_warn=True, log_bump=5, logger=self.logger, _log_init=False))
+                self.data[parameter_name] = NoDupFlatList(no_warn=True, log_bump=5, logger=self.logger, _log_init=False)
             case "list" | "dict":
-                super().__setitem__(parameter_name, eval(parameter_type)())
+                self.data[parameter_name] = eval(parameter_type)()
             case "bool":
-                super().__setitem__(parameter_name, False)
+                self.data[parameter_name] = False
             case "int":
-                super().__setitem__(parameter_name, 0)
+                self.data[parameter_name] = 0
             case "float":
-                super().__setitem__(parameter_name, 0.0)
+                self.data[parameter_name] = 0.0
             case "str":
-                super().__setitem__(parameter_name, "")
+                self.data[parameter_name] = ""
             case "Path":
-                super().__setitem__(parameter_name, Path())
+                self.data[parameter_name] = Path()
             case "PyCPIO":
-                super().__setitem__(parameter_name, PyCPIO(logger=self.logger, _log_init=False, _log_bump=10))
+                self.data[parameter_name] = PyCPIO(logger=self.logger, _log_init=False, _log_bump=10)
             case _:  # For strings and things, don't init them so they are None
                 self.logger.warning("Leaving '%s' as None" % parameter_name)
-                super().__setitem__(parameter_name, None)
+                self.data[parameter_name] = None
 
     def _process_unprocessed(self, parameter_name: str) -> None:
         """ Processes queued values for a parameter. """
