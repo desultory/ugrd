@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '3.4.0'
+__version__ = '3.4.1'
 
 
 from zenlib.util import contains
@@ -81,8 +81,7 @@ def make_cpio(self) -> None:
             self.logger.debug("Adding CPIO node: %s" % node)
             cpio.add_chardev(name=node['path'], mode=node['mode'], major=node['major'], minor=node['minor'])
 
-    out_cpio = self._get_out_path(self['_archive_out_path'])
-
+    out_cpio = self['_archive_out_path']
     if not out_cpio.parent.exists():
         self._mkdir(out_cpio.parent, resolve_build=False)
 

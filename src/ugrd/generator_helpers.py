@@ -4,7 +4,7 @@ from subprocess import run, CompletedProcess, TimeoutExpired
 
 from zenlib.util import pretty_print
 
-__version__ = "1.3.2"
+__version__ = "1.3.3"
 __author__ = "desultory"
 
 
@@ -22,12 +22,8 @@ def get_subpath(path: Path, subpath: Union[Path, str]) -> Path:
 class GeneratorHelpers:
     """ Mixin class for the InitramfsGenerator class. """
     def _get_build_path(self, path: Union[Path, str]) -> Path:
-        """ Returns the path relative to the build directory, under the basedir. """
-        return self._get_out_path(get_subpath(self.build_dir, path))
-
-    def _get_out_path(self, path: Union[Path, str]) -> Path:
-        """ Gets the path relative to the basedir. """
-        return get_subpath(self.basedir, path)
+        """ Returns the path relative to the build directory, under the tmpdir. """
+        return get_subpath(get_subpath(self.tmpdir, self.build_dir), path)
 
     def _mkdir(self, path: Path, resolve_build=True) -> None:
         """ Creates a directory within the build directory."""

@@ -1,10 +1,10 @@
-__version__ = "0.5.2"
+__version__ = "0.5.4"
 
 from zenlib.util import unset
 
 
 COPY_CONFIG = [
-    'mounts', 'out_dir', 'basedir', 'clean',
+    'mounts', 'out_dir', 'tmpdir', 'clean',
     'test_image_size', 'test_flag'
 ]
 
@@ -28,8 +28,8 @@ def init_test_vars(self):
 
 def get_qemu_cmd_args(self):
     """ Gets the qemu command from the configuration """
-    test_initrd = self._get_out_path(self._archive_out_path)
-    test_rootfs = self['_test_rootfs']._get_out_path(self['_test_rootfs']['_archive_out_path'])
+    test_initrd = self._archive_out_path
+    test_rootfs = self['_test_rootfs']['_archive_out_path']
     qemu_args = {'-m': self['test_memory'],
                  '-cpu': self['test_cpu'],
                  '-kernel': self['test_kernel'],

@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '3.7.1'
+__version__ = '3.7.3'
 
 from pathlib import Path
 from typing import Union
@@ -12,7 +12,7 @@ def detect_tmpdir(self) -> None:
     from os import environ
     if tmpdir := environ.get('TMPDIR'):
         self.logger.info("Detected TMPDIR: %s" % tmpdir)
-        self['basedir'] = Path(tmpdir)
+        self['tmpdir'] = Path(tmpdir)
 
 
 @contains('clean', "Skipping cleaning build directory", log_level=30)
