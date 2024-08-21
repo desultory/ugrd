@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "2.0.2"
+__version__ = "2.0.3"
 
 from tomllib import load, TOMLDecodeError
 from pathlib import Path
@@ -284,4 +284,4 @@ class InitramfsConfigDict(UserDict):
         self['validated'] = True
 
     def __str__(self) -> str:
-        return pretty_print(self)
+        return pretty_print(self.data)
