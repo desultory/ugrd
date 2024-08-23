@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.12.1'
+__version__ = '2.12.2'
 
 from pathlib import Path
 from subprocess import run
@@ -312,7 +312,7 @@ def process_ignored_module(self, module: str) -> None:
                 if module in self['_kmod_modinfo'] and self['_kmod_modinfo'][module]['filename'] == '(builtin)':
                     self.logger.debug("Removing built-in module from kmod_init: %s" % module)
                 else:
-                    raise ValueError("Cannot ignore external module in kmod_init: %s" % module)
+                    raise ValueError("Required module cannot be imported and is not builtin: %s" % module)
             else:
                 self.logger.debug("Removing ignored kernel module from %s: %s" % (key, module))
             self[key].remove(module)
