@@ -14,7 +14,8 @@ def fake_dm_udev(self):
     returns a bash script to fake udev for dm devices.
     calls _make_fake_dm_udev_db for each dm device.
     """
-    return ['for dm in /sys/block/dm-*; do',
+    return ['mkdir --parents /run/udev/data',
+            'for dm in /sys/block/dm-*; do',
             '    source "${dm}/uevent"',
             '    einfo "Faking udev for ${DEVNAME}"',
             '    udev_db_file="/run/udev/data/b${MAJOR}:${MINOR}"',
