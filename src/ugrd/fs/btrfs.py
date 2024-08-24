@@ -1,4 +1,4 @@
-__version__ = '1.8.1'
+__version__ = '1.8.2'
 __author__ = 'desultory'
 
 
@@ -43,7 +43,7 @@ def _validate_root_subvol(self) -> None:
 
 def _process_root_subvol(self, root_subvol: str) -> None:
     """ processes the root subvolume. """
-    self.update({'root_subvol': root_subvol})
+    self.data['root_subvol'] = root_subvol
     self.logger.debug("Set root_subvol to: %s", root_subvol)
 
 
@@ -53,7 +53,7 @@ def _process_subvol_selector(self, subvol_selector: bool) -> None:
     Adds the _base_mount_path to paths if enabled.
     """
     if subvol_selector:
-        self.update({'subvol_selector': subvol_selector})
+        self.data['subvol_selector'] = subvol_selector
         self.logger.debug("Set subvol_selector to: %s", subvol_selector)
         self['paths'] = self['_base_mount_path']
 
