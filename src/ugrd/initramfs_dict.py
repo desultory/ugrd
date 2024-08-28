@@ -71,6 +71,8 @@ class InitramfsConfigDict(UserDict):
         """
         Handles a config parameter, setting the value and processing it if the type is known.
         Raises a KeyError if the parameter is not registered.
+
+        Uses custom processing functions if they are defined, otherwise uses the standard setters.
         """
         # Get the expected type, first searching builtin_parameters, then custom_parameters
         for d in (self.builtin_parameters, self['custom_parameters']):
@@ -126,11 +128,9 @@ class InitramfsConfigDict(UserDict):
         """
         Updates the custom_parameters attribute.
         Sets the initial value of the parameter based on the type.
-
-        If the parameter is in the processing queue, process the queued values.
         """
         from pycpio import PyCPIO
-        from .initramfs_generator import InitramfsGenerator
+        from .initramfs_generator import InitramfsGenerator  # import here for eval'ing
 
         self['custom_parameters'][parameter_name] = eval(parameter_type)
         self.logger.debug("Registered custom parameter '%s' with type: %s" % (parameter_name, parameter_type))
@@ -278,7 +278,7 @@ class InitramfsConfigDict(UserDict):
         self['modules'].append(module)
 
     def validate(self) -> None:
-        """ Validate config """
+        """ Validate config, checks that all values are processed, sets validated flag."""
         if self['_processing']:
             self.logger.critical("Unprocessed config values: %s" % ', '.join(list(self['_processing'].keys())))
         self['validated'] = True
