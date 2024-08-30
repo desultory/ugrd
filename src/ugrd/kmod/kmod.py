@@ -1,8 +1,9 @@
 __author__ = 'desultory'
-__version__ = '2.12.3'
+__version__ = '2.13.0'
 
 from pathlib import Path
 from subprocess import run
+from typing import Union
 
 from zenlib.util import contains, unset
 
@@ -52,11 +53,20 @@ def _process__kmod_auto_multi(self, module: str) -> None:
     self['_kmod_auto'].append(module)
 
 
+def _normalize_kmod_name(module: Union[str, list]) -> str:
+    """ Replaces -'s with _'s in a kernel module name. """
+    if isinstance(module, list) and not isinstance(module, str):
+        return [_normalize_kmod_name(m) for m in module]
+    return module.replace('-', '_')
+
+
 def _get_kmod_info(self, module: str):
     """
     Runs modinfo on a kernel module, parses the output and stored the results in self['_kmod_modinfo'].
     !!! Should be run after metadata is processed so the kver is set properly !!!
     """
+    module = _normalize_kmod_name(module)
+
     if module in self['_kmod_modinfo']:
         return self.logger.debug("[%s] Module info already exists." % module)
     args = ['modinfo', module, '--set-version', self['kernel_version']]
@@ -77,9 +87,9 @@ def _get_kmod_info(self, module: str):
             module_info['filename'] = line.split()[1]
         elif line.startswith('depends:') and line != 'depends:':
             if ',' in line:
-                module_info['depends'] = line.split(':')[1].lstrip().split(',')
+                module_info['depends'] = _normalize_kmod_name(line.split(':')[1].lstrip().split(','))
             else:
-                module_info['depends'] = [line.split()[1]]
+                module_info['depends'] = _normalize_kmod_name([line.split()[1]])
         elif line.startswith('softdep:'):
             module_info['softdep'] = line.split()[2::2]
         elif line.startswith('firmware:'):
