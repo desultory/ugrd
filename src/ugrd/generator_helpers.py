@@ -26,7 +26,11 @@ class GeneratorHelpers:
         return get_subpath(get_subpath(self.tmpdir, self.build_dir), path)
 
     def _mkdir(self, path: Path, resolve_build=True) -> None:
-        """ Creates a directory within the build directory."""
+        """
+        Creates a directory within the build directory.
+        If resolve_build is True, the path is resolved to the build directory.
+        If not, the provided path is used as-is.
+        """
         from os.path import isdir
         from os import mkdir
         if resolve_build:
