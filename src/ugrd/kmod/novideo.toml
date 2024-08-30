@@ -3,7 +3,7 @@ kmod_ignore = [
 'uvcvideo', 'uvc',  # USB video
 'drm_kms_helper', 'drm_display_helper',  'drm_buddy', 'drm_ttm_helper',  # DRM
 'amdgpu', 'radeon', 'amdxcp',  # AMD GPU
-'nouveau', 'nvidia',  # NVIDIA GPU
+'nouveau', 'nvidia', 'nvidia_drm',  # NVIDIA GPU
 'ast', 'mgag200',  # Server GPU
 'videobuf2_common', 'videobuf2_v4l2', 'drm_suballoc_helper', 'videobuf2_vmalloc', 'videobuf2_memops',  # V4L2
 ]
