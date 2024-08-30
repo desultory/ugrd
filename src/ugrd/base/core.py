@@ -103,7 +103,7 @@ def deploy_xz_dependencies(self) -> None:
         out_path = self._get_build_path(str(xz_dependency).replace('.xz', ''))
         if not out_path.parent.is_dir():
             self.logger.debug("Creating parent directory: %s" % out_path.parent)
-            self._mkdir(out_path.parent)
+            self._mkdir(out_path.parent, resolve_build=False)
         with out_path.open('wb') as out_file:
             out_file.write(decompress(xz_dependency.read_bytes()))
             self.logger.info("[xz] Decompressed '%s' to: %s" % (xz_dependency, out_path))
@@ -117,7 +117,7 @@ def deploy_gz_dependencies(self) -> None:
         out_path = self._get_build_path(str(gz_dependency).replace('.gz', ''))
         if not out_path.parent.is_dir():
             self.logger.debug("Creating parent directory: %s" % out_path.parent)
-            self._mkdir(out_path.parent)
+            self._mkdir(out_path.parent, resolve_build=False)
         with out_path.open('wb') as out_file:
             out_file.write(decompress(gz_dependency.read_bytes()))
             self.logger.info("[gz] Decompressed '%s' to: %s" % (gz_dependency, out_path))
