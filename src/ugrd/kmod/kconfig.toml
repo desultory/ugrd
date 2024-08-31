@@ -1,0 +1,5 @@
+[custom_parameters]
+kernel_config_file = "Path"  # Path to the kernel configuration file
+
+[imports.build_pre]
+"ugrd.kmod.kmod" = [ "find_kernel_config" ]

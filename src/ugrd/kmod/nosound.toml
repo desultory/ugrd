@@ -3,12 +3,13 @@ kmod_ignore = [
 'snd_timer', 'snd_hrtimer',  # alsa
 'snd_pcm', 'snd_rawmidi', 'snd_seq_device', 'snd_seq', 'snd_seq_dummy', 'snd_ump', # subtypes
 'snd_usb_audio', 'snd_usbmidi_lib',  # usb
-'snd_soc_core', 'snd_soc_acpi',  # soc
+'snd_soc_core', 'snd_soc_acpi', 'snd_acp_config',  # soc
 'snd_soc_acpi_intel_match',  # intel soc
-'snd_sof_utils', 'snd_sof_pci',  # sof
+'snd_sof', 'snd_sof_utils', 'snd_sof_pci', 'snd_sof_xtensa_dsp',  # sof
 'snd_sof_intel_hda', # intel sof
 'snd_hda_intel', 'snd_intel_sdw_acpi', 'snd_intel_dspcfg',  # intel
+'ac97_bus', 'snd_rpl_pci_acp6x', 'snd_rn_pci_acp3x', 'snd_pci_acp3x',  # AMD
 'snd_hda_codec_hdmi',  # hdmi
 'soundwire_cadence', 'soundwire_bus', 'soundwire_generic_allocation',  # soundwire
-'ledtrig_audio',  # misc
+'ledtrig_audio', 'ac97_bus', # misc
 ]
