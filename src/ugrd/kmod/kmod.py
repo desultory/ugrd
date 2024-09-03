@@ -18,13 +18,6 @@ def _normalize_kmod_name(module: Union[str, list]) -> str:
     return module.replace('-', '_')
 
 
-# Decorator to normalize the first argument of a function, as a kmod name
-def normalized_module(func):
-    def wrapper(self, module: Union[str, list], *args, **kwargs):
-        return func(self, _normalize_kmod_name(module), *args, **kwargs)
-    return wrapper
-
-
 class DependencyResolutionError(Exception):
     pass
 
@@ -37,9 +30,9 @@ class IgnoredModuleError(Exception):
     pass
 
 
-@normalized_module
 def _process_kernel_modules_multi(self, module: str) -> None:
     """ Adds kernel modules to self['kernel_modules']. """
+    module = _normalize_kmod_name(module)
     if module in self['kmod_ignore']:
         self.logger.debug("[%s] Module is in the ignore list." % module)
         self['_kmod_removed'] = module
@@ -49,9 +42,9 @@ def _process_kernel_modules_multi(self, module: str) -> None:
     self['kernel_modules'].append(module)
 
 
-@normalized_module
 def _process_kmod_init_multi(self, module: str) -> None:
     """ Adds init modules to self['kernel_modules']. """
+    module = _normalize_kmod_name(module)
     if module in self['kmod_ignore']:
         raise IgnoredModuleError("kmod_init module is in the ignore list: %s" % module)
     self['kmod_init'].append(module)
@@ -59,9 +52,9 @@ def _process_kmod_init_multi(self, module: str) -> None:
     self['kernel_modules'] = module
 
 
-@normalized_module
 def _process__kmod_auto_multi(self, module: str) -> None:
     """ Adds autodetected modules to self['kernel_modules']. """
+    module = _normalize_kmod_name(module)
     if module in self['kmod_ignore']:
         self.logger.debug("Autodetected module is in the ignore list: %s" % module)
         self['_kmod_removed'] = module
@@ -70,12 +63,12 @@ def _process__kmod_auto_multi(self, module: str) -> None:
     self['_kmod_auto'].append(module)
 
 
-@normalized_module
 def _get_kmod_info(self, module: str):
     """
     Runs modinfo on a kernel module, parses the output and stored the results in self['_kmod_modinfo'].
     !!! Should be run after metadata is processed so the kver is set properly !!!
     """
+    module = _normalize_kmod_name(module)
     if module in self['_kmod_modinfo']:
         return self.logger.debug("[%s] Module info already exists." % module)
     args = ['modinfo', module, '--set-version', self['kernel_version']]
@@ -201,9 +194,9 @@ def regen_kmod_metadata(self) -> None:
     self._run(['depmod', '--basedir', build_dir, self['kernel_version']])
 
 
-@normalized_module
 def _add_kmod_firmware(self, kmod: str) -> None:
     """ Adds firmware files for the specified kernel module to the initramfs. """
+    kmod = _normalize_kmod_name(kmod)
     if kmod not in self['_kmod_modinfo']:
         raise DependencyResolutionError("Kernel module info does not exist: %s" % kmod)
 
@@ -217,9 +210,9 @@ def _add_kmod_firmware(self, kmod: str) -> None:
         _add_firmware_dep(self, kmod, firmware)
 
 
-@normalized_module
 def _add_firmware_dep(self, kmod: str, firmware: str) -> None:
     """ Adds a kernel module firmware file to the initramfs dependencies. """
+    kmod = _normalize_kmod_name(kmod)
     firmware_path = Path('/lib/firmware') / firmware
     if not firmware_path.exists():
         if firmware_path.with_suffix(firmware_path.suffix + '.xz').exists():
@@ -234,9 +227,9 @@ def _add_firmware_dep(self, kmod: str, firmware: str) -> None:
     self['dependencies'] = firmware_path
 
 
-@normalized_module
 def _process_kmod_dependencies(self, kmod: str) -> None:
     """ Processes a kernel module's dependencies. """
+    kmod = _normalize_kmod_name(kmod)
     _get_kmod_info(self, kmod)
     # Add dependencies of the module
     dependencies = []
