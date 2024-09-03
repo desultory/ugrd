@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.14.0'
+__version__ = '2.14.1'
 
 from pathlib import Path
 from subprocess import run
@@ -201,6 +201,7 @@ def regen_kmod_metadata(self) -> None:
     self._run(['depmod', '--basedir', build_dir, self['kernel_version']])
 
 
+@normalized_module
 def _add_kmod_firmware(self, kmod: str) -> None:
     """ Adds firmware files for the specified kernel module to the initramfs. """
     if kmod not in self['_kmod_modinfo']:
@@ -216,6 +217,7 @@ def _add_kmod_firmware(self, kmod: str) -> None:
         _add_firmware_dep(self, kmod, firmware)
 
 
+@normalized_module
 def _add_firmware_dep(self, kmod: str, firmware: str) -> None:
     """ Adds a kernel module firmware file to the initramfs dependencies. """
     firmware_path = Path('/lib/firmware') / firmware
@@ -232,6 +234,7 @@ def _add_firmware_dep(self, kmod: str, firmware: str) -> None:
     self['dependencies'] = firmware_path
 
 
+@normalized_module
 def _process_kmod_dependencies(self, kmod: str) -> None:
     """ Processes a kernel module's dependencies. """
     _get_kmod_info(self, kmod)
