@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.13.0'
+__version__ = '2.14.0'
 
 from pathlib import Path
 from subprocess import run
@@ -9,6 +9,20 @@ from zenlib.util import contains, unset
 
 
 MODULE_METADATA_FILES = ['modules.order', 'modules.builtin', 'modules.builtin.modinfo']
+
+
+def _normalize_kmod_name(module: Union[str, list]) -> str:
+    """ Replaces -'s with _'s in a kernel module name. """
+    if isinstance(module, list) and not isinstance(module, str):
+        return [_normalize_kmod_name(m) for m in module]
+    return module.replace('-', '_')
+
+
+# Decorator to normalize the first argument of a function, as a kmod name
+def normalized_module(func):
+    def wrapper(self, module: Union[str, list], *args, **kwargs):
+        return func(self, _normalize_kmod_name(module), *args, **kwargs)
+    return wrapper
 
 
 class DependencyResolutionError(Exception):
@@ -23,6 +37,7 @@ class IgnoredModuleError(Exception):
     pass
 
 
+@normalized_module
 def _process_kernel_modules_multi(self, module: str) -> None:
     """ Adds kernel modules to self['kernel_modules']. """
     if module in self['kmod_ignore']:
@@ -34,6 +49,7 @@ def _process_kernel_modules_multi(self, module: str) -> None:
     self['kernel_modules'].append(module)
 
 
+@normalized_module
 def _process_kmod_init_multi(self, module: str) -> None:
     """ Adds init modules to self['kernel_modules']. """
     if module in self['kmod_ignore']:
@@ -43,6 +59,7 @@ def _process_kmod_init_multi(self, module: str) -> None:
     self['kernel_modules'] = module
 
 
+@normalized_module
 def _process__kmod_auto_multi(self, module: str) -> None:
     """ Adds autodetected modules to self['kernel_modules']. """
     if module in self['kmod_ignore']:
@@ -53,20 +70,12 @@ def _process__kmod_auto_multi(self, module: str) -> None:
     self['_kmod_auto'].append(module)
 
 
-def _normalize_kmod_name(module: Union[str, list]) -> str:
-    """ Replaces -'s with _'s in a kernel module name. """
-    if isinstance(module, list) and not isinstance(module, str):
-        return [_normalize_kmod_name(m) for m in module]
-    return module.replace('-', '_')
-
-
+@normalized_module
 def _get_kmod_info(self, module: str):
     """
     Runs modinfo on a kernel module, parses the output and stored the results in self['_kmod_modinfo'].
     !!! Should be run after metadata is processed so the kver is set properly !!!
     """
-    module = _normalize_kmod_name(module)
-
     if module in self['_kmod_modinfo']:
         return self.logger.debug("[%s] Module info already exists." % module)
     args = ['modinfo', module, '--set-version', self['kernel_version']]
