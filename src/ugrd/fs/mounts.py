@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.10.2'
+__version__ = '4.10.3'
 
 from pathlib import Path
 from zenlib.util import contains, pretty_print
@@ -368,7 +368,10 @@ def autodetect_root_lvm(self, mount_loc, dm_num, dm_info) -> None:
 
     # Check if the LVM volume is part of a LUKS volume
     for slave in self._dm_info[dm_num]['slaves']:
-        _autodetect_dm(self, '/dev/' + slave)
+        try:
+            _autodetect_dm(self, '/dev/' + slave)
+        except KeyError:
+            self.logger.debug("LVM slave does not appear to be a DM device: %s" % slave)
 
 
 @contains('autodetect_root_luks', "Skipping LUKS autodetection, autodetect_root_luks is disabled.", log_level=30)
