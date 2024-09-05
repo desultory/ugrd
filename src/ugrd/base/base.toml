@@ -22,7 +22,7 @@ autodetect_init = true
 "ugrd.base.base" = [ "do_switch_root" ]
 
 [imports.functions]
-"ugrd.base.base" = [ "check_var", "setvar", "readvar", "prompt_user",
+"ugrd.base.base" = [ "check_var", "setvar", "readvar", "prompt_user", "retry",
                      "edebug", "einfo", "ewarn", "eerror",
 		     "rd_fail", "rd_restart", "_find_init" ]
 

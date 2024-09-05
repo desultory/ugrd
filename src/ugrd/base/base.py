@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.6.3'
+__version__ = '4.7.1'
 
 from importlib.metadata import version
 from pathlib import Path
@@ -158,6 +158,34 @@ def prompt_user(self) -> str:
             'else',
             '    read -rs',
             'fi']
+
+
+def retry(self) -> str:
+    """
+    Returns a bash function that retries a command some number of times.
+    The first argument is the number of retries. if 0, it retries 100 times.
+    The second argument is the timeout in seconds.
+    The remaining arguments represent the command to run.
+    """
+    return ['retries=${1}',
+            'timeout=${2}',
+            'shift 2',
+            'if [ "$retries" -eq 0 ]; then',
+            '    retries=100',
+            'fi',
+            'for i in {1..$retries}; do',
+            '    err=$("$@" 2>&1 > /dev/tty)',
+            '    status=$?',
+            '    if [ $status -eq 0 ]; then',
+            '        return 0',
+            '    fi',
+            r'    ewarn "[${i}/${retries}] Failed: ${*}\n $err"',
+            '    if [ -n "$timeout" ]; then',
+            '        einfo "Retrying in: ${timeout}s"',
+            '        sleep "$timeout"',
+            '    fi',
+            'done',
+            'return 1']
 
 
 # To feel more at home
