@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.11.0'
+__version__ = '4.11.1'
 
 from pathlib import Path
 from zenlib.util import contains, pretty_print
@@ -510,6 +510,7 @@ def mount_fstab(self) -> list[str]:
             'else',  # If timeout is set, prompt the user with a timeout
             '    prompt_user "Press enter once devices have settled. [${timeout}s]" "$timeout"',
             'fi',
+            'timeout="${timeout:-1}"',  # Set the timeout to 1 if it's not set, for retries
             f'retry {self["mount_retries"]} "$timeout" mount -a || rd_fail "Failed to mount all filesystems."']
 
     return out
