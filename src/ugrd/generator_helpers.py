@@ -4,7 +4,7 @@ from subprocess import run, CompletedProcess, TimeoutExpired
 
 from zenlib.util import pretty_print
 
-__version__ = "1.3.3"
+__version__ = "1.3.4"
 __author__ = "desultory"
 
 
@@ -76,7 +76,7 @@ class GeneratorHelpers:
         with open(file_path, 'w') as file:
             file.writelines("\n".join(contents))
 
-        if contents[0] == self.shebang:
+        if contents[0].startswith("#!/bin/bash"):
             self.logger.debug("Running bash -n on file: %s" % file_name)
             try:
                 self._run(['bash', '-n', str(file_path)])

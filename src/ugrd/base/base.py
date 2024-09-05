@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.7.1'
+__version__ = '4.7.3'
 
 from importlib.metadata import version
 from pathlib import Path
@@ -173,13 +173,11 @@ def retry(self) -> str:
             'if [ "$retries" -eq 0 ]; then',
             '    retries=100',
             'fi',
-            'for i in {1..$retries}; do',
-            '    err=$("$@" 2>&1 > /dev/tty)',
-            '    status=$?',
-            '    if [ $status -eq 0 ]; then',
+            'i=-1; while [ "$((i += 1))" -lt "$retries" ]; do',
+            '    if "$@"; then',
             '        return 0',
             '    fi',
-            r'    ewarn "[${i}/${retries}] Failed: ${*}\n $err"',
+            r'    ewarn "[${i}/${retries}] Failed: ${*}"',
             '    if [ -n "$timeout" ]; then',
             '        einfo "Retrying in: ${timeout}s"',
             '        sleep "$timeout"',
