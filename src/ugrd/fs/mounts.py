@@ -510,7 +510,7 @@ def mount_fstab(self) -> list[str]:
             'else',  # If timeout is set, prompt the user with a timeout
             '    prompt_user "Press enter once devices have settled. [${timeout}s]" "$timeout"',
             'fi',
-            f'retry {self["mount_retries"]} "${timeout:-1}" mount -a || rd_fail "Failed to mount all filesystems."']
+            f'retry {self["mount_retries"]} "${{timeout:-1}}" mount -a || rd_fail "Failed to mount all filesystems."']
 
     return out
 
