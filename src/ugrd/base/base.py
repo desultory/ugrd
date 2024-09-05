@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.7.3'
+__version__ = '4.8.0'
 
 from importlib.metadata import version
 from pathlib import Path
@@ -179,8 +179,7 @@ def retry(self) -> str:
             '    fi',
             r'    ewarn "[${i}/${retries}] Failed: ${*}"',
             '    if [ -n "$timeout" ]; then',
-            '        einfo "Retrying in: ${timeout}s"',
-            '        sleep "$timeout"',
+            '        prompt_user "Retrying in: ${timeout}s" "$timeout"',
             '    fi',
             'done',
             'return 1']
