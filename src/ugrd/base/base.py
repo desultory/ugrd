@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.8.0'
+__version__ = '4.8.1'
 
 from importlib.metadata import version
 from pathlib import Path
@@ -171,6 +171,9 @@ def retry(self) -> str:
             'timeout=${2}',
             'shift 2',
             'if [ "$retries" -eq 0 ]; then',
+            '    "$@"',  # If retries is 0, just run the command
+            '    return "$?"',
+            'elif [ "$retries" -lt 0 ]; then',
             '    retries=100',
             'fi',
             'i=-1; while [ "$((i += 1))" -lt "$retries" ]; do',
@@ -178,7 +181,7 @@ def retry(self) -> str:
             '        return 0',
             '    fi',
             r'    ewarn "[${i}/${retries}] Failed: ${*}"',
-            '    if [ -n "$timeout" ]; then',
+            '    if [ "$i" -lt "$((retries - 1))" ]; then',
             '        prompt_user "Retrying in: ${timeout}s" "$timeout"',
             '    fi',
             'done',
