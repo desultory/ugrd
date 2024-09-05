@@ -5,7 +5,7 @@ opt_dependencies = [ '/usr/libexec/keyboxd' ]  # Pull keyboxd in as an optional 
 
 
 [cryptsetup_key_types.gpg]
-key_command = "gpg --decrypt {key_file}"
+key_command = "gpg --decrypt {key_file} 2>&1"
 
 [symlinks.pinentry]
 source = "/usr/bin/pinentry-tty"
