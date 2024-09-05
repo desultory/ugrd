@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.11.1'
+__version__ = '4.11.2'
 
 from pathlib import Path
 from zenlib.util import contains, pretty_print
@@ -560,7 +560,7 @@ def mount_root(self) -> str:
             '    umount "$(readvar MOUNTS_ROOT_TARGET)"',
             'fi',
             '''einfo "Mounting '$(readvar MOUNTS_ROOT_SOURCE)' ($(readvar MOUNTS_ROOT_TYPE)) to '$(readvar MOUNTS_ROOT_TARGET)' with options: $(readvar MOUNTS_ROOT_OPTIONS)"''',
-            'mount "$(readvar MOUNTS_ROOT_SOURCE)" -t "$(readvar MOUNTS_ROOT_TYPE)" "$(readvar MOUNTS_ROOT_TARGET)" -o "$(readvar MOUNTS_ROOT_OPTIONS)"']
+            f'retry {self["mount_retries"]} {self["mount_timeout"] or 1} mount "$(readvar MOUNTS_ROOT_SOURCE)" -t "$(readvar MOUNTS_ROOT_TYPE)" "$(readvar MOUNTS_ROOT_TARGET)" -o "$(readvar MOUNTS_ROOT_OPTIONS)"']
 
 
 def export_mount_info(self) -> None:
