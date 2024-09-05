@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.10.3'
+__version__ = '4.11.0'
 
 from pathlib import Path
 from zenlib.util import contains, pretty_print
@@ -486,14 +486,20 @@ def mount_late(self) -> list[str]:
 
 
 def mount_fstab(self) -> list[str]:
-    """ Generates the init line for mounting the fstab. """
+    """
+    Generates the init function for mounting the fstab.
+    If a mount_timeout is set, sets the default rootdelay.
+    If a mount_wait is set, enables rootwait.
+    mount_retries sets the number of times to retry the mount (for unattended booting).
+    """
     out = []
     if timeout := self.get('mount_timeout'):  # Set the timeout, using the defined timeout as the default
-        out.append('timeout=$(readvar rootdelay %s)' % timeout)
+        out.append(f'timeout=$(readvar rootdelay {timeout})')
     else:
         out.append('timeout=$(readvar rootdelay)')
+
     if rootwait := self.get('mount_wait'):  # Set the rootwait bool, using the defined rootwait as the default
-        out.append('rootwait=$(readvar rootwait %s)' % int(rootwait))
+        out.append(f'rootwait=$(readvar rootwait {int(rootwait)})')
     else:
         out.append('rootwait=$(readvar rootwait)')
 
@@ -503,9 +509,9 @@ def mount_fstab(self) -> list[str]:
             '    fi',
             'else',  # If timeout is set, prompt the user with a timeout
             '    prompt_user "Press enter once devices have settled. [${timeout}s]" "$timeout"',
-            'fi']
+            'fi',
+            f'retry {self["mount_retries"]} "$timeout" mount -a || rd_fail "Failed to mount all filesystems."']
 
-    out += ["mount -a || rd_fail 'Failed to mount fstab'"]
     return out
 
 
