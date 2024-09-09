@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.5.1'
+__version__ = '2.5.2'
 
 from zenlib.util import contains
 
@@ -257,6 +257,8 @@ def open_crypt_device(self, name: str, parameters: dict) -> list[str]:
 
 def crypt_init(self) -> list[str]:
     """ Generates the bash script portion to prompt for keys. """
+    if not self['cryptsetup_prompt']:
+        self.logger.warning("'cryptsetup_prompt' is disabled, if the 'quiet' kernel parameter is not set, the prompt may be hidden under log messages at runtime.")
     out = [r'einfo "Unlocking LUKS volumes, ugrd.cryptsetup version: %s"' % __version__]
     for name, parameters in self['cryptsetup'].items():
         # Check if the volume is already open, if so, skip it
