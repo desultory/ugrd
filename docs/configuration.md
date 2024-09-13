@@ -161,6 +161,13 @@ destination = "/mnt/extra"
 label = "extra"
 ```
 
+#### ugrd.fs.fakeudev
+
+This module is used to create fake udev entries for DM devices.
+This is only needed when using systemd, and if there are mounts that depend on a root DM device.
+
+This module can be enabled by adding `ugrd.fs.fakeudev` to the `modules` list.
+
 #### ugrd.fs.cpio
 
 This module handles CPIO creation.
