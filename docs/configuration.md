@@ -10,21 +10,15 @@ Modules may be imported to extend the functionality of the build system and resu
 
 The modules config directive should contain a list with names specifying the path of which will be loaded, such as `ugrd.base.base`, `ugrd.base.console` or `ugrd.crypto.crypsetup`.
 
-External modules can be defined in `/var/lib/ugrd`.
+> By default `ugrd.base.base` and `ugrd.base.core` are loaded. These modules include the cmdline, kmod, and mounts modules.
 
 When a module is loaded, `initramfs_dict.py` will try to load the toml file for that module, parsing it in the same manner `config.yaml` is parsed.
 
-The order in which modules/directives are loaded is very important!
-
-Within modules, all config values are imported, then processed according to the order of the `custon_parameters` list.
-
-Modules can load other modules using the `modules` directive, be careful considering loading orders.
-
-`_module_name` can be set within a module for logging purposes, it is verified to be accurate when imported but optional.
+Modules can load other modules, and can therefore be used as aliases for a set of modules.
 
 ## Base modules
 
-Several basic modules are provided for actions such as mounts, config processing, and other basic parameters.
+Several basic modules are provided for actions such as mounts, cmdline processing, and kernel module loading.
 
 Modules write to a shared config dict that is accessible by other modules.
 

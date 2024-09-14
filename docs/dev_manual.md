@@ -6,6 +6,10 @@ Modules only require a toml definition, and can import other modules to act as m
 
 Python functions can be added imported into `init` and `build` runlevels to execute build tasks or output init lines.
 
+Within modules, all config values are imported, then processed according to the order of the `custom_parameters` list.
+
+`_module_name` can be set within a module for logging purposes, it is verified to be accurate when imported but optional.
+
 ## Imports
 
 UGRD allows python functions to be imported from modules using the `imports` dict.
