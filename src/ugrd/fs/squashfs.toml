@@ -1,4 +1,5 @@
 autodetect_root = false
+autodetect_root_dm = false
 
 kmod_init = ['squashfs', 'overlay']
 
