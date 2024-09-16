@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "0.2.4"
+__version__ = "0.3.0"
 
 from zenlib.util import contains
 
@@ -17,8 +17,8 @@ def mount_squashfs(self):
     Creates /run/squashfs directory to mount squashfs image.
     Creates /run/upperdir and /run/workdir directories for overlayfs.
     """
-    return ["mkdir -p /run/squashfs",
+    return ["einfo $(mkdir -pv /run/squashfs)",
             f"mount -t squashfs -o loop /livecd/{self.squashfs_image} /run/squashfs || rd_fail 'Failed to mount squashfs image: {self.squashfs_image}'",
-            "mkdir -p /run/upperdir",
-            "mkdir -p /run/workdir",
+            "edebug $(mkdir -pv /run/upperdir)",
+            "edebug $(mkdir -pv /run/workdir)",
             f"mount -t overlay overlay -o lowerdir=/run/squashfs,upperdir=/run/upperdir,workdir=/run/workdir {self.mounts['root']['destination']} || rd_fail 'Failed to mount overlayfs'"]
