@@ -1,0 +1,14 @@
+autodetect_root = false
+
+kmod_init = ['squashfs', 'overlay']
+
+[imports.init_mount]
+"ugrd.fs.squashfs" = ["mount_squashfs"]
+
+[masks]
+init_mount = "mount_cmdline_root"  # Don't use the normal mount process
+build_tasks = "export_mount_info"
+functions = "mount_root"
+
+[custom_parameters]
+squashfs_image = "Path"  # the path to the squashfs image (at runtime)
