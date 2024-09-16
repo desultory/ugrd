@@ -1,10 +1,15 @@
 autodetect_root = false
 autodetect_root_dm = false
 
-kmod_init = ['squashfs', 'overlay']
+squashfs_image = 'image.squashfs'
+
+kmod_init = ['hfsplus', 'nls_utf8', 'squashfs', 'overlay']
+
+[imports.build_pre]
+"ugrd.fs.livecd" = ["generate_livecd_mount"]
 
 [imports.init_mount]
-"ugrd.fs.squashfs" = ["mount_squashfs"]
+"ugrd.fs.livecd" = ["mount_squashfs"]
 
 [masks]
 init_mount = "mount_cmdline_root"  # Don't use the normal mount process
@@ -13,3 +18,4 @@ functions = "mount_root"
 
 [custom_parameters]
 squashfs_image = "Path"  # the path to the squashfs image (at runtime)
+livecd_label = "str"  # The label of the livecd
