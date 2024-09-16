@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.11.2'
+__version__ = '4.11.4'
 
 from pathlib import Path
 from zenlib.util import contains, pretty_print
