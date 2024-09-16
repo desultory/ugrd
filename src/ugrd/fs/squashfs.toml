@@ -8,7 +8,6 @@ kmod_init = ['squashfs', 'overlay']
 
 [masks]
 init_mount = "mount_cmdline_root"  # Don't use the normal mount process
-build_tasks = "export_mount_info"
 functions = "mount_root"
 
 [custom_parameters]
