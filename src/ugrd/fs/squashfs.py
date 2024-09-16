@@ -8,6 +8,7 @@ def mount_squashfs(self):
     Creates /run/squashfs directory to mount squashfs image.
     Creates /run/upperdir and /run/workdir directories for overlayfs.
     """
+    self['exports']['MOUNTS_ROOT_TARGET'] = self['mounts']['root']['destination']  # export the root mount info for switch_root
     return ["mkdir -p /run/squashfs",
             f"mount -t squashfs -o loop {self.squashfs_image} /run/squashfs",
             "mkdir -p /run/upperdir",
