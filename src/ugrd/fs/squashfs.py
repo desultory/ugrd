@@ -1,7 +1,7 @@
-from zenlib.util import unset
+from zenlib.util import contains
 
 
-@unset("squashfs_image", "squashfs_image must be set to the path of the squashfs image to mount.", raise_exception=True)
+@contains("squashfs_image", "squashfs_image must be set to the path of the squashfs image to mount.", raise_exception=True)
 def mount_squashfs(self):
     """
     Returns bash lines to mount squashfs image.
