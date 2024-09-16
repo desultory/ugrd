@@ -3,7 +3,7 @@ autodetect_root_dm = false
 
 squashfs_image = 'image.squashfs'
 
-kmod_init = ['hfsplus', 'squashfs', 'overlay']
+kmod_init = ['hfsplus', 'nls_utf8', 'squashfs', 'overlay']
 
 [imports.build_pre]
 "ugrd.fs.livecd" = ["generate_livecd_mount"]
