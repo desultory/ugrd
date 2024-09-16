@@ -15,4 +15,4 @@ functions = "mount_root"
 
 [custom_parameters]
 squashfs_image = "Path"  # the path to the squashfs image (at runtime)
-livecd_label = "string"  # The label of the livecd
+livecd_label = "str"  # The label of the livecd
