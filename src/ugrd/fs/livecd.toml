@@ -5,6 +5,9 @@ squashfs_image = 'image.squashfs'
 
 kmod_init = ['hfsplus', 'squashfs', 'overlay']
 
+[imports.build_pre]
+"ugrd.fs.livecd" = ["generate_livecd_mount"]
+
 [imports.init_mount]
 "ugrd.fs.livecd" = ["mount_squashfs"]
 
