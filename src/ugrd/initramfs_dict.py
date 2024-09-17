@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "2.0.3"
+__version__ = "2.1.0"
 
 from tomllib import load, TOMLDecodeError
 from pathlib import Path
@@ -51,7 +51,8 @@ class InitramfsConfigDict(UserDict):
             if arg == 'modules':  # allow loading modules by name from the command line
                 for module in value.split(','):
                     self[arg] = module
-            self[arg] = value
+            else:
+                self[arg] = value
 
     def __setitem__(self, key: str, value) -> None:
         # If the type is registered, use the appropriate update function
