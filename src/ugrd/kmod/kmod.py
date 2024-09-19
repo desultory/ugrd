@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.14.1'
+__version__ = '2.14.2'
 
 from pathlib import Path
 from subprocess import run
@@ -129,7 +129,7 @@ def _autodetect_modules_lspci(self) -> None:
 
 
 @contains('kmod_autodetect_lsmod', "kmod_autodetect_lsmod is not enabled, skipping.")
-def _autodetect_modules_lsmod(self) -> list[str]:
+def _autodetect_modules_lsmod(self) -> None:
     """ Gets the name of all currently used kernel modules. """
     from platform import uname
     if self.get('kernel_version') and self['kernel_version'] != uname().release:
@@ -346,4 +346,3 @@ def load_modules(self) -> None:
             '    einfo "Loading kernel modules: %s"' % module_list,
             '    modprobe -av %s' % module_list,
             'fi']
-
