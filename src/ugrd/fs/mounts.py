@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.11.4'
+__version__ = '4.12.0'
 
 from pathlib import Path
 from zenlib.util import contains, pretty_print
@@ -195,6 +195,7 @@ def generate_fstab(self, mount_class="mounts", filename="/etc/fstab") -> None:
         self.logger.debug("[%s] No fstab entries generated for mounts: %s" % (mount_class, ', '.join(self[mount_class].keys())))
 
 
+@contains('hostonly', "Skipping mount autodetection, hostonly mode is enabled.", log_level=30)
 def get_mounts_info(self) -> None:
     """ Gets the mount info for all devices. """
     with open('/proc/mounts', 'r') as mounts:
@@ -203,6 +204,7 @@ def get_mounts_info(self) -> None:
             self['_mounts'][mountpoint] = {'device': device, 'fstype': fstype, 'options': options.split(',')}
 
 
+@contains('hostonly', "Skipping blkid autodetection, hostonly mode is enabled.", log_level=30)
 def get_blkid_info(self, device=None) -> str:
     """
     Gets the blkid info for all devices if no device is passed.
@@ -339,11 +341,13 @@ def _autodetect_dm(self, mountpoint) -> None:
 
     self.logger.debug("[%s] Device mapper info: %s" % (source_device.name, self._dm_info[dm_num]))
     if dm_info.get('type') == 'crypto_LUKS' or source_device.name in self.get('cryptsetup', {}):
-        return autodetect_luks(self, source_device, dm_num, dm_info)
+        autodetect_luks(self, source_device, dm_num, dm_info)
     elif dm_info.get('type') == 'LVM2_member':
-        return autodetect_root_lvm(self, source_device, dm_num, dm_info)
+        autodetect_root_lvm(self, source_device, dm_num, dm_info)
     else:
         raise RuntimeError("Unknown device mapper device type: %s" % dm_info.get('type'))
+
+    autodetect_mount_kmods(self, slave_source)
 
 
 @contains('autodetect_root_dm', "Skipping device mapper autodetection, autodetect_root_dm is disabled.", log_level=30)
@@ -439,6 +443,7 @@ def autodetect_root(self) -> None:
         root_dev = _resolve_root_dev(self)
     if root_dev not in self['_blkid_info']:
         get_blkid_info(self, root_dev)
+    autodetect_mount_kmods(self, root_dev)  # Get kmods for the root device
 
     root_mount_info = self['_blkid_info'][root_dev]
     self.logger.debug("Detected root mount info: %s" % root_mount_info)
@@ -573,3 +578,27 @@ def export_mount_info(self) -> None:
 def export_root_target(self) -> None:
     """ Exports the root target path to /run/MOUNTS_ROOT_TARGET """
     self['exports']['MOUNTS_ROOT_TARGET'] = self['mounts']['root']['destination']
+
+
+def autodetect_mount_kmods(self, device) -> None:
+    """ Autodetects the kernel modules for a block device. """
+    if device_kmods := resolve_blkdev_kmod(self, device):
+        self.logger.info("Auto-enabling kernel modules for device: %s" % ', '.join(device_kmods))
+        self['kmod_init'] = device_kmods
+
+
+def resolve_blkdev_kmod(self, device) -> list[str]:
+    """ Gets the kmod name for a block device. """
+    dev = Path(device)
+    device_name = dev.name
+    if device_name.startswith('dm-') or dev.parent.name == 'mapper' or dev.parent.name.startswith('vg'):
+        return ['dm_mod']
+    elif device_name.startswith('nvme'):
+        return ['nvme']
+    elif device_name.startswith('sd'):
+        return ['sd_mod']
+    elif device_name.startswith('sr'):
+        return ['sr_mod']
+    else:
+        self.logger.error("Unable to determine kernel module for block device: %s" % device_name)
+        return []

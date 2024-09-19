@@ -18,8 +18,10 @@ modules = [
 
 # Optionally supply a kernel version, uses the current kernel version if not specified
 #kernel_version = "6.1.53-gentoo-dist"
+# lspci based detection is usually helpful
 kmod_autodetect_lspci = true
-kmod_autodetect_lsmod = true
+# lsmod detection can be helpful, but can bring in unnecessary modules
+#kmod_autodetect_lsmod = true
 
 # Wait a few seconds for storage to settle after modules are loaded if external or slow storage is used
 #mount_wait = true
