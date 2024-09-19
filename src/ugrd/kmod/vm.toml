@@ -1,1 +1,2 @@
+# This is deprecated, unless required for non-root mounts, in which case it is better to just specify this within the main config
 kmod_init = ['virtio_blk']
