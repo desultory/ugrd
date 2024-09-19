@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.12.0'
+__version__ = '4.12.1'
 
 from pathlib import Path
 from zenlib.util import contains, pretty_print
@@ -595,6 +595,8 @@ def resolve_blkdev_kmod(self, device) -> list[str]:
         return ['dm_mod']
     elif device_name.startswith('nvme'):
         return ['nvme']
+    elif device_name.startswith('vd'):
+        return ['virtio_blk']
     elif device_name.startswith('sd'):
         return ['sd_mod']
     elif device_name.startswith('sr'):
