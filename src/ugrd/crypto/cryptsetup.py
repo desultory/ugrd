@@ -70,7 +70,11 @@ def _validate_crypysetup_key(self, key_paramters: dict) -> None:
 
 
 @contains('validate', "Skipping cryptsetup configuration validation.", log_level=30)
-def _validate_cryptsetup_config(self, mapped_name: str, config: dict) -> None:
+def _validate_cryptsetup_config(self, mapped_name: str) -> None:
+    try:
+        config = self['cryptsetup'][mapped_name]
+    except KeyError:
+        raise KeyError("No cryptsetup configuration found for: %s" % mapped_name)
     self.logger.log(5, "[%s] Validating cryptsetup configuration: %s" % (mapped_name, config))
     for parameter in config:
         if parameter not in CRYPTSETUP_PARAMETERS:
@@ -92,7 +96,6 @@ def _validate_cryptsetup_config(self, mapped_name: str, config: dict) -> None:
 def _process_cryptsetup_multi(self, mapped_name: str, config: dict) -> None:
     """ Processes the cryptsetup configuration """
     config = _merge_cryptsetup(self, mapped_name, config)  # Merge the config with the existing configuration
-    _validate_cryptsetup_config(self, mapped_name, config)  # Validate the configuration
     self.logger.debug("[%s] Processing cryptsetup configuration: %s" % (mapped_name, config))
     # Check if the key type is defined in the configuration, otherwise use the default, check if it's valid
     if key_type := config.get('key_type', self.get('cryptsetup_key_type')):
@@ -118,21 +121,21 @@ def _process_cryptsetup_multi(self, mapped_name: str, config: dict) -> None:
 
 
 @contains('validate', "Skipping cryptsetup configuration validation.", log_level=30)
-def _validate_luks_source(self, mapped_name: str) -> None:
-    """ Checks that a LUKS source device is valid """
+def _validate_luks_config(self, mapped_name: str) -> None:
+    """ Checks that a LUKS config portion is valid. """
     for _dm_info in self['_dm_info'].values():
         if _dm_info['name'] == mapped_name:
-            dm_info = _dm_info
+            dm_info = _dm_info  # Get the device mapper information
             break
     else:
         raise ValueError("No device mapper information found for: %s" % mapped_name)
 
-    cryptsetup_info = self['cryptsetup'][mapped_name]
+    cryptsetup_info = self['cryptsetup'][mapped_name]  # Get the cryptsetup information
 
-    if not dm_info['uuid'].startswith('CRYPT-LUKS'):
+    if not dm_info['uuid'].startswith('CRYPT-LUKS'):  # Ensure the device is a crypt device
         raise ValueError("Device is not a crypt device: %s" % dm_info)
 
-    slave_source = dm_info['slaves'][0]
+    slave_source = dm_info['slaves'][0]  # Get the slave source
 
     try:
         blkid_info = self['_blkid_info'][f'/dev/{slave_source}']
@@ -147,18 +150,19 @@ def _validate_luks_source(self, mapped_name: str) -> None:
             break
     else:
         raise ValueError("[%s] Unable to validate LUKS source: %s" % (mapped_name, cryptsetup_info))
+    _validate_cryptsetup_config(self, mapped_name)
 
 
 def export_crypt_sources(self) -> list[str]:
     """
-    Validates the cryptsetup configuration.
+    Validates the cryptsetup configuration (if enabled).
     Adds the cryptsetup source and token to the exports.
     Sets the token to the partuuid or uuid if it exists.
     Sets the SOURCE when using a path.
     Only allows using the path if validation is disabled.
     """
     for name, parameters in self['cryptsetup'].items():
-        _validate_luks_source(self, name)
+        _validate_luks_config(self, name)
         if parameters.get('path'):
             if not self['validate']:
                 self.logger.warning("Using device paths is unreliable and can result in boot failures. Consider using partuuid.")

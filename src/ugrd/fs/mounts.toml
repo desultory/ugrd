@@ -20,7 +20,7 @@ late_fstab = "/etc/fstab.late"
 "ugrd.fs.mounts" = [ "_process_mounts_multi", "_process_late_mounts_multi", "_process_mount_timeout" ]
 
 [imports.build_pre]
-"ugrd.fs.mounts" = [ "get_mounts_info", "get_dm_info", "get_blkid_info", "autodetect_root", "autodetect_root_dm" ]
+"ugrd.fs.mounts" = [ "get_mounts_info", "get_dm_info", "get_blkid_info", "autodetect_root", "autodetect_mounts", "autodetect_root_dm" ]
 
 [imports.build_tasks]
 "ugrd.fs.mounts" = [ "autodetect_init_mount", "export_mount_info", "export_root_target" ]
@@ -44,6 +44,7 @@ late_fstab = "/etc/fstab.late"
 mounts = "dict"  # Add the mounts property, used to define the mounts to be made in the fstab
 late_mounts = "dict"  # Like mounts, but run after the root is mounted
 late_fstab = "str"  # The path to the late_fstab file
+auto_mounts = "NoDupFlatList"  # A list of mounts to be automatically added to the mounts list
 mount_wait = "bool"  # Add the mount_wait property, if defined, user input will be required before attempting to mount entries
 mount_timeout = "float"  # Add the mount_timeout property, used to define the timeout for mount_wait
 mount_retries = "int"  # The number of times to re-attempt mounting the fstab
