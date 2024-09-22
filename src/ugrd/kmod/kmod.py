@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.14.2'
+__version__ = '2.15.0'
 
 from pathlib import Path
 from subprocess import run
@@ -114,6 +114,7 @@ def _autodetect_modules_lspci(self) -> None:
         cmd = self._run(['lspci', '-k'])
     except RuntimeError as e:
         raise DependencyResolutionError("Failed to get list of kernel modules") from e
+    lspci_kmods = set()
     # Iterate over all output lines
     for line in cmd.stdout.decode('utf-8').split('\n'):
         # If the line contains the string 'Kernel modules:' or 'Kernel driver in use:', it contains the name of a kernel module
@@ -122,10 +123,11 @@ def _autodetect_modules_lspci(self) -> None:
             if ',' in module:
                 # If there are multiple modules, split them and add them to the module set
                 for module in module.split(','):
-                    self['_kmod_auto'] = module.strip()
+                    lspci_kmods.add(module.strip())
             else:
-                # Add the single module to the module set
-                self['_kmod_auto'] = module.strip()
+                lspci_kmods.add(module.strip())
+
+    self['_kmod_auto'] = list(lspci_kmods)
 
 
 @contains('kmod_autodetect_lsmod', "kmod_autodetect_lsmod is not enabled, skipping.")
@@ -306,7 +308,10 @@ def process_modules(self) -> None:
         try:
             _process_kmod_dependencies(self, kmod)
             continue
-        except (IgnoredModuleError, BuiltinModuleError) as e:
+        except BuiltinModuleError as e:
+            self.logger.debug(e)
+            continue  # Don't add built-in modules to the ignore list
+        except IgnoredModuleError as e:
             self.logger.info(e)
         except DependencyResolutionError as e:
             if kmod in self['kmod_init']:
