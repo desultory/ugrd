@@ -155,6 +155,10 @@ destination = "/mnt/extra"
 label = "extra"
 ```
 
+##### auto_mounts
+
+Paths added to `auto_mounts` will be auto-configured to mount before `init_main` is run.
+
 #### ugrd.fs.fakeudev
 
 This module is used to create fake udev entries for DM devices.

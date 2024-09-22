@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.12.2'
+__version__ = '4.13.0'
 
 from pathlib import Path
 from zenlib.util import contains, pretty_print
@@ -443,25 +443,41 @@ def autodetect_root(self) -> None:
         root_dev = _resolve_root_dev(self)
     if root_dev not in self['_blkid_info']:
         get_blkid_info(self, root_dev)
-    autodetect_mount_kmods(self, root_dev)  # Get kmods for the root device
+    self['mounts'] = _autodetect_mount(self, '/')
 
-    root_mount_info = self['_blkid_info'][root_dev]
-    self.logger.debug("Detected root mount info: %s" % root_mount_info)
-    mount_info = {'root': {'type': 'auto', 'base_mount': False}}
 
-    if mount_type := root_mount_info.get('type'):  # Attempt to autodetect the root type
-        self.logger.info("Autodetected root type: %s" % mount_type)
-        mount_info['root']['type'] = mount_type.lower()
+def _autodetect_mount(self, mountpoint) -> dict:
+    """ Returns mount config based on the mount at the specified mountpoint. """
+    if mountpoint not in self['_mounts']:
+        raise FileNotFoundError("auto_mount mountpointpoint not found in host mounts: %s" % mountpoint)
+    if self['_mounts'][mountpoint]['device'] not in self['_blkid_info']:
+        get_blkid_info(self, self['_mounts'][mountpoint]['device'])
+    mount_device = self['_mounts'][mountpoint]['device']
+    mount_info = self['_blkid_info'][mount_device]
+    autodetect_mount_kmods(self, mount_device)
+    mount_name = 'root' if mountpoint == '/' else mountpoint.removeprefix('/')
+    mount_config = {mount_name: {'type': 'auto'}}
+    if mount_type := mount_info.get('type'):
+        self.logger.info("Autodetected mount type: %s" % mount_type)
+        mount_config[mount_name]['type'] = mount_type.lower()
 
     for source_type in SOURCE_TYPES:
-        if source := root_mount_info.get(source_type):
-            self.logger.info("Autodetected root source: %s=%s" % (source_type, source))
-            mount_info['root'][source_type] = source
+        if source := mount_info.get(source_type):
+            self.logger.info("[%s] Autodetected mount source: %s=%s" % (mount_name, source_type, source))
+            mount_config[mount_name][source_type] = source
             break
     else:
-        raise ValueError("Failed to autodetect root mount source.")
+        raise ValueError("[%s] Failed to autodetect mount source." % mountpoint)
 
-    self['mounts'] = mount_info
+    return mount_config
+
+
+@contains('auto_mounts', "Skipping auto mounts, auto_mounts is empty.", log_level=10)
+@contains('hostonly', "Skipping mount autodetection, hostonly mode is enabled.", log_level=30)
+def autodetect_mounts(self) -> None:
+    """ Configured the mount config for a device based on the host mount config. """
+    for mountpoint in self['auto_mounts']:
+        self['mounts'] = _autodetect_mount(self, mountpoint)
 
 
 def mount_base(self) -> list[str]:
