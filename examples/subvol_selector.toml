@@ -1,24 +1,8 @@
-# This config will decrypt the volume fdf442da-0574-4531-98c7-55227a041f1d, mapping it to "/dev/mapper/root"
-# It will pull all current kernel modules from the active kernel version
-# The kmod novideo, nosound, and nonetwork modules are pulled to help minmize pulled modules.
+# Enables the btrfs suvol selector, so a subvol can be selected at boot time.
 
 modules = [
-  "ugrd.kmod.novideo",
-  "ugrd.kmod.nosound",
-  "ugrd.kmod.nonetwork",
-  "ugrd.crypto.cryptsetup",
   "ugrd.fs.btrfs",
 ]
 
-# Optionally supply a kernel version
-#kernel_version = "6.1.53-gentoo-dist"
-kmod_autodetect_lsmod = true
-# Optionally kmod_autodetect_lspci could be used
-#kmod_autodetect_lspci = true
-
 # Allows you to dynamically select root subvol at UGRD runtime
 subvol_selector = true
-
-# The UUID of the encrypted volume, mounted at /dev/mapper/root
-[cryptsetup.root]
-uuid = "fdf442da-0574-4531-98c7-55227a041f1d"
