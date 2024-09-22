@@ -16,15 +16,13 @@ cryptsetup_key_type = "gpg"
 # The gpg module uses agetty on tty1 so this must be overridden
 primary_console = "ttyS1"
 
+auto_mounts = ['/boot']  # Automatically create mount config for /boot on the host
+
 # Define console information
 [console.ttyS1]
 baud = 115_200
 type = "vt100"
 local = true
-
-[mounts.boot]
-type = "vfat"
-uuid = "4A48-F4DC"
 
 [cryptsetup.root1]
 uuid = "9e04e825-7f60-4171-815a-86e01ec4c4d3"

@@ -7,7 +7,6 @@ modules = [
   "ugrd.kmod.standard_mask"
 ]
 
-
 # Device mapper autodetection is enabled by default
 # autodetect_root_luks = true
 

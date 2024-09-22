@@ -30,6 +30,8 @@ kmod_autodetect_lspci = true
 # The location of the gpg public key, if using a smartcard and gpg encrypted keyfile
 #sc_public_key = "/etc/ugrd/pubkey.gpg"
 
+#auto_mounts = ['/boot']  # Automatically create mount config for /boot on the host
+
 # Optionally specify the root mountpoint information manually
 #[mounts.root]
 # The label of the root filesystem, a uuid or partuuid could be used instead

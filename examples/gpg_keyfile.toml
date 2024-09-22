@@ -6,11 +6,7 @@ modules = [
   "ugrd.crypto.gpg",
 ]
 
-# This is necessary if the keyfile is on another device.
-# The keyfile could be added as a dependency if it's on the same device.
-[mounts.boot]
-type = "vfat"
-uuid = "4886-A631"
+auto_mounts = ['/boot']  # Automatically create mount config for /boot on the host
 
 # Information about the LUKS volume
 [cryptsetup.root]
