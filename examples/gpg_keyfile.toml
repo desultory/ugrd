@@ -1,0 +1,18 @@
+# This is an example configuration for using a GPG protected keyfile on external storage.
+
+modules = [
+  "ugrd.kmod.usb",
+  "ugrd.kmod.standard_mask",
+  "ugrd.crypto.gpg",
+]
+
+# This is necessary if the keyfile is on another device.
+# The keyfile could be added as a dependency if it's on the same device.
+[mounts.boot]
+type = "vfat"
+uuid = "4886-A631"
+
+# Information about the LUKS volume
+[cryptsetup.root]
+key_type = "gpg"
+key_file = "/boot/rootfs.luks.gpg"
