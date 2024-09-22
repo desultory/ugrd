@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.13.0'
+__version__ = '4.13.1'
 
 from pathlib import Path
 from zenlib.util import contains, pretty_print
@@ -433,29 +433,29 @@ def _resolve_root_dev(self) -> None:
 @contains('hostonly', "Skipping root autodetection, hostonly mode is disabled.", log_level=30)
 def autodetect_root(self) -> None:
     """ Sets self['mounts']['root']'s source based on the host mount. """
-    if any(source_type in self['mounts']['root'] for source_type in SOURCE_TYPES):
-        self.logger.warning("Root mount source already set: %s", pretty_print(self['mounts']['root']))
-        return
-
     # Sometimes the root device listed in '/proc/mounts' differs from the blkid info
     root_dev = self['_mounts']['/']['device']
     if self['resolve_root_dev']:
         root_dev = _resolve_root_dev(self)
     if root_dev not in self['_blkid_info']:
         get_blkid_info(self, root_dev)
-    self['mounts'] = _autodetect_mount(self, '/')
+    _autodetect_mount(self, '/')
 
 
-def _autodetect_mount(self, mountpoint) -> dict:
-    """ Returns mount config based on the mount at the specified mountpoint. """
+def _autodetect_mount(self, mountpoint) -> None:
+    """ Sets mount config for the specified mountpoint. """
     if mountpoint not in self['_mounts']:
         raise FileNotFoundError("auto_mount mountpointpoint not found in host mounts: %s" % mountpoint)
     if self['_mounts'][mountpoint]['device'] not in self['_blkid_info']:
         get_blkid_info(self, self['_mounts'][mountpoint]['device'])
+
     mount_device = self['_mounts'][mountpoint]['device']
     mount_info = self['_blkid_info'][mount_device]
     autodetect_mount_kmods(self, mount_device)
     mount_name = 'root' if mountpoint == '/' else mountpoint.removeprefix('/')
+    if mount_name in self['mounts'] and any(s_type in self['mounts'][mount_name] for s_type in SOURCE_TYPES):
+        return self.logger.warning("[%s] Mount config already set: %s" % (mountpoint, pretty_print(self['mounts'][mount_name])))
+
     mount_config = {mount_name: {'type': 'auto'}}
     if mount_type := mount_info.get('type'):
         self.logger.info("Autodetected mount type: %s" % mount_type)
@@ -469,7 +469,7 @@ def _autodetect_mount(self, mountpoint) -> dict:
     else:
         raise ValueError("[%s] Failed to autodetect mount source." % mountpoint)
 
-    return mount_config
+    self['mounts'] = mount_config
 
 
 @contains('auto_mounts', "Skipping auto mounts, auto_mounts is empty.", log_level=10)
@@ -477,7 +477,7 @@ def _autodetect_mount(self, mountpoint) -> dict:
 def autodetect_mounts(self) -> None:
     """ Configured the mount config for a device based on the host mount config. """
     for mountpoint in self['auto_mounts']:
-        self['mounts'] = _autodetect_mount(self, mountpoint)
+        _autodetect_mount(self, mountpoint)
 
 
 def mount_base(self) -> list[str]:
