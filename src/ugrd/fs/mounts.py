@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.13.1'
+__version__ = '4.13.2'
 
 from pathlib import Path
 from zenlib.util import contains, pretty_print
@@ -433,6 +433,8 @@ def _resolve_root_dev(self) -> None:
 @contains('hostonly', "Skipping root autodetection, hostonly mode is disabled.", log_level=30)
 def autodetect_root(self) -> None:
     """ Sets self['mounts']['root']'s source based on the host mount. """
+    if '/' not in self['_mounts']:
+        raise FileNotFoundError("Root mount not found in host mounts.\nCurrent mounts: %s" % pretty_print(self['_mounts']))
     # Sometimes the root device listed in '/proc/mounts' differs from the blkid info
     root_dev = self['_mounts']['/']['device']
     if self['resolve_root_dev']:
