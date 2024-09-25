@@ -21,6 +21,13 @@ Unless validation is disabled, µgRD attemts to validate most configuration agai
 
 The original goal of this project was to create an initramfs suitable for decrypting a LUKS root filesyem with a smartcard, with enough config validation to prevent the user from being left in a broken pre-boot environment.
 
+### Auto-detection
+* Root mount, using `/proc/mounts`. `root=` and `rootflags=` can be used but are not required.
+* LUKS auto-configuration and validation for the root mount
+* BTRFS root subvolumes are automatically detected, but can be overridden or `subvol_selector` can be used to select a subvolume at boot time.
+* `/usr` auto-mounting if the init system requires it
+* Auto-detctection of kernel modules required by the storage device used by the root filesystem
+
 Currently the following features are supported:
 
 * Basic configuration validation in `validate` mode
@@ -33,14 +40,7 @@ Currently the following features are supported:
   - Allows for late insertion of a smartcard
   - Can fail back to plain password entry
 * LVM support (under LUKS) with the `ugrd.fs.lvm` module
-* Auto-detection and validation of the root mount using `/proc/mounts`
-* Auto-detection and validation of LUKS root mounts
-* Auto-detection and validation of the btrfs subvolume used for the root mount, if present
-* Auto-detection of mountpoints for the system init.
 * Dynamic BTRFS subvolume selection at boot time using `subvol_selector`
-* Auto-detection of kernel modules using `lspci` and `lsmod`
-* Reading the `root` and `rootflags` parameters from the kernel commandline
-  - Falls back to host mount config if cmdline mount parameters fail
 * Key entry over serial
 * Automatic CPIO generation (PyCPIO)
   - Device nodes are created within the CPIO only, so true root privileges are not required
