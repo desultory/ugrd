@@ -40,7 +40,7 @@ The original goal of this project was to create an initramfs suitable for decryp
 
 * OpenPGP Smartcards (YubiKey) with the `ugrd.crypto.smartcard` module [yubikey example](examples/yubikey.toml)
 * GPG encrypted LUKS keyfiles with the `ugrd.crypto.gpg` module [gpg example](examples/gpg_keyfile.toml)
-* LUKS with detatched headers [detached header example](examples/detached_header.toml)
+* LUKS with detatched headers [detached headers example](examples/detached_headers.toml)
 * Cryptsetup re-attempts and alternative unlock methods
   - Allows for late insertion of a smartcard `cryptsetup_retries` and `cryptsetup_autoretry`
   - Can fail back to plain password entry `try_nokey`
