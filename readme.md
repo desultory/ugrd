@@ -28,7 +28,7 @@ The original goal of this project was to create an initramfs suitable for decryp
 * Rootfs LVM, including under LUKS, is auto-mounted
 * BTRFS root subvolumes are automatically detected, but can be overridden or `subvol_selector` can be used to select a subvolume at boot time.
 * `/usr` auto-mounting if the init system requires it
-* Auto-detctection of kernel modules required by the storage device used by the root filesystem
+* Auto-detection of kernel modules required by the storage device used by the root filesystem
 
 ### Validation
 
