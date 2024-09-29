@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.14.1'
+__version__ = '4.14.2'
 
 from pathlib import Path
 from zenlib.util import contains, pretty_print
@@ -608,6 +608,8 @@ def autodetect_mount_kmods(self, device) -> None:
 def resolve_blkdev_kmod(self, device) -> list[str]:
     """ Gets the kmod name for a block device. """
     dev = Path(device)
+    while dev.is_symlink():
+        dev = dev.resolve()
     device_name = dev.name
     if device_name.startswith('dm-') or dev.parent.name == 'mapper' or dev.parent.name.startswith('vg'):
         return ['dm_mod']
