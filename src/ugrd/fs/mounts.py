@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.13.2'
+__version__ = '4.13.3'
 
 from pathlib import Path
 from zenlib.util import contains, pretty_print
@@ -447,7 +447,7 @@ def autodetect_root(self) -> None:
 def _autodetect_mount(self, mountpoint) -> None:
     """ Sets mount config for the specified mountpoint. """
     if mountpoint not in self['_mounts']:
-        raise FileNotFoundError("auto_mount mountpointpoint not found in host mounts: %s" % mountpoint)
+        raise FileNotFoundError("auto_mount mountpoint not found in host mounts: %s" % mountpoint)
     if self['_mounts'][mountpoint]['device'] not in self['_blkid_info']:
         get_blkid_info(self, self['_mounts'][mountpoint]['device'])
 
