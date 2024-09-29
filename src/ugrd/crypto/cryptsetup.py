@@ -1,8 +1,9 @@
 __author__ = 'desultory'
-__version__ = '2.5.3'
+__version__ = '2.5.4'
 
 from zenlib.util import contains
 
+from pathlib import Path
 
 _module_name = 'ugrd.crypto.cryptsetup'
 
@@ -47,7 +48,6 @@ def _validate_crypysetup_key(self, key_paramters: dict) -> None:
         self.logger.info("Skipping key validation for included key.")
         return
 
-    from pathlib import Path
     key_path = Path(key_paramters['key_file'])
 
     if not key_path.is_file():
@@ -85,7 +85,7 @@ def _validate_cryptsetup_config(self, mapped_name: str) -> None:
             self.logger.warning("A partuuid or device path must be specified when using detached headers: %s" % mapped_name)
             if config.get('uuid'):
                 raise ValueError("A UUID cannot be used with a detached header: %s" % mapped_name)
-        if not config['header_file'].exists():  # Make sure the header file exists, it may not be present at build time
+        if not Path(config['header_file']).exists():  # Make sure the header file exists, it may not be present at build time
             self.logger.warning("[%s] Header file not found: %s" % (mapped_name, config['header_file']))
     elif not any([config.get('partuuid'), config.get('uuid'), config.get('path')]):
         if not self['autodetect_root_luks']:
