@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.5.5'
+__version__ = '2.5.6'
 
 from zenlib.util import contains
 
@@ -160,7 +160,8 @@ def _validate_cryptsetup_device(self, mapped_name) -> None:
 
     try:
         # Get the luks header info, remove tabs, and split the output
-        luks_info = self._run(['cryptsetup', 'luksDump', slave_device]).stdout.decode().replace('\t', '').split('\n')  # Check that the device is a LUKS device
+        luks_header_source = cryptsetup_info.get('header_file') or slave_device
+        luks_info = self._run(['cryptsetup', 'luksDump', luks_header_source]).stdout.decode().replace('\t', '').split('\n')  # Check that the device is a LUKS device
         self.logger.debug("[%s] LUKS information:\n%s" % (mapped_name, luks_info))
     except RuntimeError as e:
         luks_info = []
