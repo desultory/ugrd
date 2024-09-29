@@ -85,6 +85,8 @@ def _validate_cryptsetup_config(self, mapped_name: str) -> None:
         self.logger.warning("A partuuid or device path must be specified when using detached headers: %s" % mapped_name)
         if config.get('uuid'):
             raise ValueError("A UUID cannot be used with a detached header: %s" % mapped_name)
+        if not config['header_file'].exists():
+            raise FileNotFoundError("[%s] Header file not found: %s" % (mapped_name, config['header_file']))
     elif not any([config.get('partuuid'), config.get('uuid'), config.get('path')]):
         if not self['autodetect_root_luks']:
             raise ValueError("A device uuid, partuuid, or path must be specified for cryptsetup mount: %s" % mapped_name)
@@ -161,6 +163,7 @@ def _validate_cryptsetup_device(self, mapped_name) -> None:
         luks_info = self._run(['cryptsetup', 'luksDump', slave_device]).stdout.decode().replace('\t', '').split('\n')  # Check that the device is a LUKS device
         self.logger.debug("[%s] LUKS information:\n%s" % (mapped_name, luks_info))
     except RuntimeError as e:
+        luks_info = []
         if not cryptsetup_info.get('header_file'):
             return self.logger.error("[%s] Unable to get LUKS information: %s" % (mapped_name, e))
 
@@ -174,7 +177,7 @@ def _validate_cryptsetup_device(self, mapped_name) -> None:
         else:
             raise ValueError("[%s] Unable to validate LUKS UUID: %s" % (mapped_name, cryptsetup_token))
 
-    if 'PBKDF:      argon2id' in luks_info or token_type == 'partuuid':  # Validate the argon2 dependency
+    if cryptsetup_info.get('header_file') or 'PBKDF:      argon2id' in luks_info:  # Validate the argon2 dependency
         for dep in self['dependencies']:
             if dep.name.startswith('libargon2.so'):
                 break
