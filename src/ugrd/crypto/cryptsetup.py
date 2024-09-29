@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.5.4'
+__version__ = '2.5.5'
 
 from zenlib.util import contains
 
@@ -177,12 +177,14 @@ def _validate_cryptsetup_device(self, mapped_name) -> None:
         else:
             raise ValueError("[%s] Unable to validate LUKS UUID: %s" % (mapped_name, cryptsetup_token))
 
-    if cryptsetup_info.get('header_file') or 'PBKDF:      argon2id' in luks_info:  # Validate the argon2 dependency
-        for dep in self['dependencies']:
-            if dep.name.startswith('libargon2.so'):
-                break
-        else:
-            self.logger.error("[%s] Missing dependency: libargon2.so" % mapped_name)
+    for dep in self['dependencies']:
+        if dep.name.startswith('libargon2.so'):
+            break
+    else:
+        if cryptsetup_info.get('header_file'):
+            self.logger.error("[%s] Missing cryptsetup dependency: libargon2.so" % mapped_name)
+        if 'PBKDF:      argon2id' in luks_info:
+            raise FileNotFoundError("[%s] Missing cryptsetup dependency: libargon2.so" % mapped_name)
 
 
 @contains('validate', "Skipping cryptsetup configuration validation.", log_level=30)
