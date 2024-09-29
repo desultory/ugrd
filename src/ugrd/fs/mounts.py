@@ -605,7 +605,7 @@ def autodetect_mount_kmods(self, device) -> None:
         self['kmod_init'] = device_kmods
 
 
-def resolve_blkdev_kmod(self, device, resolve=True) -> list[str]:
+def resolve_blkdev_kmod(self, device) -> list[str]:
     """ Gets the kmod name for a block device. """
     dev = Path(device)
     device_name = dev.name
@@ -621,9 +621,6 @@ def resolve_blkdev_kmod(self, device, resolve=True) -> list[str]:
         return ['mmc_block']
     elif device_name.startswith('sr'):
         return ['sr_mod']
-    elif resolve:
-        device = _resolve_dev(self, device)
-        return resolve_blkdev_kmod(self, device, resolve=False)
     else:
         self.logger.error("[%s] Unable to determine kernel module for block device: %s" % (device_name, device))
         return []
