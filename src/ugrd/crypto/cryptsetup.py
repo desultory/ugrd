@@ -120,9 +120,13 @@ def _process_cryptsetup_multi(self, mapped_name: str, config: dict) -> None:
     self['cryptsetup'][mapped_name] = config
 
 
-@contains('validate', "Skipping cryptsetup configuration validation.", log_level=30)
-def _validate_luks_config(self, mapped_name: str) -> None:
-    """ Checks that a LUKS config portion is valid. """
+@contains('hostonly', "Skipping cryptsetup device check.", log_level=30)
+def _validate_cryptsetup_device(self, mapped_name) -> None:
+    """
+    Validates a cryptsetup device against the device mapper information,
+    blkid information, and cryptsetup information.
+    Uses `cryptsetup luksDump` to check that the device is a LUKS device.
+    """
     for _dm_info in self['_dm_info'].values():
         if _dm_info['name'] == mapped_name:
             dm_info = _dm_info  # Get the device mapper information
@@ -130,19 +134,20 @@ def _validate_luks_config(self, mapped_name: str) -> None:
     else:
         raise ValueError("No device mapper information found for: %s" % mapped_name)
 
-    cryptsetup_info = self['cryptsetup'][mapped_name]  # Get the cryptsetup information
-
     if not dm_info['uuid'].startswith('CRYPT-LUKS'):  # Ensure the device is a crypt device
         raise ValueError("Device is not a crypt device: %s" % dm_info)
 
+    cryptsetup_info = self['cryptsetup'][mapped_name]  # Get the cryptsetup information
     slave_source = dm_info['slaves'][0]  # Get the slave source
 
-    try:
-        blkid_info = self['_blkid_info'][f'/dev/{slave_source}']
+    try:  # Get the blkid information
+        slave_device = f'/dev/{slave_source}'
+        blkid_info = self['_blkid_info'][slave_device]
     except KeyError:
-        blkid_info = self['_blkid_info'][f'/dev/mapper/{slave_source}']
+        slave_device = f'/dev/mapper/{slave_source}'
+        blkid_info = self['_blkid_info'][slave_device]
 
-    for token_type in ['partuuid', 'uuid']:
+    for token_type in ['partuuid', 'uuid']:  # Validate the uuid/partuuid token
         if cryptsetup_token := cryptsetup_info.get(token_type):
             if blkid_info.get(token_type) != cryptsetup_token:
                 raise ValueError("[%s] LUKS %s mismatch, found '%s', expected: %s" %
@@ -150,6 +155,36 @@ def _validate_luks_config(self, mapped_name: str) -> None:
             break
     else:
         raise ValueError("[%s] Unable to validate LUKS source: %s" % (mapped_name, cryptsetup_info))
+
+    try:
+        # Get the luks header info, remove tabs, and split the output
+        luks_info = self._run(['cryptsetup', 'luksDump', slave_device]).stdout.decode().replace('\t', '').split('\n')  # Check that the device is a LUKS device
+        self.logger.debug("[%s] LUKS information:\n%s" % (mapped_name, luks_info))
+    except RuntimeError as e:
+        return self.logger.error("[%s] Unable to get LUKS information: %s" % (mapped_name, e))
+
+    if token_type == 'uuid':  # Validate the LUKS UUID
+        for line in luks_info:
+            if 'UUID' in line:
+                if line.split()[1] != cryptsetup_token:
+                    raise ValueError("[%s] LUKS UUID mismatch, found '%s', expected: %s" %
+                                     (mapped_name, line.split()[1], cryptsetup_token))
+                break
+        else:
+            raise ValueError("[%s] Unable to validate LUKS UUID: %s" % (mapped_name, cryptsetup_token))
+
+    if 'PBKDF:      argon2id' in luks_info:
+        for dep in self['dependencies']:
+            if dep.name.startswith('libargon2.so'):
+                break
+        else:
+            self.logger.error("[%s] Missing dependency: libargon2.so" % mapped_name)
+
+
+@contains('validate', "Skipping cryptsetup configuration validation.", log_level=30)
+def _validate_luks_config(self, mapped_name: str) -> None:
+    """ Checks that a LUKS config portion is valid. """
+    _validate_cryptsetup_device(self, mapped_name)
     _validate_cryptsetup_config(self, mapped_name)
 
 
