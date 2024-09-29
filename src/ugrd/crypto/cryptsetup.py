@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.5.2'
+__version__ = '2.5.3'
 
 from zenlib.util import contains
 
@@ -161,7 +161,8 @@ def _validate_cryptsetup_device(self, mapped_name) -> None:
         luks_info = self._run(['cryptsetup', 'luksDump', slave_device]).stdout.decode().replace('\t', '').split('\n')  # Check that the device is a LUKS device
         self.logger.debug("[%s] LUKS information:\n%s" % (mapped_name, luks_info))
     except RuntimeError as e:
-        return self.logger.error("[%s] Unable to get LUKS information: %s" % (mapped_name, e))
+        if not cryptsetup_info.get('header_file'):
+            return self.logger.error("[%s] Unable to get LUKS information: %s" % (mapped_name, e))
 
     if token_type == 'uuid':  # Validate the LUKS UUID
         for line in luks_info:
@@ -173,7 +174,7 @@ def _validate_cryptsetup_device(self, mapped_name) -> None:
         else:
             raise ValueError("[%s] Unable to validate LUKS UUID: %s" % (mapped_name, cryptsetup_token))
 
-    if 'PBKDF:      argon2id' in luks_info:
+    if 'PBKDF:      argon2id' in luks_info or token_type == 'partuuid':  # Validate the argon2 dependency
         for dep in self['dependencies']:
             if dep.name.startswith('libargon2.so'):
                 break
