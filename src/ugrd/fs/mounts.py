@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.13.3'
+__version__ = '4.13.4'
 
 from pathlib import Path
 from zenlib.util import contains, pretty_print
@@ -622,5 +622,5 @@ def resolve_blkdev_kmod(self, device) -> list[str]:
     elif device_name.startswith('sr'):
         return ['sr_mod']
     else:
-        self.logger.error("Unable to determine kernel module for block device: %s" % device_name)
+        self.logger.error("[%s] Unable to determine kernel module for block device: %s" % (device_name, device))
         return []
