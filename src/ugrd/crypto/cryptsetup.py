@@ -80,13 +80,13 @@ def _validate_cryptsetup_config(self, mapped_name: str) -> None:
         if parameter not in CRYPTSETUP_PARAMETERS:
             raise ValueError("Invalid parameter: %s" % parameter)
 
-    # The partuuid must be specified if using a detached header
-    if config.get('header_file') and (not config.get('partuuid') and not config.get('path')):
-        self.logger.warning("A partuuid or device path must be specified when using detached headers: %s" % mapped_name)
-        if config.get('uuid'):
-            raise ValueError("A UUID cannot be used with a detached header: %s" % mapped_name)
-        if not config['header_file'].exists():
-            raise FileNotFoundError("[%s] Header file not found: %s" % (mapped_name, config['header_file']))
+    if config.get('header_file'):  # Check that he header is defined with a partuuid or path
+        if not config.get('partuuid') and not config.get('path'):
+            self.logger.warning("A partuuid or device path must be specified when using detached headers: %s" % mapped_name)
+            if config.get('uuid'):
+                raise ValueError("A UUID cannot be used with a detached header: %s" % mapped_name)
+        if not config['header_file'].exists():  # Make sure the header file exists, it may not be present at build time
+            self.logger.warning("[%s] Header file not found: %s" % (mapped_name, config['header_file']))
     elif not any([config.get('partuuid'), config.get('uuid'), config.get('path')]):
         if not self['autodetect_root_luks']:
             raise ValueError("A device uuid, partuuid, or path must be specified for cryptsetup mount: %s" % mapped_name)
