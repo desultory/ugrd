@@ -38,5 +38,5 @@ jobs:
         venv/bin/pip install .
     - name: Test fullauto.toml
       run: |
-        ls /boot
         sudo venv/bin/python -m unittest discover tests
+        ugrd -d
