@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.13.4'
+__version__ = '4.14.0'
 
 from pathlib import Path
 from zenlib.util import contains, pretty_print
@@ -414,19 +414,19 @@ def autodetect_luks(self, mount_loc, dm_num, dm_info) -> None:
                      (mount_loc.name, self._dm_info[dm_num]['name'], dm_num, pretty_print(self['cryptsetup'])))
 
 
-def _resolve_root_dev(self) -> None:
+def _resolve_dev(self, device_path) -> str:
     """
-    Resolves the root device, if possible.
+    Resolves a device path, if possible.
     Useful for cases where the device in blkid differs from the device in /proc/mounts.
     """
-    major, minor = _get_device_id(self['_mounts']['/']['device'])
+    major, minor = _get_device_id(self['_mounts'][device_path]['device'])
     for device in self['_blkid_info']:
         check_major, check_minor = _get_device_id(device)
         if (major, minor) == (check_major, check_minor):
-            self.logger.info("Resolved root device: %s -> %s" % (self['_mounts']['/']['device'], device))
+            self.logger.info("Resolved device: %s -> %s" % (self['_mounts'][device_path]['device'], device))
             return device
-    self.logger.warning("Failed to resolve root device: %s" % self['_mounts']['/']['device'])
-    return self['_mounts']['/']['device']
+    self.logger.warning("Failed to resolve device: %s" % self['_mounts']['/']['device'])
+    return self['_mounts'][device_path]['device']
 
 
 @contains('autodetect_root', "Skipping root autodetection, autodetect_root is disabled.", log_level=30)
@@ -438,7 +438,7 @@ def autodetect_root(self) -> None:
     # Sometimes the root device listed in '/proc/mounts' differs from the blkid info
     root_dev = self['_mounts']['/']['device']
     if self['resolve_root_dev']:
-        root_dev = _resolve_root_dev(self)
+        root_dev = _resolve_dev(self, '/')
     if root_dev not in self['_blkid_info']:
         get_blkid_info(self, root_dev)
     _autodetect_mount(self, '/')
@@ -551,7 +551,7 @@ def _validate_host_mount(self, mount, destination_path=None) -> bool:
     # Using the mount path, get relevant hsot mount info
     host_source_dev = self['_mounts'][destination_path]['device']
     if destination_path == '/' and self['resolve_root_dev']:
-        host_source_dev = _resolve_root_dev(self)
+        host_source_dev = _resolve_dev(self, '/')
     host_mount_options = self['_mounts'][destination_path]['options']
     for option in mount.get('options', []):
         if option == 'ro' and destination_path == '/':
@@ -605,7 +605,7 @@ def autodetect_mount_kmods(self, device) -> None:
         self['kmod_init'] = device_kmods
 
 
-def resolve_blkdev_kmod(self, device) -> list[str]:
+def resolve_blkdev_kmod(self, device, resolve=True) -> list[str]:
     """ Gets the kmod name for a block device. """
     dev = Path(device)
     device_name = dev.name
@@ -621,6 +621,9 @@ def resolve_blkdev_kmod(self, device) -> list[str]:
         return ['mmc_block']
     elif device_name.startswith('sr'):
         return ['sr_mod']
+    elif resolve:
+        device = _resolve_dev(self, device)
+        return resolve_blkdev_kmod(self, device, resolve=False)
     else:
         self.logger.error("[%s] Unable to determine kernel module for block device: %s" % (device_name, device))
         return []
