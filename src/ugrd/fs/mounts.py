@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.14.0'
+__version__ = '4.14.1'
 
 from pathlib import Path
 from zenlib.util import contains, pretty_print
@@ -602,7 +602,7 @@ def autodetect_mount_kmods(self, device) -> None:
     """ Autodetects the kernel modules for a block device. """
     if device_kmods := resolve_blkdev_kmod(self, device):
         self.logger.info("Auto-enabling kernel modules for device: %s" % ', '.join(device_kmods))
-        self['kmod_init'] = device_kmods
+        self['_kmod_auto'] = device_kmods
 
 
 def resolve_blkdev_kmod(self, device) -> list[str]:
