@@ -19,7 +19,7 @@ Unless validation is disabled, µgRD attemts to validate most configuration agai
 
 ## Project goal and features
 
-The original goal of this project was to create an initramfs suitable for decrypting a LUKS root filesyem with a smartcard, with enough config validation to prevent the user from being left in a broken pre-boot environment.
+The original goal of this project was to create an initramfs suitable for decrypting a LUKS root filesystem with a smartcard, with enough config validation to prevent the user from being left in a broken pre-boot environment.
 
 ### Auto-detection
 
