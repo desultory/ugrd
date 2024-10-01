@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.14.2'
+__version__ = '4.14.3'
 
 from pathlib import Path
 from zenlib.util import contains, pretty_print
@@ -339,7 +339,7 @@ def _autodetect_dm(self, mountpoint) -> None:
     if source_device.name != self._dm_info[dm_num]['name'] and source_device.name != dm_num:
         raise ValueError("Device mapper device name mismatch: %s != %s" % (source_device.name, self._dm_info[dm_num]['name']))
 
-    self.logger.debug("[%s] Device mapper info: %s" % (source_device.name, self._dm_info[dm_num]))
+    self.logger.debug("[%s] Device mapper info: %s\nDevice config: %s" % (source_device.name, self._dm_info[dm_num], dm_info))
     if dm_info.get('type') == 'crypto_LUKS' or source_device.name in self.get('cryptsetup', {}):
         autodetect_luks(self, source_device, dm_num, dm_info)
     elif dm_info.get('type') == 'LVM2_member':
