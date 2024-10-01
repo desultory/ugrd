@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.5.7'
+__version__ = '2.5.8'
 
 from zenlib.util import contains
 
@@ -97,6 +97,10 @@ def _validate_cryptsetup_config(self, mapped_name: str) -> None:
 
 def _process_cryptsetup_multi(self, mapped_name: str, config: dict) -> None:
     """ Processes the cryptsetup configuration """
+    for parameter in config:
+        if parameter not in CRYPTSETUP_PARAMETERS:
+            self.logger.error("[%s] Unknown parameter: %s" % (mapped_name, parameter))
+
     config = _merge_cryptsetup(self, mapped_name, config)  # Merge the config with the existing configuration
     self.logger.debug("[%s] Processing cryptsetup configuration: %s" % (mapped_name, config))
     # Check if the key type is defined in the configuration, otherwise use the default, check if it's valid
