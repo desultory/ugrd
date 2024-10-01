@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.5.6'
+__version__ = '2.5.7'
 
 from zenlib.util import contains
 
@@ -156,7 +156,7 @@ def _validate_cryptsetup_device(self, mapped_name) -> None:
                                  (mapped_name, token_type, cryptsetup_token, blkid_info[token_type]))
             break
     else:
-        raise ValueError("[%s] Unable to validate LUKS source: %s" % (mapped_name, cryptsetup_info))
+        raise ValueError("[%s] No UUID or PARTUUID set for LUKS source: %s" % (mapped_name, cryptsetup_info))
 
     try:
         # Get the luks header info, remove tabs, and split the output
@@ -166,7 +166,8 @@ def _validate_cryptsetup_device(self, mapped_name) -> None:
     except RuntimeError as e:
         luks_info = []
         if not cryptsetup_info.get('header_file'):
-            return self.logger.error("[%s] Unable to get LUKS information: %s" % (mapped_name, e))
+            return self.logger.error("[%s] Unable to read LUKS header: %s" % (mapped_name, e))
+        self.logger.warning("[%s] Cannot read detached LUKS header for validation: %s" % (mapped_name, e))
 
     if token_type == 'uuid':  # Validate the LUKS UUID
         for line in luks_info:
