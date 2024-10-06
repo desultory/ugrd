@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.15.6'
+__version__ = '4.15.7'
 
 from pathlib import Path
 from zenlib.util import contains, pretty_print
@@ -280,12 +280,11 @@ def get_virtual_block_info(self) -> dict:
             self['_dm_info'][virt_device.name] = {'major': maj,
                                                   'minor': minor,
                                                   'holders': [holder.name for holder in (virt_device / 'holders').iterdir()],
-                                                  'slaves': [slave.name for slave in (virt_device / 'slaves').iterdir()],
-                                                  'uuid': (virt_device / 'dm/uuid').read_text().strip()}
+                                                  'slaves': [slave.name for slave in (virt_device / 'slaves').iterdir()]}
             if (virt_device / 'dm').exists():
-                self['_dm_info'][virt_device.name]['name'] = (virt_device / 'dm/name').read_text().strip()
+                self['_dm_info'][virt_device.name]['uuid'] = (virt_device / 'dm/uuid').read_text().strip()
             elif (virt_device / 'md').exists():
-                self['_dm_info'][virt_device.name]['name'] = (virt_device / 'md/name').read_text().strip()
+                self['_dm_info'][virt_device.name]['uuid'] = (virt_device / 'md/uuid').read_text().strip()
             else:
                 raise ValueError("Failed to get virtual device name: %s" % virt_device.name)
 
