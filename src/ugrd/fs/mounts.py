@@ -292,6 +292,7 @@ def get_virtual_block_info(self) -> dict:
                 self['_dm_info'][virt_device.name]['name'] = (virt_device / 'dm/name').read_text().strip()
             except FileNotFoundError:
                 self.logger.warning("No device mapper name found for: %s" % virt_device.name)
+                self['_dm_info'][virt_device.name]['name'] = virt_device.name  # we can pretend
 
     if self['_dm_info']:
         self.logger.info("Found virtual block devices: %s" % ', '.join(self['_dm_info'].keys()))
