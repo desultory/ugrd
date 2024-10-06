@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.15.1'
+__version__ = '4.15.2'
 
 from pathlib import Path
 from zenlib.util import contains, pretty_print
@@ -345,7 +345,7 @@ def _autodetect_dm(self, mountpoint) -> None:
     if dm_info.get('type') == 'crypto_LUKS' or source_device.name in self.get('cryptsetup', {}):
         autodetect_luks(self, source_device, dm_num, dm_info)
     elif dm_info.get('type') == 'LVM2_member':
-        autodetect_root_lvm(self, source_device, dm_num, dm_info)
+        autodetect_lvm(self, source_device, dm_num, dm_info)
     else:
         raise RuntimeError("Unknown device mapper device type: %s" % dm_info.get('type'))
 
@@ -367,7 +367,7 @@ def autodetect_root_dm(self) -> None:
 
 @contains('autodetect_root_lvm', "Skipping LVM autodetection, autodetect_root_lvm is disabled.", log_level=20)
 @contains('hostonly', "Skipping LVM autodetection, hostonly mode is disabled.", log_level=30)
-def autodetect_root_lvm(self, mount_loc, dm_num, dm_info) -> None:
+def autodetect_lvm(self, mount_loc, dm_num, dm_info) -> None:
     """ Autodetects LVM mounts and sets the lvm config. """
     if 'ugrd.fs.lvm' not in self['modules']:
         self.logger.info("Autodetected LVM mount, enabling the lvm module.")
