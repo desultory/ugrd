@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.14.3'
+__version__ = '4.15.0'
 
 from pathlib import Path
 from zenlib.util import contains, pretty_print
@@ -298,8 +298,10 @@ def _get_device_id(device: str) -> str:
 @contains('hostonly', "Skipping device mapper autodetection, hostonly mode is disabled.", log_level=30)
 def _autodetect_dm(self, mountpoint) -> None:
     """
-    Autodetects device mapper config given a device.
-    If no device is passed, it will attempt to autodetect based on the mountpoint.
+    Autodetects device mapper config given a mountpoint.
+    Ensures it's a device mapper mount, then autodetects the mount type.
+
+    Adds kmods to the autodetect list based on the mount source.
     """
     if mountpoint in self['_mounts']:
         source_device = self['_mounts'][mountpoint]['device']
@@ -349,6 +351,12 @@ def _autodetect_dm(self, mountpoint) -> None:
 
     autodetect_mount_kmods(self, slave_source)
 
+    for slave in self._dm_info[dm_num]['slaves']:
+        try:
+            _autodetect_dm(self, '/dev/' + slave)
+        except KeyError:
+            self.logger.debug("Slave does not appear to be a DM device: %s" % slave)
+
 
 @contains('autodetect_root_dm', "Skipping device mapper autodetection, autodetect_root_dm is disabled.", log_level=30)
 @contains('hostonly', "Skipping device mapper autodetection, hostonly mode is disabled.", log_level=30)
@@ -369,13 +377,6 @@ def autodetect_root_lvm(self, mount_loc, dm_num, dm_info) -> None:
         self['lvm'] = {self._dm_info[dm_num]['name']: {'uuid': uuid}}
     else:
         raise ValueError("Failed to autodetect LVM volume uuid: %s" % mount_loc.name)
-
-    # Check if the LVM volume is part of a LUKS volume
-    for slave in self._dm_info[dm_num]['slaves']:
-        try:
-            _autodetect_dm(self, '/dev/' + slave)
-        except KeyError:
-            self.logger.debug("LVM slave does not appear to be a DM device: %s" % slave)
 
 
 @contains('autodetect_root_luks', "Skipping LUKS autodetection, autodetect_root_luks is disabled.", log_level=30)
