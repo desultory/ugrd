@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.16.2'
+__version__ = '4.16.3'
 
 from pathlib import Path
 from zenlib.util import contains, pretty_print
@@ -205,7 +205,7 @@ def get_mounts_info(self) -> None:
 
 
 @contains('hostonly', "Skipping blkid autodetection, hostonly mode is enabled.", log_level=30)
-def get_blkid_info(self, device=None) -> str:
+def get_blkid_info(self, device=None) -> dict:
     """
     Gets the blkid info for all devices if no device is passed.
     Gets the blkid info for the passed device if a device is passed.
@@ -233,6 +233,7 @@ def get_blkid_info(self, device=None) -> str:
         raise ValueError("[%s] Failed to parse blkid info: %s" % (device, info))
 
     self.logger.debug("Blkid info: %s" % pretty_print(self['_blkid_info']))
+    return self['_blkid_info'][device] if device else self['_blkid_info']
 
 
 @contains('init_target', 'init_target must be set', raise_exception=True)
@@ -327,11 +328,17 @@ def _autodetect_dm(self, mountpoint, device=None) -> None:
         self.logger.debug("Mount is not a device mapper mount: %s" % source_device)
         return
 
+    device_name = source_device.split('/')[-1]
     if source_device not in self['_blkid_info']:
-        device_name = source_device.split('/')[-1]
-        mapped_device = f'/dev/mapper/{device_name}'
-        if mapped_device not in self['_blkid_info']:
-            raise FileNotFoundError("[%s] No blkid info for virtual device: %s" % (mountpoint, device_name))
+        if device_name in self['_dm_info']:
+            if f'/dev/{device_name}' in self['_blkid_info']:
+                source_device = f'/dev/{device_name}'
+            elif f'/dev/mapper/{device_name}' in self['_blkid_info']:
+                source_device = f'/dev/mapper/{device_name}'
+            elif not get_blkid_info(self, source_device):
+                raise FileNotFoundError("[%s] No blkid info for virtual device: %s" % (mountpoint, source_device))
+        else:
+            raise ValueError("[%s] No blkid info for virtual device: %s" % (mountpoint, source_device))
 
     self.logger.info("[%s] Detected virtual block device: %s" % (mountpoint, source_device))
     source_device = Path(source_device)

@@ -75,14 +75,14 @@ class InitramfsGenerator(GeneratorHelpers):
         self.logger.info("Building initramfs")
         for hook in self.build_tasks:
             self.logger.debug("Running build hook: %s" % hook)
-            self.run_hook(hook)
+            self.run_hook(hook, force_exclude=True)
         self.generate_init()
         self.run_hook('build_final')
         self.pack_build()
         self.run_checks()
         self.run_tests()
 
-    def run_func(self, function, force_include=False) -> list[str]:
+    def run_func(self, function, force_include=False, force_exclude=False) -> list[str]:
         """ Runs a function, If force_include is set, forces the function to be included in the bash source file. """
         self.logger.log(self['_build_log_level'], "Running function: %s" % function.__name__)
 
@@ -102,9 +102,12 @@ class InitramfsGenerator(GeneratorHelpers):
                 self.logger.debug("[%s] Function returned string: %s" % (function.__name__, function_output))
                 return function_output
 
-            self.logger.debug("[%s] Function returned output: %s" % (function.__name__, pretty_print(function_output)))
-            self.included_functions[function.__name__] = function_output
-            self.logger.debug("Created function alias: %s" % function.__name__)
+            if not force_exclude:
+                self.logger.debug("[%s] Function returned output: %s" % (function.__name__, pretty_print(function_output)))
+                self.included_functions[function.__name__] = function_output
+                self.logger.debug("Created function alias: %s" % function.__name__)
+            elif function_output:
+                self.logger.debug("[%s] Function output was not included: %s" % (function.__name__, function_output))
             return function.__name__
         else:
             self.logger.debug("[%s] Function returned no output" % function.__name__)
@@ -151,7 +154,7 @@ class InitramfsGenerator(GeneratorHelpers):
                 for line in func_content:
                     out.append(f"    {line}")
             else:
-                raise TypeError("Function content is not a string or list: %s" % func_content)
+                raise TypeError("[%s] Function content is not a string or list: %s" % (func_name, func_content))
             out.append("}")
 
         return out
