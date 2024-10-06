@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.16.1'
+__version__ = '4.16.2'
 
 from pathlib import Path
 from zenlib.util import contains, pretty_print
@@ -328,7 +328,10 @@ def _autodetect_dm(self, mountpoint, device=None) -> None:
         return
 
     if source_device not in self['_blkid_info']:
-        raise FileNotFoundError("[%s] No blkdid info for virtual device: %s" % (mountpoint, source_device))
+        device_name = source_device.split('/')[-1]
+        mapped_device = f'/dev/mapper/{device_name}'
+        if mapped_device not in self['_blkid_info']:
+            raise FileNotFoundError("[%s] No blkid info for virtual device: %s" % (mountpoint, device_name))
 
     self.logger.info("[%s] Detected virtual block device: %s" % (mountpoint, source_device))
     source_device = Path(source_device)
