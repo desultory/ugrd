@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.15.0'
+__version__ = '4.15.1'
 
 from pathlib import Path
 from zenlib.util import contains, pretty_print
@@ -354,6 +354,7 @@ def _autodetect_dm(self, mountpoint) -> None:
     for slave in self._dm_info[dm_num]['slaves']:
         try:
             _autodetect_dm(self, '/dev/' + slave)
+            self.logger.ingo("[%s] Autodetected device mapper container: %s" % (source_device.name, slave))
         except KeyError:
             self.logger.debug("Slave does not appear to be a DM device: %s" % slave)
 
