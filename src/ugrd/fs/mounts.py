@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.16.0'
+__version__ = '4.16.1'
 
 from pathlib import Path
 from zenlib.util import contains, pretty_print
@@ -337,14 +337,14 @@ def _autodetect_dm(self, mountpoint, device=None) -> None:
 
     for name, info in self['_dm_info'].items():
         if info['major'] == str(major) and info['minor'] == str(minor):
-            dm_num = name
+            dev_name = name
             break
     else:
         raise RuntimeError("[%s] Unable to find device mapper device with maj: %s min: %s" % (source_device, major, minor))
 
-    if len(self._dm_info[dm_num]['slaves']) == 0:
+    if len(self._dm_info[dev_name]['slaves']) == 0:
         raise RuntimeError("No slaves found for device mapper device, unknown type: %s" % source_device.name)
-    slave_source = self._dm_info[dm_num]['slaves'][0]
+    slave_source = self._dm_info[dev_name]['slaves'][0]
 
     try:
         dm_info = self['_blkid_info'][f"/dev/{slave_source}"]
@@ -353,20 +353,20 @@ def _autodetect_dm(self, mountpoint, device=None) -> None:
             dm_info = self['_blkid_info'][f"/dev/mapper/{self._dm_info[slave_source]['name']}"]
         else:
             raise KeyError("Unable to find blkid info for device mapper slave: %s" % slave_source)
-    if source_device.name != self._dm_info[dm_num]['name'] and source_device.name != dm_num:
-        raise ValueError("Device mapper device name mismatch: %s != %s" % (source_device.name, self._dm_info[dm_num]['name']))
+    if source_device.name != self._dm_info[dev_name]['name'] and source_device.name != dev_name:
+        raise ValueError("Device mapper device name mismatch: %s != %s" % (source_device.name, self._dm_info[dev_name]['name']))
 
-    self.logger.debug("[%s] Device mapper info: %s\nDevice config: %s" % (source_device.name, self._dm_info[dm_num], dm_info))
+    self.logger.debug("[%s] Device mapper info: %s\nDevice config: %s" % (source_device.name, self._dm_info[dev_name], dm_info))
     if dm_info.get('type') == 'crypto_LUKS' or source_device.name in self.get('cryptsetup', {}):
-        autodetect_luks(self, source_device, dm_num, dm_info)
+        autodetect_luks(self, source_device, dev_name, dm_info)
     elif dm_info.get('type') == 'LVM2_member':
-        autodetect_lvm(self, source_device, dm_num, dm_info)
+        autodetect_lvm(self, source_device, dev_name, dm_info)
     else:
         raise RuntimeError("Unknown device mapper device type: %s" % dm_info.get('type'))
 
     autodetect_mount_kmods(self, slave_source)
 
-    for slave in self._dm_info[dm_num]['slaves']:
+    for slave in self._dm_info[dev_name]['slaves']:
         self.logger.warning(slave)
         try:
             _autodetect_dm(self, mountpoint, f"/dev/{slave}")
