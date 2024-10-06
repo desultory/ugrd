@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.15.5'
+__version__ = '4.15.6'
 
 from pathlib import Path
 from zenlib.util import contains, pretty_print
@@ -274,25 +274,25 @@ def get_virtual_block_info(self) -> dict:
         self.logger.warning("No virtual block devices found, disabling device mapper autodetection.")
         return
 
-    for dm_device in (Path('/sys/devices/virtual/block').iterdir()):
-        if dm_device.name.startswith('dm-') or dm_device.name.startswith('md'):
-            maj, minor = (dm_device / 'dev').read_text().strip().split(':')
-            self['_dm_info'][dm_device.name] = {'major': maj,
-                                                'minor': minor,
-                                                'holders': [holder.name for holder in (dm_device / 'holders').iterdir()],
-                                                'slaves': [slave.name for slave in (dm_device / 'slaves').iterdir()],
-                                                'uuid': (dm_device / 'dm/uuid').read_text().strip()}
-            if uuid := (dm_device / 'dm/uuid').read_text().strip():
-                self['_dm_info'][dm_device.name]['uuid'] = uuid
-            elif uuid := (dm_device / 'md/uuid').read_text().strip():
-                self['_dm_info'][dm_device.name]['uuid'] = uuid
+    for virt_device in (Path('/sys/devices/virtual/block').iterdir()):
+        if virt_device.name.startswith('dm-') or virt_device.name.startswith('md'):
+            maj, minor = (virt_device / 'dev').read_text().strip().split(':')
+            self['_dm_info'][virt_device.name] = {'major': maj,
+                                                  'minor': minor,
+                                                  'holders': [holder.name for holder in (virt_device / 'holders').iterdir()],
+                                                  'slaves': [slave.name for slave in (virt_device / 'slaves').iterdir()],
+                                                  'uuid': (virt_device / 'dm/uuid').read_text().strip()}
+            if (virt_device / 'dm').exists():
+                self['_dm_info'][virt_device.name]['name'] = (virt_device / 'dm/name').read_text().strip()
+            elif (virt_device / 'md').exists():
+                self['_dm_info'][virt_device.name]['name'] = (virt_device / 'md/name').read_text().strip()
             else:
-                raise ValueError("Failed to get virtual device uuid: %s" % dm_device.name)
+                raise ValueError("Failed to get virtual device name: %s" % virt_device.name)
 
             try:
-                self['_dm_info'][dm_device.name]['name'] = (dm_device / 'dm/name').read_text().strip()
+                self['_dm_info'][virt_device.name]['name'] = (virt_device / 'dm/name').read_text().strip()
             except FileNotFoundError:
-                self.logger.warning("No device mapper name found for: %s" % dm_device.name)
+                self.logger.warning("No device mapper name found for: %s" % virt_device.name)
 
     if self['_dm_info']:
         self.logger.info("Found virtual block devices: %s" % ', '.join(self['_dm_info'].keys()))
