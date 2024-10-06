@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.15.3'
+__version__ = '4.15.4'
 
 from pathlib import Path
 from zenlib.util import contains, pretty_print
@@ -277,12 +277,16 @@ def get_dm_info(self) -> dict:
     for dm_device in (Path('/sys/devices/virtual/block').iterdir()):
         if dm_device.name.startswith('dm-') or dm_device.name.startswith('md'):
             maj, minor = (dm_device / 'dev').read_text().strip().split(':')
-            self['_dm_info'][dm_device.name] = {'name': (dm_device / 'dm/name').read_text().strip(),
-                                                'major': maj,
+            self['_dm_info'][dm_device.name] = {'major': maj,
                                                 'minor': minor,
                                                 'holders': [holder.name for holder in (dm_device / 'holders').iterdir()],
                                                 'slaves': [slave.name for slave in (dm_device / 'slaves').iterdir()],
                                                 'uuid': (dm_device / 'dm/uuid').read_text().strip()}
+            try:
+                self['_dm_info'][dm_device.name]['name'] = (dm_device / 'dm/name').read_text().strip()
+            except FileNotFoundError:
+                self.logger.warning("No device mapper name found for: %s" % dm_device.name)
+
     if self['_dm_info']:
         self.logger.info("Found device mapper devices: %s" % ', '.join(self['_dm_info'].keys()))
         self.logger.debug("Device mapper info: %s" % pretty_print(self['_dm_info']))
