@@ -329,10 +329,11 @@ def _autodetect_dm(self, mountpoint, device=None) -> None:
     device_name = source_device.split('/')[-1]
     if source_device not in self['_blkid_info']:
         if device_name in self['_dm_info']:
-            if f'/dev/{device_name}' in self['_blkid_info']:
-                source_device = f'/dev/{device_name}'
-            elif f'/dev/mapper/{device_name}' in self['_blkid_info']:
-                source_device = f'/dev/mapper/{device_name}'
+            source_name = self['_dm_info'][device_name]['name']
+            if f'/dev/{source_name}' in self['_blkid_info']:
+                source_device = f'/dev/{source_name}'
+            elif f'/dev/mapper/{source_name}' in self['_blkid_info']:
+                source_device = f'/dev/mapper/{source_name}'
             elif not get_blkid_info(self, source_device):
                 raise FileNotFoundError("[%s] No blkid info for virtual device: %s" % (mountpoint, source_device))
         else:
