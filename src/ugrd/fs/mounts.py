@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.15.2'
+__version__ = '4.15.3'
 
 from pathlib import Path
 from zenlib.util import contains, pretty_print
@@ -275,7 +275,7 @@ def get_dm_info(self) -> dict:
         return
 
     for dm_device in (Path('/sys/devices/virtual/block').iterdir()):
-        if dm_device.name.startswith('dm-'):
+        if dm_device.name.startswith('dm-') or dm_device.name.startswith('md'):
             maj, minor = (dm_device / 'dev').read_text().strip().split(':')
             self['_dm_info'][dm_device.name] = {'name': (dm_device / 'dm/name').read_text().strip(),
                                                 'major': maj,
