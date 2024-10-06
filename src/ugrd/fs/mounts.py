@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.15.7'
+__version__ = '4.16.0'
 
 from pathlib import Path
 from zenlib.util import contains, pretty_print
@@ -307,26 +307,30 @@ def _get_device_id(device: str) -> str:
 
 
 @contains('hostonly', "Skipping device mapper autodetection, hostonly mode is disabled.", log_level=30)
-def _autodetect_dm(self, mountpoint) -> None:
+def _autodetect_dm(self, mountpoint, device=None) -> None:
     """
     Autodetects device mapper config given a mountpoint.
+    Uses the passed device if the mountpoint is not found in self['_mounts'], and is passed.
     Ensures it's a device mapper mount, then autodetects the mount type.
 
     Adds kmods to the autodetect list based on the mount source.
     """
-    if mountpoint in self['_mounts']:
+    if device:
+        self.logger.debug("[%s] Using provided device for mount autodetection: %s" % (mountpoint, device))
+        source_device = device
+    elif mountpoint in self['_mounts']:
         source_device = self['_mounts'][mountpoint]['device']
     else:
-        source_device = "/dev/mapper/" + self['_dm_info'][mountpoint.split('/')[-1]]['name']
+        raise FileNotFoundError("Mountpoint not found in host mounts: %s" % mountpoint)
 
-    if not source_device or source_device not in self['_blkid_info']:
-        raise FileNotFoundError("[%s] No blkdid info for dm device: %s" % (mountpoint, source_device))
-
-    if not source_device.startswith('/dev/mapper') and not source_device.startswith('/dev/dm-'):
+    if not any(source_device.startswith(prefix) for prefix in ['/dev/mapper', '/dev/dm-', '/dev/md']):
         self.logger.debug("Mount is not a device mapper mount: %s" % source_device)
         return
 
-    self.logger.info("Detected a device mapper mount: %s" % source_device)
+    if source_device not in self['_blkid_info']:
+        raise FileNotFoundError("[%s] No blkdid info for virtual device: %s" % (mountpoint, source_device))
+
+    self.logger.info("[%s] Detected virtual block device: %s" % (mountpoint, source_device))
     source_device = Path(source_device)
     major, minor = _get_device_id(source_device)
     self.logger.debug("[%s] Major: %s, Minor: %s" % (source_device, major, minor))
@@ -363,8 +367,9 @@ def _autodetect_dm(self, mountpoint) -> None:
     autodetect_mount_kmods(self, slave_source)
 
     for slave in self._dm_info[dm_num]['slaves']:
+        self.logger.warning(slave)
         try:
-            _autodetect_dm(self, '/dev/' + slave)
+            _autodetect_dm(self, mountpoint, f"/dev/{slave}")
             self.logger.info("[%s] Autodetected device mapper container: %s" % (source_device.name, slave))
         except KeyError:
             self.logger.debug("Slave does not appear to be a DM device: %s" % slave)
