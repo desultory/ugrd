@@ -311,9 +311,11 @@ def _get_device_id(device: str) -> str:
 def _autodetect_dm(self, mountpoint, device=None) -> None:
     """
     Autodetects device mapper config given a mountpoint.
-    Uses the passed device if the mountpoint is not found in self['_mounts'], and is passed.
-    Ensures it's a device mapper mount, then autodetects the mount type.
+    Uses the mountpouint from self['_mounts'], raises an error if not found.
+    Uses the device path if passed.
+    Attempts to get the device info from blkid based on the device path.
 
+    Ensures it's a device mapper mount, then autodetects the mount type.
     Adds kmods to the autodetect list based on the mount source.
     """
     if device:
@@ -377,9 +379,8 @@ def _autodetect_dm(self, mountpoint, device=None) -> None:
     autodetect_mount_kmods(self, slave_source)
 
     for slave in self._dm_info[dev_name]['slaves']:
-        self.logger.warning(slave)
         try:
-            _autodetect_dm(self, mountpoint, f"/dev/{slave}")
+            _autodetect_dm(self, mountpoint, slave)  # Just pass the slave device name, as it will be re-detected
             self.logger.info("[%s] Autodetected device mapper container: %s" % (source_device.name, slave))
         except KeyError:
             self.logger.debug("Slave does not appear to be a DM device: %s" % slave)
