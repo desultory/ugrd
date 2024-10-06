@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.15.4'
+__version__ = '4.15.5'
 
 from pathlib import Path
 from zenlib.util import contains, pretty_print
@@ -260,13 +260,13 @@ def autodetect_init_mount(self, parent=None) -> None:
     autodetect_init_mount(self, parent.parent)
 
 
-def get_dm_info(self) -> dict:
+def get_virtual_block_info(self) -> dict:
     """
-    Populates the device mapper info.
+    Populates the virtual block device info. (previously device mapper only)
     Disables device mapper autodetection if no virtual block devices are found.
     """
     if self.get('_dm_info'):
-        self.logger.debug("Device mapper info already set.")
+        self.logger.debug("Virtual device info already set.")
         return
 
     if not Path('/sys/devices/virtual/block').exists():
@@ -282,16 +282,23 @@ def get_dm_info(self) -> dict:
                                                 'holders': [holder.name for holder in (dm_device / 'holders').iterdir()],
                                                 'slaves': [slave.name for slave in (dm_device / 'slaves').iterdir()],
                                                 'uuid': (dm_device / 'dm/uuid').read_text().strip()}
+            if uuid := (dm_device / 'dm/uuid').read_text().strip():
+                self['_dm_info'][dm_device.name]['uuid'] = uuid
+            elif uuid := (dm_device / 'md/uuid').read_text().strip():
+                self['_dm_info'][dm_device.name]['uuid'] = uuid
+            else:
+                raise ValueError("Failed to get virtual device uuid: %s" % dm_device.name)
+
             try:
                 self['_dm_info'][dm_device.name]['name'] = (dm_device / 'dm/name').read_text().strip()
             except FileNotFoundError:
                 self.logger.warning("No device mapper name found for: %s" % dm_device.name)
 
     if self['_dm_info']:
-        self.logger.info("Found device mapper devices: %s" % ', '.join(self['_dm_info'].keys()))
-        self.logger.debug("Device mapper info: %s" % pretty_print(self['_dm_info']))
+        self.logger.info("Found virtual block devices: %s" % ', '.join(self['_dm_info'].keys()))
+        self.logger.debug("Virtual block device info: %s" % pretty_print(self['_dm_info']))
     else:
-        self.logger.debug("No device mapper devices found.")
+        self.logger.debug("No virtual block devices found.")
 
 
 def _get_device_id(device: str) -> str:
