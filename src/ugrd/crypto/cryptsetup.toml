@@ -1,5 +1,3 @@
-modules = ['ugrd.base.base']
-
 binaries = [ "cryptsetup" ]
 
 kmod_init = [ "dm_crypt" ]
