@@ -354,7 +354,7 @@ def _autodetect_dm(self, mountpoint) -> None:
     for slave in self._dm_info[dm_num]['slaves']:
         try:
             _autodetect_dm(self, '/dev/' + slave)
-            self.logger.ingo("[%s] Autodetected device mapper container: %s" % (source_device.name, slave))
+            self.logger.info("[%s] Autodetected device mapper container: %s" % (source_device.name, slave))
         except KeyError:
             self.logger.debug("Slave does not appear to be a DM device: %s" % slave)
 
