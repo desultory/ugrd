@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.16.0'
+__version__ = '2.16.1'
 
 from pathlib import Path
 from subprocess import run
@@ -290,6 +290,11 @@ def process_modules(self) -> None:
             _process_kmod_dependencies(self, kmod)
             continue
         except BuiltinModuleError:
+            if kmod in self['kmod_init']:
+                self.logger.debug("Removing built-in module from kmod_init: %s" % kmod)
+                self['kmod_init'].remove(kmod)
+            self.logger.debug("Removing built-in module from kernel_modules: %s" % kmod)
+            self['kernel_modules'].remove(kmod)
             continue  # Don't add built-in modules to the ignore list
         except IgnoredModuleError as e:
             self.logger.info(e)
