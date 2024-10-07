@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.6.0'
+__version__ = '2.6.1'
 
 from zenlib.util import contains
 
@@ -133,9 +133,9 @@ def _validate_cryptsetup_device(self, mapped_name) -> None:
     blkid information, and cryptsetup information.
     Uses `cryptsetup luksDump` to check that the device is a LUKS device.
     """
-    for _dm_info in self['_dm_info'].values():
-        if _dm_info['name'] == mapped_name:
-            dm_info = _dm_info  # Get the device mapper information
+    for device_info in self['_vblk_info'].values():
+        if device_info['name'] == mapped_name:
+            dm_info = device_info  # Get the device mapper information
             break
     else:
         raise ValueError("No device mapper information found for: %s" % mapped_name)
