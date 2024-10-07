@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.9.0'
+__version__ = '4.9.1'
 
 from importlib.metadata import version
 from pathlib import Path
@@ -52,8 +52,14 @@ def _find_init(self) -> str:
             'return 1']
 
 
+def set_loglevel(self) -> list[str]:
+    """ Returns bash to set the log level. """
+    self['exports']['loglevel'] = self['loglevel']
+    return 'readvar loglevel > /proc/sys/kernel/printk'
+
+
 @contains('init_target', 'init_target must be set.', raise_exception=True)
-def do_switch_root(self) -> str:
+def do_switch_root(self) -> list[str]:
     """
     Should be the final statement, switches root.
     Checks if the root mount is mounted and that it contains an init.

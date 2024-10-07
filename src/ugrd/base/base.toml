@@ -9,6 +9,7 @@ binaries = [ "awk", "grep", "ls", "cp", "cat", "switch_root" ]
 
 paths = [ "root" ]
 
+loglevel = 5
 shebang = "#!/bin/bash -l"
 autodetect_init = true
 
@@ -17,6 +18,9 @@ autodetect_init = true
 
 [imports.build_pre]
 "ugrd.base.base" = [ "autodetect_init" ]
+
+[imports.init_early]
+"ugrd.base.base" = [ "set_loglevel" ]
 
 [imports.init_final]
 "ugrd.base.base" = [ "do_switch_root" ]
@@ -29,4 +33,5 @@ autodetect_init = true
 [custom_parameters]
 init_target = "Path"  # Specifies the location of the system init file
 autodetect_init = "bool"  # If set to true, the init_target will be autodetected based on the system's init system
+loglevel = "int"  # Set the kernel log level at /proc/sys/kernel/printk
 shebang = "str"  # Add the shebang property, used because this is a bash script
