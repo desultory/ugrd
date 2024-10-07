@@ -357,21 +357,21 @@ def _autodetect_dm(self, mountpoint, device=None) -> None:
     else:
         raise RuntimeError("[%s] Unable to find device mapper device with maj: %s min: %s" % (source_device, major, minor))
 
-    if len(self._dm_info[dev_name]['slaves']) == 0:
+    if len(self['_dm_info'][dev_name]['slaves']) == 0:
         raise RuntimeError("No slaves found for device mapper device, unknown type: %s" % source_device.name)
-    slave_source = self._dm_info[dev_name]['slaves'][0]
+    slave_source = self['_dm_info'][dev_name]['slaves'][0]
 
     try:
         blkid_info = self['_blkid_info'][f"/dev/{slave_source}"]
     except KeyError:
         if slave_source in self['_dm_info']:
-            blkid_info = self['_blkid_info'][f"/dev/mapper/{self._dm_info[slave_source]['name']}"]
+            blkid_info = self['_blkid_info'][f"/dev/mapper/{self['_dm_info'][slave_source]['name']}"]
         else:
             raise KeyError("Unable to find blkid info for device mapper slave: %s" % slave_source)
-    if source_device.name != self._dm_info[dev_name]['name'] and source_device.name != dev_name:
-        raise ValueError("Device mapper device name mismatch: %s != %s" % (source_device.name, self._dm_info[dev_name]['name']))
+    if source_device.name != self['_dm_info'][dev_name]['name'] and source_device.name != dev_name:
+        raise ValueError("Device mapper device name mismatch: %s != %s" % (source_device.name, self['_dm_info'][dev_name]['name']))
 
-    self.logger.debug("[%s] Device mapper info: %s\nDevice config: %s" % (source_device.name, self._dm_info[dev_name], blkid_info))
+    self.logger.debug("[%s] Device mapper info: %s\nDevice config: %s" % (source_device.name, self['_dm_info'][dev_name], blkid_info))
     if blkid_info.get('type') == 'crypto_LUKS' or source_device.name in self.get('cryptsetup', {}):
         autodetect_luks(self, source_device, dev_name, blkid_info)
     elif blkid_info.get('type') == 'LVM2_member':
@@ -383,7 +383,7 @@ def _autodetect_dm(self, mountpoint, device=None) -> None:
 
     autodetect_mount_kmods(self, slave_source)
 
-    for slave in self._dm_info[dev_name]['slaves']:
+    for slave in self['_dm_info'][dev_name]['slaves']:
         try:
             _autodetect_dm(self, mountpoint, slave)  # Just pass the slave device name, as it will be re-detected
             self.logger.info("[%s] Autodetected device mapper container: %s" % (source_device.name, slave))
@@ -402,7 +402,7 @@ def autodetect_raid(self, mount_loc, dm_name, blkid_info) -> None:
         self.logger.info("Autodetected MDRAID mount, enabling the mdraid module.")
         self['modules'] = 'ugrd.fs.mdraid'
 
-    if level := self._dm_info[dm_name].get('level'):
+    if level := self['_dm_info'][dm_name].get('level'):
         self.logger.info("[%s] MDRAID level: %s" % (mount_loc.name, level))
         self['_kmod_auto'] = level
     else:
@@ -425,7 +425,7 @@ def autodetect_lvm(self, mount_loc, dm_num, blkid_info) -> None:
 
     if uuid := blkid_info.get('uuid'):
         self.logger.info("[%s] LVM volume contianer uuid: %s" % (mount_loc.name, uuid))
-        self['lvm'] = {self._dm_info[dm_num]['name']: {'uuid': uuid}}
+        self['lvm'] = {self['_dm_info'][dm_num]['name']: {'uuid': uuid}}
     else:
         raise ValueError("Failed to autodetect LVM volume uuid: %s" % mount_loc.name)
 
@@ -438,12 +438,12 @@ def autodetect_luks(self, mount_loc, dm_num, blkid_info) -> None:
         self.logger.info("Autodetected LUKS mount, enabling the cryptsetup module: %s" % mount_loc.name)
         self['modules'] = 'ugrd.crypto.cryptsetup'
 
-    if 'cryptsetup' in self and any(mount_type in self['cryptsetup'].get(self._dm_info[dm_num]['name'], []) for mount_type in SOURCE_TYPES):
-        self.logger.warning("Skipping LUKS autodetection, cryptsetup config already set: %s" % self['cryptsetup'][self._dm_info[dm_num]['name']])
+    if 'cryptsetup' in self and any(mount_type in self['cryptsetup'].get(self['_dm_info'][dm_num]['name'], []) for mount_type in SOURCE_TYPES):
+        self.logger.warning("Skipping LUKS autodetection, cryptsetup config already set: %s" % self['cryptsetup'][self['_dm_info'][dm_num]['name']])
         return
 
-    if len(self._dm_info[dm_num]['slaves']) > 1:
-        self.logger.error("Device mapper slaves: %s" % self._dm_info[dm_num]['slaves'])
+    if len(self['_dm_info'][dm_num]['slaves']) > 1:
+        self.logger.error("Device mapper slaves: %s" % self['_dm_info'][dm_num]['slaves'])
         raise RuntimeError("Multiple slaves found for device mapper device, unknown type: %s" % mount_loc.name)
 
     dm_type = blkid_info.get('type')
@@ -452,18 +452,18 @@ def autodetect_luks(self, mount_loc, dm_num, blkid_info) -> None:
             if not self['cryptsetup'][mount_loc.name].get('header_file'):
                 raise ValueError("[%s] Unknown LUKS mount type: %s" % (mount_loc.name, dm_type))
         else:  # If there is some uuid and it's not LUKS, that's a problem
-            raise RuntimeError("[%s] Unknown device mapper slave type: %s" % (self._dm_info[dm_num]['slaves'][0], dm_type))
+            raise RuntimeError("[%s] Unknown device mapper slave type: %s" % (self['_dm_info'][dm_num]['slaves'][0], dm_type))
 
     # Configure cryptsetup based on the LUKS mount
     if uuid := blkid_info.get('uuid'):
         self.logger.info("[%s] LUKS volume uuid: %s" % (mount_loc.name, uuid))
-        self['cryptsetup'] = {self._dm_info[dm_num]['name']: {'uuid': uuid}}
+        self['cryptsetup'] = {self['_dm_info'][dm_num]['name']: {'uuid': uuid}}
     elif partuuid := blkid_info.get('partuuid'):
         self.logger.info("[%s] LUKS volume partuuid: %s" % (mount_loc.name, partuuid))
-        self['cryptsetup'] = {self._dm_info[dm_num]['name']: {'partuuid': partuuid}}
+        self['cryptsetup'] = {self['_dm_info'][dm_num]['name']: {'partuuid': partuuid}}
 
     self.logger.info("[%s] Configuring cryptsetup for LUKS mount (%s) on: %s\n%s" %
-                     (mount_loc.name, self._dm_info[dm_num]['name'], dm_num, pretty_print(self['cryptsetup'])))
+                     (mount_loc.name, self['_dm_info'][dm_num]['name'], dm_num, pretty_print(self['cryptsetup'])))
 
 
 def _resolve_dev(self, device_path) -> str:
