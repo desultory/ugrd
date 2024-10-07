@@ -47,7 +47,7 @@ minor = 1
 		     "deploy_symlinks" ]
 
 [imports.build_final]
-"ugrd.base.core" = [ "check_usr" ]
+"ugrd.base.core" = [ "handle_usr_symlinks" ]
 
 [custom_parameters]
 hostonly = "bool"  # If true, the initramfs will be built specifically for the host building it

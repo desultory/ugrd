@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '3.7.3'
+__version__ = '3.7.4'
 
 from pathlib import Path
 from typing import Union
@@ -67,9 +67,8 @@ def calculate_dependencies(self, binary: str) -> list[Path]:
     return dependency_paths
 
 
-def check_usr(self) -> None:
-    """ Checks for /bin and /sbin in the build directory.
-    If the are not present, it will symlink them to /usr/bin and /usr/sbin. """
+def handle_usr_symlinks(self) -> None:
+    """ Adds symlinks for /usr/bin and /usr/sbin to /bin and /sbin. """
     build_dir = self._get_build_path('/')
 
     if not (build_dir / 'bin').is_dir():

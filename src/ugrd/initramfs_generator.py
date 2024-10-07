@@ -30,7 +30,6 @@ class InitramfsGenerator(GeneratorHelpers):
             self.logger.warning("[%s] Config file not found, using the base config." % config)
         except TOMLDecodeError as e:
             raise ValueError("[%s] Error decoding config file: %s" % (config, e))
-        self.config_dict.validate()
 
     def load_config(self, config_filename) -> None:
         """
@@ -76,6 +75,8 @@ class InitramfsGenerator(GeneratorHelpers):
         for hook in self.build_tasks:
             self.logger.debug("Running build hook: %s" % hook)
             self.run_hook(hook, force_exclude=True)
+        self.config_dict.validate()
+
         self.generate_init()
         self.run_hook('build_final')
         self.pack_build()
