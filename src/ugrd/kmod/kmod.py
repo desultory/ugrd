@@ -1,33 +1,14 @@
 __author__ = 'desultory'
-__version__ = '2.15.1'
+__version__ = '2.16.0'
 
 from pathlib import Path
 from subprocess import run
-from typing import Union
 
 from zenlib.util import contains, unset
+from ugrd.kmod import _normalize_kmod_name, BuiltinModuleError, DependencyResolutionError, IgnoredModuleError
 
 
 MODULE_METADATA_FILES = ['modules.order', 'modules.builtin', 'modules.builtin.modinfo']
-
-
-def _normalize_kmod_name(module: Union[str, list]) -> str:
-    """ Replaces -'s with _'s in a kernel module name. """
-    if isinstance(module, list) and not isinstance(module, str):
-        return [_normalize_kmod_name(m) for m in module]
-    return module.replace('-', '_')
-
-
-class DependencyResolutionError(Exception):
-    pass
-
-
-class BuiltinModuleError(Exception):
-    pass
-
-
-class IgnoredModuleError(Exception):
-    pass
 
 
 def _process_kernel_modules_multi(self, module: str) -> None:
