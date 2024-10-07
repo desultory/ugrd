@@ -26,6 +26,7 @@ The original goal of this project was to create an initramfs suitable for decryp
 * Root mount, using `/proc/mounts`. `root=` and `rootflags=` can be used but are not required.
 * LUKS auto-configuration and validation for the root mount
 * Rootfs LVM, including under LUKS, is auto-mounted
+* MDRAID auto-configuration for the root mount.
 * BTRFS root subvolumes are automatically detected, but can be overridden or `subvol_selector` can be used to select a subvolume at boot time.
 * `/usr` auto-mounting if the init system requires it
 * Auto-detection of kernel modules required by the storage device used by the root filesystem
