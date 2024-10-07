@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.16.5'
+__version__ = '4.16.6'
 
 from pathlib import Path
 from zenlib.util import contains, pretty_print
@@ -286,6 +286,7 @@ def get_virtual_block_info(self) -> dict:
                 self['_dm_info'][virt_device.name]['uuid'] = (virt_device / 'dm/uuid').read_text().strip()
             elif (virt_device / 'md').exists():
                 self['_dm_info'][virt_device.name]['uuid'] = (virt_device / 'md/uuid').read_text().strip()
+                self['_dm_info'][virt_device.name]['level'] = (virt_device / 'md/level').read_text().strip()
             else:
                 raise ValueError("Failed to get virtual device name: %s" % virt_device.name)
 
@@ -394,10 +395,15 @@ def _autodetect_dm(self, mountpoint, device=None) -> None:
 @contains('autodetect_root_raid', "Skipping RAID autodetection, autodetect_root_raid is disabled.", log_level=30)
 @contains('hostonly', "Skipping RAID autodetection, hostonly mode is disabled.", log_level=30)
 def autodetect_raid(self, mount_loc, dm_num, dm_info) -> None:
-    """ Autodetects MD RAID mounts and sets the raid config. """
+    """
+    Autodetects MD RAID mounts and sets the raid config.
+    Adds kmods for the raid level to the autodetect list.
+    """
     if 'ugrd.fs.raid' not in self['modules']:
         self.logger.info("Autodetected MDRAID mount, enabling the mdraid module.")
         self['modules'] = 'ugrd.fs.mdraid'
+
+    self['_kmod_auto'] = dm_info['level']
 
 
 @contains('autodetect_root_dm', "Skipping device mapper autodetection, autodetect_root_dm is disabled.", log_level=30)
@@ -666,6 +672,8 @@ def resolve_blkdev_kmod(self, device) -> list[str]:
         return ['mmc_block']
     elif device_name.startswith('sr'):
         return ['sr_mod']
+    elif device_name.startswith('md'):
+        return ['md_mod']
     else:
         self.logger.error("[%s] Unable to determine kernel module for block device: %s" % (device_name, device))
         return []
