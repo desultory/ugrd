@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.17.0'
+__version__ = '4.17.1'
 
 from pathlib import Path
 from zenlib.util import contains, pretty_print
@@ -393,7 +393,7 @@ def _autodetect_dm(self, mountpoint, device=None) -> None:
 
 @contains('autodetect_root_raid', "Skipping RAID autodetection, autodetect_root_raid is disabled.", log_level=30)
 @contains('hostonly', "Skipping RAID autodetection, hostonly mode is disabled.", log_level=30)
-def autodetect_raid(self, mount_loc, dm_num, dm_info) -> None:
+def autodetect_raid(self, mount_loc, dm_name, dm_info) -> None:
     """
     Autodetects MD RAID mounts and sets the raid config.
     Adds kmods for the raid level to the autodetect list.
@@ -402,7 +402,11 @@ def autodetect_raid(self, mount_loc, dm_num, dm_info) -> None:
         self.logger.info("Autodetected MDRAID mount, enabling the mdraid module.")
         self['modules'] = 'ugrd.fs.mdraid'
 
-    self['_kmod_auto'] = dm_info['level']
+    if level := dm_info.get('level'):
+        self.logger.info("[%s] MDRAID level: %s" % (mount_loc.name, level))
+        self['_kmod_auto'] = level
+    else:
+        raise ValueError("[%s] Failed to autodetect MDRAID level: %s" % (dm_name, dm_info))
 
 
 @contains('autodetect_root_dm', "Skipping device mapper autodetection, autodetect_root_dm is disabled.", log_level=30)
