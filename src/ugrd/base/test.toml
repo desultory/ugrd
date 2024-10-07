@@ -27,4 +27,3 @@ test_flag = "str"  # Define the success flag for the test
 test_rootfs_name = "str"  # Define the name of the rootfs image
 test_rootfs_build_dir = "Path"  # Define the build directory for the rootfs image
 qemu_bool_args = "NoDupFlatList"  # Define the qemu boolean arguments
-_qemu_cmd = "str"  # Define the qemu command to use for the test
