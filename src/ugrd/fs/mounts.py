@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.17.2'
+__version__ = '4.18.0'
 
 from pathlib import Path
 from zenlib.util import contains, pretty_print
@@ -266,7 +266,7 @@ def get_virtual_block_info(self) -> dict:
     Populates the virtual block device info. (previously device mapper only)
     Disables device mapper autodetection if no virtual block devices are found.
     """
-    if self.get('_dm_info'):
+    if self.get('_vblk_info'):
         self.logger.debug("Virtual device info already set.")
         return
 
@@ -278,27 +278,27 @@ def get_virtual_block_info(self) -> dict:
     for virt_device in (Path('/sys/devices/virtual/block').iterdir()):
         if virt_device.name.startswith('dm-') or virt_device.name.startswith('md'):
             maj, minor = (virt_device / 'dev').read_text().strip().split(':')
-            self['_dm_info'][virt_device.name] = {'major': maj,
-                                                  'minor': minor,
-                                                  'holders': [holder.name for holder in (virt_device / 'holders').iterdir()],
-                                                  'slaves': [slave.name for slave in (virt_device / 'slaves').iterdir()]}
+            self['_vblk_info'][virt_device.name] = {'major': maj,
+                                                    'minor': minor,
+                                                    'holders': [holder.name for holder in (virt_device / 'holders').iterdir()],
+                                                    'slaves': [slave.name for slave in (virt_device / 'slaves').iterdir()]}
             if (virt_device / 'dm').exists():
-                self['_dm_info'][virt_device.name]['uuid'] = (virt_device / 'dm/uuid').read_text().strip()
+                self['_vblk_info'][virt_device.name]['uuid'] = (virt_device / 'dm/uuid').read_text().strip()
             elif (virt_device / 'md').exists():
-                self['_dm_info'][virt_device.name]['uuid'] = (virt_device / 'md/uuid').read_text().strip()
-                self['_dm_info'][virt_device.name]['level'] = (virt_device / 'md/level').read_text().strip()
+                self['_vblk_info'][virt_device.name]['uuid'] = (virt_device / 'md/uuid').read_text().strip()
+                self['_vblk_info'][virt_device.name]['level'] = (virt_device / 'md/level').read_text().strip()
             else:
                 raise ValueError("Failed to get virtual device name: %s" % virt_device.name)
 
             try:
-                self['_dm_info'][virt_device.name]['name'] = (virt_device / 'dm/name').read_text().strip()
+                self['_vblk_info'][virt_device.name]['name'] = (virt_device / 'dm/name').read_text().strip()
             except FileNotFoundError:
                 self.logger.warning("No device mapper name found for: %s" % virt_device.name)
-                self['_dm_info'][virt_device.name]['name'] = virt_device.name  # we can pretend
+                self['_vblk_info'][virt_device.name]['name'] = virt_device.name  # we can pretend
 
-    if self['_dm_info']:
-        self.logger.info("Found virtual block devices: %s" % ', '.join(self['_dm_info'].keys()))
-        self.logger.debug("Virtual block device info: %s" % pretty_print(self['_dm_info']))
+    if self['_vblk_info']:
+        self.logger.info("Found virtual block devices: %s" % ', '.join(self['_vblk_info'].keys()))
+        self.logger.debug("Virtual block device info: %s" % pretty_print(self['_vblk_info']))
     else:
         self.logger.debug("No virtual block devices found.")
 
@@ -334,8 +334,8 @@ def _autodetect_dm(self, mountpoint, device=None) -> None:
             return
 
     if source_device not in self['_blkid_info']:
-        if device_name in self['_dm_info']:
-            source_name = self['_dm_info'][device_name]['name']
+        if device_name in self['_vblk_info']:
+            source_name = self['_vblk_info'][device_name]['name']
             if f'/dev/{source_name}' in self['_blkid_info']:
                 source_device = f'/dev/{source_name}'
             elif f'/dev/mapper/{source_name}' in self['_blkid_info']:
@@ -350,28 +350,28 @@ def _autodetect_dm(self, mountpoint, device=None) -> None:
     major, minor = _get_device_id(source_device)
     self.logger.debug("[%s] Major: %s, Minor: %s" % (source_device, major, minor))
 
-    for name, info in self['_dm_info'].items():
+    for name, info in self['_vblk_info'].items():
         if info['major'] == str(major) and info['minor'] == str(minor):
             dev_name = name
             break
     else:
         raise RuntimeError("[%s] Unable to find device mapper device with maj: %s min: %s" % (source_device, major, minor))
 
-    if len(self['_dm_info'][dev_name]['slaves']) == 0:
+    if len(self['_vblk_info'][dev_name]['slaves']) == 0:
         raise RuntimeError("No slaves found for device mapper device, unknown type: %s" % source_device.name)
-    slave_source = self['_dm_info'][dev_name]['slaves'][0]
+    slave_source = self['_vblk_info'][dev_name]['slaves'][0]
 
     try:
         blkid_info = self['_blkid_info'][f"/dev/{slave_source}"]
     except KeyError:
-        if slave_source in self['_dm_info']:
-            blkid_info = self['_blkid_info'][f"/dev/mapper/{self['_dm_info'][slave_source]['name']}"]
+        if slave_source in self['_vblk_info']:
+            blkid_info = self['_blkid_info'][f"/dev/mapper/{self['_vblk_info'][slave_source]['name']}"]
         else:
             raise KeyError("Unable to find blkid info for device mapper slave: %s" % slave_source)
-    if source_device.name != self['_dm_info'][dev_name]['name'] and source_device.name != dev_name:
-        raise ValueError("Device mapper device name mismatch: %s != %s" % (source_device.name, self['_dm_info'][dev_name]['name']))
+    if source_device.name != self['_vblk_info'][dev_name]['name'] and source_device.name != dev_name:
+        raise ValueError("Device mapper device name mismatch: %s != %s" % (source_device.name, self['_vblk_info'][dev_name]['name']))
 
-    self.logger.debug("[%s] Device mapper info: %s\nDevice config: %s" % (source_device.name, self['_dm_info'][dev_name], blkid_info))
+    self.logger.debug("[%s] Device mapper info: %s\nDevice config: %s" % (source_device.name, self['_vblk_info'][dev_name], blkid_info))
     if blkid_info.get('type') == 'crypto_LUKS' or source_device.name in self.get('cryptsetup', {}):
         autodetect_luks(self, source_device, dev_name, blkid_info)
     elif blkid_info.get('type') == 'LVM2_member':
@@ -383,7 +383,7 @@ def _autodetect_dm(self, mountpoint, device=None) -> None:
 
     autodetect_mount_kmods(self, slave_source)
 
-    for slave in self['_dm_info'][dev_name]['slaves']:
+    for slave in self['_vblk_info'][dev_name]['slaves']:
         try:
             _autodetect_dm(self, mountpoint, slave)  # Just pass the slave device name, as it will be re-detected
             self.logger.info("[%s] Autodetected device mapper container: %s" % (source_device.name, slave))
@@ -402,7 +402,7 @@ def autodetect_raid(self, mount_loc, dm_name, blkid_info) -> None:
         self.logger.info("Autodetected MDRAID mount, enabling the mdraid module.")
         self['modules'] = 'ugrd.fs.mdraid'
 
-    if level := self['_dm_info'][dm_name].get('level'):
+    if level := self['_vblk_info'][dm_name].get('level'):
         self.logger.info("[%s] MDRAID level: %s" % (mount_loc.name, level))
         self['_kmod_auto'] = level
     else:
@@ -425,7 +425,7 @@ def autodetect_lvm(self, mount_loc, dm_num, blkid_info) -> None:
 
     if uuid := blkid_info.get('uuid'):
         self.logger.info("[%s] LVM volume contianer uuid: %s" % (mount_loc.name, uuid))
-        self['lvm'] = {self['_dm_info'][dm_num]['name']: {'uuid': uuid}}
+        self['lvm'] = {self['_vblk_info'][dm_num]['name']: {'uuid': uuid}}
     else:
         raise ValueError("Failed to autodetect LVM volume uuid: %s" % mount_loc.name)
 
@@ -438,12 +438,12 @@ def autodetect_luks(self, mount_loc, dm_num, blkid_info) -> None:
         self.logger.info("Autodetected LUKS mount, enabling the cryptsetup module: %s" % mount_loc.name)
         self['modules'] = 'ugrd.crypto.cryptsetup'
 
-    if 'cryptsetup' in self and any(mount_type in self['cryptsetup'].get(self['_dm_info'][dm_num]['name'], []) for mount_type in SOURCE_TYPES):
-        self.logger.warning("Skipping LUKS autodetection, cryptsetup config already set: %s" % self['cryptsetup'][self['_dm_info'][dm_num]['name']])
+    if 'cryptsetup' in self and any(mount_type in self['cryptsetup'].get(self['_vblk_info'][dm_num]['name'], []) for mount_type in SOURCE_TYPES):
+        self.logger.warning("Skipping LUKS autodetection, cryptsetup config already set: %s" % self['cryptsetup'][self['_vblk_info'][dm_num]['name']])
         return
 
-    if len(self['_dm_info'][dm_num]['slaves']) > 1:
-        self.logger.error("Device mapper slaves: %s" % self['_dm_info'][dm_num]['slaves'])
+    if len(self['_vblk_info'][dm_num]['slaves']) > 1:
+        self.logger.error("Device mapper slaves: %s" % self['_vblk_info'][dm_num]['slaves'])
         raise RuntimeError("Multiple slaves found for device mapper device, unknown type: %s" % mount_loc.name)
 
     dm_type = blkid_info.get('type')
@@ -452,18 +452,18 @@ def autodetect_luks(self, mount_loc, dm_num, blkid_info) -> None:
             if not self['cryptsetup'][mount_loc.name].get('header_file'):
                 raise ValueError("[%s] Unknown LUKS mount type: %s" % (mount_loc.name, dm_type))
         else:  # If there is some uuid and it's not LUKS, that's a problem
-            raise RuntimeError("[%s] Unknown device mapper slave type: %s" % (self['_dm_info'][dm_num]['slaves'][0], dm_type))
+            raise RuntimeError("[%s] Unknown device mapper slave type: %s" % (self['_vblk_info'][dm_num]['slaves'][0], dm_type))
 
     # Configure cryptsetup based on the LUKS mount
     if uuid := blkid_info.get('uuid'):
         self.logger.info("[%s] LUKS volume uuid: %s" % (mount_loc.name, uuid))
-        self['cryptsetup'] = {self['_dm_info'][dm_num]['name']: {'uuid': uuid}}
+        self['cryptsetup'] = {self['_vblk_info'][dm_num]['name']: {'uuid': uuid}}
     elif partuuid := blkid_info.get('partuuid'):
         self.logger.info("[%s] LUKS volume partuuid: %s" % (mount_loc.name, partuuid))
-        self['cryptsetup'] = {self['_dm_info'][dm_num]['name']: {'partuuid': partuuid}}
+        self['cryptsetup'] = {self['_vblk_info'][dm_num]['name']: {'partuuid': partuuid}}
 
     self.logger.info("[%s] Configuring cryptsetup for LUKS mount (%s) on: %s\n%s" %
-                     (mount_loc.name, self['_dm_info'][dm_num]['name'], dm_num, pretty_print(self['cryptsetup'])))
+                     (mount_loc.name, self['_vblk_info'][dm_num]['name'], dm_num, pretty_print(self['cryptsetup'])))
 
 
 def _resolve_dev(self, device_path) -> str:

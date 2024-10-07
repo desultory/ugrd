@@ -58,7 +58,7 @@ autodetect_root_raid = "bool"  # Whether or not to try to autodetect MDRAID part
 autodetect_init_mount = "bool"  # Adds a late_mount for the init target if it exists under a mount on the host
 resolve_root_dev = "bool"  # Whether or not to attempt resolve the root device source
 _mounts = "dict"  # The mounts information
-_dm_info = "dict"  # The device-mapper information
+_vblk_info = "dict"  # Virtual block device information
 _blkid_info = "dict"  # The blkid information
 
 # Define the base of the root mount
