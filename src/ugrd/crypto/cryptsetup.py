@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.5.8'
+__version__ = '2.6.0'
 
 from zenlib.util import contains
 
@@ -248,10 +248,8 @@ def get_crypt_dev(self) -> list[str]:
             '    source_dev=$(blkid --match-token "$source_token" --output device)',
             '    if [ -n "$source_dev" ]; then',
             '        echo -n "$source_dev"',
-            '        return',
             '    fi',
-            'fi',
-            'rd_fail "Failed to resolve device source for cryptsetup mount: $1"']
+            'fi']
 
 
 def open_crypt_device(self, name: str, parameters: dict) -> list[str]:
@@ -284,8 +282,14 @@ def open_crypt_device(self, name: str, parameters: dict) -> list[str]:
         cryptsetup_command += ' --allow-discards'
         self.logger.warning("Using --allow-discards can be a security risk.")
 
+    # Resolve the device source using get_crypt_dev, if no source is returned, run rd_fail
+    out += [f'crypt_dev="$(get_crypt_dev {name})"',
+            'if [ -z "$crypt_dev" ]; then',
+            f'    rd_fail "Failed to resolve device source for cryptsetup mount: {name}"',
+            'fi']
+
     # Add the variable for the source device and mapped name
-    cryptsetup_command += f' "$(get_crypt_dev {name})" {name}'
+    cryptsetup_command += f' "$crypt_dev" {name}'
 
     # Check if the device was successfully opened
     out += [f'    if {cryptsetup_command}; then',
