@@ -1,4 +1,4 @@
-__version__ = "0.5.4"
+__version__ = "0.6.0"
 
 from zenlib.util import unset
 
@@ -26,30 +26,6 @@ def init_test_vars(self):
         self['test_flag'] = uuid4()
 
 
-def get_qemu_cmd_args(self):
-    """ Gets the qemu command from the configuration """
-    test_initrd = self._archive_out_path
-    test_rootfs = self['_test_rootfs']['_archive_out_path']
-    qemu_args = {'-m': self['test_memory'],
-                 '-cpu': self['test_cpu'],
-                 '-kernel': self['test_kernel'],
-                 '-initrd': test_initrd,
-                 '-serial': 'mon:stdio',
-                 '-append': self['test_cmdline'],
-                 '-drive': 'file=%s,format=raw' % test_rootfs}
-
-    qemu_bools = [f'-{item}' for item in self['qemu_bool_args']]
-
-    arglist = [f"qemu-system-{self['test_arch']}"] + qemu_bools
-    for key, value in qemu_args.items():
-        arglist.append(key)
-        arglist.append(value)
-
-    self['_qemu_cmd'] = ' '.join(str(arg) for arg in arglist)
-
-    return arglist
-
-
 def make_test_image(self):
     """ Creates a new initramfs generator to creaate the test image """
     from ugrd.initramfs_generator import InitramfsGenerator
@@ -73,14 +49,36 @@ def make_test_image(self):
     self['_test_rootfs'] = target_fs
 
 
+def _get_qemu_cmd_args(self):
+    """ Gets the qemu command from the configuration """
+    test_initrd = self._archive_out_path
+    test_rootfs = self['_test_rootfs']['_archive_out_path']
+    qemu_args = {'-m': self['test_memory'],
+                 '-cpu': self['test_cpu'],
+                 '-kernel': self['test_kernel'],
+                 '-initrd': test_initrd,
+                 '-serial': 'mon:stdio',
+                 '-append': self['test_cmdline'],
+                 '-drive': 'file=%s,format=raw' % test_rootfs}
+
+    qemu_bools = [f'-{item}' for item in self['qemu_bool_args']]
+
+    arglist = [f"qemu-system-{self['test_arch']}"] + qemu_bools
+    for key, value in qemu_args.items():
+        arglist.append(key)
+        arglist.append(value)
+
+    return arglist
+
+
 def test_image(self):
-    qemu_cmd = get_qemu_cmd_args(self)
+    qemu_cmd = _get_qemu_cmd_args(self)
     self.logger.info("Testing initramfs image: %s", self['_archive_out_path'])
     self.logger.debug("Test config:\n%s", self._test_rootfs)
     self.logger.info("Test kernel: %s", self['test_kernel'])
     self.logger.info("Test rootfs: %s", self['_test_rootfs']['_archive_out_path'])
     self.logger.info("Test flag: %s", self['test_flag'])
-    self.logger.info("QEMU command: %s", self['_qemu_cmd'])
+    self.logger.info("QEMU command: %s", ' '.join([str(arg) for arg in qemu_cmd]))
 
     try:
         results = self._run(qemu_cmd, timeout=self['test_timeout'])

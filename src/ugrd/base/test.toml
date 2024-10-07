@@ -12,8 +12,11 @@ qemu_bool_args = ['nographic', 'no-reboot', 'enable-kvm']
 [imports.build_pre]
 "ugrd.base.test" = [ "init_test_vars" ]
 
+[imports.build_tasks]
+"ugrd.base.test" = [ "make_test_image" ]
+
 [imports.tests]
-"ugrd.base.test" = [ "make_test_image", "test_image" ]
+"ugrd.base.test" = [ "test_image" ]
 
 [custom_parameters]
 test_kernel = "Path"  # Define the kernel to use for the test
