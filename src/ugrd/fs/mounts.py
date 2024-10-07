@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.17.1'
+__version__ = '4.17.2'
 
 from pathlib import Path
 from zenlib.util import contains, pretty_print
@@ -362,24 +362,24 @@ def _autodetect_dm(self, mountpoint, device=None) -> None:
     slave_source = self._dm_info[dev_name]['slaves'][0]
 
     try:
-        dm_info = self['_blkid_info'][f"/dev/{slave_source}"]
+        blkid_info = self['_blkid_info'][f"/dev/{slave_source}"]
     except KeyError:
         if slave_source in self['_dm_info']:
-            dm_info = self['_blkid_info'][f"/dev/mapper/{self._dm_info[slave_source]['name']}"]
+            blkid_info = self['_blkid_info'][f"/dev/mapper/{self._dm_info[slave_source]['name']}"]
         else:
             raise KeyError("Unable to find blkid info for device mapper slave: %s" % slave_source)
     if source_device.name != self._dm_info[dev_name]['name'] and source_device.name != dev_name:
         raise ValueError("Device mapper device name mismatch: %s != %s" % (source_device.name, self._dm_info[dev_name]['name']))
 
-    self.logger.debug("[%s] Device mapper info: %s\nDevice config: %s" % (source_device.name, self._dm_info[dev_name], dm_info))
-    if dm_info.get('type') == 'crypto_LUKS' or source_device.name in self.get('cryptsetup', {}):
-        autodetect_luks(self, source_device, dev_name, dm_info)
-    elif dm_info.get('type') == 'LVM2_member':
-        autodetect_lvm(self, source_device, dev_name, dm_info)
-    elif dm_info.get('type') == 'linux_raid_member':
-        autodetect_raid(self, source_device, dev_name, dm_info)
+    self.logger.debug("[%s] Device mapper info: %s\nDevice config: %s" % (source_device.name, self._dm_info[dev_name], blkid_info))
+    if blkid_info.get('type') == 'crypto_LUKS' or source_device.name in self.get('cryptsetup', {}):
+        autodetect_luks(self, source_device, dev_name, blkid_info)
+    elif blkid_info.get('type') == 'LVM2_member':
+        autodetect_lvm(self, source_device, dev_name, blkid_info)
+    elif blkid_info.get('type') == 'linux_raid_member':
+        autodetect_raid(self, source_device, dev_name, blkid_info)
     else:
-        raise RuntimeError("Unknown device mapper device type: %s" % dm_info.get('type'))
+        raise RuntimeError("Unknown device mapper device type: %s" % blkid_info.get('type'))
 
     autodetect_mount_kmods(self, slave_source)
 
@@ -393,7 +393,7 @@ def _autodetect_dm(self, mountpoint, device=None) -> None:
 
 @contains('autodetect_root_raid', "Skipping RAID autodetection, autodetect_root_raid is disabled.", log_level=30)
 @contains('hostonly', "Skipping RAID autodetection, hostonly mode is disabled.", log_level=30)
-def autodetect_raid(self, mount_loc, dm_name, dm_info) -> None:
+def autodetect_raid(self, mount_loc, dm_name, blkid_info) -> None:
     """
     Autodetects MD RAID mounts and sets the raid config.
     Adds kmods for the raid level to the autodetect list.
@@ -402,11 +402,11 @@ def autodetect_raid(self, mount_loc, dm_name, dm_info) -> None:
         self.logger.info("Autodetected MDRAID mount, enabling the mdraid module.")
         self['modules'] = 'ugrd.fs.mdraid'
 
-    if level := dm_info.get('level'):
+    if level := self._dm_info[dm_name].get('level'):
         self.logger.info("[%s] MDRAID level: %s" % (mount_loc.name, level))
         self['_kmod_auto'] = level
     else:
-        raise ValueError("[%s] Failed to autodetect MDRAID level: %s" % (dm_name, dm_info))
+        raise ValueError("[%s] Failed to autodetect MDRAID level: %s" % (dm_name, blkid_info))
 
 
 @contains('autodetect_root_dm', "Skipping device mapper autodetection, autodetect_root_dm is disabled.", log_level=30)
@@ -417,14 +417,14 @@ def autodetect_root_dm(self) -> None:
 
 @contains('autodetect_root_lvm', "Skipping LVM autodetection, autodetect_root_lvm is disabled.", log_level=20)
 @contains('hostonly', "Skipping LVM autodetection, hostonly mode is disabled.", log_level=30)
-def autodetect_lvm(self, mount_loc, dm_num, dm_info) -> None:
+def autodetect_lvm(self, mount_loc, dm_num, blkid_info) -> None:
     """ Autodetects LVM mounts and sets the lvm config. """
     if 'ugrd.fs.lvm' not in self['modules']:
         self.logger.info("Autodetected LVM mount, enabling the lvm module.")
         self['modules'] = 'ugrd.fs.lvm'
 
-    if uuid := dm_info.get('uuid'):
-        self.logger.info("[%s] LVM volume uuid: %s" % (mount_loc.name, uuid))
+    if uuid := blkid_info.get('uuid'):
+        self.logger.info("[%s] LVM volume contianer uuid: %s" % (mount_loc.name, uuid))
         self['lvm'] = {self._dm_info[dm_num]['name']: {'uuid': uuid}}
     else:
         raise ValueError("Failed to autodetect LVM volume uuid: %s" % mount_loc.name)
@@ -432,7 +432,7 @@ def autodetect_lvm(self, mount_loc, dm_num, dm_info) -> None:
 
 @contains('autodetect_root_luks', "Skipping LUKS autodetection, autodetect_root_luks is disabled.", log_level=30)
 @contains('hostonly', "Skipping LUKS autodetection, hostonly mode is disabled.", log_level=30)
-def autodetect_luks(self, mount_loc, dm_num, dm_info) -> None:
+def autodetect_luks(self, mount_loc, dm_num, blkid_info) -> None:
     """ Autodetects LUKS mounts and sets the cryptsetup config. """
     if 'ugrd.crypto.cryptsetup' not in self['modules']:
         self.logger.info("Autodetected LUKS mount, enabling the cryptsetup module: %s" % mount_loc.name)
@@ -446,19 +446,19 @@ def autodetect_luks(self, mount_loc, dm_num, dm_info) -> None:
         self.logger.error("Device mapper slaves: %s" % self._dm_info[dm_num]['slaves'])
         raise RuntimeError("Multiple slaves found for device mapper device, unknown type: %s" % mount_loc.name)
 
-    dm_type = dm_info.get('type')
+    dm_type = blkid_info.get('type')
     if dm_type != 'crypto_LUKS':
-        if not dm_info.get('uuid'):  # No uuid will be defined if there are detached headers
+        if not blkid_info.get('uuid'):  # No uuid will be defined if there are detached headers
             if not self['cryptsetup'][mount_loc.name].get('header_file'):
                 raise ValueError("[%s] Unknown LUKS mount type: %s" % (mount_loc.name, dm_type))
         else:  # If there is some uuid and it's not LUKS, that's a problem
             raise RuntimeError("[%s] Unknown device mapper slave type: %s" % (self._dm_info[dm_num]['slaves'][0], dm_type))
 
     # Configure cryptsetup based on the LUKS mount
-    if uuid := dm_info.get('uuid'):
+    if uuid := blkid_info.get('uuid'):
         self.logger.info("[%s] LUKS volume uuid: %s" % (mount_loc.name, uuid))
         self['cryptsetup'] = {self._dm_info[dm_num]['name']: {'uuid': uuid}}
-    elif partuuid := dm_info.get('partuuid'):
+    elif partuuid := blkid_info.get('partuuid'):
         self.logger.info("[%s] LUKS volume partuuid: %s" % (mount_loc.name, partuuid))
         self['cryptsetup'] = {self._dm_info[dm_num]['name']: {'partuuid': partuuid}}
 
