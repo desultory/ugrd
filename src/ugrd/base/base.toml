@@ -14,7 +14,7 @@ shebang = "#!/bin/bash -l"
 autodetect_init = true
 
 [imports.config_processing]
-"ugrd.base.base" = [ "_process_init_target", "_process_autodetect_init" ]
+"ugrd.base.base" = [ "_process_loglevel", "_process_init_target", "_process_autodetect_init" ]
 
 [imports.build_pre]
 "ugrd.base.base" = [ "autodetect_init" ]

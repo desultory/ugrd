@@ -23,6 +23,12 @@ def _process_init_target(self, target: Path) -> None:
     _validate_init_target(self)
 
 
+def _process_loglevel(self, loglevel: int) -> None:
+    """ Sets the loglevel. """
+    self.data['loglevel'] = int(loglevel)
+    self['exports']['loglevel'] = loglevel
+
+
 @unset('init_target', 'init_target is already set, skipping autodetection.', log_level=30)
 def _process_autodetect_init(self, state) -> None:
     self.data['autodetect_init'] = state
@@ -54,7 +60,6 @@ def _find_init(self) -> str:
 
 def set_loglevel(self) -> list[str]:
     """ Returns bash to set the log level. """
-    self['exports']['loglevel'] = self['loglevel']
     return 'readvar loglevel > /proc/sys/kernel/printk'
 
 
