@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.16.4'
+__version__ = '4.16.5'
 
 from pathlib import Path
 from zenlib.util import contains, pretty_print
@@ -375,6 +375,9 @@ def _autodetect_dm(self, mountpoint, device=None) -> None:
         autodetect_luks(self, source_device, dev_name, dm_info)
     elif dm_info.get('type') == 'LVM2_member':
         autodetect_lvm(self, source_device, dev_name, dm_info)
+    elif dm_info.get('type') == 'linux_raid_member':
+        autodetect_raid(self, source_device, dev_name, dm_info)
+        raise NotImplementedError("RAID autodetection not implemented.")
     else:
         raise RuntimeError("Unknown device mapper device type: %s" % dm_info.get('type'))
 
@@ -386,6 +389,15 @@ def _autodetect_dm(self, mountpoint, device=None) -> None:
             self.logger.info("[%s] Autodetected device mapper container: %s" % (source_device.name, slave))
         except KeyError:
             self.logger.debug("Slave does not appear to be a DM device: %s" % slave)
+
+
+@contains('autodetect_root_raid', "Skipping RAID autodetection, autodetect_root_raid is disabled.", log_level=30)
+@contains('hostonly', "Skipping RAID autodetection, hostonly mode is disabled.", log_level=30)
+def autodetect_raid(self, mount_loc, dm_num, dm_info) -> None:
+    """ Autodetects MD RAID mounts and sets the raid config. """
+    if 'ugrd.fs.raid' not in self['modules']:
+        self.logger.info("Autodetected MDRAID mount, enabling the mdraid module.")
+        self['modules'] = 'ugrd.fs.mdraid'
 
 
 @contains('autodetect_root_dm', "Skipping device mapper autodetection, autodetect_root_dm is disabled.", log_level=30)

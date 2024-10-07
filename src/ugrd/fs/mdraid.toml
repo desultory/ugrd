@@ -1,0 +1,4 @@
+binaries = ['mdadm']
+
+[imports.init_early]
+"ugrd.fs.mdadm" = [ "md_init" ]
