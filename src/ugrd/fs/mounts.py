@@ -378,7 +378,6 @@ def _autodetect_dm(self, mountpoint, device=None) -> None:
         autodetect_lvm(self, source_device, dev_name, dm_info)
     elif dm_info.get('type') == 'linux_raid_member':
         autodetect_raid(self, source_device, dev_name, dm_info)
-        raise NotImplementedError("RAID autodetection not implemented.")
     else:
         raise RuntimeError("Unknown device mapper device type: %s" % dm_info.get('type'))
 
