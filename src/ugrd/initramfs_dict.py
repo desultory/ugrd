@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "2.1.0"
+__version__ = "2.2.0"
 
 from tomllib import load, TOMLDecodeError
 from pathlib import Path
@@ -55,6 +55,8 @@ class InitramfsConfigDict(UserDict):
                 self[arg] = value
 
     def __setitem__(self, key: str, value) -> None:
+        if self['validated']:
+            return self.logger.error("[%s] Config is validatied, refusing to set value: %s" % (key, value))
         # If the type is registered, use the appropriate update function
         if any(key in d for d in (self.builtin_parameters, self['custom_parameters'])):
             return self.handle_parameter(key, value)
