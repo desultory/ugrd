@@ -1,5 +1,5 @@
-__version__ = '0.1.0'
+__version__ = '0.1.1'
 
 
 def md_init(self):
-    return "mdadm --assemble --scan"
+    return 'einfo "Assembling MD devices: $(mdadm --assemble --scan)"'
