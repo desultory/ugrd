@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.16.6'
+__version__ = '4.17.0'
 
 from pathlib import Path
 from zenlib.util import contains, pretty_print
@@ -398,7 +398,7 @@ def autodetect_raid(self, mount_loc, dm_num, dm_info) -> None:
     Autodetects MD RAID mounts and sets the raid config.
     Adds kmods for the raid level to the autodetect list.
     """
-    if 'ugrd.fs.raid' not in self['modules']:
+    if 'ugrd.fs.mdraid' not in self['modules']:
         self.logger.info("Autodetected MDRAID mount, enabling the mdraid module.")
         self['modules'] = 'ugrd.fs.mdraid'
 
