@@ -6,6 +6,8 @@ Modules only require a toml definition, and can import other modules to act as m
 
 Python functions can be added imported into `init` and `build` runlevels to execute build tasks or output init lines.
 
+> `build` functions are allowed to mutate config, init functions are not. Init is the final build task where bash files are generated.
+
 Within modules, all config values are imported, then processed according to the order of the `custom_parameters` list.
 
 `_module_name` can be set within a module for logging purposes, it is verified to be accurate when imported but optional.
@@ -49,11 +51,19 @@ Build imports are used to mutate config and build the base structure of the init
 
 ### build_tasks
 
-`build_tasks` are functions which will be executed after `build_pre`, such as dependency pulling.
+`build_tasks` are functions which will be executed after `build_pre`, which make up the majority of the build process.
 
 ### build_late
 
-`build_late` functions are executed after the init has been generated.
+`build_late` are finalizing build functions, immediately before files are deployed
+
+### build_deploy
+
+`build_deploy` is mostly for builtin functions and is where components are actually copied into the build directory.
+
+### build_final
+
+`build_final` is the last build hook, where finalizing tasks take place.
 
 ## Init imports
 

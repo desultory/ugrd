@@ -16,7 +16,7 @@ class InitramfsGenerator(GeneratorHelpers):
         self.included_functions = {}
 
         # Used for functions that are run as part of the build process
-        self.build_tasks = ['build_pre', 'build_tasks', 'build_deploy', 'build_final']
+        self.build_tasks = ['build_pre', 'build_tasks', 'build_late', 'build_deploy', 'build_final']
 
         # init_pre and init_final are run as part of generate_initramfs_main
         self.init_types = ['init_debug', 'init_early', 'init_main', 'init_late', 'init_premount', 'init_mount', 'init_mount_late', 'init_cleanup']
