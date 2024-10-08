@@ -14,11 +14,17 @@ def find_kernel_path(self):
     from pathlib import Path
     self.logger.info("Trying to find the kernel path for: %s", self['kernel_version'])
     if not (self['_kmod_dir'] / 'vmlinuz').exists():
-        kernel_path = Path('/boot/vmlinuz-%s' % self['kernel_version'])
-    kernel_path = Path(self['_kmod_dir']) / 'vmlinuz'
+        for search_dir in ['/boot', '/efi']:
+            for prefix in ['vmlinuz', 'kernel', 'linux', 'bzImage']:
+                kernel_path = Path(search_dir) / f'{prefix}-{self["kernel_version"]}'
+                if kernel_path.exists():
+                    break
+        else:
+            raise FileNotFoundError("Kernel not found: %s" % self['kernel_version'])
+    else:
+        kernel_path = Path(self['_kmod_dir']) / 'vmlinuz'
 
-    if not self['test_kernel'].exists():
-        raise FileNotFoundError("Test kernel not found: %s" % self['test_kernel'])
+    self.logger.info("Found kernel at: %s", kernel_path)
     self['test_kernel'] = kernel_path
 
 
