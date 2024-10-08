@@ -1,4 +1,4 @@
-__version__ = "0.6.0"
+__version__ = "0.7.0"
 
 from zenlib.util import unset
 
@@ -13,10 +13,13 @@ COPY_CONFIG = [
 def find_kernel_path(self):
     from pathlib import Path
     self.logger.info("Trying to find the kernel path for: %s", self['kernel_version'])
-    kernel_path = Path('/boot/vmlinuz-%s' % self['kernel_version'])
-    self['test_kernel'] = kernel_path
+    if not (self['_kmod_dir'] / 'vmlinuz').exists():
+        kernel_path = Path('/boot/vmlinuz-%s' % self['kernel_version'])
+    kernel_path = Path(self['_kmod_dir']) / 'vmlinuz'
+
     if not self['test_kernel'].exists():
         raise FileNotFoundError("Test kernel not found: %s" % self['test_kernel'])
+    self['test_kernel'] = kernel_path
 
 
 def init_test_vars(self):
