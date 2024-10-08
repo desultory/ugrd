@@ -134,7 +134,7 @@ class InitramfsGenerator(GeneratorHelpers):
             self.logger.debug("No output for init level: %s" % level)
             return []
 
-    def generate_profile(self) -> None:
+    def generate_profile(self) -> list[str]:
         """ Generates the bash profile file based on self.included_functions. """
         from importlib.metadata import version
         ver = version(__package__) or 9999   # Version won't be found unless the package is installed
@@ -231,8 +231,5 @@ class InitramfsGenerator(GeneratorHelpers):
             self.logger.debug("No tests executed.")
 
     def __str__(self) -> str:
-        return str(pretty_print(self.config_dict))
-
-
-
+        return print(self.config_dict)
 
