@@ -17,6 +17,7 @@ def find_kernel_path(self):
         for search_dir in ['/boot', '/efi']:
             for prefix in ['vmlinuz', 'kernel', 'linux', 'bzImage']:
                 kernel_path = Path(search_dir) / f'{prefix}-{self["kernel_version"]}'
+                self.logger.warning("Trying kernel path: %s", kernel_path)
                 if kernel_path.exists():
                     break
         else:
