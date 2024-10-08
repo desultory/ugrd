@@ -24,11 +24,12 @@ no_kmod = "bool" # Disables kernel modules entirely
 "ugrd.kmod.kmod" = [ "_process_kmod_init_multi", "_process_kernel_modules_multi", "_process__kmod_auto_multi" ]
 
 [imports.build_pre]
-"ugrd.kmod.kmod" = [ "get_kernel_metadata",
-		     "autodetect_modules",
-		     "process_modules", "process_ignored_modules", "process_module_metadata" ]
+"ugrd.kmod.kmod" = [ "get_kernel_metadata", "autodetect_modules" ]
 
 [imports.build_tasks]
+"ugrd.kmod.kmod" = [ "process_modules", "process_ignored_modules", "process_module_metadata" ]
+
+[imports.build_final]
 "ugrd.kmod.kmod" = [ "regen_kmod_metadata" ]
 
 [imports.init_pre]

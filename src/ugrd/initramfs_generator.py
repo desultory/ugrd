@@ -15,8 +15,8 @@ class InitramfsGenerator(GeneratorHelpers):
         # Used for functions that are added to the bash source file
         self.included_functions = {}
 
-        # Used for functions that are run as part of the build process, build_final is run after init generation
-        self.build_tasks = ['build_pre', 'build_tasks']
+        # Used for functions that are run as part of the build process
+        self.build_tasks = ['build_pre', 'build_tasks', 'build_deploy', 'build_final']
 
         # init_pre and init_final are run as part of generate_initramfs_main
         self.init_types = ['init_debug', 'init_early', 'init_main', 'init_late', 'init_premount', 'init_mount', 'init_mount_late', 'init_cleanup']
@@ -78,7 +78,6 @@ class InitramfsGenerator(GeneratorHelpers):
         self.config_dict.validate()
 
         self.generate_init()
-        self.run_hook('build_final')
         self.pack_build()
         self.run_checks()
         self.run_tests()

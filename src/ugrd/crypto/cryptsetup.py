@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.6.2'
+__version__ = '2.6.3'
 
 from zenlib.util import contains
 
@@ -183,7 +183,10 @@ def _validate_cryptsetup_device(self, mapped_name) -> None:
         else:
             raise ValueError("[%s] Unable to validate LUKS UUID: %s" % (mapped_name, cryptsetup_token))
 
-    for dep in self['dependencies']:
+    if 'Cipher:     aes-xts-plain64' in luks_info:
+        self['kernel_modules'] = 'crypto_xts'
+
+    for dep in self['dependencies']:  # Ensure argon is installed if argon2id is used
         if dep.name.startswith('libargon2.so'):
             break
     else:

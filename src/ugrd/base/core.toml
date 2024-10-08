@@ -37,7 +37,7 @@ minor = 1
 [imports.build_pre]
 "ugrd.base.core" = [ "detect_tmpdir", "clean_build_dir", "find_libgcc" ]
 
-[imports.build_tasks]
+[imports.build_deploy]
 "ugrd.base.core" = [ "generate_structure",
 		     "deploy_dependencies",
 		     "deploy_xz_dependencies",
