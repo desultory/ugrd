@@ -180,7 +180,6 @@ class InitramfsGenerator(GeneratorHelpers):
         self.run_hook('functions', force_include=True)
 
         init.extend(self.run_init_hook('init_pre'))
-        init += [self.banner]
 
         if self['imports'].get('custom_init') and self.get('_custom_init_file'):
             init += ["\n# !!custom_init"]

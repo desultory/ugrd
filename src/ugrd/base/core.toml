@@ -49,6 +49,9 @@ minor = 1
 [imports.build_final]
 "ugrd.base.core" = [ "handle_usr_symlinks" ]
 
+[imports.init_pre]
+"ugrd.base.core" = [ "print_banner" ]
+
 [custom_parameters]
 hostonly = "bool"  # If true, the initramfs will be built specifically for the host building it
 validate = "bool"  # If true, the configuration of the initramfs will be validated against the host
