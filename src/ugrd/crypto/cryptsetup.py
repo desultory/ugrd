@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.6.3'
+__version__ = '2.7.0'
 
 from zenlib.util import contains
 
@@ -189,11 +189,18 @@ def _validate_cryptsetup_device(self, mapped_name) -> None:
     for dep in self['dependencies']:  # Ensure argon is installed if argon2id is used
         if dep.name.startswith('libargon2.so'):
             break
-    else:
-        if cryptsetup_info.get('header_file'):
-            self.logger.error("[%s] Missing cryptsetup dependency: libargon2.so" % mapped_name)
-        if 'PBKDF:      argon2id' in luks_info:
-            raise FileNotFoundError("[%s] Missing cryptsetup dependency: libargon2.so" % mapped_name)
+    else:  # If it's not, try to see if it's available in openssl
+        for dep in self['dependencies']:
+            if dep.name.startswith('libcrypto.so'):
+                openssl_kdfs = self._run(['openssl', 'list', '-kdf-algorithms']).stdout.decode().lower().split('\n')
+                if 'argon2id' in openssl_kdfs:
+                    break
+        else:  # If argon support cannot be validated, raise an error if argon2id is used
+            if cryptsetup_info.get('header_file'):
+                self.logger.error("[%s] Unable to check: libargon2.so" % mapped_name)
+            if 'PBKDF:      argon2id' in luks_info:
+                raise FileNotFoundError("[%s] Missing cryptsetup dependency: libargon2.so" % mapped_name)
+            self.logger.error("[%s] Unable to validate argon support for LUKS: %s" % (mapped_name, luks_info))
 
 
 @contains('validate', "Skipping cryptsetup configuration validation.", log_level=30)
