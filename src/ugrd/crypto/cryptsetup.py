@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.7.0'
+__version__ = '2.7.1'
 
 from zenlib.util import contains
 
@@ -193,8 +193,10 @@ def _validate_cryptsetup_device(self, mapped_name) -> None:
         for dep in self['dependencies']:
             if dep.name.startswith('libcrypto.so'):
                 openssl_kdfs = self._run(['openssl', 'list', '-kdf-algorithms']).stdout.decode().lower().split('\n')
-                if 'argon2id' in openssl_kdfs:
-                    break
+                self.logger.debug("OpenSSL KDFs: %s" % openssl_kdfs)
+                for kdf in openssl_kdfs:
+                    if kdf.lstrip().startswith('argon2id') and 'default' in kdf:
+                        break
         else:  # If argon support cannot be validated, raise an error if argon2id is used
             if cryptsetup_info.get('header_file'):
                 self.logger.error("[%s] Unable to check: libargon2.so" % mapped_name)
