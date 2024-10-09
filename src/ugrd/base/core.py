@@ -7,14 +7,6 @@ from typing import Union
 from zenlib.util import contains, unset, NoDupFlatList
 
 
-def print_banner(self) -> list[str]:
-    """ Prints the banner. Prints the kernel version if set """
-    banner = [self.banner]
-    if kver := self.get('kernel_version'):
-        banner.append(f"einfo 'Kernel version: {kver}'")
-    return banner
-
-
 def detect_tmpdir(self) -> None:
     """ Reads TMPDIR from the environment, sets it as the temporary directory. """
     from os import environ

@@ -10,7 +10,6 @@ library_paths = [ "/lib64" ]
 old_count = 1
 
 binaries = [ "/bin/bash" ]
-banner = 'einfo "UGRD v$(readvar VERSION)"'
 
 [nodes.console]
 mode = 0o644
@@ -48,9 +47,6 @@ minor = 1
 
 [imports.build_final]
 "ugrd.base.core" = [ "handle_usr_symlinks" ]
-
-[imports.init_pre]
-"ugrd.base.core" = [ "print_banner" ]
 
 [custom_parameters]
 hostonly = "bool"  # If true, the initramfs will be built specifically for the host building it

@@ -1,6 +1,7 @@
 modules = [ "ugrd.base.core",
 	    "ugrd.fs.mounts",
 	    "ugrd.base.cmdline",
+	    "ugrd.base.banner",
 	    "ugrd.kmod.kmod",
 	    "ugrd.fs.cpio",
 	    "ugrd.base.checks" ]
