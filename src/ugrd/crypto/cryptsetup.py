@@ -190,7 +190,7 @@ def _validate_cryptsetup_device(self, mapped_name) -> None:
     for dep in self['dependencies']:  # Ensure argon is installed if argon2id is used
         if dep.name.startswith('libargon2.so'):
             has_argon = True
-        elif dep.name.startswith('libargon2.so'):
+        elif dep.name.startswith('libcrypto.so'):
             openssl_kdfs = self._run(['openssl', 'list', '-kdf-algorithms']).stdout.decode().lower().split('\n')
             self.logger.debug("OpenSSL KDFs: %s" % openssl_kdfs)
             for kdf in openssl_kdfs:
