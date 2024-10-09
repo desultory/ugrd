@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.7.2'
+__version__ = '2.8.0'
 
 from zenlib.util import contains
 
@@ -7,7 +7,7 @@ from pathlib import Path
 
 _module_name = 'ugrd.crypto.cryptsetup'
 
-CRYPTSETUP_PARAMETERS = ['key_type', 'partuuid', 'uuid', 'path', 'key_file', 'header_file', 'retries', 'key_command', 'reset_command', 'try_nokey', 'include_key']
+CRYPTSETUP_PARAMETERS = ['key_type', 'partuuid', 'uuid', 'path', 'key_file', 'header_file', 'retries', 'key_command', 'reset_command', 'try_nokey', 'include_key', 'validate_key']
 
 
 def _merge_cryptsetup(self, mapped_name: str, config: dict) -> None:
@@ -45,8 +45,9 @@ def _process_cryptsetup_key_types_multi(self, key_type: str, config: dict) -> No
 def _validate_crypysetup_key(self, key_paramters: dict) -> None:
     """ Validates the cryptsetup key """
     if key_paramters.get('include_key'):
-        self.logger.info("Skipping key validation for included key.")
-        return
+        return self.logger.info("Skipping key validation for included key.")
+    elif key_paramters.get('validate_key') is False:
+        return self.logger.info("Skipping key validation for: %s" % key_paramters['key_file'])
 
     key_path = Path(key_paramters['key_file'])
 
