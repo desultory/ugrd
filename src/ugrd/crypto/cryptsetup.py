@@ -186,6 +186,7 @@ def _validate_cryptsetup_device(self, mapped_name) -> None:
     if 'Cipher:     aes-xts-plain64' in luks_info:
         self['kernel_modules'] = 'crypto_xts'
 
+    has_argon = False
     for dep in self['dependencies']:  # Ensure argon is installed if argon2id is used
         if dep.name.startswith('libargon2.so'):
             has_argon = True
