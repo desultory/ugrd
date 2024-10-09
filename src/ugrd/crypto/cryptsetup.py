@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.7.1'
+__version__ = '2.7.2'
 
 from zenlib.util import contains
 
@@ -188,21 +188,19 @@ def _validate_cryptsetup_device(self, mapped_name) -> None:
 
     for dep in self['dependencies']:  # Ensure argon is installed if argon2id is used
         if dep.name.startswith('libargon2.so'):
-            break
-    else:  # If it's not, try to see if it's available in openssl
-        for dep in self['dependencies']:
-            if dep.name.startswith('libcrypto.so'):
-                openssl_kdfs = self._run(['openssl', 'list', '-kdf-algorithms']).stdout.decode().lower().split('\n')
-                self.logger.debug("OpenSSL KDFs: %s" % openssl_kdfs)
-                for kdf in openssl_kdfs:
-                    if kdf.lstrip().startswith('argon2id') and 'default' in kdf:
-                        break
-        else:  # If argon support cannot be validated, raise an error if argon2id is used
-            if cryptsetup_info.get('header_file'):
-                self.logger.error("[%s] Unable to check: libargon2.so" % mapped_name)
-            if 'PBKDF:      argon2id' in luks_info:
-                raise FileNotFoundError("[%s] Missing cryptsetup dependency: libargon2.so" % mapped_name)
-            self.logger.error("[%s] Unable to validate argon support for LUKS: %s" % (mapped_name, luks_info))
+            has_argon = True
+        elif dep.name.startswith('libargon2.so'):
+            openssl_kdfs = self._run(['openssl', 'list', '-kdf-algorithms']).stdout.decode().lower().split('\n')
+            self.logger.debug("OpenSSL KDFs: %s" % openssl_kdfs)
+            for kdf in openssl_kdfs:
+                if kdf.lstrip().startswith('argon2id') and 'default' in kdf:
+                    has_argon = True
+    if not has_argon:
+        if cryptsetup_info.get('header_file'):  # A header may be specified but unavailable
+            self.logger.error("[%s] Unable to check: libargon2.so" % mapped_name)
+        if 'PBKDF:      argon2id' in luks_info:  # If luks info is found, and argon is used, raise an error
+            raise FileNotFoundError("[%s] Missing cryptsetup dependency: libargon2.so" % mapped_name)
+        self.logger.error("[%s] Unable to validate argon support for LUKS: %s" % (mapped_name, luks_info))
 
 
 @contains('validate', "Skipping cryptsetup configuration validation.", log_level=30)
