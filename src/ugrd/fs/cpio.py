@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '3.4.1'
+__version__ = '3.4.2'
 
 
 from zenlib.util import contains
@@ -18,6 +18,7 @@ def check_cpio_funcs(self) -> None:
     """ Checks that all included functions are in the profile included in the generated CPIO file. """
     bash_func_names = [func + '() {' for func in self.included_functions]
     _check_in_cpio(self, 'etc/profile', bash_func_names)
+    return "All functions found in CPIO."
 
 
 @contains('check_in_cpio')
