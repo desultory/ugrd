@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '5.0.0'
+__version__ = '5.1.0'
 
 from importlib.metadata import version
 from pathlib import Path
@@ -223,12 +223,7 @@ def edebug(self) -> str:
             'if [ "$(readvar debug)" != "1" ]; then',
             '    return',
             'fi',
-            'if check_var plymouth; then',
-            '    plymouth display-message --text="${*}"',
-            '    return',
-            'fi',
-            r'echo -e "\e[1;34m *\e[0m ${*}"'
-            ]
+            r'echo -e "\e[1;34m *\e[0m ${*}"']
 
 
 def einfo(self) -> str:
@@ -236,12 +231,7 @@ def einfo(self) -> str:
     return ['if check_var quiet; then',
             '    return',
             'fi',
-            'if check_var plymouth; then',
-            '    plymouth display-message --text="${*}"',
-            '    return',
-            'fi',
-            r'echo -e "\e[1;32m *\e[0m ${*}"'
-            ]
+            r'echo -e "\e[1;32m *\e[0m ${*}"']
 
 
 def ewarn(self) -> str:
