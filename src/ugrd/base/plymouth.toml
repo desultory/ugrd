@@ -1,4 +1,4 @@
-binaries = ['plymouthd', 'plymouth']
+binaries = ['plymouthd', 'plymouth', 'plymouth-set-default-theme']
 
 [imports.config_processing]
 "ugrd.base.plymouth" = [ "_process_plymouth_config", "_process_plymouth_theme" ]
