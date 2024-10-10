@@ -1,4 +1,4 @@
-modules = ['ugrd.fs.cpio']  # get_archive_path
+modules = [ 'ugrd.fs.cpio', 'ugrd.base.banner' ]  # get_archive_path
 paths = ['dev', 'sys', 'proc']
 
 test_image_size = 16

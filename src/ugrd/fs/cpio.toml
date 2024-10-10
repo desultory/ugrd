@@ -4,7 +4,7 @@ cpio_rotate = true
 check_cpio = true
 
 [imports.build_final]
-"ugrd.fs.cpio" = ['get_archive_path']
+"ugrd.fs.cpio" = [ "get_archive_path" ]
 
 [imports.pack]
 "ugrd.fs.cpio" = [ "make_cpio" ]
