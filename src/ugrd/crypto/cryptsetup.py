@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.8.0'
+__version__ = '3.0.0'
 
 from zenlib.util import contains
 
@@ -304,7 +304,13 @@ def open_crypt_device(self, name: str, parameters: dict) -> list[str]:
     cryptsetup_command += f' "$crypt_dev" {name}'
 
     # Check if the device was successfully opened
-    out += [f'    if {cryptsetup_command}; then',
+    out += ['    if checkvar plymouth; then',
+            '        einfo "Unlocking device: %s" % crypt_dev',
+            f'        plymount ask-for-password --prompt "Enter key for device: $crypt_dev" --command "{cryptsetup_command}"',
+            '        if [ $? -eq 0 ]; then',
+            '            break',
+            '        fi',
+            f'    elif {cryptsetup_command}; then',
             f'        einfo "Successfully opened device: {name}"',
             '        break',
             '    else',
