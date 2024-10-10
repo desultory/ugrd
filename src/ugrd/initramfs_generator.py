@@ -192,8 +192,6 @@ class InitramfsGenerator(GeneratorHelpers):
         if self.included_functions:  # There should always be included functions, if the base config is used
             self._write('/etc/profile', self.generate_profile(), 0o755)
             self.logger.info("Included functions: %s" % ', '.join(list(self.included_functions.keys())))
-            if self['imports'].get('custom_init'):
-                custom_init.insert(2, self.banner)
 
         if self.get('_custom_init_file'):  # Write the custom init file if it exists
             self._write(self['_custom_init_file'], custom_init, 0o755)
