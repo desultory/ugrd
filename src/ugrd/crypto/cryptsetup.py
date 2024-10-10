@@ -295,16 +295,16 @@ def open_crypt_device(self, name: str, parameters: dict) -> list[str]:
         self.logger.warning("Using --allow-discards can be a security risk.")
 
     # Resolve the device source using get_crypt_dev, if no source is returned, run rd_fail
-    out += [f'crypt_dev="$(get_crypt_dev {name})"',
-            'if [ -z "$crypt_dev" ]; then',
-            f'    rd_fail "Failed to resolve device source for cryptsetup mount: {name}"',
-            'fi']
+    out += [f'    crypt_dev="$(get_crypt_dev {name})"',
+            '    if [ -z "$crypt_dev" ]; then',
+            f'        rd_fail "Failed to resolve device source for cryptsetup mount: {name}"',
+            '    fi']
 
     # Add the variable for the source device and mapped name
     cryptsetup_command += f' "$crypt_dev" {name}'
 
     # Check if the device was successfully opened
-    out += ['    if checkvar plymouth; then',
+    out += ['    if check_var plymouth; then',
             '        einfo "Unlocking device: %s" % crypt_dev',
             f'        plymount ask-for-password --prompt "Enter key for device: $crypt_dev" --command "{cryptsetup_command}"',
             '        if [ $? -eq 0 ]; then',
