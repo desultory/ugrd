@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "1.1.0"
+__version__ = "1.2.0"
 
 
 def custom_init(self) -> str:
@@ -10,6 +10,7 @@ def custom_init(self) -> str:
     """
     custom_init_contents = [self['shebang'],
                             f'einfo "Starting console module v{__version__}"',
+                            'print_banner',
                             *self.generate_init_main()]
 
     return console_init(self), custom_init_contents
