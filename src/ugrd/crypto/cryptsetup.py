@@ -306,7 +306,7 @@ def open_crypt_device(self, name: str, parameters: dict) -> list[str]:
     # Check if the device was successfully opened
     out += ['    if check_var plymouth; then',
             '        einfo "Unlocking device: $crypt_dev"',
-            f'        plymouth ask-for-password --prompt "Enter key for device: $crypt_dev" --command "{cryptsetup_command}"',
+            f'        plymouth ask-for-password --prompt "[${{i}} / {retries}] Enter passphrase to unlock {name}" --command "{cryptsetup_command}" --number-of-tries 0',
             '        if [ $? -eq 0 ]; then',
             '            break',
             '        fi',
