@@ -244,7 +244,7 @@ class InitramfsGenerator(GeneratorHelpers):
             self.logger.debug("No tests executed.")
 
     def _log_run(self, logline) -> None:
-        self.logger.info(f"== | {logline}")
+        self.logger.info(f"-- | {logline}")
 
     def __str__(self) -> str:
         return str(self.config_dict)

@@ -100,16 +100,18 @@ def test_image(self):
     stdout = results.stdout.decode('utf-8').split('\r\n')
     self.logger.debug("QEMU output: %s", stdout)
 
+    # Get the time of the kernel panic
+    for line in stdout:
+        if line.endswith('exitcode=0x00000000'):
+            panic_time = line.split(']')[0][1:].strip()
+            self.logger.info("Test took: %s", panic_time)
+            break
+    else:
+        self.logger.warning("Unable to determine test duration from panic message.")
+
     if self['test_flag'] in stdout:
         self.logger.info("Test passed")
     else:
         self.logger.error("Test failed")
         self.logger.error("QEMU stdout:\n%s", stdout)
-
-    # Get the time of the kernel panic
-    for line in stdout:
-        if line.endswith('exitcode=0x00000000'):
-            panic_time = line.split(']')[0][1:].strip()
-            return self.logger.info("Test took: %s", panic_time)
-    self.logger.warning("Unable to determine test duration from panic message.")
-
+        raise RuntimeError("Test failed")
