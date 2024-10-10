@@ -165,12 +165,12 @@ def prompt_user(self) -> str:
     The second argument is the timeout in seconds.
 
     if plymouth is running, just run 'plymouth display-message --text="$prompt",
-    then 'plymouth watch-keystoke --command="read -rs"'
+    then 'plymouth watch-keystoke'
     """
     return ['prompt=${1:-"Press enter to continue."}',
             'if check_var plymouth; then',
             '    plymouth display-message --text="$prompt"',
-            '    plymouth watch-keystroke --command="read -rs"',
+            '    plymouth watch-keystroke',
             '    return',
             'fi',
             r'echo -e "\e[1;35m *\e[0m $prompt"',
