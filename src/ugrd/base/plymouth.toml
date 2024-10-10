@@ -6,7 +6,7 @@ binaries = ['plymouthd', 'plymouth']
 [mounts.devpts]
 type = "devpts"
 destination = "/dev/pts"
-options = ['noauto', 'nosuid', 'noexec', 'mode=0620']
+options = ['noauto', 'nosuid', 'noexec', 'mode=0620', 'gid=5']
 path = "/dev/pts"
 no_validate = true
 
