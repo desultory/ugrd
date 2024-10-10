@@ -70,11 +70,8 @@ class InitramfsGenerator(GeneratorHelpers):
         return super().__getattr__(item)
 
     def build(self) -> None:
-        """ Builds the initramfs. """
-        self.logger.info("Building initramfs")
-        for hook in self.build_tasks:
-            self.logger.debug("Running build hook: %s" % hook)
-            self.run_hook(hook, force_exclude=True)
+        """ Builds the initramfs image. """
+        self.run_build()
         self.config_dict.validate()
 
         self.generate_init()
@@ -83,7 +80,11 @@ class InitramfsGenerator(GeneratorHelpers):
         self.run_tests()
 
     def run_func(self, function, force_include=False, force_exclude=False) -> list[str]:
-        """ Runs a function, If force_include is set, forces the function to be included in the bash source file. """
+        """
+        Runs an imported function.
+        If force_include is set, forces the function to be included in the bash source file.
+        if force_exclude is set, does not include the output of the function in the bash source file.
+        """
         self.logger.log(self['_build_log_level'], "Running function: %s" % function.__name__)
 
         if function_output := function(self):
@@ -123,16 +124,6 @@ class InitramfsGenerator(GeneratorHelpers):
             if function_output := self.run_func(function, *args, **kwargs):
                 out.append(function_output)
         return out
-
-    def run_init_hook(self, level: str) -> list[str]:
-        """ Runs the specified init hook, returning the output. """
-        if runlevel := self.run_hook(level):
-            out = ['\n# Begin %s' % level]
-            out += runlevel
-            return out
-        else:
-            self.logger.debug("No output for init level: %s" % level)
-            return []
 
     def generate_profile(self) -> list[str]:
         """ Generates the bash profile file based on self.included_functions. """
@@ -208,12 +199,28 @@ class InitramfsGenerator(GeneratorHelpers):
         self._write('init', init, 0o755)
         self.logger.debug("Final config:\n%s" % self)
 
+    def run_build(self) -> None:
+        """ Runs all build tasks. """
+        for task in self.build_tasks:
+            self.logger.debug("Running build task: %s" % task)
+            self.run_hook(task, force_exclude=True)
+
     def pack_build(self) -> None:
         """ Packs the initramfs based on self['imports']['pack']."""
         if self['imports'].get('pack'):
             self.run_hook('pack')
         else:
             self.logger.warning("No pack functions specified, the final build is present in: %s" % self.build_dir)
+
+    def run_init_hook(self, level: str) -> list[str]:
+        """ Runs the specified init hook, returning the output. """
+        if runlevel := self.run_hook(level):
+            out = ['\n# Begin %s' % level]
+            out += runlevel
+            return out
+        else:
+            self.logger.debug("No output for init level: %s" % level)
+            return []
 
     def run_checks(self) -> None:
         """ Runs checks if defined in self['imports']['checks']. """
