@@ -241,6 +241,10 @@ def ewarn(self) -> str:
 
 def eerror(self) -> str:
     """ Returns a bash function like eerror. """
-    return r'echo -e "\e[1;31m *\e[0m ${*}"'
+    return ['if check_var plymouth; then',
+            '    plymouth display-message --text="Error: ${*}"',
+            '    return',
+            'fi',
+            r'echo -e "\e[1;31m *\e[0m ${*}"']
 
 
