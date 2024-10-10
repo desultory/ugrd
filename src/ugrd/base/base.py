@@ -218,6 +218,10 @@ def edebug(self) -> str:
             'if [ "$(readvar debug)" != "1" ]; then',
             '    return',
             'fi',
+            'if check_var plymouth; then',
+            '    plymouth display-message --text="${*}"',
+            '    return',
+            'fi',
             r'echo -e "\e[1;34m *\e[0m ${*}"'
             ]
 
@@ -227,13 +231,21 @@ def einfo(self) -> str:
     return ['if check_var quiet; then',
             '    return',
             'fi',
+            'if check_var plymouth; then',
+            '    plymouth display-message --text="${*}"',
+            '    return',
+            'fi',
             r'echo -e "\e[1;32m *\e[0m ${*}"'
             ]
 
 
 def ewarn(self) -> str:
     """ Returns a bash function like ewarn. """
-    return ['if check_var quiet; then',
+    return ['if check_var plymouth; then',
+            '    plymouth display-message --text="Warning: ${*}"',
+            '    return',
+            'fi',
+            'if check_var quiet; then',
             '    return',
             'fi',
             r'echo -e "\e[1;33m *\e[0m ${*}"']
