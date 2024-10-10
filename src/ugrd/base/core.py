@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '3.8.0'
+__version__ = '3.9.0'
 
 from pathlib import Path
 from typing import Union
@@ -263,9 +263,15 @@ def _process_dependencies_multi(self, dependency: Union[Path, str]) -> None:
     """
     dependency = _validate_dependency(self, dependency)
 
-    if dependency.is_symlink():
+    if dependency.is_dir():
+        self.logger.debug("Dependency is a directory, adding to paths: %s" % dependency)
+        self['paths'] = dependency
+        return
+
+    while dependency.is_symlink():
         if self['symlinks'].get(f'_auto_{dependency.name}'):
             self.logger.log(5, "Dependency is a symlink which is already in the symlinks list, skipping: %s" % dependency)
+            break
         else:
             resolved_path = dependency.resolve()
             self.logger.debug("Dependency is a symlink, adding to symlinks: %s -> %s" % (dependency, resolved_path))

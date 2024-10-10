@@ -1,8 +1,7 @@
 binaries = ['plymouthd', 'plymouth']
 
-
 [imports.config_processing]
-"ugrd.base.plymouth" = [ "_process_plymouth_config" ]
+"ugrd.base.plymouth" = [ "_process_plymouth_config", "_process_plymouth_theme" ]
 
 [mounts.devpts]
 type = "devpts"
@@ -13,6 +12,9 @@ no_validate = true
 
 [imports.build_pre]
 "ugrd.base.plymouth" = [ "find_plymouth_config" ]
+
+[imports.build_tasks]
+"ugrd.base.plymouth" = [ "pull_plymouth" ]
 
 [imports.init_main]
 "ugrd.base.plymouth" = [ "start_plymouth" ]
