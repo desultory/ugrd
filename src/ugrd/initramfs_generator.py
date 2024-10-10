@@ -162,7 +162,9 @@ class InitramfsGenerator(GeneratorHelpers):
     def generate_init_main(self) -> list[str]:
         """
         Generates the main init file.
-        Just runs each hook  in self.init_types and returns the output
+        Just runs each hook in self.init_types and returns the output.
+        These hooks include all init levels but init_pre and init_final.
+        If a 'custom_init' function is defined, it will be used instead of this function.
         """
         out = []
         for init_type in self.init_types:
@@ -173,14 +175,14 @@ class InitramfsGenerator(GeneratorHelpers):
     def generate_init(self) -> None:
         """ Generates the init file. """
         self.logger.info("Running init generator functions")
-
-        init = [self['shebang']]
+        init = [self['shebang']]  # Add the shebang to the top of the init file
 
         # Run all included functions, so they get included
         self.run_hook('functions', force_include=True)
 
-        init.extend(self.run_init_hook('init_pre'))
+        init.extend(self.run_init_hook('init_pre'))  # Always run init_pre first
 
+        # If custom_init is used, create the init using that
         if self['imports'].get('custom_init') and self.get('_custom_init_file'):
             init += ["\n# !!custom_init"]
             init_line, custom_init = self['imports']['custom_init'](self)
@@ -188,19 +190,19 @@ class InitramfsGenerator(GeneratorHelpers):
                 init.append(init_line)
             else:
                 init.extend(init_line)
-        else:
+        else:  # Otherwise, use the standard init generator
             init.extend(self.generate_init_main())
 
-        init.extend(self.run_init_hook('init_final'))
+        init.extend(self.run_init_hook('init_final'))  # Always run init_final last
         init += ["\n\n# END INIT"]
 
-        if self.included_functions:
+        if self.included_functions:  # There should always be included functions, if the base config is used
             self._write('/etc/profile', self.generate_profile(), 0o755)
             self.logger.info("Included functions: %s" % ', '.join(list(self.included_functions.keys())))
             if self['imports'].get('custom_init'):
                 custom_init.insert(2, self.banner)
 
-        if self.get('_custom_init_file'):
+        if self.get('_custom_init_file'):  # Write the custom init file if it exists
             self._write(self['_custom_init_file'], custom_init, 0o755)
 
         self._write('init', init, 0o755)
