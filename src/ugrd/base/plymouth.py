@@ -27,7 +27,7 @@ def _process_plymouth_config(self, file):
     plymouth_config.read(file)
     self['plymouth_theme'] = plymouth_config['Daemon']['Theme']
     self.data['plymouth_config'] = file
-    self['copies'] = {'plymouth_config_file': {'source': file, 'dest': '/etc/plymouth/plymouthd.conf'}}
+    self['copies'] = {'plymouth_config_file': {'source': file, 'destination': '/etc/plymouth/plymouthd.conf'}}
 
 
 def _process_plymouth_theme(self, theme):

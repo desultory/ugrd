@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '3.9.0'
+__version__ = '3.9.1'
 
 from pathlib import Path
 from typing import Union
@@ -334,7 +334,7 @@ def _process_copies_multi(self, name: str, parameters: dict) -> None:
     if 'source' not in parameters:
         raise ValueError("[%s] No source specified" % name)
     if 'destination' not in parameters:
-        raise ValueError("[%s] No target specified" % name)
+        raise ValueError("[%s] No destination specified" % name)
 
     self.logger.debug("[%s] Adding copies: %s" % (name, parameters))
     self['copies'][name] = parameters
