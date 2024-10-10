@@ -1,14 +1,14 @@
-## Usage
+# Usage
 
 Once installed, `ugrd` can be executed as root to create an initramfs based on the definition in `/etc/ugrd/config.toml`.
 
-### Supplying configuration
+## Supplying configuration
 
 Alternate configuration can be supplied with:
 
 `ugrd -c example_config.toml`
 
-### Overriding the output location
+## Overriding the output location
 
 The last argument is the output file, which can be a path:
 
@@ -16,7 +16,7 @@ The last argument is the output file, which can be a path:
 
 > If no path information is supplied, the filename provided will be created under `build_dir`
 
-### Hostonly mode
+## Hostonly mode
 
 The `hostonly` boolean is enabled by default and is required for `validation`.
 
@@ -24,61 +24,30 @@ The `hostonly` boolean is enabled by default and is required for `validation`.
 
 It can be forced at runtime with `--hostonly` and disabled with `--no-hostonly`.
 
-### Validation mode
+## Validation mode
 
 The `validate` option is set by default and attempts to verify that the generated initramfs will work on the system creating it.
 
 It can be forced at runtime with `--validate` and disabled with `--no-validate`.
 
-## Output
+## Build logging
+
+To enable verbose logging of what is being moved into the initramfs build directory, set `build_logging` to `true`, or enable it at runtime with `--build-logging`.
+
+This option will bump the log level of build operations to at least `INFO` (20).
+
+This can be enabled at runtime with `--build-logging` or disabled with `--no-build-logging`
+
+The output can be logged to a file instead of stdout by specifying a log file with `--log-file`
+
+# Output
 
 An initramfs environment will be generated at `build_dir` (`/tmp/initramfs/`).
 
 The initramfs will be packed to `out_dir` (`/tmp/initramfs_out`) and named `out_file` (`ugrd.cpio`).
 
-## Config information
+# Image configuration/information
 
 The final config dict can be printed with `--print-config`.
 
 A list of functions by runlevel can be printed with `--print-init`.
-
-### Embedding the initramfs image into the kernel
-
-The `build_dir`can be embedded into the Linux kernel with:
-
-```
-CONFIG_INITRAMFS_SOURCE="/tmp/initramfs"
-```
-
-A CPIO file can be embedded into the Linux kernel with: 
-
-```
-CONFIG_INITRAMFS_SOURCE="/usr/src/initramfs/ugrd.cpio"
-```
-
-### Making the kernel automatically search for the initamfs image
-
-To make the kernel try to load a specific initrd file at boot, without embedding it:
-
-```
-CONFIG_CMDLINE_BOOL=y
-CONFIG_CMDLINE="initrd=ugrd.cpio"
-```
-
-> This will use `ugrd.cpio` under the ESP.
-
-### efibootmgr configuration
-
-If the kernel is built with the `CONFIG_EFI_STUB` option, the path of the initramfs can be passed to it with the `initrd=` command line option.
-
-This can be set with:
-
-`efibootmgr -c -d /dev/sda -L "Gentoo UGRD" -l 'vmlinuz-gentoo.efi' -u 'initrd=ugrd.cpio'`
-
-> This example assumes that the ESP is the first partition on `/dev/sda`, the kernel is named `vmlinuz-gentoo.efi` under the root of the ESP, and `ugrd.cpio` is also on the ESP root.
-
-> On some systems, the EFI may remove entries that don't follow a particular format.
-
-### Bootloader configuration
-
-If a CPIO file is generated, it can be passed to the bootloader. Embedding the initramfs into the kernel is preferred, as the entire kernel image can be signed.

@@ -1,15 +1,15 @@
-#!/bin/bash
+#!/bin/sh
 
 COMMAND="${1:?}"
 KERNEL_VERSION="${2:?}"
 
 # Do not attempt to create initramfs if the supplied image is already a UKI
-[[ "$KERNEL_INSTALL_IMAGE_TYPE" = "uki" ]] && exit 0
+[ "${KERNEL_INSTALL_IMAGE_TYPE}" = "uki" ] && exit 0
 
 # Only run if the initrd generator is ugrd
-[[ ${KERNEL_INSTALL_INITRD_GENERATOR} == "ugrd" ]] || exit 0
+[ "${KERNEL_INSTALL_INITRD_GENERATOR}" = "ugrd" ] || exit 0
 
 # only run when the COMMAND is add, and fewer than 5 arguments are passed
-[[ "$COMMAND" == "add" || "$#" -lt 5 ]] || exit 0
+[ "${COMMAND}" = "add" ] && [ "${#}" -lt 5 ] || exit 0
 
-ugrd "$([[ $KERNEL_INSTALL_VERBOSE == 1 ]] && echo --debug)" --no-rotate --kver "$KERNEL_VERSION" "$KERNEL_INSTALL_STAGING_AREA/initrd" || exit 1
+ugrd "$([ "${KERNEL_INSTALL_VERBOSE}" = 1 ] && echo --debug)" --no-rotate --kver "${KERNEL_VERSION}" "${KERNEL_INSTALL_STAGING_AREA}/initrd" || exit 1

@@ -1,30 +1,19 @@
 __author__ = 'desultory'
-__version__ = '2.10.0'
+__version__ = '2.16.1'
 
 from pathlib import Path
 from subprocess import run
 
 from zenlib.util import contains, unset
+from ugrd.kmod import _normalize_kmod_name, BuiltinModuleError, DependencyResolutionError, IgnoredModuleError
 
 
-MODULE_METADATA_FILES = ['modules.alias', 'modules.alias.bin', 'modules.builtin', 'modules.builtin.alias.bin', 'modules.builtin.bin', 'modules.builtin.modinfo',
-                         'modules.dep', 'modules.dep.bin', 'modules.devname', 'modules.order', 'modules.softdep', 'modules.symbols', 'modules.symbols.bin']
-
-
-class DependencyResolutionError(Exception):
-    pass
-
-
-class BuiltinModuleError(Exception):
-    pass
-
-
-class IgnoredModuleError(Exception):
-    pass
+MODULE_METADATA_FILES = ['modules.order', 'modules.builtin', 'modules.builtin.modinfo']
 
 
 def _process_kernel_modules_multi(self, module: str) -> None:
     """ Adds kernel modules to self['kernel_modules']. """
+    module = _normalize_kmod_name(module)
     if module in self['kmod_ignore']:
         self.logger.debug("[%s] Module is in the ignore list." % module)
         self['_kmod_removed'] = module
@@ -36,6 +25,7 @@ def _process_kernel_modules_multi(self, module: str) -> None:
 
 def _process_kmod_init_multi(self, module: str) -> None:
     """ Adds init modules to self['kernel_modules']. """
+    module = _normalize_kmod_name(module)
     if module in self['kmod_ignore']:
         raise IgnoredModuleError("kmod_init module is in the ignore list: %s" % module)
     self['kmod_init'].append(module)
@@ -45,6 +35,7 @@ def _process_kmod_init_multi(self, module: str) -> None:
 
 def _process__kmod_auto_multi(self, module: str) -> None:
     """ Adds autodetected modules to self['kernel_modules']. """
+    module = _normalize_kmod_name(module)
     if module in self['kmod_ignore']:
         self.logger.debug("Autodetected module is in the ignore list: %s" % module)
         self['_kmod_removed'] = module
@@ -58,6 +49,7 @@ def _get_kmod_info(self, module: str):
     Runs modinfo on a kernel module, parses the output and stored the results in self['_kmod_modinfo'].
     !!! Should be run after metadata is processed so the kver is set properly !!!
     """
+    module = _normalize_kmod_name(module)
     if module in self['_kmod_modinfo']:
         return self.logger.debug("[%s] Module info already exists." % module)
     args = ['modinfo', module, '--set-version', self['kernel_version']]
@@ -78,9 +70,9 @@ def _get_kmod_info(self, module: str):
             module_info['filename'] = line.split()[1]
         elif line.startswith('depends:') and line != 'depends:':
             if ',' in line:
-                module_info['depends'] = line.split(':')[1].lstrip().split(',')
+                module_info['depends'] = _normalize_kmod_name(line.split(':')[1].lstrip().split(','))
             else:
-                module_info['depends'] = [line.split()[1]]
+                module_info['depends'] = _normalize_kmod_name([line.split()[1]])
         elif line.startswith('softdep:'):
             module_info['softdep'] = line.split()[2::2]
         elif line.startswith('firmware:'):
@@ -103,6 +95,7 @@ def _autodetect_modules_lspci(self) -> None:
         cmd = self._run(['lspci', '-k'])
     except RuntimeError as e:
         raise DependencyResolutionError("Failed to get list of kernel modules") from e
+    lspci_kmods = set()
     # Iterate over all output lines
     for line in cmd.stdout.decode('utf-8').split('\n'):
         # If the line contains the string 'Kernel modules:' or 'Kernel driver in use:', it contains the name of a kernel module
@@ -111,14 +104,15 @@ def _autodetect_modules_lspci(self) -> None:
             if ',' in module:
                 # If there are multiple modules, split them and add them to the module set
                 for module in module.split(','):
-                    self['_kmod_auto'] = module.strip()
+                    lspci_kmods.add(module.strip())
             else:
-                # Add the single module to the module set
-                self['_kmod_auto'] = module.strip()
+                lspci_kmods.add(module.strip())
+
+    self['_kmod_auto'] = list(lspci_kmods)
 
 
 @contains('kmod_autodetect_lsmod', "kmod_autodetect_lsmod is not enabled, skipping.")
-def _autodetect_modules_lsmod(self) -> list[str]:
+def _autodetect_modules_lsmod(self) -> None:
     """ Gets the name of all currently used kernel modules. """
     from platform import uname
     if self.get('kernel_version') and self['kernel_version'] != uname().release:
@@ -155,27 +149,37 @@ def get_kernel_metadata(self) -> None:
         self['kernel_version'] = cmd.stdout.decode('utf-8').strip()
         self.logger.info(f"Using detected kernel version: {self['kernel_version']}")
 
-    if not (Path('/lib/modules') / self['kernel_version']).exists():
-        if self['no_kmod']:
+    self['_kmod_dir'] = Path('/lib/modules') / self['kernel_version']
+    if not self['_kmod_dir'].exists():
+        if self['no_kmod']:  # Just warn if no_kmod is set
             self.logger.warning("Kernel module directory does not exist, but no_kmod is set.")
         else:
             raise DependencyResolutionError(f"Kernel module directory does not exist for kernel: {self['kernel_version']}")
 
 
-@contains('kmod_init', "kmod_init is empty, skipping.", log_level=30)
+@contains('kmod_init', "kmod_init is empty, skipping.")
 @unset('no_kmod', "no_kmod is enabled, skipping.", log_level=30)
 def process_module_metadata(self) -> None:
     """ Adds kernel module metadata files to dependencies."""
-    module_path = Path('/lib/modules/') / self['kernel_version']
     for meta_file in MODULE_METADATA_FILES:
-        meta_file_path = module_path / meta_file
+        meta_file_path = self['_kmod_dir'] / meta_file
 
         self.logger.debug("[%s] Adding kernel module metadata files to dependencies: %s" % (self['kernel_version'], meta_file_path))
         self['dependencies'] = meta_file_path
 
 
+@contains('kmod_init', "kmod_init is empty, skipping.")
+@unset('no_kmod', "no_kmod is enabled, skipping.", log_level=30)
+def regen_kmod_metadata(self) -> None:
+    """ Regenerates kernel module metadata files using depmod. """
+    self.logger.info("Regenerating kernel module metadata files.")
+    build_dir = self._get_build_path('/')
+    self._run(['depmod', '--basedir', build_dir, self['kernel_version']])
+
+
 def _add_kmod_firmware(self, kmod: str) -> None:
     """ Adds firmware files for the specified kernel module to the initramfs. """
+    kmod = _normalize_kmod_name(kmod)
     if kmod not in self['_kmod_modinfo']:
         raise DependencyResolutionError("Kernel module info does not exist: %s" % kmod)
 
@@ -191,6 +195,7 @@ def _add_kmod_firmware(self, kmod: str) -> None:
 
 def _add_firmware_dep(self, kmod: str, firmware: str) -> None:
     """ Adds a kernel module firmware file to the initramfs dependencies. """
+    kmod = _normalize_kmod_name(kmod)
     firmware_path = Path('/lib/firmware') / firmware
     if not firmware_path.exists():
         if firmware_path.with_suffix(firmware_path.suffix + '.xz').exists():
@@ -207,6 +212,7 @@ def _add_firmware_dep(self, kmod: str, firmware: str) -> None:
 
 def _process_kmod_dependencies(self, kmod: str) -> None:
     """ Processes a kernel module's dependencies. """
+    kmod = _normalize_kmod_name(kmod)
     _get_kmod_info(self, kmod)
     # Add dependencies of the module
     dependencies = []
@@ -238,8 +244,18 @@ def _process_kmod_dependencies(self, kmod: str) -> None:
     if self['_kmod_modinfo'][kmod]['filename'] == '(builtin)':
         raise BuiltinModuleError("Not adding built-in module to dependencies: %s" % kmod)
 
-    self['dependencies'] = self['_kmod_modinfo'][kmod]['filename']
     _add_kmod_firmware(self, kmod)
+
+    filename = self['_kmod_modinfo'][kmod]['filename']
+    if filename.endswith('.ko'):
+        self['dependencies'] = filename
+    elif filename.endswith('.ko.xz'):
+        self['xz_dependencies'] = filename
+    elif filename.endswith('.ko.gz'):
+        self['gz_dependencies'] = filename
+    else:
+        self.logger.warning("[%s] Unknown kmod extension: %s" % (kmod, filename))
+        self['dependencies'] = filename
 
 
 def process_ignored_module(self, module: str) -> None:
@@ -251,7 +267,7 @@ def process_ignored_module(self, module: str) -> None:
                 if module in self['_kmod_modinfo'] and self['_kmod_modinfo'][module]['filename'] == '(builtin)':
                     self.logger.debug("Removing built-in module from kmod_init: %s" % module)
                 else:
-                    raise ValueError("Cannot ignore external module in kmod_init: %s" % module)
+                    raise ValueError("Required module cannot be imported and is not builtin: %s" % module)
             else:
                 self.logger.debug("Removing ignored kernel module from %s: %s" % (key, module))
             self[key].remove(module)
@@ -273,7 +289,14 @@ def process_modules(self) -> None:
         try:
             _process_kmod_dependencies(self, kmod)
             continue
-        except (IgnoredModuleError, BuiltinModuleError) as e:
+        except BuiltinModuleError:
+            if kmod in self['kmod_init']:
+                self.logger.debug("Removing built-in module from kmod_init: %s" % kmod)
+                self['kmod_init'].remove(kmod)
+            self.logger.debug("Removing built-in module from kernel_modules: %s" % kmod)
+            self['kernel_modules'].remove(kmod)
+            continue  # Don't add built-in modules to the ignore list
+        except IgnoredModuleError as e:
             self.logger.info(e)
         except DependencyResolutionError as e:
             if kmod in self['kmod_init']:
@@ -290,7 +313,9 @@ def process_modules(self) -> None:
             _process_kmod_dependencies(self, kmod)
             self['kmod_init'] = kmod
             continue
-        except (IgnoredModuleError, BuiltinModuleError) as e:
+        except BuiltinModuleError:
+            continue  # Don't add built-in modules to the ignore list
+        except IgnoredModuleError as e:
             self.logger.debug(e)
         except DependencyResolutionError as e:
             self.logger.warning("[%s] Failed to process autodetected kernel module dependencies: %s" % (kmod, e))
@@ -313,4 +338,3 @@ def load_modules(self) -> None:
             '    einfo "Loading kernel modules: %s"' % module_list,
             '    modprobe -av %s' % module_list,
             'fi']
-

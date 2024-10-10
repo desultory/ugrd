@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '3.5.0'
+__version__ = '3.8.0'
 
 from pathlib import Path
 from typing import Union
@@ -7,29 +7,32 @@ from typing import Union
 from zenlib.util import contains, unset, NoDupFlatList
 
 
+def detect_tmpdir(self) -> None:
+    """ Reads TMPDIR from the environment, sets it as the temporary directory. """
+    from os import environ
+    if tmpdir := environ.get('TMPDIR'):
+        self.logger.info("Detected TMPDIR: %s" % tmpdir)
+        self['tmpdir'] = Path(tmpdir)
+
+
 @contains('clean', "Skipping cleaning build directory", log_level=30)
 def clean_build_dir(self) -> None:
     """ Cleans the build directory. """
     from shutil import rmtree
 
-    if self.build_dir.is_dir():
-        self.logger.warning("Cleaning build directory: %s" % self.build_dir)
-        rmtree(self.build_dir)
+    build_dir = self._get_build_path('/')
+
+    if build_dir.is_dir():
+        self.logger.warning("Cleaning build directory: %s" % build_dir)
+        rmtree(build_dir)
     else:
-        self.logger.info("Build directory does not exist, skipping cleaning: %s" % self.build_dir)
+        self.logger.info("Build directory does not exist, skipping cleaning: %s" % build_dir)
 
 
 def generate_structure(self) -> None:
     """ Generates the initramfs directory structure. """
-    if not self.build_dir.is_dir():
-        self._mkdir(self.build_dir)
-
     for subdir in set(self['paths']):
-        # Get the relative path of each path, create the directory in the build dir
-        subdir_relative_path = subdir.relative_to(subdir.anchor)
-        target_dir = self.build_dir / subdir_relative_path
-
-        self._mkdir(target_dir)
+        self._mkdir(subdir)
 
 
 def calculate_dependencies(self, binary: str) -> list[Path]:
@@ -64,17 +67,17 @@ def calculate_dependencies(self, binary: str) -> list[Path]:
     return dependency_paths
 
 
-def check_usr(self) -> None:
-    """ Checks for /bin and /sbin in the build directory.
-    If the are not present, it will symlink them to /usr/bin and /usr/sbin. """
+def handle_usr_symlinks(self) -> None:
+    """ Adds symlinks for /usr/bin and /usr/sbin to /bin and /sbin. """
+    build_dir = self._get_build_path('/')
 
-    if not (self.build_dir / 'bin').is_dir():
-        if (self.build_dir / 'usr/bin').is_dir():
+    if not (build_dir / 'bin').is_dir():
+        if (build_dir / 'usr/bin').is_dir():
             self._symlink('/usr/bin', '/bin/')
         else:
             raise RuntimeError("Neither /bin nor /usr/bin exist in the build directory")
 
-    if not (self.build_dir / 'sbin').is_dir() and (self.build_dir / 'usr/sbin').is_dir():
+    if not (build_dir / 'sbin').is_dir() and (build_dir / 'usr/sbin').is_dir():
         self._symlink('/usr/sbin', '/sbin/')
 
 
@@ -99,7 +102,7 @@ def deploy_xz_dependencies(self) -> None:
         out_path = self._get_build_path(str(xz_dependency).replace('.xz', ''))
         if not out_path.parent.is_dir():
             self.logger.debug("Creating parent directory: %s" % out_path.parent)
-            self._mkdir(out_path.parent)
+            self._mkdir(out_path.parent, resolve_build=False)
         with out_path.open('wb') as out_file:
             out_file.write(decompress(xz_dependency.read_bytes()))
             self.logger.info("[xz] Decompressed '%s' to: %s" % (xz_dependency, out_path))
@@ -113,7 +116,7 @@ def deploy_gz_dependencies(self) -> None:
         out_path = self._get_build_path(str(gz_dependency).replace('.gz', ''))
         if not out_path.parent.is_dir():
             self.logger.debug("Creating parent directory: %s" % out_path.parent)
-            self._mkdir(out_path.parent)
+            self._mkdir(out_path.parent, resolve_build=False)
         with out_path.open('wb') as out_file:
             out_file.write(decompress(gz_dependency.read_bytes()))
             self.logger.info("[gz] Decompressed '%s' to: %s" % (gz_dependency, out_path))
@@ -142,7 +145,7 @@ def deploy_nodes(self) -> None:
     for node, config in self['nodes'].items():
         node_path_abs = Path(config['path'])
 
-        node_path = self.build_dir / node_path_abs.relative_to(node_path_abs.anchor)
+        node_path = self._get_build_path('/') / node_path_abs.relative_to(node_path_abs.anchor)
         node_mode = S_IFCHR | config['mode']
 
         try:
@@ -173,6 +176,28 @@ def find_libgcc(self) -> None:
 
     self['dependencies'] = source_path
     self['library_paths'] = str(source_path.parent)
+
+
+def _process_out_file(self, out_file):
+    """ Processes the out_file configuration option. """
+    if Path(out_file).is_dir():
+        self.logger.info("Specified out_file is a directory, setting out_dir: %s" % out_file)
+        self['out_dir'] = out_file
+        return
+
+    if out_file.startswith('./'):
+        self.logger.debug("Relative out_file path detected: %s" % out_file)
+        self['out_dir'] = Path('.').resolve()
+        self.logger.info("Resolved out_dir to: %s" % self['out_dir'])
+        out_file = Path(out_file[2:])
+    elif Path(out_file).parent.is_dir() and str(Path(out_file).parent) != '.':
+        self['out_dir'] = Path(out_file).parent
+        self.logger.info("Resolved out_dir to: %s" % self['out_dir'])
+        out_file = Path(out_file).name
+    else:
+        out_file = Path(out_file)
+
+    self.data['out_file'] = out_file
 
 
 def _process_paths_multi(self, path: Union[Path, str]) -> None:
@@ -220,16 +245,23 @@ def _process_binaries_multi(self, binary: str) -> None:
     self['binaries'].append(binary)
 
 
-def _process_dependencies_multi(self, dependency: Union[Path, str]) -> None:
-    """
-    Converts the input to a Path if it is not one, checks if it exists.
-    If the dependency is a symlink, resolve it and add it to the symlinks list.
-    """
+def _validate_dependency(self, dependency: Union[Path, str]) -> None:
+    """ Performas basic validation and normalization for dependencies. """
     if not isinstance(dependency, Path):
         dependency = Path(dependency)
 
     if not dependency.exists():
         raise FileNotFoundError("Dependency does not exist: %s" % dependency)
+
+    return dependency
+
+
+def _process_dependencies_multi(self, dependency: Union[Path, str]) -> None:
+    """
+    Converts the input to a Path if it is not one, checks if it exists.
+    If the dependency is a symlink, resolve it and add it to the symlinks list.
+    """
+    dependency = _validate_dependency(self, dependency)
 
     if dependency.is_symlink():
         if self['symlinks'].get(f'_auto_{dependency.name}'):
@@ -240,7 +272,7 @@ def _process_dependencies_multi(self, dependency: Union[Path, str]) -> None:
             self['symlinks'][f'_auto_{dependency.name}'] = {'source': resolved_path, 'target': dependency}
             dependency = resolved_path
 
-    self.logger.debug("Adding dependency: %s" % dependency)
+    self.logger.debug("Added dependency: %s" % dependency)
     self['dependencies'].append(dependency)
 
 
@@ -258,15 +290,9 @@ def _process_xz_dependencies_multi(self, dependency: Union[Path, str]) -> None:
     Checks that the file is a xz file, and adds it to the xz dependencies list.
     !! Resolves symlinks implicitly !!
     """
-    if not isinstance(dependency, Path):
-        dependency = Path(dependency)
-
-    if not dependency.exists():
-        raise FileNotFoundError("XZ dependency does not exist: %s" % dependency)
-
+    dependency = _validate_dependency(self, dependency)
     if dependency.suffix != '.xz':
         self.logger.warning("XZ dependency missing xz extension: %s" % dependency)
-
     self['xz_dependencies'].append(dependency)
 
 
@@ -275,15 +301,9 @@ def _process_gz_dependencies_multi(self, dependency: Union[Path, str]) -> None:
     Checks that the file is a gz file, and adds it to the gz dependencies list.
     !! Resolves symlinks implicitly !!
     """
-    if not isinstance(dependency, Path):
-        dependency = Path(dependency)
-
-    if not dependency.exists():
-        raise FileNotFoundError("GZIP dependency does not exist: %s" % dependency)
-
+    dependency = _validate_dependency(self, dependency)
     if dependency.suffix != '.gz':
-        self.logger.warning("GZIP dependency missing gzip extension: %s" % dependency)
-
+        self.logger.warning("GZIP dependency missing gz extension: %s" % dependency)
     self['gz_dependencies'].append(dependency)
 
 
@@ -296,7 +316,7 @@ def _process_build_logging(self, log_build: bool) -> None:
         if self['_build_log_level'] > 10:
             self.logger.warning("Resetting _build_log_level to 10, as build logging is disabled.")
         self['_build_log_level'] = 10
-    dict.__setitem__(self, 'build_logging', log_build)
+    self.data['build_logging'] = log_build
 
 
 def _process_copies_multi(self, name: str, parameters: dict) -> None:
@@ -351,31 +371,6 @@ def _process_nodes_multi(self, name: str, config: dict) -> None:
     self['nodes'][name] = config
 
 
-def _process_file_owner(self, owner: Union[str, int]) -> None:
-    """
-    Processes the passed file owner into a uid.
-    If the owner is a string, it is assumed to be a username and the uid is looked up.
-    If the owner is an int, it is assumed to be a uid and is used directly.
-    """
-    from pwd import getpwnam
-
-    if isinstance(owner, str):
-        try:
-            self.logger.debug("Processing file owner: %s" % owner)
-            owner = getpwnam(owner).pw_uid
-            self.logger.info("Resolved uid: %s" % owner)
-        except KeyError:
-            self.logger.error("Unable to find uid for user: %s" % owner)
-            self.logger.warning("Setting file owner to 0 (root)")
-            owner = 0
-    elif not isinstance(owner, int):
-        self.logger.error("Unable to process file owner: %s" % owner)
-        raise ValueError("Invalid type passed for file owner: %s" % type(owner))
-
-    self['_file_owner_uid'] = owner
-    dict.__setitem__(self, 'file_owner', owner)
-
-
 def _process_masks_multi(self, runlevel: str, function: str) -> None:
     """ Processes a mask definition. """
     if runlevel not in self['masks']:
@@ -391,7 +386,7 @@ def _process_hostonly(self, hostonly: bool) -> None:
     If validation is enabled, and hostonly mode is set to disabled, disable validation and warn.
     """
     self.logger.debug("Processing hostonly: %s" % hostonly)
-    dict.__setitem__(self, 'hostonly', hostonly)
+    self.data['hostonly'] = hostonly
     if not hostonly and self['validate']:
         self.logger.warning("Hostonly is disabled, disabling validation")
         self['validate'] = False
@@ -405,6 +400,5 @@ def _process_validate(self, validate: bool) -> None:
     self.logger.debug("Processing validate: %s" % validate)
     if not self['hostonly'] and validate:
         raise ValueError("Cannot enable validation when hostonly mode is disabled")
-
-    dict.__setitem__(self, 'validate', validate)
+    self.data['validate'] = validate
 

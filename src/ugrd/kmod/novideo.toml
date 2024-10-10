@@ -1,3 +1,9 @@
-kmod_ignore = ['amdgpu', 'drm_kms_helper', 'ttm', 'drm_display_helper', 'gpu_sched', 'drm_buddy', 'video', 'drm_ttm_helper',
-               'videobuf2_common', 'uvc', 'amdxcp', 'videobuf2_v4l2', 'drm_suballoc_helper', 'uvcvideo', 'videobuf2_vmalloc',
-	       'videodev', 'videobuf2_memops', 'ast']
+kmod_ignore = [
+'video', 'videodev', 'ttm', 'gpu_sched',   # generic modules
+'uvcvideo', 'uvc',  # USB video
+'drm_kms_helper', 'drm_display_helper',  'drm_buddy', 'drm_ttm_helper',  # DRM
+'amdgpu', 'radeon', 'amdxcp',  # AMD GPU
+'nouveau', 'nvidia', 'nvidia_drm',  # NVIDIA GPU
+'ast', 'mgag200',  # Server GPU
+'videobuf2_common', 'videobuf2_v4l2', 'drm_suballoc_helper', 'videobuf2_vmalloc', 'videobuf2_memops',  # V4L2
+]

@@ -4,7 +4,11 @@ modules = [
   "ugrd.kmod.nonetwork"
 ]
 
-kmod_ignore = [ 'kvm', 'kvm_amd', 'kvm_intel', 'ch341', 'cp210x', 'joydev', 'iTCO_wdt', 'iTCO_vendor_support', 'intel_qat',
-                'intel_powerclamp', 'binfmt_misc', 'coretemp', 'wmi', 'intel_cstate', 'rapl', 'intel_rapl_common',
-                'x86_pkg_temp_thermal', 'intel_rapl_msr', 'intel_pmc_bxt', 'i2c_ismt', 'i2c_i801', 'sp5100_tco',
-                'k10temp', 'i2c_piix4', 'spi_intel_pci' ]
+kmod_ignore = [
+'kvm', 'kvm_amd', 'kvm_intel',  # virtualization
+'ch341', 'cp210x', 'joydev', 'binfmt_misc', 'wmi', 'xpad',  # misc
+'coretemp', 'x86_pkg_temp_thermal', 'k10temp', 'x86_pkg_temp_thermal',  # thermal
+'iTCO_wdt', 'iTCO_vendor_support', 'sp5100_tco',  # watchdog
+'intel_qat', 'intel_powerclamp', 'intel_cstate', 'rapl', 'intel_rapl_common', 'intel_rapl_msr', 'intel_pmc_bxt',  #intel
+'i2c_piix4', 'spi_intel_pci', 'i2c_ismt', 'i2c_i801'  # i2c
+]

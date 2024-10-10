@@ -1,0 +1,8 @@
+check_included_funcs = true
+
+[imports.checks]
+"ugrd.base.checks" = [ "check_included_funcs", "check_in_file" ]
+
+[custom_parameters]
+check_included_funcs = 'bool'  # Checks that all included functions are in the profile
+check_in_file = 'dict'  # Dict where each key is a file, and the value is a list of strings to look for in a file

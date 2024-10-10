@@ -1,12 +1,7 @@
 # Example config for using a keymap
 
 modules = [
-  "ugrd.kmod.vm",
   "ugrd.base.keymap",
 ]
 
 keymap_file = "/usr/share/keymaps/i386/dvorak/ANSI-dvorak.map.gz"
-
-# Optionally supply a kernel version
-#kernel_version = "6.1.57-gentoo-custom"
-

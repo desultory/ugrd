@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.1.0'
+__version__ = '1.1.2'
 
 from zenlib.util import contains
 
@@ -14,5 +14,5 @@ def fetch_keys(self) -> None:
 @contains('sc_public_key', "Smartcard public key file not specified (sc_public_key)", raise_exception=True)
 def import_keys(self) -> str:
     """ Import GPG public keys at runtime. """
-    return f"gpg --import {self['sc_public_key']}"
+    return f'einfo "Importing GPG keys: $(gpg --import {self['sc_public_key']} 2>&1)"'
 

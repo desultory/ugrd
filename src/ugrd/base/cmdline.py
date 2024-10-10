@@ -1,9 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.3.1'
-
-
-CMDLINE_BOOLS = ['quiet', 'debug', 'recovery', 'rootwait']
-CMDLINE_STRINGS = ['init', 'root', 'roottype', 'rootflags', 'rootdelay']
+__version__ = '2.4.0'
 
 
 def parse_cmdline_bool(self) -> str:
@@ -32,10 +28,10 @@ def parse_cmdline(self) -> str:
     """ Returns bash script to parse /proc/cmdline """
     return [r'''cmdline=$(awk -F '--' '{print $1}' /proc/cmdline)''',  # Get everything before '--'
             r'''setvar INIT_ARGS "$(awk -F '--' '{print $2}' /proc/cmdline)"''',  # Get everything after '--'
-            f'''for bool in {" ".join([f'"{bool}"' for bool in CMDLINE_BOOLS])}; do''',
+            f'''for bool in {" ".join([f'"{bool}"' for bool in self['cmdline_bools']])}; do''',
             '    parse_cmdline_bool "$bool"',
             'done',
-            f'''for string in {" ".join([f'"{string}"' for string in CMDLINE_STRINGS])}; do''',
+            f'''for string in {" ".join([f'"{string}"' for string in self['cmdline_strings']])}; do''',
             '    parse_cmdline_str "$string"',
             'done',
             'einfo "Parsed cmdline: $cmdline"']

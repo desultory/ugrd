@@ -1,7 +1,21 @@
-kmod_ignore = ['r8169', 'iwlwifi', 'r8169', 'stp', 'rfkill', '8021q', 'llc', 'garp', 'net_failover', 'failover', 'mrp', 'btusb',
-               'tun', 'r8152', 'ip6table_nat', 'xt_MASQUERADE', 'btbcm', 'tap', 'nf_defrag_ipv6', 'xt_conntrack',
-	       'iptable_filter', 'nf_conntrack', 'nf_defrag_ipv4', 'ip6_tables', 'usbnet', 'wireguard', 'ip6table_filter',
-	       'iptable_mangle', 'mac80211', 'ipt_REJECT', 'ip_tables', 'xt_CHECKSUM', 'iptable_nat', 'nf_reject_ipv4',
-	       'ip6_udp_tunnel', 'udp_tunnel', 'nf_nat', 'btmtk', 'bluetooth', 'ip6table_mangle', 'bridge', 'iwlmvm',
-	       'btintel', 'btrtl', 'r8153_ecm', 'cdc_ether', 'cfg80211', 'vhost_net', 'igb', 'ixgbe', 'pinctrl_denverton',
-	       'nfnetlink', 'nfnetlink_queue', 'nfnetlink_log', 'nf_conntrack_netlink', 'sctp']
+kmod_ignore = [
+'rfkill', 'bluetooth', 'cfg80211', 'mac80211', # Wireless
+'iwlwifi', 'iwlmvm', 'btusb', 'btintel', 'btrtl', 'btbcm', 'btmtk',  # wireless vendor
+'mt76', 'mt76x2_common', 'mt7921_common', 'mt76x0_common', 'mt76_usb', 'mt76x02_lib',  # mediatek
+'cdc_acm', 'cdc_ncm', 'cdc_wdm', 'cdc_ether',  # USB CDC
+'stp', '8021q', 'llc', 'garp', 'mrp', 'bridge', 'bonding',  # Ethernet
+'r8169', 'r8152', 'r8153_ecm', 'igb', 'ixgbe', 'tg3', 'e1000e', 'e1000',  # Ethernet cards
+'tun', 'tap', 'wireguard', 'udp_tunnel', 'ip6_udp_tunnel',  # Tunnels
+'net_failover', 'failover','vhost_net','usbnet',  # Misc
+'tls', 'sctp',  # Misc protocols
+'rtl2832', 'r820t', 'dvb_usb_rtl28xxu', 'dvb_core', 'dvb_usb_v2',  # SDR
+'grace', 'nfs_acl', 'nfsd', 'lockd', 'sunrpc', 'auth_rpcgss', 'nfs', 'netfs',  # NFS
+'nf_nat', 'nfnetlink', 'nfnetlink_queue', 'nfnetlink_log',  # Netfilter base
+'nf_conntrack', 'nf_conntrack_netlink',  # Netfilter conntrack
+'nf_defrag_ipv4', 'nf_defrag_ipv6',  # Netfilter defrag
+'nf_reject_ipv4', 'nf_reject_ipv6',  # Netfilter reject
+'iptable_filter', 'ip_tables', 'ip6table_filter', 'ip6_tables',   # iptables
+'xt_MASQUERADE', 'xt_conntrack', 'xt_CHECKSUM', 'xt_addrtype', 'xt_comment', 'xt_conntrack', 'xt_mark', 'xt_multiport', 'xt_nat', 'xt_recent', 'xt_set', 'xt_tcpudp', 'xt_u32',  # iptables extensions
+'ip6table_nat', 'iptable_nat', 'iptable_mangle', 'ip6table_mangle',  # iptables nat/mangle
+'ipt_REJECT', 'ip6t_REJECT'  # iptables reject
+]

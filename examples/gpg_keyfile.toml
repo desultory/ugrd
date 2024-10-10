@@ -1,0 +1,14 @@
+# This is an example configuration for using a GPG protected keyfile on external storage.
+
+modules = [
+  "ugrd.kmod.usb",
+  "ugrd.kmod.standard_mask",
+  "ugrd.crypto.gpg",
+]
+
+auto_mounts = ['/boot']  # Automatically create mount config for /boot on the host
+
+# Information about the LUKS volume
+[cryptsetup.root]
+key_type = "gpg"
+key_file = "/boot/rootfs.luks.gpg"

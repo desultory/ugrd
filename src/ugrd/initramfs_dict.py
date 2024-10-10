@@ -1,26 +1,28 @@
-
 __author__ = "desultory"
-__version__ = "1.8.0"
+__version__ = "2.2.1"
 
 from tomllib import load, TOMLDecodeError
 from pathlib import Path
 from queue import Queue
+from collections import UserDict
 
 from zenlib.logging import loggify
 from zenlib.util import handle_plural, pretty_print, NoDupFlatList
 
 
 @loggify
-class InitramfsConfigDict(dict):
+class InitramfsConfigDict(UserDict):
     """
-    Dict for containing config for the InitramfsGenerator
+    Dict for ugrd config
 
-    IMPORTANT:
+    IMPORTANT!!!:
         This dict does not act like a normal dict, setitem is designed to append when the overrides are used
         Default parameters are defined in builtin_parameters
 
-    If a new parameter is added, and it's not a known type, an exception will be raised.
-    If that paramter name starts with an underscore, it will be added to a queue for later processing.
+    By default ugrd.base.base is loaded, which is a very minimal config.
+    If NO_BASE is set to True, ugrd.base.core is loaded instead, which contains absolute essentials.
+
+    If parameters which are not registerd are set, they are added to the processing queue and processed when the type is known.
     """
     builtin_parameters = {'modules': NoDupFlatList,  # A list of the names of modules which have been loaded, mostly used for dependency checking
                           'imports': dict,  # A dict of functions to be imported into the initramfs, under their respective hooks
@@ -34,9 +36,9 @@ class InitramfsConfigDict(dict):
         # Define the default parameters
         for parameter, default_type in self.builtin_parameters.items():
             if default_type == NoDupFlatList:
-                super().__setitem__(parameter, default_type(no_warn=True, log_bump=5, logger=self.logger, _log_init=False))
+                self.data[parameter] = default_type(no_warn=True, log_bump=5, logger=self.logger, _log_init=False)
             else:
-                super().__setitem__(parameter, default_type())
+                self.data[parameter] = default_type()
         if not NO_BASE:
             self['modules'] = 'ugrd.base.base'
         else:
@@ -46,12 +48,15 @@ class InitramfsConfigDict(dict):
         """ Imports data from an argument dict. """
         for arg, value in args.items():
             self.logger.info("Importing argument '%s' with value: %s" % (arg, value))
-            if arg == 'modules':
+            if arg == 'modules':  # allow loading modules by name from the command line
                 for module in value.split(','):
                     self[arg] = module
-            self[arg] = value
+            else:
+                self[arg] = value
 
     def __setitem__(self, key: str, value) -> None:
+        if self['validated']:
+            return self.logger.error("[%s] Config is validatied, refusing to set value: %s" % (key, value))
         # If the type is registered, use the appropriate update function
         if any(key in d for d in (self.builtin_parameters, self['custom_parameters'])):
             return self.handle_parameter(key, value)
@@ -69,14 +74,17 @@ class InitramfsConfigDict(dict):
         """
         Handles a config parameter, setting the value and processing it if the type is known.
         Raises a KeyError if the parameter is not registered.
+
+        Uses custom processing functions if they are defined, otherwise uses the standard setters.
         """
         # Get the expected type, first searching builtin_parameters, then custom_parameters
         for d in (self.builtin_parameters, self['custom_parameters']):
             expected_type = d.get(key)
             if expected_type:
                 if expected_type.__name__ == "InitramfsGenerator":
-                    return super().__setitem__(key, value)
-                break
+                    self.data[key] = value
+                    return self.logger.debug("Setting InitramfsGenerator: %s" % key)
+                break  # Break and raise an exception if the type is not found
         else:
             raise KeyError("Parameter not registered: %s" % key)
 
@@ -103,7 +111,7 @@ class InitramfsConfigDict(dict):
                 self.logger.log(5, "[%s] Using custom plural setitem: %s" % (key, func.__name__))
                 return handle_plural(func)(self, value)
 
-        if expected_type in (list, NoDupFlatList):  # Adppend to lists, don't replace
+        if expected_type in (list, NoDupFlatList):  # Append to lists, don't replace
             self.logger.log(5, "Using list setitem for: %s" % key)
             return self[key].append(value)
 
@@ -116,42 +124,39 @@ class InitramfsConfigDict(dict):
                 return self[key].update(value)
 
         self.logger.debug("Setting custom parameter: %s" % key)
-        super().__setitem__(key, expected_type(value))  # For everything else, simply set it
+        self.data[key] = expected_type(value)  # For everything else, simply set it
 
     @handle_plural
     def _process_custom_parameters(self, parameter_name: str, parameter_type: type) -> None:
         """
         Updates the custom_parameters attribute.
         Sets the initial value of the parameter based on the type.
-
-        If the parameter is in the processing queue, process the queued values.
         """
         from pycpio import PyCPIO
-        from .initramfs_generator import InitramfsGenerator
 
         self['custom_parameters'][parameter_name] = eval(parameter_type)
         self.logger.debug("Registered custom parameter '%s' with type: %s" % (parameter_name, parameter_type))
 
         match parameter_type:
             case "NoDupFlatList":
-                super().__setitem__(parameter_name, NoDupFlatList(no_warn=True, log_bump=5, logger=self.logger, _log_init=False))
+                self.data[parameter_name] = NoDupFlatList(no_warn=True, log_bump=5, logger=self.logger, _log_init=False)
             case "list" | "dict":
-                super().__setitem__(parameter_name, eval(parameter_type)())
+                self.data[parameter_name] = eval(parameter_type)()
             case "bool":
-                super().__setitem__(parameter_name, False)
+                self.data[parameter_name] = False
             case "int":
-                super().__setitem__(parameter_name, 0)
+                self.data[parameter_name] = 0
             case "float":
-                super().__setitem__(parameter_name, 0.0)
+                self.data[parameter_name] = 0.0
             case "str":
-                super().__setitem__(parameter_name, "")
+                self.data[parameter_name] = ""
             case "Path":
-                super().__setitem__(parameter_name, Path())
+                self.data[parameter_name] = Path()
             case "PyCPIO":
-                super().__setitem__(parameter_name, PyCPIO(logger=self.logger, _log_init=False, _log_bump=10))
+                self.data[parameter_name] = PyCPIO(logger=self.logger, _log_init=False, _log_bump=10)
             case _:  # For strings and things, don't init them so they are None
                 self.logger.warning("Leaving '%s' as None" % parameter_name)
-                super().__setitem__(parameter_name, None)
+                self.data[parameter_name] = None
 
     def _process_unprocessed(self, parameter_name: str) -> None:
         """ Processes queued values for a parameter. """
@@ -275,10 +280,10 @@ class InitramfsConfigDict(dict):
         self['modules'].append(module)
 
     def validate(self) -> None:
-        """ Validate config """
+        """ Validate config, checks that all values are processed, sets validated flag."""
         if self['_processing']:
             self.logger.critical("Unprocessed config values: %s" % ', '.join(list(self['_processing'].keys())))
         self['validated'] = True
 
     def __str__(self) -> str:
-        return pretty_print(self)
+        return pretty_print(self.data)

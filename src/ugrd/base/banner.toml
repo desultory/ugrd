@@ -1,0 +1,7 @@
+banner = 'einfo "UGRD v$(readvar VERSION)"'
+
+[imports.init_pre]
+"ugrd.base.banner" = [ "print_banner" ]
+
+[custom_parameters]
+banner = "str"  # Banner string to be printed at the start of init

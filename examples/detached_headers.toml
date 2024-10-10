@@ -9,10 +9,7 @@ modules = [
 #mount_wait = true
 #mount_timeout = 3
 
-
-[mounts.boot]
-type = "vfat"
-uuid = "BDF2-0139"
+auto_mounts = ['/boot']  # Automatically create mount config for /boot on the host
 
 [cryptsetup.root]
 header_file = "/boot/luks_header.img"

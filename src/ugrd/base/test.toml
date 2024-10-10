@@ -1,7 +1,6 @@
 test_rootfs_name = 'ugrd-test-rootfs'
-test_rootfs_build_dir = '/tmp/initramfs_test_rootfs'
+test_rootfs_build_dir = 'initramfs_test_rootfs'
 test_image_size = 16
-test_flag = "UGRD TEST SUCCESSFUL"
 
 test_memory = '256M'
 test_cpu = 'host'
@@ -10,8 +9,11 @@ test_timeout = 15
 test_cmdline = 'console=ttyS0,115200 panic=1'
 qemu_bool_args = ['nographic', 'no-reboot', 'enable-kvm']
 
+[imports.build_pre]
+"ugrd.base.test" = [ "init_test_vars" ]
+
 [imports.tests]
-"ugrd.base.test" = ["init_test_vars", "make_test_image", "test_image"]
+"ugrd.base.test" = [ "test_image" ]
 
 [custom_parameters]
 test_kernel = "Path"  # Define the kernel to use for the test
@@ -25,5 +27,3 @@ test_flag = "str"  # Define the success flag for the test
 test_rootfs_name = "str"  # Define the name of the rootfs image
 test_rootfs_build_dir = "Path"  # Define the build directory for the rootfs image
 qemu_bool_args = "NoDupFlatList"  # Define the qemu boolean arguments
-_test_rootfs = "InitramfsGenerator"  # Define the target rootfs generator
-_qemu_cmd = "str"  # Define the qemu command to use for the test

@@ -1,5 +1,5 @@
-file_owner = "portage"
-build_dir = "/tmp/initramfs"
+tmpdir = "/tmp"
+build_dir = "initramfs_build"
 _build_log_level = 10
 out_dir = "/tmp/initramfs_out"
 clean = true
@@ -10,7 +10,6 @@ library_paths = [ "/lib64" ]
 old_count = 1
 
 binaries = [ "/bin/bash" ]
-banner = 'einfo "UGRD v$(readvar VERSION)"'
 
 [nodes.console]
 mode = 0o644
@@ -19,6 +18,7 @@ minor = 1
 
 [imports.config_processing]
 "ugrd.base.core" = [ "_process_build_logging",
+		     "_process_out_file",
 		     "_process_binaries_multi",
 		     "_process_dependencies_multi",
 		     "_process_opt_dependencies_multi",
@@ -26,7 +26,6 @@ minor = 1
 		     "_process_gz_dependencies_multi",
 		     "_process_copies_multi",
 		     "_process_symlinks_multi",
-		     "_process_file_owner",
 		     "_process_nodes_multi",
 		     "_process_paths_multi",
 		     "_process_masks_multi",
@@ -35,9 +34,9 @@ minor = 1
 		   ]
 
 [imports.build_pre]
-"ugrd.base.core" = [ "clean_build_dir", "find_libgcc" ]
+"ugrd.base.core" = [ "detect_tmpdir", "clean_build_dir", "find_libgcc" ]
 
-[imports.build_tasks]
+[imports.build_deploy]
 "ugrd.base.core" = [ "generate_structure",
 		     "deploy_dependencies",
 		     "deploy_xz_dependencies",
@@ -47,13 +46,13 @@ minor = 1
 		     "deploy_symlinks" ]
 
 [imports.build_final]
-"ugrd.base.core" = [ "check_usr" ]
+"ugrd.base.core" = [ "handle_usr_symlinks" ]
 
 [custom_parameters]
 hostonly = "bool"  # If true, the initramfs will be built specifically for the host building it
 validate = "bool"  # If true, the configuration of the initramfs will be validated against the host
-_file_owner_uid = "int"  # Add the _file_owner_uid property, used to store the uid of the file owner
 _custom_init_file = "str"  # Add the _custom_init_file propety, used to set where the custom init file is located
+tmpdir = "Path"  # The base directory for builds
 build_dir = "Path"  # The directory where the initramfs is built
 build_logging = "bool" # If true, additional build information will be logged to the console
 _build_log_level = "int"  # The level of logging to use for the build log, set to 10 by default and incremeted by if build_log is true (min 20)
@@ -70,8 +69,6 @@ nodes = "dict"  # Nodes dict, defines the device nodes to be created
 paths = "NoDupFlatList"  # Paths to be created in the initramfs
 masks = "dict"  # Imports to be masked in the initramfs
 out_dir = "Path"  # The directory where the initramfs is packed/output. If no packer is used, this is the final output directory.
+out_file = "str"  # The name of the output file, if absolute, overrids out dir with the path, and sets out_file to the filename
 old_count = "int"  # The number of times to cycle old files before deleting
 clean = "bool"  # Add the clean property, used to define if the mounts should be cleaned up after boot
-file_owner = "str"  # Add the file_owner property, used to define who should own the copied initramfs files
-banner = "str"  # Banner string to be printed at the start of init
-

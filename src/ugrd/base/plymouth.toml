@@ -7,9 +7,8 @@ binaries = ['plymouthd', 'plymouth']
 [mounts.devpts]
 type = "devpts"
 destination = "/dev/pts"
-options = ['nosuid', 'noexec', 'gid=5', 'mode=0620']
+options = ['nosuid', 'noexec', 'mode=0620']
 path = "/dev/pts"
-remake_mountpoint = true
 no_validate = true
 
 [imports.build_pre]

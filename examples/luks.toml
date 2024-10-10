@@ -3,15 +3,13 @@
 # Don't pull sound, video, or network kmods
 
 modules = [
-  "ugrd.crypto.cryptsetup",
-  "ugrd.kmod.nosound",
-  "ugrd.kmod.novideo",
-  "ugrd.kmod.nonetwork",
+#  "ugrd.crypto.cryptsetup", # this module will be automatically activated if a LUKS volume is detected
+  "ugrd.kmod.standard_mask"
 ]
 
-kmod_autodetect_lsmod = true
+# Device mapper autodetection is enabled by default
+# autodetect_root_luks = true
 
-
-# Information about the LUKS volume
-[cryptsetup.root]
-uuid = "eee3611d-9b36-42b3-8ed2-62173064c76a"
+# Information about the LUKS volume can be manually specified
+#[cryptsetup.root]
+#uuid = "eee3611d-9b36-42b3-8ed2-62173064c76a"

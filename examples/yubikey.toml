@@ -1,27 +1,19 @@
 # This module generates an initramfs that uses a yubikey to decrypt a luks keyfile.
 # The sc_public_key must be specified.
-# Pull kmod aliases for reading nvme, fat formatted usb storage.
-# Wait 2.5 seconds for storage to settle after modules are loaded.
+# fat formatted usb storage.
 # GPG encrypted keyfiles are on /boot, protected with the yubikey.
 
 modules = [
   "ugrd.kmod.usb",
-  "ugrd.kmod.nvme",
   "ugrd.kmod.standard_mask",
   "ugrd.crypto.smartcard",
 ]
 
 sc_public_key = "/etc/ugrd/pubkey.gpg"
 
-# Wait a few seconds for storage to settle after modules are loaded
-mount_wait = true
-mount_timeout = 2.5
-
 # This is necessary if the keyfile is on another device.
 # The keyfile could be added as a dependency. if it's on the same device.
-[mounts.boot]
-type = "vfat"
-uuid = "4886-A631"
+auto_mounts = ['/boot']  # Automatically create mount config for /boot on the host
 
 # Information about the LUKS volume
 [cryptsetup.root]

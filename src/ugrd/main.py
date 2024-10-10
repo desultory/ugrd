@@ -32,6 +32,8 @@ def main():
                  {'flags': ['--no-autodetect-root-luks'], 'action': 'store_false', 'help': 'do not autodetect root LUKS volumes', 'dest': 'autodetect_root_luks'},
                  {'flags': ['--autodetect-root-lvm'], 'action': 'store_true', 'help': 'autodetect LVM volumes'},
                  {'flags': ['--no-autodetect-root-lvm'], 'action': 'store_false', 'help': 'do not autodetect LVM volumes', 'dest': 'autodetect_root_lvm'},
+                 {'flags': ['--autodetect-root-raid'], 'action': 'store_true', 'help': 'autodetect MRRAID volumes'},
+                 {'flags': ['--no-autodetect-root-raid'], 'action': 'store_false', 'help': 'do not autodetect MRRAID volumes', 'dest': 'autodetect_root_raid'},
                  {'flags': ['--autodetect-root-dm'], 'action': 'store_true', 'help': 'autodetect DM (LUKS/LVM) root partitions'},
                  {'flags': ['--no-autodetect-root-dm'], 'action': 'store_false', 'help': 'do not autodetect root DM volumes', 'dest': 'autodetect_root_dm'},
                  {'flags': ['--no-kmod'], 'action': 'store_true', 'help': 'Allow images to be built without kmods/kernel info'},
@@ -39,6 +41,7 @@ def main():
                  {'flags': ['--print-init'], 'action': 'store_true', 'help': 'print the final init structure'},
                  {'flags': {'--test'}, 'action': 'store_true', 'help': 'Tests the image with qemu'},
                  {'flags': {'--test-kernel'}, 'action': 'store', 'help': 'Tests the image with qemu using a specific kernel file.'},
+                 {'flags': {'--livecd-label'}, 'action': 'store', 'help': 'Sets the label for the livecd'},
                  {'flags': ['out_file'], 'action': 'store', 'help': 'set the output image location', 'nargs': '?'}]
 
     args, logger = get_args_n_logger(package=__package__, description='MicrogRAM disk initramfs generator', arguments=arguments, drop_default=True)
@@ -47,11 +50,14 @@ def main():
     kwargs.pop('print_init', None)  # This is not a valid kwarg for InitramfsGenerator
     test = kwargs.pop('test', False)
 
+    if kwargs.get('livecd_label') and 'ugrd.fs.livecd' not in kwargs.get('modules', ''):
+        kwargs['modules'] = kwargs['modules'] + ',ugrd.fs.livecd' if kwargs.get('modules') else 'ugrd.fs.livecd'
+
     if test:
         logger.warning("TEST MODE ENABLED")
         logger.info("Disabling DM autodetection")
         kwargs['autodetect_root_dm'] = False
-        kwargs['modules'] = 'ugrd.base.test'
+        kwargs['modules'] = kwargs['modules'] + ',ugrd.base.test' if kwargs.get('modules') else 'ugrd.base.test'
 
     logger.debug(f"Using the following kwargs: {kwargs}")
     generator = InitramfsGenerator(**kwargs)

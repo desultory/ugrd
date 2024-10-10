@@ -1,3 +1,7 @@
+cmdline_bools = ['quiet', 'debug', 'recovery', 'rootwait']
+cmdline_strings = ['init', 'root', 'roottype', 'rootflags', 'rootdelay', 'loglevel']
+
+
 [imports.init_pre]
 "ugrd.base.cmdline" = [ "export_exports", "parse_cmdline" ]
 
@@ -9,4 +13,6 @@
 
 [custom_parameters]
 exports = "dict"  # Add the exports property, used to specify the exports for the init script
+cmdline_bools = "NoDupFlatList" # set the booleans to be procesed from /proc/cmdline
+cmdline_strings = "NoDupFlatList" # set the strings to be procesed from /proc/cmdline
 _init_mount = "NoDupFlatList" # List contaning functions which were removed from imports.int_mount by refactor_mounts

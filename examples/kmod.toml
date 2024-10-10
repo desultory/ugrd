@@ -1,4 +1,4 @@
-# This config module will simply pull/load kmods
+# This config module will simply pull/load kmods from the running system
 
 modules = [
   "ugrd.kmod.nosound",

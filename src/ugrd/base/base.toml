@@ -1,27 +1,38 @@
-modules = ["ugrd.base.core",  "ugrd.fs.mounts", "ugrd.base.cmdline", "ugrd.kmod.kmod", "ugrd.fs.cpio"]
+modules = [ "ugrd.base.core",
+	    "ugrd.fs.mounts",
+	    "ugrd.base.cmdline",
+	    "ugrd.base.banner",
+	    "ugrd.kmod.kmod",
+	    "ugrd.fs.cpio",
+	    "ugrd.base.checks" ]
 
 binaries = [ "awk", "grep", "ls", "cp", "cat", "switch_root" ]
 
 paths = [ "root" ]
 
+loglevel = 5
 shebang = "#!/bin/bash -l"
 autodetect_init = true
 
 [imports.config_processing]
-"ugrd.base.base" = [ "_process_init_target", "_process_autodetect_init" ]
+"ugrd.base.base" = [ "_process_loglevel", "_process_init_target", "_process_autodetect_init" ]
 
 [imports.build_pre]
 "ugrd.base.base" = [ "autodetect_init" ]
+
+[imports.init_early]
+"ugrd.base.base" = [ "set_loglevel" ]
 
 [imports.init_final]
 "ugrd.base.base" = [ "do_switch_root" ]
 
 [imports.functions]
-"ugrd.base.base" = [ "check_var", "setvar", "readvar", "prompt_user",
+"ugrd.base.base" = [ "check_var", "setvar", "readvar", "prompt_user", "retry",
                      "edebug", "einfo", "ewarn", "eerror",
 		     "rd_fail", "rd_restart", "_find_init" ]
 
 [custom_parameters]
 init_target = "Path"  # Specifies the location of the system init file
 autodetect_init = "bool"  # If set to true, the init_target will be autodetected based on the system's init system
+loglevel = "int"  # Set the kernel log level at /proc/sys/kernel/printk
 shebang = "str"  # Add the shebang property, used because this is a bash script

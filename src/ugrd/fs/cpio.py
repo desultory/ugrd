@@ -1,17 +1,52 @@
 __author__ = 'desultory'
-__version__ = '3.0.1'
+__version__ = '3.4.3'
 
 
-from pycpio import PyCPIO
+from zenlib.util import contains
 
 
-def check_cpio(self, cpio: PyCPIO) -> None:
+@contains('check_cpio')
+def check_cpio_deps(self) -> None:
     """ Checks that all dependenceis are in the generated CPIO file. """
     for dep in self['dependencies']:
-        if str(dep) not in cpio.entries:
-            raise FileNotFoundError("Dependency not found in CPIO: %s" % dep)
-        else:
-            self.logger.debug("Dependency found in CPIO: %s" % dep)
+        _check_in_cpio(self, dep)
+    return "All dependencies found in CPIO."
+
+
+@contains('check_cpio')
+def check_cpio_funcs(self) -> None:
+    """ Checks that all included functions are in the profile included in the generated CPIO file. """
+    bash_func_names = [func + '() {' for func in self.included_functions]
+    _check_in_cpio(self, 'etc/profile', bash_func_names)
+    return "All functions found in CPIO."
+
+
+@contains('check_in_cpio')
+@contains('check_cpio')
+def check_in_cpio(self) -> None:
+    """ Checks that all required files and lines are in the generated CPIO file. """
+    for file, lines in self['check_in_cpio'].items():
+        _check_in_cpio(self, file, lines)
+    return "All files and lines found in CPIO."
+
+
+def _check_in_cpio(self, file, lines=[]):
+    """ Checks that the file is in the CPIO archive, and it contains the specified lines. """
+    cpio = self._cpio_archive
+    file = str(file).lstrip('/')  # Normalize as it may be a path
+    if file not in cpio.entries:
+        self.logger.warning("CPIO entries:\n%s" % '\n'.join(cpio.entries.keys()))
+        raise FileNotFoundError("File not found in CPIO: %s" % file)
+    else:
+        self.logger.debug("File found in CPIO: %s" % file)
+
+    if lines:
+        entry_data = cpio.entries[file].data.decode().splitlines()
+        for line in lines:
+            if line not in entry_data:
+                raise FileNotFoundError("Line not found in CPIO: %s" % line)
+            else:
+                self.logger.debug("Line found in CPIO: %s" % line)
 
 
 def get_archive_path(self) -> str:
@@ -39,8 +74,7 @@ def make_cpio(self) -> None:
     Raises FileNotFoundError if the output directory does not exist.
     """
     cpio = self._cpio_archive
-    cpio.append_recursive(self.build_dir, relative=True)
-    check_cpio(self, cpio)
+    cpio.append_recursive(self._get_build_path('/'), relative=True)
 
     if self.get('mknod_cpio'):
         for node in self['nodes'].values():
@@ -48,9 +82,8 @@ def make_cpio(self) -> None:
             cpio.add_chardev(name=node['path'], mode=node['mode'], major=node['major'], minor=node['minor'])
 
     out_cpio = self['_archive_out_path']
-
     if not out_cpio.parent.exists():
-        self._mkdir(out_cpio.parent)
+        self._mkdir(out_cpio.parent, resolve_build=False)
 
     if out_cpio.exists():
         if self['cpio_rotate']:
@@ -62,27 +95,3 @@ def make_cpio(self) -> None:
             raise FileExistsError("File already exists, and cleaning/rotation are disabled: %s" % out_cpio)
 
     cpio.write_cpio_file(out_cpio, compression=self['cpio_compression'], _log_bump=-10, _log_init=False)
-
-
-def _process_out_file(self, out_file):
-    """ Processes the out_file configuration option. """
-    from pathlib import Path
-
-    if Path(out_file).is_dir():
-        self.logger.info("Specified out_file is a directory, setting out_dir: %s" % out_file)
-        self['out_dir'] = out_file
-        return
-
-    if out_file.startswith('./'):
-        self.logger.debug("Relative out_file path detected: %s" % out_file)
-        self['out_dir'] = Path('.').resolve()
-        self.logger.info("Resolved out_dir to: %s" % self['out_dir'])
-        out_file = Path(out_file[2:])
-    elif Path(out_file).parent.is_dir() and str(Path(out_file).parent) != '.':
-        self['out_dir'] = Path(out_file).parent
-        self.logger.info("Resolved out_dir to: %s" % self['out_dir'])
-        out_file = Path(out_file).name
-    else:
-        out_file = Path(out_file)
-
-    dict.__setitem__(self, 'out_file', out_file)

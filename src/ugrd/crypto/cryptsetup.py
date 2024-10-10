@@ -1,12 +1,13 @@
 __author__ = 'desultory'
-__version__ = '2.5.1'
+__version__ = '2.8.0'
 
 from zenlib.util import contains
 
+from pathlib import Path
 
 _module_name = 'ugrd.crypto.cryptsetup'
 
-CRYPTSETUP_PARAMETERS = ['key_type', 'partuuid', 'uuid', 'path', 'key_file', 'header_file', 'retries', 'key_command', 'reset_command', 'try_nokey', 'include_key']
+CRYPTSETUP_PARAMETERS = ['key_type', 'partuuid', 'uuid', 'path', 'key_file', 'header_file', 'retries', 'key_command', 'reset_command', 'try_nokey', 'include_key', 'validate_key']
 
 
 def _merge_cryptsetup(self, mapped_name: str, config: dict) -> None:
@@ -44,10 +45,10 @@ def _process_cryptsetup_key_types_multi(self, key_type: str, config: dict) -> No
 def _validate_crypysetup_key(self, key_paramters: dict) -> None:
     """ Validates the cryptsetup key """
     if key_paramters.get('include_key'):
-        self.logger.info("Skipping key validation for included key.")
-        return
+        return self.logger.info("Skipping key validation for included key.")
+    elif key_paramters.get('validate_key') is False:
+        return self.logger.info("Skipping key validation for: %s" % key_paramters['key_file'])
 
-    from pathlib import Path
     key_path = Path(key_paramters['key_file'])
 
     if not key_path.is_file():
@@ -70,17 +71,23 @@ def _validate_crypysetup_key(self, key_paramters: dict) -> None:
 
 
 @contains('validate', "Skipping cryptsetup configuration validation.", log_level=30)
-def _validate_cryptsetup_config(self, mapped_name: str, config: dict) -> None:
+def _validate_cryptsetup_config(self, mapped_name: str) -> None:
+    try:
+        config = self['cryptsetup'][mapped_name]
+    except KeyError:
+        raise KeyError("No cryptsetup configuration found for: %s" % mapped_name)
     self.logger.log(5, "[%s] Validating cryptsetup configuration: %s" % (mapped_name, config))
     for parameter in config:
         if parameter not in CRYPTSETUP_PARAMETERS:
             raise ValueError("Invalid parameter: %s" % parameter)
 
-    # The partuuid must be specified if using a detached header
-    if config.get('header_file') and (not config.get('partuuid') and not config.get('path')):
-        self.logger.warning("A partuuid or device path must be specified when using detached headers: %s" % mapped_name)
-        if config.get('uuid'):
-            raise ValueError("A UUID cannot be used with a detached header: %s" % mapped_name)
+    if config.get('header_file'):  # Check that he header is defined with a partuuid or path
+        if not config.get('partuuid') and not config.get('path'):
+            self.logger.warning("A partuuid or device path must be specified when using detached headers: %s" % mapped_name)
+            if config.get('uuid'):
+                raise ValueError("A UUID cannot be used with a detached header: %s" % mapped_name)
+        if not Path(config['header_file']).exists():  # Make sure the header file exists, it may not be present at build time
+            self.logger.warning("[%s] Header file not found: %s" % (mapped_name, config['header_file']))
     elif not any([config.get('partuuid'), config.get('uuid'), config.get('path')]):
         if not self['autodetect_root_luks']:
             raise ValueError("A device uuid, partuuid, or path must be specified for cryptsetup mount: %s" % mapped_name)
@@ -91,8 +98,11 @@ def _validate_cryptsetup_config(self, mapped_name: str, config: dict) -> None:
 
 def _process_cryptsetup_multi(self, mapped_name: str, config: dict) -> None:
     """ Processes the cryptsetup configuration """
+    for parameter in config:
+        if parameter not in CRYPTSETUP_PARAMETERS:
+            self.logger.error("[%s] Unknown parameter: %s" % (mapped_name, parameter))
+
     config = _merge_cryptsetup(self, mapped_name, config)  # Merge the config with the existing configuration
-    _validate_cryptsetup_config(self, mapped_name, config)  # Validate the configuration
     self.logger.debug("[%s] Processing cryptsetup configuration: %s" % (mapped_name, config))
     # Check if the key type is defined in the configuration, otherwise use the default, check if it's valid
     if key_type := config.get('key_type', self.get('cryptsetup_key_type')):
@@ -117,48 +127,101 @@ def _process_cryptsetup_multi(self, mapped_name: str, config: dict) -> None:
     self['cryptsetup'][mapped_name] = config
 
 
-@contains('validate', "Skipping cryptsetup configuration validation.", log_level=30)
-def _validate_luks_source(self, mapped_name: str) -> None:
-    """ Checks that a LUKS source device is valid """
-    for _dm_info in self['_dm_info'].values():
-        if _dm_info['name'] == mapped_name:
-            dm_info = _dm_info
+@contains('hostonly', "Skipping cryptsetup device check.", log_level=30)
+def _validate_cryptsetup_device(self, mapped_name) -> None:
+    """
+    Validates a cryptsetup device against the device mapper information,
+    blkid information, and cryptsetup information.
+    Uses `cryptsetup luksDump` to check that the device is a LUKS device.
+    """
+    for device_info in self['_vblk_info'].values():
+        if device_info['name'] == mapped_name:
+            dm_info = device_info  # Get the device mapper information
             break
     else:
         raise ValueError("No device mapper information found for: %s" % mapped_name)
 
-    cryptsetup_info = self['cryptsetup'][mapped_name]
-
-    if not dm_info['uuid'].startswith('CRYPT-LUKS'):
+    if not dm_info['uuid'].startswith('CRYPT-LUKS'):  # Ensure the device is a crypt device
         raise ValueError("Device is not a crypt device: %s" % dm_info)
 
-    slave_source = dm_info['slaves'][0]
+    cryptsetup_info = self['cryptsetup'][mapped_name]  # Get the cryptsetup information
+    slave_source = dm_info['slaves'][0]  # Get the slave source
 
-    try:
-        blkid_info = self['_blkid_info'][f'/dev/{slave_source}']
+    try:  # Get the blkid information
+        slave_device = f'/dev/{slave_source}'
+        blkid_info = self['_blkid_info'][slave_device]
     except KeyError:
-        blkid_info = self['_blkid_info'][f'/dev/mapper/{slave_source}']
+        slave_device = f'/dev/mapper/{slave_source}'
+        blkid_info = self['_blkid_info'][slave_device]
 
-    for token_type in ['partuuid', 'uuid']:
+    for token_type in ['partuuid', 'uuid']:  # Validate the uuid/partuuid token
         if cryptsetup_token := cryptsetup_info.get(token_type):
             if blkid_info.get(token_type) != cryptsetup_token:
                 raise ValueError("[%s] LUKS %s mismatch, found '%s', expected: %s" %
                                  (mapped_name, token_type, cryptsetup_token, blkid_info[token_type]))
             break
     else:
-        raise ValueError("[%s] Unable to validate LUKS source: %s" % (mapped_name, cryptsetup_info))
+        raise ValueError("[%s] No UUID or PARTUUID set for LUKS source: %s" % (mapped_name, cryptsetup_info))
+
+    try:
+        # Get the luks header info, remove tabs, and split the output
+        luks_header_source = cryptsetup_info.get('header_file') or slave_device
+        luks_info = self._run(['cryptsetup', 'luksDump', luks_header_source]).stdout.decode().replace('\t', '').split('\n')  # Check that the device is a LUKS device
+        self.logger.debug("[%s] LUKS information:\n%s" % (mapped_name, luks_info))
+    except RuntimeError as e:
+        luks_info = []
+        if not cryptsetup_info.get('header_file'):
+            return self.logger.error("[%s] Unable to read LUKS header: %s" % (mapped_name, e))
+        self.logger.warning("[%s] Cannot read detached LUKS header for validation: %s" % (mapped_name, e))
+
+    if token_type == 'uuid':  # Validate the LUKS UUID
+        for line in luks_info:
+            if 'UUID' in line:
+                if line.split()[1] != cryptsetup_token:
+                    raise ValueError("[%s] LUKS UUID mismatch, found '%s', expected: %s" %
+                                     (mapped_name, line.split()[1], cryptsetup_token))
+                break
+        else:
+            raise ValueError("[%s] Unable to validate LUKS UUID: %s" % (mapped_name, cryptsetup_token))
+
+    if 'Cipher:     aes-xts-plain64' in luks_info:
+        self['kernel_modules'] = 'crypto_xts'
+
+    has_argon = False
+    for dep in self['dependencies']:  # Ensure argon is installed if argon2id is used
+        if dep.name.startswith('libargon2.so'):
+            has_argon = True
+        elif dep.name.startswith('libcrypto.so'):
+            openssl_kdfs = self._run(['openssl', 'list', '-kdf-algorithms']).stdout.decode().lower().split('\n')
+            self.logger.debug("OpenSSL KDFs: %s" % openssl_kdfs)
+            for kdf in openssl_kdfs:
+                if kdf.lstrip().startswith('argon2id') and 'default' in kdf:
+                    has_argon = True
+    if not has_argon:
+        if cryptsetup_info.get('header_file'):  # A header may be specified but unavailable
+            self.logger.error("[%s] Unable to check: libargon2.so" % mapped_name)
+        if 'PBKDF:      argon2id' in luks_info:  # If luks info is found, and argon is used, raise an error
+            raise FileNotFoundError("[%s] Missing cryptsetup dependency: libargon2.so" % mapped_name)
+        self.logger.error("[%s] Unable to validate argon support for LUKS: %s" % (mapped_name, luks_info))
+
+
+@contains('validate', "Skipping cryptsetup configuration validation.", log_level=30)
+def _validate_luks_config(self, mapped_name: str) -> None:
+    """ Checks that a LUKS config portion is valid. """
+    _validate_cryptsetup_device(self, mapped_name)
+    _validate_cryptsetup_config(self, mapped_name)
 
 
 def export_crypt_sources(self) -> list[str]:
     """
-    Validates the cryptsetup configuration.
+    Validates the cryptsetup configuration (if enabled).
     Adds the cryptsetup source and token to the exports.
     Sets the token to the partuuid or uuid if it exists.
     Sets the SOURCE when using a path.
     Only allows using the path if validation is disabled.
     """
     for name, parameters in self['cryptsetup'].items():
-        _validate_luks_source(self, name)
+        _validate_luks_config(self, name)
         if parameters.get('path'):
             if not self['validate']:
                 self.logger.warning("Using device paths is unreliable and can result in boot failures. Consider using partuuid.")
@@ -197,10 +260,8 @@ def get_crypt_dev(self) -> list[str]:
             '    source_dev=$(blkid --match-token "$source_token" --output device)',
             '    if [ -n "$source_dev" ]; then',
             '        echo -n "$source_dev"',
-            '        return',
             '    fi',
-            'fi',
-            'rd_fail "Failed to resolve device source for cryptsetup mount: $1"']
+            'fi']
 
 
 def open_crypt_device(self, name: str, parameters: dict) -> list[str]:
@@ -233,8 +294,14 @@ def open_crypt_device(self, name: str, parameters: dict) -> list[str]:
         cryptsetup_command += ' --allow-discards'
         self.logger.warning("Using --allow-discards can be a security risk.")
 
+    # Resolve the device source using get_crypt_dev, if no source is returned, run rd_fail
+    out += [f'crypt_dev="$(get_crypt_dev {name})"',
+            'if [ -z "$crypt_dev" ]; then',
+            f'    rd_fail "Failed to resolve device source for cryptsetup mount: {name}"',
+            'fi']
+
     # Add the variable for the source device and mapped name
-    cryptsetup_command += f' "$(get_crypt_dev {name})" {name}'
+    cryptsetup_command += f' "$crypt_dev" {name}'
 
     # Check if the device was successfully opened
     out += [f'    if {cryptsetup_command}; then',
@@ -257,6 +324,9 @@ def open_crypt_device(self, name: str, parameters: dict) -> list[str]:
 
 def crypt_init(self) -> list[str]:
     """ Generates the bash script portion to prompt for keys. """
+    if self['loglevel'] > 5:
+        self.logger.warning("loglevel > 5, cryptsetup prompts may not be visible.")
+
     out = [r'einfo "Unlocking LUKS volumes, ugrd.cryptsetup version: %s"' % __version__]
     for name, parameters in self['cryptsetup'].items():
         # Check if the volume is already open, if so, skip it
