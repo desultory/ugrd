@@ -120,8 +120,11 @@ def rd_fail(self) -> list[str]:
             '    if check_var plymouth; then',
             '        plymouth display-message --text="Entering recovery shell"',
             '        plymouth hide-splash',
+            '        bash -l',
+            '        plymouth show-splash',
+            '    else',
+            '        bash -l',
             '    fi',
-            '    bash -l',
             'fi',
             'prompt_user "Press enter to restart init."',
             'rd_restart']
@@ -168,16 +171,14 @@ def prompt_user(self) -> str:
     The first argument is the prompt message.
     The second argument is the timeout in seconds.
 
-    if plymouth is running, just run 'plymouth display-message --text="$prompt",
-    then 'plymouth watch-keystoke'
+    if plymouth is running, run 'plymouth display-message --text="$prompt" instead of echo.
     """
     return ['prompt=${1:-"Press enter to continue."}',
             'if check_var plymouth; then',
             '    plymouth display-message --text="$prompt"',
-            '    plymouth watch-keystroke',
-            '    return',
+            'else',
+            r'    echo -e "\e[1;35m *\e[0m $prompt"',
             'fi',
-            r'echo -e "\e[1;35m *\e[0m $prompt"',
             'if [ -n "$2" ]; then',
             '    read -t "$2" -rs',
             'else',
