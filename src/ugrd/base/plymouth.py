@@ -48,8 +48,13 @@ def pull_plymouth(self):
             self['dependencies'] = file
 
 
+def make_devpts(self):
+    """ Creates /dev/pts and mounts the fstab entry """
+    return ['mkdir -p /dev/pts', 'mount /dev/pts']
+
+
 def start_plymouth(self):
     """
     Runs plymouthd
     """
-    return ['plymouthd --attach-to-session --pid-file /run/plymouth/pid --mode=boot', 'plymouth show-splash']
+    return ['mkdir -p /run/plymouth', 'plymouthd --attach-to-session --pid-file /run/plymouth/pid --mode=boot', 'plymouth show-splash']
