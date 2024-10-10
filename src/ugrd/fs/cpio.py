@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '3.4.2'
+__version__ = '3.4.3'
 
 
 from zenlib.util import contains
@@ -26,7 +26,7 @@ def check_cpio_funcs(self) -> None:
 def check_in_cpio(self) -> None:
     """ Checks that all required files and lines are in the generated CPIO file. """
     for file, lines in self['check_in_cpio'].items():
-        self._check_in_cpio(file, lines)
+        _check_in_cpio(self, file, lines)
     return "All files and lines found in CPIO."
 
 
@@ -47,7 +47,6 @@ def _check_in_cpio(self, file, lines=[]):
                 raise FileNotFoundError("Line not found in CPIO: %s" % line)
             else:
                 self.logger.debug("Line found in CPIO: %s" % line)
-    return "File and lines found in CPIO."
 
 
 def get_archive_path(self) -> str:
