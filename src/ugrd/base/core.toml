@@ -72,4 +72,3 @@ out_dir = "Path"  # The directory where the initramfs is packed/output. If no pa
 out_file = "str"  # The name of the output file, if absolute, overrids out dir with the path, and sets out_file to the filename
 old_count = "int"  # The number of times to cycle old files before deleting
 clean = "bool"  # Add the clean property, used to define if the mounts should be cleaned up after boot
-banner = "str"  # Banner string to be printed at the start of init

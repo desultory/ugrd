@@ -167,7 +167,7 @@ class InitramfsGenerator(GeneratorHelpers):
 
     def generate_init(self) -> None:
         """ Generates the init file. """
-        self.logger.info("Running init generator functions")
+        self._log_run("Generating init functions")
         init = [self['shebang']]  # Add the shebang to the top of the init file
 
         # Run all included functions, so they get included
