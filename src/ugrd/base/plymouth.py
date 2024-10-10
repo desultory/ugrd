@@ -47,14 +47,20 @@ def pull_plymouth(self):
         for file in directory.rglob('*'):
             self['dependencies'] = file
 
+    self['dependencies'] = ['/usr/share/plymouth/themes/text/text.plymouth',
+                            '/usr/share/plymouth/themes/details/details.plymouth']
+
 
 def make_devpts(self):
     """ Creates /dev/pts and mounts the fstab entry """
-    return ['mkdir -p /dev/pts', 'mount /dev/pts']
+    return ['mkdir -m755 -p /dev/pts',
+            'mount /dev/pts']
 
 
 def start_plymouth(self):
     """
     Runs plymouthd
     """
-    return ['mkdir -p /run/plymouth', 'plymouthd --attach-to-session --pid-file /run/plymouth/pid --mode=boot', 'plymouth show-splash']
+    return ['mkdir -p /run/plymouth',
+            'plymouthd --mode boot --pid-file /run/plymouth/plymouth.pid --attach-to-session',
+            'plymouth show-splash']
