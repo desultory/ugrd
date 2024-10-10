@@ -10,7 +10,7 @@ from .generator_helpers import GeneratorHelpers
 @loggify
 class InitramfsGenerator(GeneratorHelpers):
     def __init__(self, config='/etc/ugrd/config.toml', *args, **kwargs):
-        self.config_dict = InitramfsConfigDict(NO_BASE=kwargs.pop('NO_BASE', False), logger=self.logger)
+        self.config_dict = InitramfsConfigDict(NO_BASE=kwargs.pop('NO_BASE', False), logger=self.logger, _log_init=False)
 
         # Used for functions that are added to the bash source file
         self.included_functions = {}
@@ -71,8 +71,10 @@ class InitramfsGenerator(GeneratorHelpers):
 
     def build(self) -> None:
         """ Builds the initramfs image. """
+        from importlib.metadata import version
+        self._log_run(f"Running ugrd v{version('ugrd')}")
         self.run_build()
-        self.config_dict.validate()
+        self.config_dict.validate()  # Validate the config after the build tasks have been run
 
         self.generate_init()
         self.pack_build()
@@ -201,12 +203,14 @@ class InitramfsGenerator(GeneratorHelpers):
 
     def run_build(self) -> None:
         """ Runs all build tasks. """
+        self._log_run("Running build tasks")
         for task in self.build_tasks:
             self.logger.debug("Running build task: %s" % task)
             self.run_hook(task, force_exclude=True)
 
     def pack_build(self) -> None:
         """ Packs the initramfs based on self['imports']['pack']."""
+        self._log_run("Packing build")
         if self['imports'].get('pack'):
             self.run_hook('pack')
         else:
@@ -224,8 +228,8 @@ class InitramfsGenerator(GeneratorHelpers):
 
     def run_checks(self) -> None:
         """ Runs checks if defined in self['imports']['checks']. """
+        self._log_run("Running checks")
         if check_output := self.run_hook('checks'):
-            self.logger.info("Completed checks.")
             for check in check_output:
                 self.logger.debug(check)
         else:
@@ -234,9 +238,13 @@ class InitramfsGenerator(GeneratorHelpers):
     def run_tests(self) -> None:
         """ Runs tests if defined in self['imports']['tests']. """
         if test_output := self.run_hook('tests'):
+            self._log_run("Running tests")
             self.logger.info("Completed tests:\n%s", test_output)
         else:
             self.logger.debug("No tests executed.")
+
+    def _log_run(self, logline) -> None:
+        self.logger.info(f"== | {logline}")
 
     def __str__(self) -> str:
         return str(self.config_dict)

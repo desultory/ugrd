@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "2.2.0"
+__version__ = "2.2.1"
 
 from tomllib import load, TOMLDecodeError
 from pathlib import Path
@@ -133,7 +133,6 @@ class InitramfsConfigDict(UserDict):
         Sets the initial value of the parameter based on the type.
         """
         from pycpio import PyCPIO
-        from .initramfs_generator import InitramfsGenerator  # import here for eval'ing
 
         self['custom_parameters'][parameter_name] = eval(parameter_type)
         self.logger.debug("Registered custom parameter '%s' with type: %s" % (parameter_name, parameter_type))
