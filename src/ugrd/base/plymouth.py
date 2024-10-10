@@ -63,4 +63,5 @@ def start_plymouth(self):
     """
     return ['mkdir -p /run/plymouth',
             'plymouthd --mode boot --pid-file /run/plymouth/plymouth.pid --attach-to-session',
+            'setvar plymouth 1',
             'plymouth show-splash']

@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.9.1'
+__version__ = '5.0.0'
 
 from importlib.metadata import version
 from pathlib import Path
@@ -163,8 +163,16 @@ def prompt_user(self) -> str:
     Returns a bash function that pauses until the user presses enter.
     The first argument is the prompt message.
     The second argument is the timeout in seconds.
+
+    if plymouth is running, just run 'plymouth display-message --text="$prompt",
+    then 'plymouth watch-keystoke --command="read -rs"'
     """
     return ['prompt=${1:-"Press enter to continue."}',
+            'if check_var plymouth; then',
+            '    plymouth display-message --text="$prompt"',
+            '    plymouth watch-keystroke --command="read -rs"',
+            '    return',
+            'fi',
             r'echo -e "\e[1;35m *\e[0m $prompt"',
             'if [ -n "$2" ]; then',
             '    read -t "$2" -rs',
