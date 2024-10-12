@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '3.1.2'
+__version__ = '3.2.0'
 
 from zenlib.util import contains
 
@@ -7,7 +7,9 @@ from pathlib import Path
 
 _module_name = 'ugrd.crypto.cryptsetup'
 
-CRYPTSETUP_PARAMETERS = ['key_type', 'partuuid', 'uuid', 'path', 'key_file', 'header_file', 'retries', 'key_command', 'reset_command', 'try_nokey', 'include_key', 'validate_key']
+CRYPTSETUP_KEY_PARAMETERS = ['key_command', 'plymouth_key_command', 'reset_command']
+CRYPTSETUP_PARAMETERS = ['key_type', 'partuuid', 'uuid', 'path', 'key_file', 'header_file', 'retries',
+                         *CRYPTSETUP_KEY_PARAMETERS, 'try_nokey', 'include_key', 'validate_key']
 
 
 def _merge_cryptsetup(self, mapped_name: str, config: dict) -> None:
@@ -27,7 +29,7 @@ def _process_cryptsetup_key_types_multi(self, key_type: str, config: dict) -> No
     """
     self.logger.debug("[%s] Processing cryptsetup key type configuration: %s" % (key_type, config))
     for parameter in config:
-        if parameter not in CRYPTSETUP_PARAMETERS:
+        if parameter not in CRYPTSETUP_KEY_PARAMETERS:
             raise ValueError("Invalid parameter: %s" % parameter)
 
     # Update the key if it already exists, otherwise create a new key type
@@ -112,7 +114,7 @@ def _process_cryptsetup_multi(self, mapped_name: str, config: dict) -> None:
         config['key_type'] = key_type
 
         # Inherit from the key type configuration
-        for parameter in ['key_command', 'reset_command']:
+        for parameter in CRYPTSETUP_KEY_PARAMETERS:
             if value := self['cryptsetup_key_types'][key_type].get(parameter):
                 config[parameter] = value.format(**config)
 
@@ -284,7 +286,7 @@ def open_crypt_device(self, name: str, parameters: dict) -> list[str]:
         out += [f"    einfo 'Attempting to open LUKS key: {parameters['key_file']}'",
                 f"    edebug 'Using key command: {parameters['key_command']}'",
                 '    if check_var plymouth; then',
-                f'        plymouth ask-for-password --prompt "[${{i}} / {retries}] Enter passphrase to unlock key for: {name}" --command "{parameters["key_command"]}" --number-of-tries 1 > /run/vars/key_data || continue',
+                f'        plymouth ask-for-password --prompt "[${{i}} / {retries}] Enter passphrase to unlock key for: {name}" --command "{parameters["plymouth_key_command"]}" --number-of-tries 1 > /run/vars/key_data || continue',
                 '    else',
                 f'        {parameters["key_command"]} > /run/vars/key_data || continue',
                 '    fi']
