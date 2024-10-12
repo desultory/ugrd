@@ -10,6 +10,9 @@ cryptsetup_keyfile_validation = true
 [imports.config_processing]
 "ugrd.crypto.cryptsetup" = [ "_process_cryptsetup_multi", "_process_cryptsetup_key_types_multi" ]
 
+[imports.build_pre]
+"ugrd.crypto.cryptsetup" = [ "detect_argon2" ]
+
 [imports.build_tasks]
 "ugrd.crypto.cryptsetup" = [ "export_crypt_sources" ]
 
@@ -31,3 +34,4 @@ cryptsetup_prompt = "bool"  # Whether to prompt the user to press enter before u
 cryptsetup_autoretry = "bool"  # Whether to automatically retry unlocking devices
 cryptsetup_trim = "bool"  # Adds the --allow-discards option to cryptsetup commands
 cryptsetup = "dict"  # Dict of cryptsetup volume to be unlocked, keyed by mapped device name
+argon2 = "bool"  # Whether or not argon2 is available

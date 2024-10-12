@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.8.1'
+__version__ = '2.9.0'
 
 from zenlib.util import contains
 
@@ -7,7 +7,10 @@ from pathlib import Path
 
 _module_name = 'ugrd.crypto.cryptsetup'
 
-CRYPTSETUP_PARAMETERS = ['key_type', 'partuuid', 'uuid', 'path', 'key_file', 'header_file', 'retries', 'key_command', 'reset_command', 'try_nokey', 'include_key', 'validate_key', 'validate']
+CRYPTSETUP_PARAMETERS = ['key_type', 'partuuid', 'uuid', 'path',
+                         'key_file', 'header_file', 'retries',
+                         'key_command', 'reset_command', 'try_nokey',
+                         'include_key', 'validate_key', 'validate']
 
 
 def _merge_cryptsetup(self, mapped_name: str, config: dict) -> None:
@@ -176,7 +179,7 @@ def _validate_cryptsetup_device(self, mapped_name) -> None:
             return self.logger.error("[%s] Unable to read LUKS header: %s" % (mapped_name, e))
         self.logger.warning("[%s] Cannot read detached LUKS header for validation: %s" % (mapped_name, e))
 
-    if token_type == 'uuid':  # Validate the LUKS UUID
+    if token_type == 'uuid':  # Validate the LUKS UUID using the header
         for line in luks_info:
             if 'UUID' in line:
                 if line.split()[1] != cryptsetup_token:
@@ -189,22 +192,27 @@ def _validate_cryptsetup_device(self, mapped_name) -> None:
     if 'Cipher:     aes-xts-plain64' in luks_info:
         self['kernel_modules'] = 'crypto_xts'
 
-    has_argon = False
-    for dep in self['dependencies']:  # Ensure argon is installed if argon2id is used
-        if dep.name.startswith('libargon2.so'):
-            has_argon = True
-        elif dep.name.startswith('libcrypto.so'):
-            openssl_kdfs = self._run(['openssl', 'list', '-kdf-algorithms']).stdout.decode().lower().split('\n')
-            self.logger.debug("OpenSSL KDFs: %s" % openssl_kdfs)
-            for kdf in openssl_kdfs:
-                if kdf.lstrip().startswith('argon2id') and 'default' in kdf:
-                    has_argon = True
-    if not has_argon:
+    if not self['argon2']:
         if cryptsetup_info.get('header_file'):  # A header may be specified but unavailable
             self.logger.error("[%s] Unable to check: libargon2.so" % mapped_name)
         if 'PBKDF:      argon2id' in luks_info:  # If luks info is found, and argon is used, raise an error
             raise FileNotFoundError("[%s] Missing cryptsetup dependency: libargon2.so" % mapped_name)
         self.logger.error("[%s] Unable to validate argon support for LUKS: %s" % (mapped_name, luks_info))
+
+
+def detect_argon2(self) -> None:
+    """ Validates that argon2 is available when argon2id is used. """
+    argon = False
+    for dep in self['dependencies']:  # Ensure argon is installed if argon2id is used
+        if dep.name.startswith('libargon2.so'):
+            argon = True
+        elif dep.name.startswith('libcrypto.so'):
+            openssl_kdfs = self._run(['openssl', 'list', '-kdf-algorithms']).stdout.decode().lower().split('\n')
+            self.logger.debug("OpenSSL KDFs: %s" % openssl_kdfs)
+            for kdf in openssl_kdfs:
+                if kdf.lstrip().startswith('argon2id') and 'default' in kdf:
+                    argon = True
+    self['argon2'] = argon
 
 
 @contains('validate', "Skipping cryptsetup configuration validation.", log_level=30)
