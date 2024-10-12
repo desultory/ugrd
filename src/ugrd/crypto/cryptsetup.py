@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.8.0'
+__version__ = '2.8.1'
 
 from zenlib.util import contains
 
@@ -7,7 +7,7 @@ from pathlib import Path
 
 _module_name = 'ugrd.crypto.cryptsetup'
 
-CRYPTSETUP_PARAMETERS = ['key_type', 'partuuid', 'uuid', 'path', 'key_file', 'header_file', 'retries', 'key_command', 'reset_command', 'try_nokey', 'include_key', 'validate_key']
+CRYPTSETUP_PARAMETERS = ['key_type', 'partuuid', 'uuid', 'path', 'key_file', 'header_file', 'retries', 'key_command', 'reset_command', 'try_nokey', 'include_key', 'validate_key', 'validate']
 
 
 def _merge_cryptsetup(self, mapped_name: str, config: dict) -> None:
@@ -145,6 +145,8 @@ def _validate_cryptsetup_device(self, mapped_name) -> None:
         raise ValueError("Device is not a crypt device: %s" % dm_info)
 
     cryptsetup_info = self['cryptsetup'][mapped_name]  # Get the cryptsetup information
+    if cryptsetup_info.get('validate') is False:
+        return self.logger.warning("Skipping cryptsetup device validation: %s" % mapped_name)
     slave_source = dm_info['slaves'][0]  # Get the slave source
 
     try:  # Get the blkid information
