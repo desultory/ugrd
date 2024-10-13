@@ -1,3 +1,5 @@
+__version__ = '0.1.0'
+
 from zenlib.util import unset
 from configparser import ConfigParser
 from pathlib import Path
@@ -28,6 +30,9 @@ def _process_plymouth_config(self, file):
     self['plymouth_theme'] = plymouth_config['Daemon']['Theme']
     self.data['plymouth_config'] = file
     self['copies'] = {'plymouth_config_file': {'source': file, 'destination': '/etc/plymouth/plymouthd.conf'}}
+    if device_timeout := plymouth_config.get('Daemon', 'DeviceTimeout', fallback=None):
+        if float(device_timeout) > 1:
+            self.logger.warning("[Plymouth] DeviceTimeout is set to %s, this may cause boot delays." % device_timeout)
 
 
 def _process_plymouth_theme(self, theme):
@@ -46,9 +51,6 @@ def pull_plymouth(self):
     for directory in dir_list:
         for file in directory.rglob('*'):
             self['dependencies'] = file
-
-    self['dependencies'] = ['/usr/share/plymouth/themes/text/text.plymouth',
-                            '/usr/share/plymouth/themes/details/details.plymouth']
 
 
 def make_devpts(self):
