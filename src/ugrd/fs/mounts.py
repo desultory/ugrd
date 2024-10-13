@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '5.0.0'
+__version__ = '5.0.1'
 
 from pathlib import Path
 from zenlib.util import contains, pretty_print
@@ -586,7 +586,6 @@ def mount_fstab(self) -> list[str]:
     return out
 
 
-@contains('validate', "Skipping host mount validation, validation is disabled.", log_level=30)
 def _validate_host_mount(self, mount, destination_path=None) -> bool:
     """ Checks if a defined mount exists on the host. """
     if mount.get('no_validate'):
@@ -628,6 +627,7 @@ def _validate_host_mount(self, mount, destination_path=None) -> bool:
     raise ValueError("[%s] Unable to validate host mount: %s" % (destination_path, mount))
 
 
+@contains('validate', "Skipping host mount validation, validation is disabled.", log_level=30)
 def check_mounts(self) -> None:
     """
     Validates all mounts against the host mounts.
