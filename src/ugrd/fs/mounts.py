@@ -1,12 +1,12 @@
 __author__ = 'desultory'
-__version__ = '4.18.0'
+__version__ = '5.0.0'
 
 from pathlib import Path
 from zenlib.util import contains, pretty_print
 
 BLKID_FIELDS = ['uuid', 'partuuid', 'label', 'type']
 SOURCE_TYPES = ['uuid', 'partuuid', 'label', 'path']
-MOUNT_PARAMETERS = ['destination', 'source', 'type', 'options', 'no_validate', 'base_mount', *SOURCE_TYPES]
+MOUNT_PARAMETERS = ['destination', 'source', 'type', 'options', 'no_validate', 'no_validate_options', 'base_mount', *SOURCE_TYPES]
 
 
 @contains('validate', "Skipping mount validation, validation is disabled.", log_level=30)
@@ -36,7 +36,7 @@ def _validate_mount_config(self, mount_name: str, mount_config) -> None:
             else:
                 self.logger.error("Valid source types: %s" % SOURCE_TYPES)
                 raise ValueError("Invalid source type in mount: %s" % value)
-        elif parameter == 'options':
+        elif parameter == 'options' and not mount_config.get('no_validate_options'):
             for option in value:
                 if 'subvol=' in option:
                     if mount_name == 'root':
@@ -160,11 +160,7 @@ def _to_mount_cmd(self, mount: dict) -> str:
 
 
 def _to_fstab_entry(self, mount: dict) -> str:
-    """
-    Prints the object as a fstab entry
-    The type must be specified
-    """
-    _validate_host_mount(self, mount)
+    """ Prints the mount config as an fstab entry. """
     fs_type = mount.get('type', 'auto')
 
     out_str = _get_mount_str(self, mount, pad=True)
@@ -596,6 +592,9 @@ def _validate_host_mount(self, mount, destination_path=None) -> bool:
     if mount.get('no_validate'):
         return self.logger.warning("Skipping host mount validation for config:\n%s" % pretty_print(mount))
 
+    if mount.get('base_mount'):
+        return self.logger.debug("Skipping host mount validation for base mount: %s" % mount)
+
     mount_type, mount_val = _get_mount_source_type(self, mount, with_val=True)
     # If a destination path is passed, like for /, use that instead of the mount's destination
     destination_path = str(mount['destination']) if destination_path is None else destination_path
@@ -604,15 +603,21 @@ def _validate_host_mount(self, mount, destination_path=None) -> bool:
     host_source_dev = self['_mounts'][destination_path]['device']
     if destination_path == '/' and self['resolve_root_dev']:
         host_source_dev = _resolve_dev(self, '/')
+
     host_mount_options = self['_mounts'][destination_path]['options']
     for option in mount.get('options', []):
+        if mount.get('no_validate_options'):
+            break  # Skip host option validation if this is set
         if option == 'ro' and destination_path == '/':
             # Skip the ro option for the root mount
             continue
         if option not in host_mount_options:
             raise ValueError("Host mount options mismatch. Expected: %s, Found: %s" % (mount['options'], host_mount_options))
 
-    if mount_type == 'path' and mount_val != Path(host_source_dev):
+    if mount_type == 'path':
+        if mount_val == Path(host_source_dev) or mount_val == host_source_dev:
+            self.logger.debug("[%s] Host mount validated: %s" % (destination_path, mount))
+            return True
         raise ValueError("Host mount path device path does not match config. Expected: %s, Found: %s" % (mount_val, host_source_dev))
     elif mount_type in ['uuid', 'partuuid', 'label']:
         # For uuid, partuuid, and label types, check that the source matches the host mount
@@ -623,13 +628,17 @@ def _validate_host_mount(self, mount, destination_path=None) -> bool:
     raise ValueError("[%s] Unable to validate host mount: %s" % (destination_path, mount))
 
 
-def mount_root(self) -> str:
+def check_mounts(self) -> None:
     """
-    Mounts the root partition to $MOUNTS_ROOT_TARGET.
-    Warns if the root partition isn't found on the current system.
+    Validates all mounts against the host mounts.
+    For the 'root' mount, the destination path is set to '/'.
     """
-    _validate_host_mount(self, self['mounts']['root'], '/')
-    # Check if the root mount is already mounted
+    for mount_name, mount in self['mounts'].items():
+        _validate_host_mount(self, mount, '/' if mount_name == 'root' else None)
+
+
+def mount_root(self) -> list[str]:
+    """ Mounts the root partition to $MOUNTS_ROOT_TARGET. """
     return ['if grep -qs "$(readvar MOUNTS_ROOT_TARGET)" /proc/mounts; then',
             '    ewarn "Root mount already exists, unmounting: $(readvar MOUNTS_ROOT_TARGET)"',
             '    umount "$(readvar MOUNTS_ROOT_TARGET)"',

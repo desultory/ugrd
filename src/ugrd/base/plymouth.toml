@@ -1,14 +1,17 @@
 binaries = ['plymouthd', 'plymouth', 'plymouth-set-default-theme']
 
+dependencies = ['/usr/share/plymouth/themes/text/text.plymouth',
+                '/usr/share/plymouth/themes/details/details.plymouth']
+
 [imports.config_processing]
 "ugrd.base.plymouth" = [ "_process_plymouth_config", "_process_plymouth_theme" ]
 
 [mounts.devpts]
 type = "devpts"
 destination = "/dev/pts"
-options = ['noauto', 'nosuid', 'noexec', 'mode=0620', 'gid=5']
-path = "/dev/pts"
-no_validate = true
+options = ['noauto', 'nosuid', 'noexec', 'rw', 'mode=620', 'gid=5']
+no_validate_options = true
+path = "devpts"
 
 [imports.build_pre]
 "ugrd.base.plymouth" = [ "find_plymouth_config" ]

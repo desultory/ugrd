@@ -1,3 +1,5 @@
+__version__ = '0.1.0'
+
 from zenlib.util import unset
 from configparser import ConfigParser
 from pathlib import Path
@@ -46,9 +48,6 @@ def pull_plymouth(self):
     for directory in dir_list:
         for file in directory.rglob('*'):
             self['dependencies'] = file
-
-    self['dependencies'] = ['/usr/share/plymouth/themes/text/text.plymouth',
-                            '/usr/share/plymouth/themes/details/details.plymouth']
 
 
 def make_devpts(self):
