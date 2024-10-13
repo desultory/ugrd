@@ -1,4 +1,4 @@
-__version__ = '0.1.0'
+__version__ = '0.1.1'
 
 from zenlib.util import unset
 from configparser import ConfigParser
@@ -47,7 +47,7 @@ def _process_plymouth_theme(self, theme):
 def pull_plymouth(self):
     """ Adds plymouth files to dependencies """
     dir_list = [Path('/usr/lib64/plymouth'), Path('/usr/share/plymouth/themes/') / self["plymouth_theme"]]
-    self.logger.info("Adding plymouth files to dependencies.")
+    self.logger.info("[%s] Adding plymouth files to dependencies." % self["plymouth_theme"])
     for directory in dir_list:
         for file in directory.rglob('*'):
             self['dependencies'] = file
