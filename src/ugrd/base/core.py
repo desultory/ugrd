@@ -381,7 +381,7 @@ def _process_masks_multi(self, runlevel: str, function: str) -> None:
     """ Processes a mask definition. """
     if runlevel not in self['masks']:
         self.logger.debug("Creating new mask: %s" % runlevel)
-        self['masks'][runlevel] = NoDupFlatList(looggger=self.logger, _log_init=False)
+        self['masks'][runlevel] = NoDupFlatList(logger=self.logger)
     self.logger.info("[%s] Adding mask: %s" % (runlevel, function))
     self['masks'][runlevel] = function
 
