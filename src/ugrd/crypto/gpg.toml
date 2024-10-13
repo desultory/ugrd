@@ -1,11 +1,13 @@
 modules = [ "ugrd.base.console", "ugrd.crypto.cryptsetup" ]
 
-binaries = [ "/usr/bin/gpg", "/usr/bin/gpg-agent", "/usr/bin/gpgconf", "/usr/bin/gpg-connect-agent", "/usr/bin/pinentry-tty"]
+binaries = [ "/usr/bin/gpg", "/usr/bin/gpg-agent", "/usr/bin/gpgconf", "/usr/bin/gpg-connect-agent", "/usr/bin/pinentry-tty",
+             "rm" ]  # rm needed to remove the decrypted key file
 opt_dependencies = [ '/usr/libexec/keyboxd' ]  # Pull keyboxd in as an optional dependency
 
 
 [cryptsetup_key_types.gpg]
 key_command = "gpg --decrypt {key_file}"
+plymouth_key_command = "gpg --batch --pinentry-mode loopback --passphrase-fd 0 --decrypt {key_file}"
 
 [symlinks.pinentry]
 source = "/usr/bin/pinentry-tty"

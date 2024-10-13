@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '4.9.1'
+__version__ = '5.1.0'
 
 from importlib.metadata import version
 from pathlib import Path
@@ -117,7 +117,14 @@ def rd_fail(self) -> list[str]:
             r'eerror "Mounts:\n$(mount)"',
             'if [ "$(readvar recovery)" == "1" ]; then',
             '    einfo "Entering recovery shell"',
-            '    bash -l',
+            '    if check_var plymouth; then',
+            '        plymouth display-message --text="Entering recovery shell"',
+            '        plymouth hide-splash',
+            '        bash -l',
+            '        plymouth show-splash',
+            '    else',
+            '        bash -l',
+            '    fi',
             'fi',
             'prompt_user "Press enter to restart init."',
             'rd_restart']
@@ -163,9 +170,15 @@ def prompt_user(self) -> str:
     Returns a bash function that pauses until the user presses enter.
     The first argument is the prompt message.
     The second argument is the timeout in seconds.
+
+    if plymouth is running, run 'plymouth display-message --text="$prompt" instead of echo.
     """
     return ['prompt=${1:-"Press enter to continue."}',
-            r'echo -e "\e[1;35m *\e[0m $prompt"',
+            'if check_var plymouth; then',
+            '    plymouth display-message --text="$prompt"',
+            'else',
+            r'    echo -e "\e[1;35m *\e[0m $prompt"',
+            'fi',
             'if [ -n "$2" ]; then',
             '    read -t "$2" -rs',
             'else',
@@ -210,8 +223,7 @@ def edebug(self) -> str:
             'if [ "$(readvar debug)" != "1" ]; then',
             '    return',
             'fi',
-            r'echo -e "\e[1;34m *\e[0m ${*}"'
-            ]
+            r'echo -e "\e[1;34m *\e[0m ${*}"']
 
 
 def einfo(self) -> str:
@@ -219,13 +231,16 @@ def einfo(self) -> str:
     return ['if check_var quiet; then',
             '    return',
             'fi',
-            r'echo -e "\e[1;32m *\e[0m ${*}"'
-            ]
+            r'echo -e "\e[1;32m *\e[0m ${*}"']
 
 
 def ewarn(self) -> str:
     """ Returns a bash function like ewarn. """
-    return ['if check_var quiet; then',
+    return ['if check_var plymouth; then',
+            '    plymouth display-message --text="Warning: ${*}"',
+            '    return',
+            'fi',
+            'if check_var quiet; then',
             '    return',
             'fi',
             r'echo -e "\e[1;33m *\e[0m ${*}"']
@@ -233,6 +248,10 @@ def ewarn(self) -> str:
 
 def eerror(self) -> str:
     """ Returns a bash function like eerror. """
-    return r'echo -e "\e[1;31m *\e[0m ${*}"'
+    return ['if check_var plymouth; then',
+            '    plymouth display-message --text="Error: ${*}"',
+            '    return',
+            'fi',
+            r'echo -e "\e[1;31m *\e[0m ${*}"']
 
 

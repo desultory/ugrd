@@ -22,9 +22,6 @@ cryptsetup_keyfile_validation = true
 [imports.functions]
 "ugrd.crypto.cryptsetup" = [ "get_crypt_dev" ]
 
-[cryptsetup_key_types.keyfile]
-key_command = "cat {key_file} |"
-
 [custom_parameters]
 cryptsetup_key_type = "str"  # The default key type to use for unlocking devices
 cryptsetup_keyfile_validation = "bool"  # Whether to validate the key file
