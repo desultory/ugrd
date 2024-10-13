@@ -30,6 +30,9 @@ def _process_plymouth_config(self, file):
     self['plymouth_theme'] = plymouth_config['Daemon']['Theme']
     self.data['plymouth_config'] = file
     self['copies'] = {'plymouth_config_file': {'source': file, 'destination': '/etc/plymouth/plymouthd.conf'}}
+    if device_timeout := plymouth_config.get('Daemon', 'DeviceTimeout', fallback=None):
+        if float(device_timeout) > 1:
+            self.logger.warning("[Plymouth] DeviceTimeout is set to %s, this may cause boot delays." % device_timeout)
 
 
 def _process_plymouth_theme(self, theme):
