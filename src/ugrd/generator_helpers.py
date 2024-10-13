@@ -1,6 +1,6 @@
-from typing import Union
 from pathlib import Path
-from subprocess import run, CompletedProcess, TimeoutExpired
+from subprocess import CompletedProcess, TimeoutExpired, run
+from typing import Union
 
 from zenlib.util import pretty_print
 
@@ -9,20 +9,21 @@ __author__ = "desultory"
 
 
 def get_subpath(path: Path, subpath: Union[Path, str]) -> Path:
-    """ Returns the subpath of a path. """
+    """Returns the subpath of a path."""
     if not isinstance(subpath, Path):
         subpath = Path(subpath)
 
     if subpath.is_absolute():
-        return path / subpath.relative_to('/')
+        return path / subpath.relative_to("/")
     else:
         return path / subpath
 
 
 class GeneratorHelpers:
-    """ Mixin class for the InitramfsGenerator class. """
+    """Mixin class for the InitramfsGenerator class."""
+
     def _get_build_path(self, path: Union[Path, str]) -> Path:
-        """ Returns the path relative to the build directory, under the tmpdir. """
+        """Returns the path relative to the build directory, under the tmpdir."""
         return get_subpath(get_subpath(self.tmpdir, self.build_dir), path)
 
     def _mkdir(self, path: Path, resolve_build=True) -> None:
@@ -31,8 +32,9 @@ class GeneratorHelpers:
         If resolve_build is True, the path is resolved to the build directory.
         If not, the provided path is used as-is.
         """
-        from os.path import isdir
         from os import mkdir
+        from os.path import isdir
+
         if resolve_build:
             path = self._get_build_path(path)
 
@@ -49,7 +51,7 @@ class GeneratorHelpers:
 
         if not isdir(path_dir):
             mkdir(path)
-            self.logger.log(self['_build_log_level'], "Created directory: %s" % path)
+            self.logger.log(self["_build_log_level"], "Created directory: %s" % path)
         else:
             self.logger.debug("Directory already exists: %s" % path_dir)
 
@@ -60,6 +62,7 @@ class GeneratorHelpers:
         If the first line is a shebang, bash -n is run on the file.
         """
         from os import chmod
+
         file_path = self._get_build_path(file_name)
 
         if not file_path.parent.is_dir():
@@ -73,13 +76,13 @@ class GeneratorHelpers:
                 file_path.unlink()
 
         self.logger.debug("[%s] Writing contents:\n%s" % (file_path, contents))
-        with open(file_path, 'w') as file:
+        with open(file_path, "w") as file:
             file.writelines("\n".join(contents))
 
         if contents[0].startswith("#!/bin/bash"):
             self.logger.debug("Running bash -n on file: %s" % file_name)
             try:
-                self._run(['bash', '-n', str(file_path)])
+                self._run(["bash", "-n", str(file_path)])
             except RuntimeError as e:
                 raise RuntimeError("Failed to validate bash script: %s" % pretty_print(contents)) from e
 
@@ -88,7 +91,7 @@ class GeneratorHelpers:
         self.logger.debug("[%s] Set file permissions: %s" % (file_path, chmod_mask))
 
     def _copy(self, source: Union[Path, str], dest=None) -> None:
-        """ Copies a file into the initramfs build directory. """
+        """Copies a file into the initramfs build directory."""
         from shutil import copy2
 
         if not isinstance(source, Path):
@@ -110,11 +113,11 @@ class GeneratorHelpers:
             self.logger.debug("Destination is a directory, adding source filename: %s" % source.name)
             dest_path = dest_path / source.name
 
-        self.logger.log(self['_build_log_level'], "Copying '%s' to '%s'" % (source, dest_path))
+        self.logger.log(self["_build_log_level"], "Copying '%s' to '%s'" % (source, dest_path))
         copy2(source, dest_path)
 
     def _symlink(self, source: Union[Path, str], target: Union[Path, str]) -> None:
-        """ Creates a symlink """
+        """Creates a symlink"""
         from os import symlink
 
         if not isinstance(source, Path):
@@ -139,24 +142,24 @@ class GeneratorHelpers:
         symlink(source, target)
 
     def _run(self, args: list[str], timeout=15) -> CompletedProcess:
-        """ Runs a command, returns the CompletedProcess object """
+        """Runs a command, returns the CompletedProcess object"""
         cmd_args = [str(arg) for arg in args]
-        self.logger.debug("Running command: %s" % ' '.join(cmd_args))
+        self.logger.debug("Running command: %s" % " ".join(cmd_args))
         try:
             cmd = run(cmd_args, capture_output=True, timeout=timeout)
         except TimeoutExpired as e:
             raise RuntimeError("[%ds] Command timed out: %s" % (timeout, [str(arg) for arg in cmd_args])) from e
 
         if cmd.returncode != 0:
-            self.logger.error("Failed to run command: %s" % ' '.join(cmd.args))
+            self.logger.error("Failed to run command: %s" % " ".join(cmd.args))
             self.logger.error("Command output:\n%s" % cmd.stdout.decode())
             self.logger.error("Command error:\n%s" % cmd.stderr.decode())
-            raise RuntimeError("Failed to run command: %s" % ' '.join(cmd.args))
+            raise RuntimeError("Failed to run command: %s" % " ".join(cmd.args))
 
         return cmd
 
     def _rotate_old(self, file_name: Path, sequence=0) -> None:
-        """ Copies a file to file_name.old then file_nane.old.n, where n is the next number in the sequence """
+        """Copies a file to file_name.old then file_nane.old.n, where n is the next number in the sequence"""
         # Nothing to do if the file doesn't exist
         if not file_name.is_file():
             self.logger.debug("File does not exist: %s" % file_name)
@@ -170,12 +173,14 @@ class GeneratorHelpers:
                 return
             else:
                 # Fail if the cycle count is not set and clean is disabled
-                raise RuntimeError("Unable to cycle file, as cycle count is not set and clean is disabled: %s" % file_name)
+                raise RuntimeError(
+                    "Unable to cycle file, as cycle count is not set and clean is disabled: %s" % file_name
+                )
 
         self.logger.debug("[%d] Cycling file: %s" % (sequence, file_name))
 
         # If the sequence is 0, we're cycling the file for the first time, just rename it to .old
-        suffix = '.old' if sequence == 0 else '.old.%d' % sequence
+        suffix = ".old" if sequence == 0 else ".old.%d" % sequence
         target_file = file_name.with_suffix(suffix)
 
         self.logger.debug("[%d] Target file: %s" % (sequence, target_file))
