@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "5.1.0"
+__version__ = "5.1.1"
 
 from pathlib import Path
 
@@ -744,10 +744,11 @@ def resolve_blkdev_kmod(self, device) -> list[str]:
 
 
 def handle_resume(self) -> None:
-    """Returns a bash script handling resume if "resume" is specified.
-    It must determine if the specified device exists, then echo the resume device to /sys/power/resume."""
+    """Returns a bash script handling resume if specified.
+    Checks that /sys/power/resume is writable, and if resume= is set, if so,
+    it checks ifthe specified device exists, then echo's the resume device to /sys/power/resume."""
     return [
-        'if [ -n "$(readvar resume)" ]; then',
+        'if [ -n "$(readvar resume)" ] && [ -w /sys/power/resume ]; then',
         '    if [ -e "$(readvar resume)" ]; then',
         '        einfo "Resuming from: $(readvar resume)"',
         "        readvar resume > /sys/power/resume",
