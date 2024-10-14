@@ -9,7 +9,7 @@ binaries = [
 
 cmdline_bools = [ "rootwait" ]
 cmdline_strings = [
-  "root", "roottype", "rootflags", "rootdelay", "resume"
+  "root", "roottype", "rootflags", "rootdelay"
 ]
 
 mount_wait = false
@@ -38,8 +38,8 @@ late_fstab = "/etc/fstab.late"
 [imports.init_pre]
 "ugrd.fs.mounts" = [ "mount_base" ]
 
-[imports.init_early]
-"ugrd.fs.mounts" = [ "handle_resume", "mount_fstab" ]
+[imports.init_main]
+"ugrd.fs.mounts" = [ "mount_fstab" ]
 
 [imports.functions]
 "ugrd.fs.mounts" = [ "mount_root" ]
