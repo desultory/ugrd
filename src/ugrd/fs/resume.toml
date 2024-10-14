@@ -1,5 +1,4 @@
 cmdline_strings = [ "resume" ]
-cmdline_bools = [ "noresume" ]
 
 [imports.init_early] 
 "ugrd.fs.resume" = [ "handle_resume" ]
