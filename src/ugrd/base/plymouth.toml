@@ -20,10 +20,7 @@ path = "devpts"
 "ugrd.base.plymouth" = [ "pull_plymouth" ]
 
 [imports.init_early]
-"ugrd.base.plymouth" = [ "make_devpts" ]
-
-[imports.init_main]
-"ugrd.base.plymouth" = [ "start_plymouth" ]
+"ugrd.base.plymouth" = [ "make_devpts", "start_plymouth" ]
 
 [custom_parameters]
 plymouth_config = "Path"  # Path to the plymouth configuration file
