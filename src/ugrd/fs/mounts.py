@@ -746,7 +746,7 @@ def handle_resume(self) -> None:
     """Returns a bash script handling resume if "resume" is specified.
     It must determine if the specified device exists, then echo the resume device to /sys/power/resume."""
     return ['if [ -n "$(readvar resume)" ]; then',
-            "    if [ -e $(readvar resume) ]; then",
+            '    if [ -e "$(readvar resume)" ]; then',
             '        einfo "Resuming from: $(readvar resume)"',
             '        readvar resume > /sys/power/resume',
             '        rd_fail "Failed to resume from $(readvar resume)"',
