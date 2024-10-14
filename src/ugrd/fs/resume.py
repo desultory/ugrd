@@ -1,4 +1,4 @@
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 
 def handle_resume(self) -> None:
@@ -7,16 +7,25 @@ def handle_resume(self) -> None:
     it checks ifthe specified device exists, then echo's the resume device to /sys/power/resume.
     In the event of failure, it prints an error message and a list of block devices.
     """
-    return [
+    out_str = [
         'if [ -n "$(readvar resume)" ] && [ -w /sys/power/resume ]; then',
         '    if [ -e "$(readvar resume)" ]; then',
         '        einfo "Resuming from: $(readvar resume)"',
         "        readvar resume > /sys/power/resume",
         '        eerror "Failed to resume from $(readvar resume)"',
-        "    else",
         '        eerror "Resume device not found: $(readvar resume)"',
         "    fi",
         r'    eerror "Block devices:\n$(blkid)"',
-        '    prompt_user "Press enter to continue booting."',
-        "fi",
     ]
+    if self["safe_resume"]:
+        out_str += [
+            '    eerror "If you wish to continue booting, remove the resume= kernel parameter."',
+            '''    eerror " or run 'setvar resume ""' to clear the resume device."''',
+            '    rd_fail "Failed to resume from $(readvar resume)."',
+        ]
+    else:
+        out_str += ['   eerror "Failed to resume from $(readvar resume)"']
+
+    out_str += ["fi"]
+
+    return out_str
