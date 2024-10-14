@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "5.0.1"
+__version__ = "5.1.0"
 
 from pathlib import Path
 
@@ -741,3 +741,18 @@ def resolve_blkdev_kmod(self, device) -> list[str]:
     else:
         self.logger.error("[%s] Unable to determine kernel module for block device: %s" % (device_name, device))
         return []
+
+def handle_resume(self) -> None:
+    """Returns a bash script handling resume if "resume" is specified.
+    It must determine if the specified device exists, then echo the resume device to /sys/power/resume."""
+    return ['if [ -n "$(readvar resume)" ]; then',
+            "    if [ -e $(readvar resume) ]; then",
+            '        einfo "Resuming from: $(readvar resume)"',
+            '        readvar resume > /sys/power/resume',
+            '        rd_fail "Failed to resume from $(readvar resume)"',
+            '    else',
+            '        ewarn "Resume device not found: $(readvar resume)"',
+            '        prompt_user "Press enter to continue booting."',
+            '    fi',
+            'fi']
+
