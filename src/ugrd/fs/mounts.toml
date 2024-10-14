@@ -7,6 +7,11 @@ binaries = [
   "mkdir",
 ]
 
+cmdline_bools = [ "rootwait" ]
+cmdline_strings = [
+  "root", "roottype", "rootflags", "rootdelay", "resume"
+]
+
 mount_wait = false
 mount_retries = 5
 autodetect_root = true

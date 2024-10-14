@@ -1,5 +1,5 @@
-cmdline_bools = ['quiet', 'debug', 'recovery', 'rootwait']
-cmdline_strings = ['init', 'root', 'roottype', 'rootflags', 'rootdelay', 'loglevel']
+cmdline_bools = ['quiet', 'debug', 'recovery']
+cmdline_strings = ['init', 'loglevel']
 
 
 [imports.init_pre]
