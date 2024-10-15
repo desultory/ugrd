@@ -4,4 +4,4 @@ cmdline_strings = [ "resume" ]
 "ugrd.fs.resume" = [ "handle_resume" ]
 
 [custom_parameters]
-safe_resume = "bool"  # Fail if resume is not possible
+force_resume = "bool"  # Fail if resume is not possible
