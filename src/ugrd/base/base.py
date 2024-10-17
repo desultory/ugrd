@@ -189,19 +189,25 @@ def prompt_user(self) -> str:
 
     if plymouth is running, run 'plymouth display-message --text="$prompt" instead of echo.
     """
-    return [
-        'prompt=${1:-"Press enter to continue."}',
-        "if check_var plymouth; then",
-        '    plymouth display-message --text="$prompt"',
-        "else",
-        r'    echo -e "\e[1;35m *\e[0m $prompt"',
-        "fi",
+    output = ['prompt=${1:-"Press enter to continue."}']
+    if "ugrd.base.plymouth" in self["modules"]:
+        output += [
+            "if check_var plymouth; then",
+            '    plymouth display-message --text="$prompt"',
+            "else",
+            r'    echo -e "\e[1;35m *\e[0m $prompt"',
+            "fi",
+        ]
+    else:
+        output += [r'echo -e "\e[1;35m *\e[0m $prompt"']
+    output += [
         'if [ -n "$2" ]; then',
         '    read -t "$2" -rs',
         "else",
         "    read -rs",
         "fi",
     ]
+    return output
 
 
 def retry(self) -> str:
