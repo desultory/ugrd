@@ -260,25 +260,37 @@ def einfo(self) -> str:
 
 
 def ewarn(self) -> str:
-    """Returns a bash function like ewarn."""
-    return [
-        "if check_var plymouth; then",
-        '    plymouth display-message --text="Warning: ${*}"',
-        "    return",
-        "fi",
+    """Returns a bash function like ewarn.
+    If plymouth is running, it displays a message instead of echoing.
+    """
+    if "ugrd.base.plymouth" in self["modules"]:
+        output = [
+            "if check_var plymouth; then",  # Always show the message if plymouth is running
+            '    plymouth display-message --text="Warning: ${*}"',
+            "    return",  # Return early so echo doesn't leak
+            "fi",
+        ]
+    else:
+        output = []
+
+    output += [
         "if check_var quiet; then",
         "    return",
         "fi",
         r'echo -e "\e[1;33m *\e[0m ${*}"',
     ]
+    return output
 
 
 def eerror(self) -> str:
     """Returns a bash function like eerror."""
-    return [
-        "if check_var plymouth; then",
-        '    plymouth display-message --text="Error: ${*}"',
-        "    return",
-        "fi",
-        r'echo -e "\e[1;31m *\e[0m ${*}"',
-    ]
+    if "ugrd.base.plymouth" in self["modules"]:
+        return [
+            "if check_var plymouth; then",
+            '    plymouth display-message --text="Error: ${*}"',
+            "    return",
+            "fi",
+            r'echo -e "\e[1;31m *\e[0m ${*}"'
+        ]
+    else:
+        return [r'echo -e "\e[1;31m *\e[0m ${*}"']
