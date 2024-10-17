@@ -153,17 +153,15 @@ def setvar(self) -> str:
 
 
 def readvar(self) -> str:
-    """
-    Returns a bash function that reads a variable from /run/vars/{name}.
+    """Returns a bash function that reads a variable from /run/vars/{name}.
     The second arg can be a default value.
     If no default is supplied, and the variable is not found, it returns an empty string.
     """
     return 'cat "/run/vars/${1}" 2>/dev/null || echo "${2}"'
 
 
-def check_var(self) -> str:
-    """
-    Returns a bash function that checks the value of a variable.
+def check_var(self) -> list[str]:
+    """Returns a bash function that checks the value of a variable.
     if it's not set, tries to read the cmdline.
     """
     return [
@@ -181,9 +179,8 @@ def check_var(self) -> str:
     ]
 
 
-def prompt_user(self) -> str:
-    """
-    Returns a bash function that pauses until the user presses enter.
+def prompt_user(self) -> list[str]:
+    """Returns a bash function that pauses until the user presses enter.
     The first argument is the prompt message.
     The second argument is the timeout in seconds.
 
@@ -210,9 +207,8 @@ def prompt_user(self) -> str:
     return output
 
 
-def retry(self) -> str:
-    """
-    Returns a bash function that retries a command some number of times.
+def retry(self) -> list[str]:
+    """Returns a bash function that retries a command some number of times.
     The first argument is the number of retries. if 0, it retries 100 times.
     The second argument is the timeout in seconds.
     The remaining arguments represent the command to run.
@@ -241,7 +237,7 @@ def retry(self) -> str:
 
 
 # To feel more at home
-def edebug(self) -> str:
+def edebug(self) -> list[str]:
     """Returns a bash function like edebug."""
     return [
         "if check_var quiet; then",
@@ -254,12 +250,12 @@ def edebug(self) -> str:
     ]
 
 
-def einfo(self) -> str:
+def einfo(self) -> list[str]:
     """Returns a bash function like einfo."""
     return ["if check_var quiet; then", "    return", "fi", r'echo -e "\e[1;32m *\e[0m ${*}"']
 
 
-def ewarn(self) -> str:
+def ewarn(self) -> list[str]:
     """Returns a bash function like ewarn.
     If plymouth is running, it displays a message instead of echoing.
     """
@@ -290,7 +286,7 @@ def eerror(self) -> str:
             '    plymouth display-message --text="Error: ${*}"',
             "    return",
             "fi",
-            r'echo -e "\e[1;31m *\e[0m ${*}"'
+            r'echo -e "\e[1;31m *\e[0m ${*}"',
         ]
     else:
         return [r'echo -e "\e[1;31m *\e[0m ${*}"']
