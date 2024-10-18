@@ -1,4 +1,4 @@
-__version__ = "0.1.1"
+__version__ = "0.2.0"
 
 from configparser import ConfigParser
 from pathlib import Path
@@ -59,11 +59,25 @@ def make_devpts(self) -> list[str]:
     return ["mkdir -m755 -p /dev/pts", "mount /dev/pts"]
 
 
+def _get_plymouthd_args(self) -> str:
+    """Returns arguments for running plymouthd"""
+    base_args = "--mode=boot --pid-file=/run/plymouth/plymouth.pid --attach-to-session"
+    cmdline_args = []
+    if "ugrd.kmod.novideo" in self["modules"]:  # If novideo is enabled, force the plymouth.use-simpledrm option
+        cmdline_args.append("plymouth.use-simpledrm")
+    if self["plymouth_force_splash"]:
+        cmdline_args.append("plymouth.ignore-serial-consoles")
+
+    if cmdline_args:
+        return f'{base_args} --kernel-command-line="{" ".join(cmdline_args)}"'
+    return base_args
+
+
 def start_plymouth(self) -> list[str]:
     """Returns bash lines to run plymouthd"""
     return [
         "mkdir -p /run/plymouth",
-        "plymouthd --mode boot --pid-file /run/plymouth/plymouth.pid --attach-to-session",
+        f"plymouthd {_get_plymouthd_args(self)}",
         "setvar plymouth 1",
         "plymouth show-splash",
     ]

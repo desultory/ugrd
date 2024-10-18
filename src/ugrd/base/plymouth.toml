@@ -24,4 +24,5 @@ path = "devpts"
 
 [custom_parameters]
 plymouth_config = "Path"  # Path to the plymouth configuration file
+plymouth_force_splash = "bool"  # Hardcode the splash argument into the plymouthd fake kernel cmdline
 plymouth_theme = "str"  # Name of the plymouth theme to use
