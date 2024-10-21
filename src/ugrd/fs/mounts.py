@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "5.3.0"
+__version__ = "5.3.1"
 
 from pathlib import Path
 
@@ -664,8 +664,7 @@ def _validate_host_mount(self, mount, destination_path=None) -> bool:
     for option in mount.get("options", []):
         if mount.get("no_validate_options"):
             break  # Skip host option validation if this is set
-        if option == "ro" and destination_path == "/":
-            # Skip the ro option for the root mount
+        if option == "ro":  # Allow the ro option to be set in the config
             continue
         if option not in host_mount_options:
             raise ValueError(
