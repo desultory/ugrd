@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "5.2.3"
+__version__ = "5.3.0"
 
 from pathlib import Path
 
@@ -560,7 +560,7 @@ def _autodetect_mount(self, mountpoint) -> None:
             "[%s] Mount config already set: %s" % (mountpoint, pretty_print(self["mounts"][mount_name]))
         )
 
-    mount_config = {mount_name: {"type": "auto"}}
+    mount_config = {mount_name: {"type": "auto", "options": ["ro"]}}  # Default to auto and ro
     if mount_type := mount_info.get("type"):
         self.logger.info("Autodetected mount type: %s" % mount_type)
         mount_config[mount_name]["type"] = mount_type.lower()
