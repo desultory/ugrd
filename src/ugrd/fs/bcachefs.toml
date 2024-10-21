@@ -1,0 +1,2 @@
+binaries = [ "bcachefs" ]
+kmod_init = [ "bcachefs" ]

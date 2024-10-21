@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "5.1.1"
+__version__ = "5.2.3"
 
 from pathlib import Path
 
@@ -55,8 +55,8 @@ def _validate_mount_config(self, mount_name: str, mount_config) -> None:
                         raise ValueError(
                             "Please use the root_subvol parameter instead of setting the option manually in the root mount."
                         )
-                    elif mount_config["type"] != "btrfs":
-                        raise ValueError("subvol option can only be used with btrfs mounts.")
+                    elif mount_config["type"] not in ["btrfs", "bcachefs"]:
+                        raise ValueError("subvol option can only be used with btrfs or bcachefs mounts.")
         elif parameter not in MOUNT_PARAMETERS:
             raise ValueError("Invalid parameter in mount: %s" % parameter)
 
@@ -101,6 +101,10 @@ def _process_mount(self, mount_name: str, mount_config, mount_class="mounts") ->
             if "ugrd.fs.btrfs" not in self["modules"]:
                 self.logger.info("Auto-enabling module: btrfs")
                 self["modules"] = "ugrd.fs.btrfs"
+        elif mount_type == "bcachefs":
+            if "ugrd.fs.bcachefs" not in self["modules"]:
+                self.logger.info("Auto-enabling module: bcachefs")
+                self["modules"] = "ugrd.fs.bcachefs"
         elif mount_type not in ["proc", "sysfs", "devtmpfs", "tmpfs", "devpts"]:
             self.logger.warning("Unknown mount type: %s" % mount_type)
 
@@ -527,6 +531,10 @@ def autodetect_root(self) -> None:
     root_dev = self["_mounts"]["/"]["device"]
     if self["resolve_root_dev"]:
         root_dev = _resolve_dev(self, "/")
+    if ':' in root_dev:  # only use the first device
+        root_dev = root_dev.split(":")[0]
+        for alt_devices in root_dev.split(":")[1:]:  # But ensure kmods are loaded for all devices
+            autodetect_mount_kmods(self, alt_devices)
     if root_dev not in self["_blkid_info"]:
         get_blkid_info(self, root_dev)
     _autodetect_mount(self, "/")
@@ -536,10 +544,14 @@ def _autodetect_mount(self, mountpoint) -> None:
     """Sets mount config for the specified mountpoint."""
     if mountpoint not in self["_mounts"]:
         raise FileNotFoundError("auto_mount mountpoint not found in host mounts: %s" % mountpoint)
-    if self["_mounts"][mountpoint]["device"] not in self["_blkid_info"]:
-        get_blkid_info(self, self["_mounts"][mountpoint]["device"])
 
     mount_device = self["_mounts"][mountpoint]["device"]
+    if ':' in mount_device:  # Handle bcachefs
+        mount_device = mount_device.split(":")[0]
+
+    if mount_device not in self["_blkid_info"]:
+        get_blkid_info(self, mount_device)
+
     mount_info = self["_blkid_info"][mount_device]
     autodetect_mount_kmods(self, mount_device)
     mount_name = "root" if mountpoint == "/" else mountpoint.removeprefix("/")
@@ -643,6 +655,8 @@ def _validate_host_mount(self, mount, destination_path=None) -> bool:
 
     # Using the mount path, get relevant hsot mount info
     host_source_dev = self["_mounts"][destination_path]["device"]
+    if ':' in host_source_dev:  # Handle bcachefs
+        host_source_dev = host_source_dev.split(":")[0]
     if destination_path == "/" and self["resolve_root_dev"]:
         host_source_dev = _resolve_dev(self, "/")
 
