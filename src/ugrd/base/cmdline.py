@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "2.5.0"
+__version__ = "2.6.1"
 
 
 def parse_cmdline_bool(self) -> list[str]:
@@ -61,11 +61,20 @@ def mount_cmdline_root(self) -> list[str]:
 
 
 def export_exports(self) -> list[str]:
-    """Returns a bash script exporting all exports defined in the exports key."""
+    """Returns a bash script exporting all exports defined in the exports key.
+    Sets 'exported' to 1 once done.
+    If 'exported' is set, returns early.
+    """
     from importlib.metadata import PackageNotFoundError, version
 
     try:
         self["exports"]["VERSION"] = version(__package__.split(".")[0])
     except PackageNotFoundError:
         self["exports"]["VERSION"] = 9999
-    return [f'setvar {key} "{value}"' for key, value in self["exports"].items()]
+
+    check_lines = ["if check_var exported; then",
+                   '    edebug "Exports already set, skipping"',
+                   "    return", "fi"]
+    export_lines = [f'setvar "{key}" "{value}"' for key, value in self["exports"].items()]
+
+    return check_lines + export_lines + ["setvar exported 1"]
