@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "5.1.1"
+__version__ = "5.1.2"
 
 from importlib.metadata import version
 from pathlib import Path
@@ -252,7 +252,18 @@ def edebug(self) -> list[str]:
 
 def einfo(self) -> list[str]:
     """Returns a bash function like einfo."""
-    return ["if check_var quiet; then", "    return", "fi", r'echo -e "\e[1;32m *\e[0m ${*}"']
+    if "ugrd.base.plymouth" in self["modules"]:
+        output = [
+            "if check_var plymouth; then",
+            '    plymouth display-message --text="${*}"',
+            "    return",
+            "fi",
+        ]
+    else:
+        output = []
+
+    output += ["if check_var quiet; then", "    return", "fi", r'echo -e "\e[1;32m *\e[0m ${*}"']
+    return output
 
 
 def ewarn(self) -> list[str]:
