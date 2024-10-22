@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "3.9.1"
+__version__ = "3.9.2"
 
 from pathlib import Path
 from typing import Union
@@ -172,7 +172,8 @@ def find_libgcc(self) -> None:
     try:
         ldconfig = self._run(["ldconfig", "-p"]).stdout.decode().split("\n")
     except RuntimeError:
-        return self.logger.critical("Unable to run ldconfig -p, if GCC is being used, this is fatal!")
+        self.logger.critical("Unable to run ldconfig -p, if GCC is being used, this is fatal!")
+        return self.logger.critical("This check can be disabled by setting `find_libgcc = false` in the configuration.")
 
     libgcc = [lib for lib in ldconfig if "libgcc_s" in lib and "(libc6," in lib][0]
     source_path = Path(libgcc.partition("=> ")[-1])
