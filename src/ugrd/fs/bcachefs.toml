@@ -1,2 +1,2 @@
-binaries = [ "bcachefs" ]
+binaries = [ "bcachefs", "mount.bcachefs" ]
 kmod_init = [ "bcachefs" ]
