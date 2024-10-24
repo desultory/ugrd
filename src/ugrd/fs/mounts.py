@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "5.3.1"
+__version__ = "5.3.2"
 
 from pathlib import Path
 
@@ -208,6 +208,25 @@ def generate_fstab(self, mount_class="mounts", filename="/etc/fstab") -> None:
         self.logger.debug(
             "[%s] No fstab entries generated for mounts: %s" % (mount_class, ", ".join(self[mount_class].keys()))
         )
+
+def umount_fstab(self) -> list[str]:
+    """Generates a function to unmount all mounts in the fstab."""
+    mountpoints = []
+    for mount_info in self["mounts"].values():
+        if mount_info.get("base_mount"):
+            continue
+        if str(mount_info.get("destination")) == "/target_rootfs":
+            continue
+
+        mountpoints.append(str(mount_info["destination"]))
+    if not mountpoints:
+        return []
+
+    out = [f"einfo 'Unmounting filesystems: {" ,".join(mountpoints)}'"]
+    for mountpoint in mountpoints:
+        out.append(f"umount {mountpoint} || ewarn 'Failed to unmount: {mountpoint}'")
+
+    return out
 
 
 @contains("hostonly", "Skipping mount autodetection, hostonly mode is enabled.", log_level=30)
