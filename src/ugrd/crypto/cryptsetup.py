@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '3.2.0'
+__version__ = '3.2.1'
 
 from zenlib.util import contains
 
@@ -367,6 +367,7 @@ def crypt_init(self) -> list[str]:
         # Check that the device was successfully opened
         out += [f'if ! cryptsetup status {name} > /dev/null 2>&1; then',
                 f'    rd_fail "Failed to open cryptsetup device: {name}"',
-                'fi']
+                'fi'
+                f'einfo "Successfully opened cryptsetup device: {name}"']
     return out
 
