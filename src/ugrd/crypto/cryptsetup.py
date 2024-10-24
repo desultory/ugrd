@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "3.2.1"
+__version__ = "3.2.2"
 
 from pathlib import Path
 
@@ -317,7 +317,7 @@ def open_crypt_device(self, name: str, parameters: dict) -> list[str]:
         out += [
             f"    einfo 'Attempting to open LUKS key: {parameters['key_file']}'",
             f"    edebug 'Using key command: {parameters['key_command']}'",
-            "    if check_var plymouth; then",
+            "    if plymouth --ping; then",
             f'        plymouth ask-for-password --prompt "[${{i}} / {retries}] Enter passphrase to unlock key for: {name}" --command "{parameters["plymouth_key_command"]}" --number-of-tries 1 > /run/vars/key_data || continue',
             "    else",
             f'        {parameters["key_command"]} > /run/vars/key_data || continue',
@@ -344,7 +344,7 @@ def open_crypt_device(self, name: str, parameters: dict) -> list[str]:
         "            break",
         "        fi",  # Try to open the device using plymouth if it's running
         "        rm /run/vars/key_data",  # Remove the key data file
-        f'    elif check_var plymouth && plymouth ask-for-password --prompt "[${{i}} / {retries}] Enter passphrase to unlock {name}" --command "{cryptsetup_command} {cryptsetup_target}" --number-of-tries 1; then',
+        f'    elif plymouth --ping && plymouth ask-for-password --prompt "[${{i}} / {retries}] Enter passphrase to unlock {name}" --command "{cryptsetup_command} {cryptsetup_target}" --number-of-tries 1; then',
         "        break",
     ]  # Break if the device was successfully opened
     if "key_file" in parameters:  # try a key file directly if it exists
