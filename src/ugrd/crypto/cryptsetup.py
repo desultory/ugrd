@@ -395,6 +395,7 @@ def crypt_init(self) -> list[str]:
         out += [
             f"if ! cryptsetup status {name} > /dev/null 2>&1; then",
             f'    rd_fail "Failed to open cryptsetup device: {name}"',
-            "fi" f'einfo "Successfully opened cryptsetup device: {name}"',
+            "fi",
+            f'einfo "Successfully opened cryptsetup device: {name}"',
         ]
     return out
