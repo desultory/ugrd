@@ -74,6 +74,10 @@ def start_plymouth(self) -> list[str]:
     return [
         "mkdir -p /run/plymouth",
         f"plymouthd {_get_plymouthd_args(self)}",
+        "if ! plymouth --ping; then",
+        '    eerror "Failed to start plymouthd"',
+        "    return 1",
+        'fi',
         "setvar plymouth 1",
         "plymouth show-splash",
     ]
