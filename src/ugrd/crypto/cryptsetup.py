@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "3.2.2"
+__version__ = "3.2.3"
 
 from pathlib import Path
 
@@ -317,12 +317,17 @@ def open_crypt_device(self, name: str, parameters: dict) -> list[str]:
         out += [
             f"    einfo 'Attempting to open LUKS key: {parameters['key_file']}'",
             f"    edebug 'Using key command: {parameters['key_command']}'",
-            "    if plymouth --ping; then",
-            f'        plymouth ask-for-password --prompt "[${{i}} / {retries}] Enter passphrase to unlock key for: {name}" --command "{parameters["plymouth_key_command"]}" --number-of-tries 1 > /run/vars/key_data || continue',
-            "    else",
-            f'        {parameters["key_command"]} > /run/vars/key_data || continue',
-            "    fi",
         ]
+        if "plymouth_key_command" in parameters and "ugrd.base.plymouth" in self["modules"]:
+            out += [
+                "    if plymouth --ping; then",
+                f'        plymouth ask-for-password --prompt "[${{i}} / {retries}] Enter passphrase to unlock key for: {name}" --command "{parameters["plymouth_key_command"]}" --number-of-tries 1 > /run/vars/key_data || continue',
+                "    else",
+                f'        {parameters["key_command"]} > /run/vars/key_data || continue',
+                "    fi",
+            ]
+        else:
+            out += [f"    {parameters['key_command']} > /run/vars/key_data || continue"]
 
     cryptsetup_command = "cryptsetup open --tries 1"  # Set tries to 1 since it runs in the loop
     cryptsetup_target = f'"$crypt_dev" {name}'  # Add a variable for the source device and mapped name
@@ -344,9 +349,12 @@ def open_crypt_device(self, name: str, parameters: dict) -> list[str]:
         "            break",
         "        fi",  # Try to open the device using plymouth if it's running
         "        rm /run/vars/key_data",  # Remove the key data file
-        f'    elif plymouth --ping && plymouth ask-for-password --prompt "[${{i}} / {retries}] Enter passphrase to unlock {name}" --command "{cryptsetup_command} {cryptsetup_target}" --number-of-tries 1; then',
-        "        break",
-    ]  # Break if the device was successfully opened
+    ]
+    if "ugrd.base.plymouth" in self["modules"]:  # Attempt plain unlock if using plymouth
+        out += [
+            f'    elif plymouth --ping && plymouth ask-for-password --prompt "[${{i}} / {retries}] Enter passphrase to unlock {name}" --command "{cryptsetup_command} {cryptsetup_target}" --number-of-tries 1; then',
+            "        break",
+        ]  # Break if the device was successfully opened
     if "key_file" in parameters:  # try a key file directly if it exists
         out += [f'    elif {cryptsetup_command} --key-file {parameters["key_file"]} {cryptsetup_target}; then']
     else:  # Otherwise, open directly
