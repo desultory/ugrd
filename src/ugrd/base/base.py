@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "5.1.2"
+__version__ = "5.1.3"
 
 from importlib.metadata import version
 from pathlib import Path
@@ -132,7 +132,7 @@ def rd_fail(self) -> list[str]:
     ]
     if "ugrd.base.plymouth" in self["modules"]:
         output += [
-            "    if check_var plymouth; then",
+            "    if plymouth --ping; then",
             '        plymouth display-message --text="Entering recovery shell"',
             "        plymouth hide-splash",
             "        bash -l",
@@ -189,7 +189,7 @@ def prompt_user(self) -> list[str]:
     output = ['prompt=${1:-"Press enter to continue."}']
     if "ugrd.base.plymouth" in self["modules"]:
         output += [
-            "if check_var plymouth; then",
+            "if plymouth --ping; then",
             '    plymouth display-message --text="$prompt"',
             "else",
             r'    echo -e "\e[1;35m *\e[0m $prompt"',
@@ -254,7 +254,7 @@ def einfo(self) -> list[str]:
     """Returns a bash function like einfo."""
     if "ugrd.base.plymouth" in self["modules"]:
         output = [
-            "if check_var plymouth; then",
+            "if plymouth --ping; then",
             '    plymouth display-message --text="${*}"',
             "    return",
             "fi",
@@ -272,7 +272,7 @@ def ewarn(self) -> list[str]:
     """
     if "ugrd.base.plymouth" in self["modules"]:
         output = [
-            "if check_var plymouth; then",  # Always show the message if plymouth is running
+            "if plymouth --ping; then",  # Always show the message if plymouth is running
             '    plymouth display-message --text="Warning: ${*}"',
             "    return",  # Return early so echo doesn't leak
             "fi",
@@ -293,7 +293,7 @@ def eerror(self) -> str:
     """Returns a bash function like eerror."""
     if "ugrd.base.plymouth" in self["modules"]:
         return [
-            "if check_var plymouth; then",
+            "if plymouth --ping; then",
             '    plymouth display-message --text="Error: ${*}"',
             "    return",
             "fi",
