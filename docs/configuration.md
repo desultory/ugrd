@@ -257,6 +257,10 @@ Importing this module will run `btrfs device scan` and pull btrfs modules.
 * `root_subvol` - Set the desired root subvolume.
 * `_base_mount_path` (/root_base) Sets where the subvolume selector mounts the base filesytem to scan for subvolumes.
 
+#### ugrd.fs.resume
+
+When enabled, attempts to resume after hibernation if resume= is passed on the kernel command line.
+
 ### Cryptographic modules
 
 Several cryptographic modules are provided, mostly to assist in mounting encrypted volumes and handling keyfiles.
