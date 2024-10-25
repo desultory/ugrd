@@ -1,6 +1,7 @@
 binaries = ['plymouthd', 'plymouth', 'plymouth-set-default-theme']
 
-dependencies = ['/usr/share/plymouth/themes/text/text.plymouth',
+dependencies = ['/usr/share/plymouth/plymouthd.defaults',
+		'/usr/share/plymouth/themes/text/text.plymouth',
                 '/usr/share/plymouth/themes/details/details.plymouth']
 
 [imports.config_processing]
