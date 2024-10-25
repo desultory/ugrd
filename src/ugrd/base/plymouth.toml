@@ -5,7 +5,7 @@ dependencies = ['/usr/share/plymouth/plymouthd.defaults',
                 '/usr/share/plymouth/themes/details/details.plymouth']
 
 [imports.config_processing]
-"ugrd.base.plymouth" = [ "_process_plymouth_config", "_process_plymouth_theme" ]
+"ugrd.base.plymouth" = [ "_process_plymouth_themes_multi" ]
 
 [mounts.devpts]
 type = "devpts"
@@ -26,4 +26,4 @@ path = "devpts"
 [custom_parameters]
 plymouth_config = "Path"  # Path to the plymouth configuration file
 plymouth_force_splash = "bool"  # Hardcode the splash argument into the plymouthd fake kernel cmdline
-plymouth_theme = "str"  # Name of the plymouth theme to use
+plymouth_themes = "NoDupFlatList"  # List of plymouth themes to pull

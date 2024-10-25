@@ -1,53 +1,48 @@
-__version__ = "0.2.1"
+__version__ = "0.3.0"
 
 from configparser import ConfigParser
 from pathlib import Path
 
-from zenlib.util import unset
-
 PLYMOUTH_CONFIG_FILES = ["/etc/plymouth/plymouthd.conf", "/usr/share/plymouth/plymouthd.defaults"]
 
 
-@unset("plymouth_config")
 def find_plymouth_config(self) -> None:
-    """Adds the plymouth config files to the build directory"""
-    self.logger.info("Finding plymouthd.conf")
+    """Processes themes from plymouth config file
+    Sets the config file if it is the first one found"""
     for file in PLYMOUTH_CONFIG_FILES:
         plymouth_config = ConfigParser()
         plymouth_config.read(file)
         if plymouth_config.has_section("Daemon") and plymouth_config.has_option("Daemon", "Theme"):
-            self["plymouth_config"] = file
-            break
+            self["plymouth_themes"] += plymouth_config["Daemon"]["Theme"]
+            if str(self["plymouth_config"]) == '.':  # Set the first config file found
+                self["plymouth_config"] = file
+            continue
         self.logger.debug("Plymouth config file missing theme option: %s" % file)
-    else:
-        raise FileNotFoundError("Failed to find plymouthd.conf")
+    if not self["plymouth_themes"]:
+        self.logger.error("No plymouth theme found in config files.")
 
 
-def _process_plymouth_config(self, file) -> None:
-    """Checks that the config file is valid"""
-    self.logger.info("Processing plymouthd.conf: %s" % file)
-    plymouth_config = ConfigParser()
-    plymouth_config.read(file)
-    self["plymouth_theme"] = plymouth_config["Daemon"]["Theme"]
-    self.data["plymouth_config"] = file
-    self["copies"] = {"plymouth_config_file": {"source": file, "destination": "/etc/plymouth/plymouthd.conf"}}
-
-
-def _process_plymouth_theme(self, theme) -> None:
+def _process_plymouth_themes_multi(self, theme) -> None:
     """Checks that the theme is valid"""
     theme_dir = Path("/usr/share/plymouth/themes") / theme
     if not theme_dir.exists():
         raise FileNotFoundError("Theme directory not found: %s" % theme_dir)
-    self.data["plymouth_theme"] = theme
+    self.data["plymouth_themes"].append(theme)
 
 
 def pull_plymouth(self) -> None:
     """Adds plymouth files to dependencies"""
-    dir_list = [Path("/usr/lib64/plymouth"), Path("/usr/share/plymouth/themes/") / self["plymouth_theme"]]
-    self.logger.info("[%s] Adding plymouth files to dependencies." % self["plymouth_theme"])
+    dir_list = [Path("/usr/lib64/plymouth")]
+    for theme in self["plymouth_themes"]:
+        dir_list += [Path("/usr/share/plymouth/themes/") / theme]
+    self.logger.debug("Adding plymouth files to dependencies.")
     for directory in dir_list:
         for file in directory.rglob("*"):
             self["dependencies"] = file
+
+    if str(self["plymouth_config"]) != "/usr/share/plymouth/plymouthd.defaults":
+        self["copies"] = {"plymouth_config_file": {"source": self["plymouth_config"], "destination": "/etc/plymouth/plymouthd.conf"}}
+
 
 
 def make_devpts(self) -> list[str]:
