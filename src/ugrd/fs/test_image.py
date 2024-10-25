@@ -1,4 +1,4 @@
-__version__ = "0.7.0"
+__version__ = "0.7.1"
 
 from zenlib.util import contains
 
@@ -15,7 +15,8 @@ def _allocate_image(self, image_path):
         if self.clean:
             self.logger.warning("Removing existing filesystem image file: %s" % image_path)
             image_path.unlink()
-        raise Exception("File already exists and 'clean' is off: %s" % image_path)
+        else:
+            raise Exception("File already exists and 'clean' is off: %s" % image_path)
 
     with open(image_path, "wb") as f:
         self.logger.info("Allocating test image file: %s" % f.name)
