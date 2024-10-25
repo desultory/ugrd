@@ -45,9 +45,13 @@ For example, the `generate_fstab` function is added to the `build_tasks` book fr
 
 Build imports are used to mutate config and build the base structure of the initramfs.
 
+### build_enum
+
+`build_enum` is used for system enumeration, such as finding the root device, loaded kernel mods, etc.
+
 ### build_pre
 
-`build_pre` contains build tasks which are run at the very start of the build, such as build directory cleaning and additional config processing.
+`build_pre` contains build tasks which are run at the very start of the build, such as build directory cleaning and additional config processing based on enumerated info.
 
 ### build_tasks
 

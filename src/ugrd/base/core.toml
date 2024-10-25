@@ -33,8 +33,11 @@ minor = 1
 		     "_process_validate",
 		   ]
 
+[imports.build_enum]
+"ugrd.base.core" = [ "detect_tmpdir", "find_libgcc" ]
+
 [imports.build_pre]
-"ugrd.base.core" = [ "detect_tmpdir", "clean_build_dir", "find_libgcc" ]
+"ugrd.base.core" = [ "clean_build_dir" ]
 
 [imports.build_deploy]
 "ugrd.base.core" = [ "generate_structure",

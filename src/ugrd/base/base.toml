@@ -17,7 +17,7 @@ autodetect_init = true
 [imports.config_processing]
 "ugrd.base.base" = [ "_process_loglevel", "_process_init_target", "_process_autodetect_init" ]
 
-[imports.build_pre]
+[imports.build_enum]
 "ugrd.base.base" = [ "autodetect_init" ]
 
 [imports.init_early]
