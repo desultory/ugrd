@@ -209,6 +209,7 @@ def generate_fstab(self, mount_class="mounts", filename="/etc/fstab") -> None:
             "[%s] No fstab entries generated for mounts: %s" % (mount_class, ", ".join(self[mount_class].keys()))
         )
 
+
 def umount_fstab(self) -> list[str]:
     """Generates a function to unmount all mounts in the fstab."""
     mountpoints = []
@@ -550,7 +551,7 @@ def autodetect_root(self) -> None:
     root_dev = self["_mounts"]["/"]["device"]
     if self["resolve_root_dev"]:
         root_dev = _resolve_dev(self, "/")
-    if ':' in root_dev:  # only use the first device
+    if ":" in root_dev:  # only use the first device
         root_dev = root_dev.split(":")[0]
         for alt_devices in root_dev.split(":")[1:]:  # But ensure kmods are loaded for all devices
             autodetect_mount_kmods(self, alt_devices)
@@ -565,7 +566,7 @@ def _autodetect_mount(self, mountpoint) -> None:
         raise FileNotFoundError("auto_mount mountpoint not found in host mounts: %s" % mountpoint)
 
     mount_device = self["_mounts"][mountpoint]["device"]
-    if ':' in mount_device:  # Handle bcachefs
+    if ":" in mount_device:  # Handle bcachefs
         mount_device = mount_device.split(":")[0]
 
     if mount_device not in self["_blkid_info"]:
@@ -674,7 +675,7 @@ def _validate_host_mount(self, mount, destination_path=None) -> bool:
 
     # Using the mount path, get relevant hsot mount info
     host_source_dev = self["_mounts"][destination_path]["device"]
-    if ':' in host_source_dev:  # Handle bcachefs
+    if ":" in host_source_dev:  # Handle bcachefs
         host_source_dev = host_source_dev.split(":")[0]
     if destination_path == "/" and self["resolve_root_dev"]:
         host_source_dev = _resolve_dev(self, "/")
@@ -773,4 +774,3 @@ def resolve_blkdev_kmod(self, device) -> list[str]:
     else:
         self.logger.error("[%s] Unable to determine kernel module for block device: %s" % (device_name, device))
         return []
-
