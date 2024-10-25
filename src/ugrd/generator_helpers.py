@@ -4,7 +4,7 @@ from typing import Union
 
 from zenlib.util import pretty_print
 
-__version__ = "1.3.4"
+__version__ = "1.3.5"
 __author__ = "desultory"
 
 
@@ -21,6 +21,12 @@ def get_subpath(path: Path, subpath: Union[Path, str]) -> Path:
 
 class GeneratorHelpers:
     """Mixin class for the InitramfsGenerator class."""
+    def _get_out_path(self, path: Union[Path, str]) -> Path:
+        """Takes a filename, if the out_dir is relative, returns the path relative to the tmpdir.
+        If the out_dir is absolute, returns the path relative to the out_dir."""
+        if self.out_dir.is_absolute():
+            return get_subpath(self.out_dir, path)
+        return get_subpath(get_subpath(self.tmpdir, self.out_dir), path)
 
     def _get_build_path(self, path: Union[Path, str]) -> Path:
         """Returns the path relative to the build directory, under the tmpdir."""

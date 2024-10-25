@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "5.1.1"
+__version__ = "5.3.3"
 
 from pathlib import Path
 
@@ -55,8 +55,8 @@ def _validate_mount_config(self, mount_name: str, mount_config) -> None:
                         raise ValueError(
                             "Please use the root_subvol parameter instead of setting the option manually in the root mount."
                         )
-                    elif mount_config["type"] != "btrfs":
-                        raise ValueError("subvol option can only be used with btrfs mounts.")
+                    elif mount_config["type"] not in ["btrfs", "bcachefs"]:
+                        raise ValueError("subvol option can only be used with btrfs or bcachefs mounts.")
         elif parameter not in MOUNT_PARAMETERS:
             raise ValueError("Invalid parameter in mount: %s" % parameter)
 
@@ -101,6 +101,10 @@ def _process_mount(self, mount_name: str, mount_config, mount_class="mounts") ->
             if "ugrd.fs.btrfs" not in self["modules"]:
                 self.logger.info("Auto-enabling module: btrfs")
                 self["modules"] = "ugrd.fs.btrfs"
+        elif mount_type == "bcachefs":
+            if "ugrd.fs.bcachefs" not in self["modules"]:
+                self.logger.info("Auto-enabling module: bcachefs")
+                self["modules"] = "ugrd.fs.bcachefs"
         elif mount_type not in ["proc", "sysfs", "devtmpfs", "tmpfs", "devpts"]:
             self.logger.warning("Unknown mount type: %s" % mount_type)
 
@@ -204,6 +208,26 @@ def generate_fstab(self, mount_class="mounts", filename="/etc/fstab") -> None:
         self.logger.debug(
             "[%s] No fstab entries generated for mounts: %s" % (mount_class, ", ".join(self[mount_class].keys()))
         )
+
+
+def umount_fstab(self) -> list[str]:
+    """Generates a function to unmount all mounts in the fstab."""
+    mountpoints = []
+    for mount_info in self["mounts"].values():
+        if mount_info.get("base_mount"):
+            continue
+        if str(mount_info.get("destination")) == "/target_rootfs":
+            continue
+
+        mountpoints.append(str(mount_info["destination"]))
+    if not mountpoints:
+        return []
+
+    out = [f"einfo 'Unmounting filesystems: {' ,'.join(mountpoints)}'"]
+    for mountpoint in mountpoints:
+        out.append(f"umount {mountpoint} || ewarn 'Failed to unmount: {mountpoint}'")
+
+    return out
 
 
 @contains("hostonly", "Skipping mount autodetection, hostonly mode is enabled.", log_level=30)
@@ -527,6 +551,10 @@ def autodetect_root(self) -> None:
     root_dev = self["_mounts"]["/"]["device"]
     if self["resolve_root_dev"]:
         root_dev = _resolve_dev(self, "/")
+    if ":" in root_dev:  # only use the first device
+        root_dev = root_dev.split(":")[0]
+        for alt_devices in root_dev.split(":")[1:]:  # But ensure kmods are loaded for all devices
+            autodetect_mount_kmods(self, alt_devices)
     if root_dev not in self["_blkid_info"]:
         get_blkid_info(self, root_dev)
     _autodetect_mount(self, "/")
@@ -536,10 +564,14 @@ def _autodetect_mount(self, mountpoint) -> None:
     """Sets mount config for the specified mountpoint."""
     if mountpoint not in self["_mounts"]:
         raise FileNotFoundError("auto_mount mountpoint not found in host mounts: %s" % mountpoint)
-    if self["_mounts"][mountpoint]["device"] not in self["_blkid_info"]:
-        get_blkid_info(self, self["_mounts"][mountpoint]["device"])
 
     mount_device = self["_mounts"][mountpoint]["device"]
+    if ":" in mount_device:  # Handle bcachefs
+        mount_device = mount_device.split(":")[0]
+
+    if mount_device not in self["_blkid_info"]:
+        get_blkid_info(self, mount_device)
+
     mount_info = self["_blkid_info"][mount_device]
     autodetect_mount_kmods(self, mount_device)
     mount_name = "root" if mountpoint == "/" else mountpoint.removeprefix("/")
@@ -548,7 +580,7 @@ def _autodetect_mount(self, mountpoint) -> None:
             "[%s] Mount config already set: %s" % (mountpoint, pretty_print(self["mounts"][mount_name]))
         )
 
-    mount_config = {mount_name: {"type": "auto"}}
+    mount_config = {mount_name: {"type": "auto", "options": ["ro"]}}  # Default to auto and ro
     if mount_type := mount_info.get("type"):
         self.logger.info("Autodetected mount type: %s" % mount_type)
         mount_config[mount_name]["type"] = mount_type.lower()
@@ -643,6 +675,8 @@ def _validate_host_mount(self, mount, destination_path=None) -> bool:
 
     # Using the mount path, get relevant hsot mount info
     host_source_dev = self["_mounts"][destination_path]["device"]
+    if ":" in host_source_dev:  # Handle bcachefs
+        host_source_dev = host_source_dev.split(":")[0]
     if destination_path == "/" and self["resolve_root_dev"]:
         host_source_dev = _resolve_dev(self, "/")
 
@@ -650,8 +684,7 @@ def _validate_host_mount(self, mount, destination_path=None) -> bool:
     for option in mount.get("options", []):
         if mount.get("no_validate_options"):
             break  # Skip host option validation if this is set
-        if option == "ro" and destination_path == "/":
-            # Skip the ro option for the root mount
+        if option == "ro":  # Allow the ro option to be set in the config
             continue
         if option not in host_mount_options:
             raise ValueError(
@@ -741,4 +774,3 @@ def resolve_blkdev_kmod(self, device) -> list[str]:
     else:
         self.logger.error("[%s] Unable to determine kernel module for block device: %s" % (device_name, device))
         return []
-

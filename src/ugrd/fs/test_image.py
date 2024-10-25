@@ -1,4 +1,4 @@
-__version__ = "0.5.4"
+__version__ = "0.6.0"
 
 from zenlib.util import contains
 
@@ -17,17 +17,18 @@ def make_test_image(self):
     rootfs_uuid = self['mounts']['root']['uuid']
     rootfs_type = self['mounts']['root']['type']
 
+    image_path = self._get_out_path(self['out_file'])
     if rootfs_type == 'ext4':
         # Create the test image file, flll with 0s
-        with open(self._archive_out_path, "wb") as f:
+        with open(image_path, "wb") as f:
             self.logger.info("Creating test image file: %s" % f.name)
             f.write(b"\0" * self.test_image_size * 2 ** 20)
-        self._run(['mkfs', '-t', rootfs_type, '-d', build_dir, '-U', rootfs_uuid, '-F', self._archive_out_path])
+        self._run(['mkfs', '-t', rootfs_type, '-d', build_dir, '-U', rootfs_uuid, '-F', image_path])
     elif rootfs_type == 'btrfs':
-        if self['clean'] and self._archive_out_path.exists():
-            self.logger.warning("Removing existing test image file: %s" % self._archive_out_path)
-            self._archive_out_path.unlink()
-        self._run(['mkfs', '-t', rootfs_type, '-f', '--rootdir', build_dir, '-U', rootfs_uuid, self._archive_out_path])
+        if self['clean'] and image_path.exists():
+            self.logger.warning("Removing existing test image file: %s" % image_path)
+            image_path.unlink()
+        self._run(['mkfs', '-t', rootfs_type, '-f', '--rootdir', build_dir, '-U', rootfs_uuid, image_path])
     else:
         raise Exception("Unsupported test rootfs type: %s" % rootfs_type)
 

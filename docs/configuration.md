@@ -32,8 +32,9 @@ Modules write to a shared config dict that is accessible by other modules.
 
 ### base.core
 
-* `build_dir` (/tmp/initramfs) Defines where the build will take place.
-* `out_dir` (/tmp/initramfs_out) Defines where packed files will be placed.
+* `tmpdir` (/tmp) Sets the temporary directory as the base for the build and out dir.
+* `build_dir` (initramfs_build) If relative, it will be placed under `tmpdir`, defines the build directory.
+* `out_dir` (initramfs_out) If relative, it will be placed under `tmpdir`, defines the output directory.
 * `out_file` Sets the name of the output file, under `out_dir` unless a path is defined.
 * `clean` (true) forces the build dir to be cleaned on each run.
 * `hostonly` (true) Builds the initramfs for the current host, if disabled, validation is automatically disabled.
@@ -42,6 +43,57 @@ Modules write to a shared config dict that is accessible by other modules.
 * `file_owner` (portage) sets the owner for items pulled into the initramfs on the build system
 * `binaries` - A list used to define programs to be pulled into the initrams. `which` is used to find the path of added entries, and `lddtree` is used to resolve dependendies.
 * `paths` - A list of directores to create in the `build_dir`. They do not need a leading `/`.
+
+#### Copying files
+
+Using the `dependencies` list will pull files into the initramfs using the same path on the host system.
+
+```
+dependencies = [ "/etc/ugrd/testfile" ]
+```
+
+#### Copying files to a different destination
+
+To copy files to a different path:
+
+```
+[copies.my_key]
+source = "/home/larry/.gnupg/pubkey.gpg"
+destination = "/etc/ugrd/pub.gpg"
+```
+
+#### symlink creation
+
+Symlinks are defined in the `symlinks` dict. Each entry must have a name, `source` and `target`:
+
+```
+[symlinks.pinentry]
+source = "/usr/bin/pinentry-tty"
+target = "/usr/bin/pinentry"
+```
+
+##### Device node creation
+
+Device nodes can be created by defining them in the `nodes` dict using the following keys:
+
+* `mode` (0o600) the device node, in octal.
+* `path` (/dev/node name) the path to create the node at.
+* `major` - Major value.
+* `minor` - Minor value.
+
+Example:
+
+```
+[nodes.console]
+mode = 0o644
+major = 5
+minor = 1
+```
+
+Creates `/dev/console` with permissions `0o644`
+
+> Using `mknod_cpio` from `ugrd.fs.cpio` will not create the device nodes in the build dir, but within the CPIO archive
+
 
 ### base.cmdline
 
@@ -111,14 +163,27 @@ Similarly `ugrd.kmod.novideo` `nonetwork`, and `nosound` exist to ignore video, 
 
 ### Filesystem modules
 
+`ugrd.fs.mounts` is the core of the filesystem module category and is included by default.
+
+Additional modules include:
+
+`ugrd.fs.btrfs` - Helps with multi-device BTRFS mounts, subvolume selection.
+`ugrd.fs.fakeudev` - Makes 'fake' udev entries for DM devices.
+`ugrd.fs.cpio` - Packs the build dir into a CPIO archive with PyCPIO.
+`ugrd.fs.livecd` - Assists in livecd image creation.
+`ugrd.fs.lvm` - Activates LVM mounts.
+`ugrd.fs.mdraid` - For MDRAID mounts.
+`ugrd.fs.resume` - Handles resume from hibernation.
+`ugrd.fs.test_image` - Creates a test rootfs for automated testing.
+
+#### ugrd.fs.mounts
+
 `autodetect_root` (true) Set the root mount parameter based on the current root label or uuid.
 `autodetect_root_dm` (true) Attempt to automatically configure virtual block devices such as LUKS/LVM/MDRAID.
 `autodetect_root_luks` (true) Attempt to automatically configure LUKS mounts for the root device.
 `autodetect_root_lvm` (true) Attempt to automatically configure LVM mounts for the root device.
 `autodetect_root_mdraid` (true) Attempt to automatically configure MDRAID mounts for the root device.
 `autodetect_init_mount'` (true) Automatically detect the mountpoint for the init binary, and add it to `late_mounts`.
-
-#### ugrd.fs.mounts
 
 `mounts`: A dictionary containing entries for mounts, with their associated config.
 
@@ -193,55 +258,9 @@ Importing this module will run `btrfs device scan` and pull btrfs modules.
 * `root_subvol` - Set the desired root subvolume.
 * `_base_mount_path` (/root_base) Sets where the subvolume selector mounts the base filesytem to scan for subvolumes.
 
-#### symlink creation
+#### ugrd.fs.resume
 
-Symlinks are defined in the `symlinks` dict. Each entry must have a name, `source` and `target`:
-
-```
-[symlinks.pinentry]
-source = "/usr/bin/pinentry-tty"
-target = "/usr/bin/pinentry"
-```
-
-#### Copying files
-
-Using the `dependencies` list will pull files into the initramfs using the same path on the host system.
-
-```
-dependencies = [ "/etc/ugrd/testfile" ]
-```
-
-#### Copying files to a different destination
-
-To copy files to a different path:
-
-```
-[copies.my_key]
-source = "/home/larry/.gnupg/pubkey.gpg"
-destination = "/etc/ugrd/pub.gpg"
-```
-
-##### Device node creation
-
-Device nodes can be created by defining them in the `nodes` dict using the following keys:
-
-* `mode` (0o600) the device node, in octal.
-* `path` (/dev/node name) the path to create the node at.
-* `major` - Major value.
-* `minor` - Minor value.
-
-Example:
-
-```
-[nodes.console]
-mode = 0o644
-major = 5
-minor = 1
-```
-
-Creates `/dev/console` with permissions `0o644`
-
-> Using `mknod_cpio` from `ugrd.fs.cpio` will not create the device nodes in the build dir, but within the CPIO archive
+When enabled, attempts to resume after hibernation if resume= is passed on the kernel command line.
 
 ### Cryptographic modules
 

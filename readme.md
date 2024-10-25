@@ -56,6 +56,7 @@ The original goal of this project was to create an initramfs suitable for decryp
   - Hardlinks are automatically created for files with matching SHA256 hashes
   - Automatic xz compression
 * ZSH and BASH autocompletion for the `ugrd` command
+* Basic hibernation/resume support with `ugrd.fs.resume`
 * Similar usage/arguments as Dracut
 
 ## Support

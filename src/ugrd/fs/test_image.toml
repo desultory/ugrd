@@ -1,13 +1,8 @@
-modules = [ 'ugrd.fs.cpio', 'ugrd.base.banner' ]  # get_archive_path
+modules = [ 'ugrd.base.banner' ]  # get_archive_path
 paths = ['dev', 'sys', 'proc']
 
 test_image_size = 16
 shebang = "#!/bin/bash"
-
-check_cpio = false
-
-[masks]
-pack = "make_cpio"
 
 [imports.build_pre]
 "ugrd.fs.test_image" = ["init_banner"]
