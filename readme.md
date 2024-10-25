@@ -1,4 +1,4 @@
-![ubuntu](https://github.com/desultory/ugrd/actions/workflows/ubuntu.yml/badge.svg)
+![tests](https://github.com/desultory/ugrd/actions/workflows/tests.yml/badge.svg)
 ![PyCPIO](https://github.com/desultory/pycpio/actions/workflows/unit_tests.yml/badge.svg)
 ![Zenlib](https://github.com/desultory/zenlib/actions/workflows/unit_tests.yml/badge.svg)
 ![Black](https://img.shields.io/badge/code%20style-black-000000.svg)
