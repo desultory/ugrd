@@ -14,7 +14,7 @@ options = ['noauto', 'nosuid', 'noexec', 'rw', 'mode=620', 'gid=5']
 no_validate_options = true
 path = "devpts"
 
-[imports.build_pre]
+[imports.build_enum]
 "ugrd.base.plymouth" = [ "find_plymouth_config" ]
 
 [imports.build_tasks]

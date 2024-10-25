@@ -10,10 +10,10 @@ cryptsetup_autoretry = false
 reset_command = "gpgconf --reload && gpg --card-status"
 
 [custom_parameters]
-sc_public_key = "str"  # The path to the public key to import
+sc_public_key = "Path"  # The path to the public key to import
 
-[imports.build_pre]
-"ugrd.crypto.smartcard" = [ "fetch_keys" ]
+[imports.config_processing]
+"ugrd.crypto.smartcard" = [ "_process_sc_public_key" ]
 
 [imports.init_early]
 "ugrd.crypto.smartcard" = [ "import_keys" ]
