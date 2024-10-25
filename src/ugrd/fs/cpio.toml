@@ -3,7 +3,7 @@ cpio_compression = "xz"
 cpio_rotate = true
 check_cpio = true
 
-[imports.build_final]
+[imports.build_pre]
 "ugrd.fs.cpio" = [ "get_archive_name" ]
 
 [imports.pack]
