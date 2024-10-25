@@ -1,4 +1,4 @@
-__version__ = "0.6.0"
+__version__ = "0.7.1"
 
 from zenlib.util import contains
 
@@ -7,6 +7,20 @@ from zenlib.util import contains
 def init_banner(self):
     """ Initialize the test image banner, set a random flag if not set. """
     self['banner'] = f"echo {self['test_flag']}"
+
+
+def _allocate_image(self, image_path):
+    """ Allocate the test image size """
+    if image_path.exists():
+        if self.clean:
+            self.logger.warning("Removing existing filesystem image file: %s" % image_path)
+            image_path.unlink()
+        else:
+            raise Exception("File already exists and 'clean' is off: %s" % image_path)
+
+    with open(image_path, "wb") as f:
+        self.logger.info("Allocating test image file: %s" % f.name)
+        f.write(b"\0" * self.test_image_size * 2 ** 20)
 
 
 def make_test_image(self):
@@ -20,9 +34,7 @@ def make_test_image(self):
     image_path = self._get_out_path(self['out_file'])
     if rootfs_type == 'ext4':
         # Create the test image file, flll with 0s
-        with open(image_path, "wb") as f:
-            self.logger.info("Creating test image file: %s" % f.name)
-            f.write(b"\0" * self.test_image_size * 2 ** 20)
+        _allocate_image(self, image_path)
         self._run(['mkfs', '-t', rootfs_type, '-d', build_dir, '-U', rootfs_uuid, '-F', image_path])
     elif rootfs_type == 'btrfs':
         if self['clean'] and image_path.exists():

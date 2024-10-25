@@ -26,21 +26,24 @@ Modules write to a shared config dict that is accessible by other modules.
 
 > The main module, mostly pulls basic binaries and pulls the `core`, `mounts`, and `cpio` module.
 
-* `init_target` Set the init target for `switch_root`.
+* `init_target` Sets the init target for `switch_root`.
 * `autodetect_init` (true) Automatically set the init target based `which init`.
+* `loglevel` (5) Sets the kernel log level in the init script.
 * `shebang` (#!/bin/bash) sets the shebang on the init script.
 
 ### base.core
 
-* `tmpdir` (/tmp) Sets the temporary directory as the base for the build and out dir.
-* `build_dir` (initramfs_build) If relative, it will be placed under `tmpdir`, defines the build directory.
-* `out_dir` (initramfs_out) If relative, it will be placed under `tmpdir`, defines the output directory.
-* `out_file` Sets the name of the output file, under `out_dir` unless a path is defined.
-* `clean` (true) forces the build dir to be cleaned on each run.
 * `hostonly` (true) Builds the initramfs for the current host, if disabled, validation is automatically disabled.
 * `validate` (true) adds additional checks to verify the initramfs will work on the build host.
+* `tmpdir` (/tmp) Sets the temporary directory as the base for the build and out dir.
+* `build_dir` (initramfs_build) If relative, it will be placed under `tmpdir`, defines the build directory.
+* `build_logging` (false) Enables additional logging during the build process.
+* `make_nodes` (false) Create real device nodes in the build dir. 
+* `find_libgcc` (true) Automatically locates libgcc using ldconfig -p and adds it to the initramfs.
+* `out_dir` (initramfs_out) If relative, it will be placed under `tmpdir`, defines the output directory.
+* `out_file` Sets the name of the output file, under `out_dir`.
+* `clean` (true) forces the build dir to be cleaned on each run.
 * `old_count` (1) Sets the number of old file to keep when running the `_rotate_old` function.
-* `file_owner` (portage) sets the owner for items pulled into the initramfs on the build system
 * `binaries` - A list used to define programs to be pulled into the initrams. `which` is used to find the path of added entries, and `lddtree` is used to resolve dependendies.
 * `paths` - A list of directores to create in the `build_dir`. They do not need a leading `/`.
 
@@ -51,6 +54,14 @@ Using the `dependencies` list will pull files into the initramfs using the same 
 ```
 dependencies = [ "/etc/ugrd/testfile" ]
 ```
+
+##### Optional dependencies
+
+`opt_dependencies` attempts to add a file to `dependencies` but will not raise an error if the file is not found.
+
+##### Compressed dependencies
+
+`xz_dependencies` and `gz_dependnencies` can be used to decompress dependencies before adding them to the initramfs.
 
 #### Copying files to a different destination
 
@@ -92,8 +103,9 @@ minor = 1
 
 Creates `/dev/console` with permissions `0o644`
 
-> Using `mknod_cpio` from `ugrd.fs.cpio` will not create the device nodes in the build dir, but within the CPIO archive
+By default, they will be processed by `ugrd.fs.cpio` and added to the CPIO archive.
 
+To create device nodes in the build dir, set `make_nodes` to `true`.
 
 ### base.cmdline
 

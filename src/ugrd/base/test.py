@@ -81,7 +81,7 @@ def make_test_image(self):
     target_fs = InitramfsGenerator(**kwargs)
     try:
         target_fs.build()
-    except (FileNotFoundError, RuntimeError) as e:
+    except (FileNotFoundError, RuntimeError, PermissionError) as e:
         self.logger.error("Test image configuration:\n%s", target_fs)
         raise RuntimeError("Failed to build test rootfs: %s" % e)
 

@@ -1,10 +1,10 @@
 __author__ = "desultory"
-__version__ = "3.9.2"
+__version__ = "3.10.0"
 
 from pathlib import Path
 from typing import Union
 
-from zenlib.util import NoDupFlatList, contains, unset
+from zenlib.util import NoDupFlatList, contains
 
 
 def detect_tmpdir(self) -> None:
@@ -139,7 +139,7 @@ def deploy_symlinks(self) -> None:
         self._symlink(symlink_parameters["source"], symlink_parameters["target"])
 
 
-@unset("mknod_cpio", "Skipping real device node creation with mknod, as mknod_cpio is not specified.", log_level=20)
+@contains("make_nodes", "Skipping real device node creation with mknod, as make_nodes is not specified.", log_level=20)
 def deploy_nodes(self) -> None:
     """Generates specified device nodes."""
     from os import makedev, mknod
