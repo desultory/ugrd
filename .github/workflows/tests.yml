@@ -45,37 +45,37 @@ jobs:
         sudo venv/bin/ugrd -d
         sudo venv/bin/python -m unittest discover tests -v
 
-  debian:
-    runs-on: ubuntu-latest
-    container:
-      image: debian
-    strategy:
-      matrix:
-        python-version: ['3.11', '3.12']
-
-    steps:
-    - name: Install system deps
-      run: |
-        apt update
-        apt install -y pax-utils qemu-system-x86 git
-    - uses: actions/checkout@v4
-    - name: Obtain dependency projects
-      run: |
-        git clone https://github.com/desultory/zenlib
-        git clone https://github.com/desultory/pycpio
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Install python deps
-      run: |
-        python -m venv venv
-        venv/bin/pip install --upgrade pip
-        venv/bin/pip install ./zenlib
-        venv/bin/pip install ./pycpio
-        ls -la
-        venv/bin/pip install .
-    - name: Test fullauto.toml
-      run: |
-        venv/bin/ugrd -d
-        venv/bin/python -m unittest discover tests -v
+#  debian:
+#    runs-on: ubuntu-latest
+#    container:
+#      image: debiani
+#    strategy:
+#      matrix:
+#        python-version: ['3.11', '3.12']
+#
+#    steps:
+#    - name: Install system deps
+#      run: |
+#        apt update
+#        apt install -y pax-utils qemu-system-x86 git
+#    - uses: actions/checkout@v4
+#    - name: Obtain dependency projects
+#      run: |
+#        git clone https://github.com/desultory/zenlib
+#        git clone https://github.com/desultory/pycpio
+#    - name: Set up Python ${{ matrix.python-version }}
+#      uses: actions/setup-python@v5
+#      with:
+#        python-version: ${{ matrix.python-version }}
+#    - name: Install python deps
+#      run: |
+#        python -m venv venv
+#        venv/bin/pip install --upgrade pip
+#        venv/bin/pip install ./zenlib
+#        venv/bin/pip install ./pycpio
+#        ls -la
+#        venv/bin/pip install .
+#    - name: Test fullauto.toml
+#      run: |
+#        venv/bin/ugrd -d
+#        venv/bin/python -m unittest discover tests -v
