@@ -56,8 +56,8 @@ jobs:
     steps:
     - name: Install system deps
       run: |
-        sudo apt update
-        sudo apt install -y pax-utils qemu-system-x86 git
+        apt update
+        apt install -y pax-utils qemu-system-x86 git
     - uses: actions/checkout@v4
     - name: Obtain dependency projects
       run: |
@@ -76,5 +76,5 @@ jobs:
         venv/bin/pip install .
     - name: Test fullauto.toml
       run: |
-        sudo venv/bin/ugrd -d
-        sudo venv/bin/python -m unittest discover tests -v
+        venv/bin/ugrd -d
+        venv/bin/python -m unittest discover tests -v
