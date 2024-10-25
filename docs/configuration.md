@@ -32,8 +32,9 @@ Modules write to a shared config dict that is accessible by other modules.
 
 ### base.core
 
-* `build_dir` (/tmp/initramfs) Defines where the build will take place.
-* `out_dir` (/tmp/initramfs_out) Defines where packed files will be placed.
+* `tmpdir` (/tmp) Sets the temporary directory as the base for the build and out dir.
+* `build_dir` (initramfs_build) If relative, it will be placed under `tmpdir`, defines the build directory.
+* `out_dir` (initramfs_out) If relative, it will be placed under `tmpdir`, defines the output directory.
 * `out_file` Sets the name of the output file, under `out_dir` unless a path is defined.
 * `clean` (true) forces the build dir to be cleaned on each run.
 * `hostonly` (true) Builds the initramfs for the current host, if disabled, validation is automatically disabled.

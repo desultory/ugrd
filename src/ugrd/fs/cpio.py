@@ -2,7 +2,7 @@ __author__ = "desultory"
 __version__ = "3.5.0"
 
 
-from zenlib.util import contains
+from zenlib.util import contains, unset
 
 
 @contains("check_cpio")
@@ -49,23 +49,20 @@ def _check_in_cpio(self, file, lines=[]):
                 self.logger.debug("Line found in CPIO: %s" % line)
 
 
-def get_archive_path(self) -> str:
+@unset("out_file")
+def get_archive_name(self) -> str:
     """Determines the filename for the output CPIO archive based on the current configuration."""
-    if out_file := self.get("out_file"):
-        self.logger.info("Using specified out_file: %s" % out_file)
+    if self.get("kmod_init"):
+        out_file = f"ugrd-{self['kernel_version']}.cpio"
     else:
-        if self.get("kmod_init"):
-            out_file = f"ugrd-{self['kernel_version']}.cpio"
-        else:
-            out_file = "ugrd.cpio"
+        out_file = "ugrd.cpio"
 
-        if compression_type := self["cpio_compression"]:
-            if (
-                compression_type.lower() != "false"
-            ):  # The variable is a string, so we need to check for the string 'false'
-                out_file += f".{compression_type}"
-
-    self["_archive_out_path"] = self.out_dir / out_file
+    if compression_type := self["cpio_compression"]:
+        if (
+            compression_type.lower() != "false"
+        ):  # The variable is a string, so we need to check for the string 'false'
+            out_file += f".{compression_type}"
+    self["out_file"] = out_file
 
 
 def make_cpio(self) -> None:
@@ -83,7 +80,7 @@ def make_cpio(self) -> None:
             self.logger.debug("Adding CPIO node: %s" % node)
             cpio.add_chardev(name=node["path"], mode=node["mode"], major=node["major"], minor=node["minor"])
 
-    out_cpio = self["_archive_out_path"]
+    out_cpio = self._get_out_path(self["out_file"])
     if not out_cpio.parent.exists():
         self._mkdir(out_cpio.parent, resolve_build=False)
 

@@ -1,8 +1,8 @@
-__version__ = "0.7.0"
+__version__ = "1.0.0"
 
 from zenlib.util import unset
 
-COPY_CONFIG = ["mounts", "out_dir", "tmpdir", "clean", "test_image_size", "test_flag"]
+COPY_CONFIG = ["mounts", "tmpdir", "clean", "test_image_size", "test_flag"]
 
 
 @unset("test_kernel")
@@ -38,8 +38,11 @@ def init_test_vars(self):
 
 def _get_qemu_cmd_args(self, test_image):
     """Returns arguements to run QEMU for the current test configuration."""
-    test_initrd = self._archive_out_path
-    test_rootfs = test_image["_archive_out_path"]
+    test_initrd = self._get_out_path(self["out_file"])
+    self.logger.info("Testing initramfs image: %s", test_initrd)
+    test_rootfs = test_image._get_out_path(test_image["out_file"])
+    self.logger.info("Test rootfs image: %s", test_rootfs)
+    self.logger.info("Test kernel: %s", self["test_kernel"])
     qemu_args = {
         "-m": self["test_memory"],
         "-cpu": self["test_cpu"],
@@ -90,10 +93,7 @@ def test_image(self):
     image = make_test_image(self)
     qemu_cmd = _get_qemu_cmd_args(self, image)
 
-    self.logger.info("Testing initramfs image: %s", self["_archive_out_path"])
     self.logger.debug("Test config:\n%s", image)
-    self.logger.info("Test kernel: %s", self["test_kernel"])
-    self.logger.info("Test rootfs: %s", image["_archive_out_path"])
     self.logger.info("Test flag: %s", self["test_flag"])
     self.logger.info("QEMU command: %s", " ".join([str(arg) for arg in qemu_cmd]))
 

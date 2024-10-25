@@ -183,24 +183,36 @@ def find_libgcc(self) -> None:
     self["library_paths"] = str(source_path.parent)
 
 
-def _process_out_file(self, out_file):
-    """Processes the out_file configuration option."""
-    if Path(out_file).is_dir():
+def _process_out_file(self, out_file: str) -> None:
+    """Processes the out_file.
+    If set to the current directory, resolves and sets the out_dir to the current directory.
+    If it starts with './', resolves it to the current directory.
+    If it is a directory, sets the out_dir to the directory.
+    If it's an absolute path, sets the out_dir to the parent directory.
+    """
+    out_file = str(out_file)
+    if out_file == "./" or out_file == ".":
+        current_dir = Path(".").resolve()
+        self.logger.info("Setting out_dir to current directory: %s" % current_dir)
+        self["out_dir"] = current_dir
+        return
+
+    if out_file.startswith("./"):
+        cwd = Path(".").resolve()
+        self.logger.info("Resolved relative out_file path: %s" % cwd)
+        out_file = cwd / out_file[2:]
+    else:
+        out_file = Path(out_file)
+
+    if out_file.is_dir():
         self.logger.info("Specified out_file is a directory, setting out_dir: %s" % out_file)
         self["out_dir"] = out_file
         return
 
-    if out_file.startswith("./"):
-        self.logger.debug("Relative out_file path detected: %s" % out_file)
-        self["out_dir"] = Path(".").resolve()
+    if out_file.parent.is_dir() and str(out_file.parent) != ".":
+        self["out_dir"] = out_file.parent
         self.logger.info("Resolved out_dir to: %s" % self["out_dir"])
-        out_file = Path(out_file[2:])
-    elif Path(out_file).parent.is_dir() and str(Path(out_file).parent) != ".":
-        self["out_dir"] = Path(out_file).parent
-        self.logger.info("Resolved out_dir to: %s" % self["out_dir"])
-        out_file = Path(out_file).name
-    else:
-        out_file = Path(out_file)
+        out_file = out_file.name
 
     self.data["out_file"] = out_file
 

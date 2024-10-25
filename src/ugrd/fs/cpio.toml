@@ -4,7 +4,7 @@ cpio_rotate = true
 check_cpio = true
 
 [imports.build_final]
-"ugrd.fs.cpio" = [ "get_archive_path" ]
+"ugrd.fs.cpio" = [ "get_archive_name" ]
 
 [imports.pack]
 "ugrd.fs.cpio" = [ "make_cpio" ]
@@ -16,7 +16,6 @@ check_cpio = true
 cpio_rotate = "bool"  # makes a .old backup of the cpio file if it already exists.
 mknod_cpio = "bool"  # When enabled, mknod is not used to create device nodes, they are just created in the cpio.
 cpio_compression = "str"  # The compression method to use for the cpio file. Currently, only xz is supported.
-_archive_out_path = "Path"  # The name of the file to create, determined based on runtime config.
 _cpio_archive = "PyCPIO"  # The cpio archive object.
 check_cpio = "bool"  # When enabled, the CPIO archive contents are checked for errors.
 check_in_cpio = "dict"  # A dictionary of files to check for in the cpio archive.

@@ -1,7 +1,7 @@
 tmpdir = "/tmp"
 build_dir = "initramfs_build"
 _build_log_level = 10
-out_dir = "/tmp/initramfs_out"
+out_dir = "initramfs_out"
 clean = true
 find_libgcc = true
 hostonly = true
