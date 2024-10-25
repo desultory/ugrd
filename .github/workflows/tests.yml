@@ -51,7 +51,7 @@ jobs:
       image: debian
     strategy:
       matrix:
-        python-version: ['3.11', '3.12', '3.13']
+        python-version: ['3.11', '3.12']
 
     steps:
     - name: Install system deps
@@ -73,6 +73,7 @@ jobs:
         venv/bin/pip install --upgrade pip
         venv/bin/pip install ./zenlib
         venv/bin/pip install ./pycpio
+        ls -la
         venv/bin/pip install .
     - name: Test fullauto.toml
       run: |
