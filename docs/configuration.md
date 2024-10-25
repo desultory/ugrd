@@ -43,6 +43,57 @@ Modules write to a shared config dict that is accessible by other modules.
 * `binaries` - A list used to define programs to be pulled into the initrams. `which` is used to find the path of added entries, and `lddtree` is used to resolve dependendies.
 * `paths` - A list of directores to create in the `build_dir`. They do not need a leading `/`.
 
+#### Copying files
+
+Using the `dependencies` list will pull files into the initramfs using the same path on the host system.
+
+```
+dependencies = [ "/etc/ugrd/testfile" ]
+```
+
+#### Copying files to a different destination
+
+To copy files to a different path:
+
+```
+[copies.my_key]
+source = "/home/larry/.gnupg/pubkey.gpg"
+destination = "/etc/ugrd/pub.gpg"
+```
+
+#### symlink creation
+
+Symlinks are defined in the `symlinks` dict. Each entry must have a name, `source` and `target`:
+
+```
+[symlinks.pinentry]
+source = "/usr/bin/pinentry-tty"
+target = "/usr/bin/pinentry"
+```
+
+##### Device node creation
+
+Device nodes can be created by defining them in the `nodes` dict using the following keys:
+
+* `mode` (0o600) the device node, in octal.
+* `path` (/dev/node name) the path to create the node at.
+* `major` - Major value.
+* `minor` - Minor value.
+
+Example:
+
+```
+[nodes.console]
+mode = 0o644
+major = 5
+minor = 1
+```
+
+Creates `/dev/console` with permissions `0o644`
+
+> Using `mknod_cpio` from `ugrd.fs.cpio` will not create the device nodes in the build dir, but within the CPIO archive
+
+
 ### base.cmdline
 
 If used, this module will override the `mount_root` function and attempt to mount the root based on the passed cmdline parameters.
@@ -110,6 +161,19 @@ Some helper modules have been created to make importing required kernel modules 
 Similarly `ugrd.kmod.novideo` `nonetwork`, and `nosound` exist to ignore video, network, and sound devices that may appear when autodetecting modules.
 
 ### Filesystem modules
+
+`ugrd.fs.mounts` is the core of the filesystem module category and is included by default.
+
+Additional modules include:
+
+`ugrd.fs.btrfs` - Helps with multi-device BTRFS mounts, subvolume selection.
+`ugrd.fs.fakeudev` - Makes 'fake' udev entries for DM devices.
+`ugrd.fs.cpio` - Packs the build dir into a CPIO archive with PyCPIO.
+`ugrd.fs.livecd` - Assists in livecd image creation.
+`ugrd.fs.lvm` - Activates LVM mounts.
+`ugrd.fs.mdraid` - For MDRAID mounts.
+`ugrd.fs.resume` - Handles resume from hibernation.
+`ugrd.fs.test_image` - Creates a test rootfs for automated testing.
 
 #### ugrd.fs.mounts
 
@@ -192,56 +256,6 @@ Importing this module will run `btrfs device scan` and pull btrfs modules.
 * `autodetect_root_subvol` (true) Autodetect the root subvolume, unless `root_subvol` or `subvol_selector` is set. Depends on `hostonly`.
 * `root_subvol` - Set the desired root subvolume.
 * `_base_mount_path` (/root_base) Sets where the subvolume selector mounts the base filesytem to scan for subvolumes.
-
-#### symlink creation
-
-Symlinks are defined in the `symlinks` dict. Each entry must have a name, `source` and `target`:
-
-```
-[symlinks.pinentry]
-source = "/usr/bin/pinentry-tty"
-target = "/usr/bin/pinentry"
-```
-
-#### Copying files
-
-Using the `dependencies` list will pull files into the initramfs using the same path on the host system.
-
-```
-dependencies = [ "/etc/ugrd/testfile" ]
-```
-
-#### Copying files to a different destination
-
-To copy files to a different path:
-
-```
-[copies.my_key]
-source = "/home/larry/.gnupg/pubkey.gpg"
-destination = "/etc/ugrd/pub.gpg"
-```
-
-##### Device node creation
-
-Device nodes can be created by defining them in the `nodes` dict using the following keys:
-
-* `mode` (0o600) the device node, in octal.
-* `path` (/dev/node name) the path to create the node at.
-* `major` - Major value.
-* `minor` - Minor value.
-
-Example:
-
-```
-[nodes.console]
-mode = 0o644
-major = 5
-minor = 1
-```
-
-Creates `/dev/console` with permissions `0o644`
-
-> Using `mknod_cpio` from `ugrd.fs.cpio` will not create the device nodes in the build dir, but within the CPIO archive
 
 ### Cryptographic modules
 
