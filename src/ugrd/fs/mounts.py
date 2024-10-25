@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "5.3.2"
+__version__ = "5.3.3"
 
 from pathlib import Path
 
@@ -223,7 +223,7 @@ def umount_fstab(self) -> list[str]:
     if not mountpoints:
         return []
 
-    out = [f"einfo 'Unmounting filesystems: {" ,".join(mountpoints)}'"]
+    out = [f"einfo 'Unmounting filesystems: {' ,'.join(mountpoints)}'"]
     for mountpoint in mountpoints:
         out.append(f"umount {mountpoint} || ewarn 'Failed to unmount: {mountpoint}'")
 
