@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "5.1.3"
+__version__ = "5.1.4"
 
 from importlib.metadata import version
 from pathlib import Path
@@ -11,7 +11,7 @@ from zenlib.util import contains, unset
 def _validate_init_target(self) -> None:
     if not self["init_target"].exists():
         raise FileNotFoundError("init_target not found at: %s" % self["init_target"])
-    if "systemd" in str(self["init_target"]):
+    if "systemd" in str(self["init_target"]) and "ugrd.fs.fakeudev" not in self["modules"]:
         self.logger.warning("'ugrd.fs.fakeudev' may be required if systemd mounts stall on boot.")
 
 
