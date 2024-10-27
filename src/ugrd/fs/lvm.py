@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.2.2'
+__version__ = '1.3.0'
 
 from zenlib.util import contains
 
@@ -10,6 +10,11 @@ def _process_lvm_multi(self, mapped_name: str, config: dict) -> None:
         raise ValueError("LVM config missing uuid: %s" % mapped_name)
     self['lvm'][mapped_name] = config
 
+
+@contains('early_lvm')
+def early_init_lvm(self) -> None:
+    """ Returns bash lines to initialize LVM """
+    return init_lvm(self)
 
 @contains('lvm', "Skipping LVM initialization, no LVM configurations found.")
 def init_lvm(self) -> None:

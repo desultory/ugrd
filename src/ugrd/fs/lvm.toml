@@ -3,8 +3,12 @@ binaries = ['pvscan', 'vgscan', 'vgchange', 'lvscan']
 [imports.config_processing]
 "ugrd.fs.lvm" = [ "_process_lvm_multi" ]
 
+[imports.init_early]
+"ugrd.fs.lvm" = [ "early_init_lvm" ]
+
 [imports.init_late]
 "ugrd.fs.lvm" = [ "init_lvm" ]
 
 [custom_parameters]
+early_lvm = "bool"  # Run an early lvm scan
 lvm = "dict"  # lvm configuration dict
