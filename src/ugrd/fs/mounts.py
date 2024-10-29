@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "5.3.3"
+__version__ = "5.4.0"
 
 from pathlib import Path
 
@@ -230,7 +230,7 @@ def umount_fstab(self) -> list[str]:
     return out
 
 
-@contains("hostonly", "Skipping mount autodetection, hostonly mode is enabled.", log_level=30)
+@contains("hostonly", "Skipping mount autodetection, hostonly mode is disabled.", log_level=30)
 def get_mounts_info(self) -> None:
     """Gets the mount info for all devices."""
     with open("/proc/mounts", "r") as mounts:
@@ -239,13 +239,11 @@ def get_mounts_info(self) -> None:
             self["_mounts"][mountpoint] = {"device": device, "fstype": fstype, "options": options.split(",")}
 
 
-@contains("hostonly", "Skipping blkid autodetection, hostonly mode is enabled.", log_level=30)
+@contains("hostonly", "Skipping blkid enumeration, hostonly mode is disabled.", log_level=30)
 def get_blkid_info(self, device=None) -> dict:
-    """
-    Gets the blkid info for all devices if no device is passed.
+    """Gets the blkid info for all devices if no device is passed.
     Gets the blkid info for the passed device if a device is passed.
-    The info is stored in self['_blkid_info'].
-    """
+    The info is stored in self['_blkid_info']."""
     from re import search
 
     if device:
@@ -301,9 +299,9 @@ def autodetect_init_mount(self, parent=None) -> None:
     autodetect_init_mount(self, parent.parent)
 
 
+@contains("hostonly", "Skipping virtual block device enumeration, hostonly mode is disabled.", log_level=30)
 def get_virtual_block_info(self) -> dict:
-    """
-    Populates the virtual block device info. (previously device mapper only)
+    """Populates the virtual block device info. (previously device mapper only)
     Disables device mapper autodetection if no virtual block devices are found.
     """
     if self.get("_vblk_info"):
@@ -352,8 +350,7 @@ def _get_device_id(device: str) -> str:
 
 @contains("hostonly", "Skipping device mapper autodetection, hostonly mode is disabled.", log_level=30)
 def _autodetect_dm(self, mountpoint, device=None) -> None:
-    """
-    Autodetects device mapper config given a mountpoint.
+    """Autodetects device mapper config given a mountpoint.
     Uses the mountpouint from self['_mounts'], raises an error if not found.
     Uses the device path if passed.
     Attempts to get the device info from blkid based on the device path.
@@ -443,8 +440,7 @@ def _autodetect_dm(self, mountpoint, device=None) -> None:
 @contains("autodetect_root_raid", "Skipping RAID autodetection, autodetect_root_raid is disabled.", log_level=30)
 @contains("hostonly", "Skipping RAID autodetection, hostonly mode is disabled.", log_level=30)
 def autodetect_raid(self, mount_loc, dm_name, blkid_info) -> None:
-    """
-    Autodetects MD RAID mounts and sets the raid config.
+    """Autodetects MD RAID mounts and sets the raid config.
     Adds kmods for the raid level to the autodetect list.
     """
     if "ugrd.fs.mdraid" not in self["modules"]:
@@ -525,8 +521,7 @@ def autodetect_luks(self, mount_loc, dm_num, blkid_info) -> None:
 
 
 def _resolve_dev(self, device_path) -> str:
-    """
-    Resolves a device path, if possible.
+    """Resolves a device path, if possible.
     Useful for cases where the device in blkid differs from the device in /proc/mounts.
     """
     major, minor = _get_device_id(self["_mounts"][device_path]["device"])
@@ -597,7 +592,7 @@ def _autodetect_mount(self, mountpoint) -> None:
 
 
 @contains("auto_mounts", "Skipping auto mounts, auto_mounts is empty.", log_level=10)
-@contains("hostonly", "Skipping mount autodetection, hostonly mode is enabled.", log_level=30)
+@contains("hostonly", "Skipping mount autodetection, hostonly mode is disabled.", log_level=30)
 def autodetect_mounts(self) -> None:
     """Configured the mount config for a device based on the host mount config."""
     for mountpoint in self["auto_mounts"]:
@@ -605,8 +600,7 @@ def autodetect_mounts(self) -> None:
 
 
 def mount_base(self) -> list[str]:
-    """
-    Generates mount commands for the base mounts.
+    """Generates mount commands for the base mounts.
     Must be run before variables are used, as it creates the /run/vars directory.
     """
     out = []
@@ -630,8 +624,7 @@ def mount_late(self) -> list[str]:
 
 
 def mount_fstab(self) -> list[str]:
-    """
-    Generates the init function for mounting the fstab.
+    """Generates the init function for mounting the fstab.
     If a mount_timeout is set, sets the default rootdelay.
     If a mount_wait is set, enables rootwait.
     mount_retries sets the number of times to retry the mount (for unattended booting).
@@ -712,8 +705,7 @@ def _validate_host_mount(self, mount, destination_path=None) -> bool:
 
 @contains("validate", "Skipping host mount validation, validation is disabled.", log_level=30)
 def check_mounts(self) -> None:
-    """
-    Validates all mounts against the host mounts.
+    """Validates all mounts against the host mounts.
     For the 'root' mount, the destination path is set to '/'.
     """
     for mount_name, mount in self["mounts"].items():
