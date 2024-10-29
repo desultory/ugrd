@@ -3,6 +3,8 @@ paths = ['dev', 'sys', 'proc']
 
 test_image_size = 16
 shebang = "#!/bin/bash"
+_cryptsetup_root = "root"
+
 
 [imports.build_pre]
 "ugrd.fs.test_image" = ["init_banner"]
@@ -13,6 +15,8 @@ shebang = "#!/bin/bash"
 [custom_parameters]
 shebang = "str"  # Add the shebang property, because the test mode disables the base module
 mounts = "dict"  # We only need the mounts dict, not the whole module
+cryptsetup = "dict"  # Same as above
+_cryptsetup_root = "str"  # Define the root device for cryptsetup
 test_image_size = "int"  # Define the size of the test image in MiB
 test_flag = "str"  # Define the success flag used to determine if the test was successful
 
