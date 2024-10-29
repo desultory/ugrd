@@ -1,0 +1,11 @@
+# BTRFS test
+modules = [ "ugrd.base.test" ]
+
+out_dir = "initramfs_test"
+
+cpio_compression = false
+hostonly = false
+
+[mounts.root]
+uuid = "aaaabbbb-cccc-dddd-eeee-ffff00000000"
+type = "btrfs"

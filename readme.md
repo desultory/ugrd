@@ -80,8 +80,11 @@ The following root filesystems have been tested:
 * BTRFS
 * EXT4
 * XFS
-* FAT32
 * NILFS2
+
+Additionally, the following filesystems have been tested for non-root mounts:
+
+* FAT32
 
 If the required kernel module is not built into the kernel, and the filesystem is not listed above, the kernel module may need to be included in `kmod_init`.
 

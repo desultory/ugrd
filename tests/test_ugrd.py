@@ -11,10 +11,6 @@ class TestCpio(TestCase):
         generator = InitramfsGenerator(logger=self.logger, config='tests/fullauto.toml')
         generator.build()
 
-    def test_ext4(self):
-        generator = InitramfsGenerator(logger=self.logger, config='tests/ext4.toml')
-        generator.build()
-
     def test_xz(self):
         generator = InitramfsGenerator(logger=self.logger, config='tests/fullauto.toml', cpio_compression='xz')
         generator.build()

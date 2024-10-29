@@ -1,0 +1,13 @@
+# XFS test
+modules = [ "ugrd.base.test" ]
+
+out_dir = "initramfs_test"
+
+cpio_compression = false
+hostonly = false
+
+test_image_size = 300  # XFS requires at least 300MB
+
+[mounts.root]
+uuid = "aaaabbbb-cccc-dddd-eeee-ffff00000000"
+type = "xfs"
