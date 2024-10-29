@@ -1,4 +1,4 @@
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 
 from zenlib.util import contains
 
@@ -11,6 +11,7 @@ def init_banner(self):
 
 def _allocate_image(self, image_path, padding=0):
     """Allocate the test image size"""
+    self._mkdir(image_path.parent, resolve_build=False)  # Make sure the parent directory exists
     if image_path.exists():
         if self.clean:
             self.logger.warning("Removing existing filesystem image file: %s" % image_path)
