@@ -1,0 +1,25 @@
+# Test included keyfile
+
+modules = [
+  "ugrd.crypto.cryptsetup",
+  "ugrd.base.test",
+]
+
+# The initramfs will be built in /tmp/initramfs if "build_dir" is not specified not specified
+out_dir = "initramfs_test"
+test_memory = '2G'
+
+#kernel_version = "6.6.35-gentoo-dist"
+#test_kernel = "/boot/vmlinuz-6.6.35-gentoo-dist"
+cpio_compression = false
+hostonly = false
+
+[cryptsetup.root]
+uuid = "abcd1234-abcd-1234-abcd-1234abcd1234"
+key_file = "/tmp/ugrd_test_key"  # Currently hardcoded for this test
+include_key = true
+
+[mounts.root]
+uuid = "10101010-abcd-1234-abcd-101010101010"
+type = "ext4"
+

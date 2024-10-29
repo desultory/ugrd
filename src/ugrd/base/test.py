@@ -1,8 +1,8 @@
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 
 from zenlib.util import unset
 
-COPY_CONFIG = ["mounts", "tmpdir", "clean", "test_image_size", "test_flag"]
+COPY_CONFIG = ["mounts", "tmpdir", "clean", "test_image_size", "test_flag", "cryptsetup"]
 
 
 @unset("test_kernel")
@@ -75,7 +75,7 @@ def make_test_image(self):
         "modules": "ugrd.fs.test_image",
         "out_file": self["test_rootfs_name"],
         "build_dir": self["test_rootfs_build_dir"],
-        **{key: self[key] for key in COPY_CONFIG},
+        **{key: self.get(key) for key in COPY_CONFIG if self.get(key) is not None},
     }
 
     target_fs = InitramfsGenerator(**kwargs)
