@@ -7,15 +7,15 @@ from zenlib.logging import loggify
 @loggify
 class TestCpio(TestCase):
     def test_ext4(self):
-        generator = InitramfsGenerator(logger=self.logger, config="tests/ext4.toml")
+        generator = InitramfsGenerator(logger=self.logger, config="tests/fs/ext4.toml")
         generator.build()
 
     def test_btrfs(self):
-        generator = InitramfsGenerator(logger=self.logger, config="tests/btrfs.toml")
+        generator = InitramfsGenerator(logger=self.logger, config="tests/fs/btrfs.toml")
         generator.build()
 
     def test_xfs(self):
-        generator = InitramfsGenerator(logger=self.logger, config="tests/xfs.toml")
+        generator = InitramfsGenerator(logger=self.logger, config="tests/fs/xfs.toml")
         generator.build()
 
 
