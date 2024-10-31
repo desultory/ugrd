@@ -1,0 +1,3 @@
+modules = [ "ugrd.fs.livecd" ]
+hostonly = false
+livecd_label = "gentoo-amd64-livegui"

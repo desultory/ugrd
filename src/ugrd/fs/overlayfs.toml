@@ -1,0 +1,13 @@
+kmod_init = ["overlay"]
+
+[imports.build_pre]
+"ugrd.fs.overlayfs" = ["detect_lowerdir"]
+
+[imports.init_early]
+"ugrd.fs.overlayfs" = ["init_overlayfs"]
+
+[imports.init_mount]
+"ugrd.fs.overlayfs" = ["mount_overlayfs"]
+
+[custom_parameters]
+lowerdir = "Path"
