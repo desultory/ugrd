@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "5.5.0"
+__version__ = "5.6.0"
 
 from pathlib import Path
 from typing import Union
@@ -364,8 +364,8 @@ def _autodetect_dm(self, mountpoint, device=None) -> None:
     if device:
         self.logger.debug("[%s] Using provided device for mount autodetection: %s" % (mountpoint, device))
         source_device = device
-    elif mountpoint in self["_mounts"]:
-        source_device = self["_mounts"][mountpoint]["device"]
+    elif mountpoint:
+        source_device = _resolve_overlay_lower_device(self, mountpoint)
     else:
         raise FileNotFoundError("Mountpoint not found in host mounts: %s" % mountpoint)
 
@@ -537,6 +537,21 @@ def _resolve_dev(self, device_path) -> str:
     return self["_mounts"][device_path]["device"]
 
 
+
+def _resolve_overlay_lower_dir(self, mountpoint) -> str:
+    for option in self["_mounts"][mountpoint]["options"]:
+        if option.startswith("lowerdir="):
+            return option.removeprefix("lowerdir=")
+    raise ValueError("[%s] No lower overlayfs mountpoint found: %s" % mountpoint, self["_mounts"][mountpoint]["options"])
+
+def _resolve_overlay_lower_device(self, mountpoint) -> dict:
+    """ Returns device for the lower overlayfs mountpoint."""
+    if self["_mounts"][mountpoint]["fstype"] != "overlay":
+        return self["_mounts"][mountpoint]["device"]
+
+    lowerdir = _resolve_overlay_lower_dir(self, mountpoint)
+    return self["_mounts"][lowerdir]["device"]
+
 @contains("autodetect_root", "Skipping root autodetection, autodetect_root is disabled.", log_level=30)
 @contains("hostonly", "Skipping root autodetection, hostonly mode is disabled.", log_level=30)
 def autodetect_root(self) -> None:
@@ -547,14 +562,12 @@ def autodetect_root(self) -> None:
         )
     # Sometimes the root device listed in '/proc/mounts' differs from the blkid info
     root_dev = self["_mounts"]["/"]["device"]
-    if self["resolve_root_dev"]:
+    if self["resolve_root_dev"]:  # Sometimes the root device listed in '/proc/mounts' differs from the blkid info
         root_dev = _resolve_dev(self, "/")
     if ":" in root_dev:  # only use the first device
         root_dev = root_dev.split(":")[0]
         for alt_devices in root_dev.split(":")[1:]:  # But ensure kmods are loaded for all devices
             autodetect_mount_kmods(self, alt_devices)
-    if root_dev not in self["_blkid_info"]:
-        get_blkid_info(self, root_dev)
     _autodetect_mount(self, "/")
 
 
@@ -563,7 +576,8 @@ def _autodetect_mount(self, mountpoint) -> None:
     if mountpoint not in self["_mounts"]:
         raise FileNotFoundError("auto_mount mountpoint not found in host mounts: %s" % mountpoint)
 
-    mount_device = self["_mounts"][mountpoint]["device"]
+    mount_device = _resolve_overlay_lower_device(self, mountpoint)
+
     if ":" in mount_device:  # Handle bcachefs
         mount_device = mount_device.split(":")[0]
 
@@ -688,8 +702,8 @@ def _validate_host_mount(self, mount, destination_path=None) -> bool:
     # If a destination path is passed, like for /, use that instead of the mount's destination
     destination_path = str(mount["destination"]) if destination_path is None else destination_path
 
-    # Using the mount path, get relevant hsot mount info
-    host_source_dev = self["_mounts"][destination_path]["device"]
+    # Using the mount path, get relevant host mount info
+    host_source_dev = _resolve_overlay_lower_device(self, destination_path)
     if ":" in host_source_dev:  # Handle bcachefs
         host_source_dev = host_source_dev.split(":")[0]
     if destination_path == "/" and self["resolve_root_dev"]:
