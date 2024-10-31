@@ -558,12 +558,8 @@ def autodetect_root(self) -> None:
             "Root mount not found in host mounts.\nCurrent mounts: %s" % pretty_print(self["_mounts"])
         )
     # Sometimes the root device listed in '/proc/mounts' differs from the blkid info
-    if self["_mounts"]["/"]["fstype"] == "overlay":
-        root_dev = _resolve_overlay_lower_device(self, "/")
-    else:
-        root_dev = self["_mounts"]["/"]["device"]
-
-    if self["resolve_root_dev"]:
+    root_dev = self["_mounts"]["/"]["device"]
+    if self["resolve_root_dev"]:  # Sometimes the root device listed in '/proc/mounts' differs from the blkid info
         root_dev = _resolve_dev(self, "/")
     if ":" in root_dev:  # only use the first device
         root_dev = root_dev.split(":")[0]
@@ -577,7 +573,11 @@ def _autodetect_mount(self, mountpoint) -> None:
     if mountpoint not in self["_mounts"]:
         raise FileNotFoundError("auto_mount mountpoint not found in host mounts: %s" % mountpoint)
 
-    mount_device = self["_mounts"][mountpoint]["device"]
+    if self["_mounts"][mountpoint]["fstype"] == "overlay":
+        mount_device = _resolve_overlay_lower_device(self, mountpoint)
+    else:
+        mount_device = self["_mounts"][mountpoint]["device"]
+
     if ":" in mount_device:  # Handle bcachefs
         mount_device = mount_device.split(":")[0]
 
