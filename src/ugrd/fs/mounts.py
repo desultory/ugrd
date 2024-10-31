@@ -702,8 +702,12 @@ def _validate_host_mount(self, mount, destination_path=None) -> bool:
     # If a destination path is passed, like for /, use that instead of the mount's destination
     destination_path = str(mount["destination"]) if destination_path is None else destination_path
 
-    # Using the mount path, get relevant hsot mount info
-    host_source_dev = self["_mounts"][destination_path]["device"]
+    # Using the mount path, get relevant host mount info
+    # Resolve overlayfs lower if needed
+    if self["_mounts"][destination_path]["fstype"] == "overlay":
+        host_source_dev = _resolve_overlay_lower_device(self, destination_path)
+    else:
+        host_source_dev = self["_mounts"][destination_path]["device"]
     if ":" in host_source_dev:  # Handle bcachefs
         host_source_dev = host_source_dev.split(":")[0]
     if destination_path == "/" and self["resolve_root_dev"]:
