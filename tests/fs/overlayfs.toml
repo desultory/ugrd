@@ -1,0 +1,6 @@
+# Overlayfs test
+modules = [ "ugrd.base.test", "ugrd.fs.overlayfs"]
+
+out_dir = "initramfs_test"
+cpio_compression = false
+autodetect_root_dm = false
