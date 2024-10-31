@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "5.4.1"
+__version__ = "5.4.2"
 
 from pathlib import Path
 
@@ -729,10 +729,6 @@ def export_mount_info(self) -> None:
     self["exports"]["MOUNTS_ROOT_SOURCE"] = _get_mount_str(self, self["mounts"]["root"])
     self["exports"]["MOUNTS_ROOT_TYPE"] = self["mounts"]["root"].get("type", "auto")
     self["exports"]["MOUNTS_ROOT_OPTIONS"] = ",".join(self["mounts"]["root"]["options"])
-
-
-def export_root_target(self) -> None:
-    """Exports the root target path to /run/MOUNTS_ROOT_TARGET, separate for masking. """
     self["exports"]["MOUNTS_ROOT_TARGET"] = self["mounts"]["root"]["destination"]
 
 
