@@ -197,6 +197,7 @@ Additional modules include:
 `autodetect_root_lvm` (true) Attempt to automatically configure LVM mounts for the root device.
 `autodetect_root_mdraid` (true) Attempt to automatically configure MDRAID mounts for the root device.
 `autodetect_init_mount'` (true) Automatically detect the mountpoint for the init binary, and add it to `late_mounts`.
+`run_dirs` A list of directories to create under `/run/` at runtime
 
 `mounts`: A dictionary containing entries for mounts, with their associated config.
 

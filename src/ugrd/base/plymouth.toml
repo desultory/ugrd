@@ -4,6 +4,8 @@ dependencies = ['/usr/share/plymouth/plymouthd.defaults',
 		'/usr/share/plymouth/themes/text/text.plymouth',
                 '/usr/share/plymouth/themes/details/details.plymouth']
 
+run_dirs = ["plymouth"]
+
 [imports.config_processing]
 "ugrd.base.plymouth" = [ "_process_plymouth_themes_multi" ]
 
