@@ -18,6 +18,9 @@ class TestCpio(TestCase):
         generator = InitramfsGenerator(logger=self.logger, config="tests/fs/xfs.toml")
         generator.build()
 
+    def test_overlayfs(self):
+        generator = InitramfsGenerator(logger=self.logger, config="tests/fs/overlayfs.toml")
+        generator.build()
 
 if __name__ == "__main__":
     main()
