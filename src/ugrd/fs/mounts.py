@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "5.5.0"
+__version__ = "5.6.0"
 
 from pathlib import Path
 from typing import Union
@@ -537,6 +537,18 @@ def _resolve_dev(self, device_path) -> str:
     return self["_mounts"][device_path]["device"]
 
 
+def _resolve_overlay_lower_device(self, mountpoint) -> dict:
+    """ Returns device for the lower overlayfs mountpoint."""
+    mount_options = self["_mounts"][mountpoint]["options"]
+    for option in mount_options:
+        if option.startswith("lowerdir="):
+            lowerdir = option.removeprefix("lowerdir=")
+            break
+    else:
+        raise ValueError("[%s] No lower overlayfs mountpoint found: %s" % mountpoint, mount_options)
+
+    return self["_mounts"][lowerdir]["device"]
+
 @contains("autodetect_root", "Skipping root autodetection, autodetect_root is disabled.", log_level=30)
 @contains("hostonly", "Skipping root autodetection, hostonly mode is disabled.", log_level=30)
 def autodetect_root(self) -> None:
@@ -546,7 +558,11 @@ def autodetect_root(self) -> None:
             "Root mount not found in host mounts.\nCurrent mounts: %s" % pretty_print(self["_mounts"])
         )
     # Sometimes the root device listed in '/proc/mounts' differs from the blkid info
-    root_dev = self["_mounts"]["/"]["device"]
+    if self["_mounts"]["/"]["fstype"] == "overlay":
+        root_dev = _resolve_overlay_lower_device(self, "/")
+    else:
+        root_dev = self["_mounts"]["/"]["device"]
+
     if self["resolve_root_dev"]:
         root_dev = _resolve_dev(self, "/")
     if ":" in root_dev:  # only use the first device
