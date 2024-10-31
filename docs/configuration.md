@@ -26,6 +26,7 @@ Modules write to a shared config dict that is accessible by other modules.
 
 > The main module, mostly pulls basic binaries and pulls the `core`, `mounts`, and `cpio` module.
 
+* `switch_root_target` Set the target filesystem for `switch_root`, defaults to the root mountpoint if not set.
 * `init_target` Sets the init target for `switch_root`.
 * `autodetect_init` (true) Automatically set the init target based `which init`.
 * `loglevel` (5) Sets the kernel log level in the init script.

@@ -732,7 +732,7 @@ def export_mount_info(self) -> None:
 
 
 def export_root_target(self) -> None:
-    """Exports the root target path to /run/MOUNTS_ROOT_TARGET"""
+    """Exports the root target path to /run/MOUNTS_ROOT_TARGET, separate for masking. """
     self["exports"]["MOUNTS_ROOT_TARGET"] = self["mounts"]["root"]["destination"]
 
 

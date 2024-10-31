@@ -1,7 +1,10 @@
+modules = ["ugrd.fs.overlayfs"]
+
 autodetect_root = false
 autodetect_root_dm = false
 
 squashfs_image = 'image.squashfs'
+lowerdir = "/run/squashfs"
 
 kmod_init = ['hfsplus', 'nls_utf8', 'squashfs', 'overlay', 'isofs', 'loop']
 

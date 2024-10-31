@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 
 from zenlib.util import contains
 
@@ -12,13 +12,6 @@ def generate_livecd_mount(self):
 
 @contains("squashfs_image", "squashfs_image must be set to the path of the squashfs image to mount.", raise_exception=True)
 def mount_squashfs(self):
-    """
-    Returns bash lines to mount squashfs image.
-    Creates /run/squashfs directory to mount squashfs image.
-    Creates /run/upperdir and /run/workdir directories for overlayfs.
-    """
+    """ Returns bash lines to mount squashfs image."""
     return ["einfo $(mkdir -pv /run/squashfs)",
-            f"mount -t squashfs -o loop /livecd/{self.squashfs_image} /run/squashfs || rd_fail 'Failed to mount squashfs image: {self.squashfs_image}'",
-            "edebug $(mkdir -pv /run/upperdir)",
-            "edebug $(mkdir -pv /run/workdir)",
-            f"mount -t overlay overlay -o lowerdir=/run/squashfs,upperdir=/run/upperdir,workdir=/run/workdir {self.mounts['root']['destination']} || rd_fail 'Failed to mount overlayfs'"]
+            f"mount -t squashfs -o loop /livecd/{self.squashfs_image} /run/squashfs || rd_fail 'Failed to mount squashfs image: {self.squashfs_image}'"]
