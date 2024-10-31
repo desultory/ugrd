@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "5.1.4"
+__version__ = "5.2.0"
 
 from importlib.metadata import version
 from pathlib import Path
@@ -46,12 +46,20 @@ def autodetect_init(self) -> None:
         raise FileNotFoundError("init_target is not specified and could not be detected.")
 
 
+def export_switch_root_target(self) -> None:
+    """Adds SWITCH_ROOT_TARGET to exports.
+    Uses switch_root_target if set, otherwise uses the rootfs."""
+    switch_root_target = self["switch_root_target"]
+    if str(switch_root_target) == ".":  # Handle empty Path
+        switch_root_target = self["mounts"]["root"]["destination"]
+    self["exports"]["SWITCH_ROOT_TARGET"] = switch_root_target
+
 def _find_init(self) -> str:
     """Returns bash to find the init_target."""
     return [
         'for init_path in "/sbin/init" "/bin/init" "/init"; do',
-        '    if [ -e "$(readvar MOUNTS_ROOT_TARGET)$init_path" ] ; then',
-        '        einfo "Found init at: $(readvar MOUNTS_ROOT_TARGET)$init_path"',
+        '    if [ -e "$(readvar SWITCH_ROOT_TARGET)$init_path" ] ; then',
+        '        einfo "Found init at: $(readvar SWITCH_ROOT_TARGET)$init_path"',
         '        setvar init "$init_path"',
         "        return",
         "    fi",
@@ -68,9 +76,8 @@ def set_loglevel(self) -> list[str]:
 
 @contains("init_target", "init_target must be set.", raise_exception=True)
 def do_switch_root(self) -> list[str]:
-    """
-    Should be the final statement, switches root.
-    Checks if the root mount is mounted and that it contains an init.
+    """Should be the final statement, switches root.
+    Checks if the switch_root target is mounted, and that it contains an init.
     If not, it restarts UGRD.
     """
     return [
@@ -79,21 +86,21 @@ def do_switch_root(self) -> list[str]:
         "    exit 1",
         "fi",
         'init_target=$(readvar init) || rd_fail "init_target not set."',  # should be set, if unset, checks fail
-        'einfo "Checking root mount: $(readvar MOUNTS_ROOT_TARGET)"',
-        'if ! grep -q " $(readvar MOUNTS_ROOT_TARGET) " /proc/mounts ; then',
-        '    rd_fail "Root not found at: $(readvar MOUNTS_ROOT_TARGET)"',
-        'elif [ ! -e "$(readvar MOUNTS_ROOT_TARGET)${init_target}" ] ; then',
-        '    ewarn "$init_target not found at: $(readvar MOUNTS_ROOT_TARGET)"',
-        r'    einfo "Target root contents:\n$(ls -l "$(readvar MOUNTS_ROOT_TARGET)")"',
+        'einfo "Checking root mount: $(readvar SWITCH_ROOT_TARGET)"',
+        'if ! grep -q " $(readvar SWITCH_ROOT_TARGET) " /proc/mounts ; then',
+        '    rd_fail "Root not found at: $(readvar SWITCH_ROOT_TARGET)"',
+        'elif [ ! -e "$(readvar SWITCH_ROOT_TARGET)${init_target}" ] ; then',
+        '    ewarn "$init_target not found at: $(readvar SWITCH_ROOT_TARGET)"',
+        r'    einfo "Target root contents:\n$(ls -l "$(readvar SWITCH_ROOT_TARGET)")"',
         "    if _find_init ; then",  # This redefineds the var, so readvar instaed of using $init_target
-        '        einfo "Switching root to: $(readvar MOUNTS_ROOT_TARGET) $(readvar init)"',
-        '        exec switch_root "$(readvar MOUNTS_ROOT_TARGET)" "$(readvar init)"',
+        '        einfo "Switching root to: $(readvar SWITCH_ROOT_TARGET) $(readvar init)"',
+        '        exec switch_root "$(readvar SWITCH_ROOT_TARGET)" "$(readvar init)"',
         "    fi",
         '    rd_fail "Unable to find init."',
         "else",
         f'    einfo "Completed UGRD v{version("ugrd")}."',
-        '    einfo "Switching root to: $(readvar MOUNTS_ROOT_TARGET) $init_target"',
-        '    exec switch_root "$(readvar MOUNTS_ROOT_TARGET)" "$init_target"',
+        '    einfo "Switching root to: $(readvar SWITCH_ROOT_TARGET) $init_target"',
+        '    exec switch_root "$(readvar SWITCH_ROOT_TARGET)" "$init_target"',
         "fi",
     ]
 

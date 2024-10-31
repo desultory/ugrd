@@ -20,6 +20,9 @@ autodetect_init = true
 [imports.build_enum]
 "ugrd.base.base" = [ "autodetect_init" ]
 
+[imports.build_tasks]
+"ugrd.base.base" = [ "export_switch_root_target" ]
+
 [imports.init_early]
 "ugrd.base.base" = [ "set_loglevel" ]
 
@@ -32,6 +35,7 @@ autodetect_init = true
 		     "rd_fail", "rd_restart", "_find_init" ]
 
 [custom_parameters]
+switch_root_target = "Path"  # Specifies the location of the new root filesystem
 init_target = "Path"  # Specifies the location of the system init file
 autodetect_init = "bool"  # If set to true, the init_target will be autodetected based on the system's init system
 loglevel = "int"  # Set the kernel log level at /proc/sys/kernel/printk

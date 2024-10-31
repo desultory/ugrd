@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "5.4.0"
+__version__ = "5.4.2"
 
 from pathlib import Path
 
@@ -216,7 +216,7 @@ def umount_fstab(self) -> list[str]:
     for mount_info in self["mounts"].values():
         if mount_info.get("base_mount"):
             continue
-        if str(mount_info.get("destination")) == "/target_rootfs":
+        if str(mount_info.get("destination")) == str(self["mounts"]["root"]["destination"]):
             continue
 
         mountpoints.append(str(mount_info["destination"]))
@@ -729,10 +729,6 @@ def export_mount_info(self) -> None:
     self["exports"]["MOUNTS_ROOT_SOURCE"] = _get_mount_str(self, self["mounts"]["root"])
     self["exports"]["MOUNTS_ROOT_TYPE"] = self["mounts"]["root"].get("type", "auto")
     self["exports"]["MOUNTS_ROOT_OPTIONS"] = ",".join(self["mounts"]["root"]["options"])
-
-
-def export_root_target(self) -> None:
-    """Exports the root target path to /run/MOUNTS_ROOT_TARGET"""
     self["exports"]["MOUNTS_ROOT_TARGET"] = self["mounts"]["root"]["destination"]
 
 
