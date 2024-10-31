@@ -6,7 +6,8 @@ kmod_init = "uhid"
 cryptsetup_autoretry = false
 
 [cryptsetup_key_types.gpg]
-reset_command = '{ gpgconf --reload && einfo "$(gpg --card-status)" }'
+# Escape braces as .format() is used
+reset_command = '{{ gpgconf --reload && einfo "$(gpg --card-status)"; }}'
 
 [custom_parameters]
 sc_public_key = "Path"  # The path to the public key to import
