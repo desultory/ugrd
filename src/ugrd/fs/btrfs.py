@@ -1,4 +1,4 @@
-__version__ = '1.8.2'
+__version__ = '1.9.0'
 __author__ = 'desultory'
 
 
@@ -15,7 +15,12 @@ class SubvolIsRoot(Exception):
 
 def _get_mount_subvol(self, mountpoint: str) -> list:
     """ Returns the subvolume name for a mountpoint. """
-    for option in self['_mounts'][mountpoint]['options']:
+    if self["_mounts"][mountpoint]["fstype"] == "overlay":
+        from ugrd.fs.mounts import _resolve_overlay_lower_dir
+        mountpoint = _resolve_overlay_lower_dir(self, mountpoint)
+    elif self["_mounts"][mountpoint]["fstype"] != "btrfs":
+        raise ValueError("Mountpoint is not a btrfs mount: %s" % mountpoint)
+    for option in self["_mounts"][mountpoint]['options']:
         if option.startswith('subvol='):
             subvol = option.split('=')[1]
             if subvol == '/':

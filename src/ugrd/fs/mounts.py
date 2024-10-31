@@ -537,16 +537,19 @@ def _resolve_dev(self, device_path) -> str:
     return self["_mounts"][device_path]["device"]
 
 
+
+def _resolve_overlay_lower_dir(self, mountpoint) -> str:
+    for option in self["_mounts"][mountpoint]["options"]:
+        if option.startswith("lowerdir="):
+            return option.removeprefix("lowerdir=")
+    raise ValueError("[%s] No lower overlayfs mountpoint found: %s" % mountpoint, self["_mounts"][mountpoint]["options"])
+
 def _resolve_overlay_lower_device(self, mountpoint) -> dict:
     """ Returns device for the lower overlayfs mountpoint."""
-    mount_options = self["_mounts"][mountpoint]["options"]
-    for option in mount_options:
-        if option.startswith("lowerdir="):
-            lowerdir = option.removeprefix("lowerdir=")
-            break
-    else:
-        raise ValueError("[%s] No lower overlayfs mountpoint found: %s" % mountpoint, mount_options)
+    if self["_mounts"][mountpoint]["fstype"] != "overlay":
+        return self["_mounts"][mountpoint]["device"]
 
+    lowerdir = _resolve_overlay_lower_dir(self, mountpoint)
     return self["_mounts"][lowerdir]["device"]
 
 @contains("autodetect_root", "Skipping root autodetection, autodetect_root is disabled.", log_level=30)
@@ -573,10 +576,7 @@ def _autodetect_mount(self, mountpoint) -> None:
     if mountpoint not in self["_mounts"]:
         raise FileNotFoundError("auto_mount mountpoint not found in host mounts: %s" % mountpoint)
 
-    if self["_mounts"][mountpoint]["fstype"] == "overlay":
-        mount_device = _resolve_overlay_lower_device(self, mountpoint)
-    else:
-        mount_device = self["_mounts"][mountpoint]["device"]
+    mount_device = _resolve_overlay_lower_device(self, mountpoint)
 
     if ":" in mount_device:  # Handle bcachefs
         mount_device = mount_device.split(":")[0]
@@ -703,11 +703,7 @@ def _validate_host_mount(self, mount, destination_path=None) -> bool:
     destination_path = str(mount["destination"]) if destination_path is None else destination_path
 
     # Using the mount path, get relevant host mount info
-    # Resolve overlayfs lower if needed
-    if self["_mounts"][destination_path]["fstype"] == "overlay":
-        host_source_dev = _resolve_overlay_lower_device(self, destination_path)
-    else:
-        host_source_dev = self["_mounts"][destination_path]["device"]
+    host_source_dev = _resolve_overlay_lower_device(self, destination_path)
     if ":" in host_source_dev:  # Handle bcachefs
         host_source_dev = host_source_dev.split(":")[0]
     if destination_path == "/" and self["resolve_root_dev"]:
