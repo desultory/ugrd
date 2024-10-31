@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "5.4.0"
+__version__ = "5.4.1"
 
 from pathlib import Path
 
@@ -216,7 +216,7 @@ def umount_fstab(self) -> list[str]:
     for mount_info in self["mounts"].values():
         if mount_info.get("base_mount"):
             continue
-        if str(mount_info.get("destination")) == "/target_rootfs":
+        if str(mount_info.get("destination")) == str(self["mounts"]["root"]["destination"]):
             continue
 
         mountpoints.append(str(mount_info["destination"]))

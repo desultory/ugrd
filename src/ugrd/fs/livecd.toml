@@ -7,15 +7,10 @@ hostonly = false
 kmod_init = ['hfsplus', 'nls_utf8', 'squashfs', 'isofs', 'loop']
 
 [imports.build_pre]
-"ugrd.fs.livecd" = ["generate_livecd_mount"]
+"ugrd.fs.livecd" = ["generate_livecd_mount", "set_squashfs_mount"]
 
-[imports.init_mount]
-"ugrd.fs.livecd" = ["mount_squashfs"]
-
-[masks]
-init_mount = "mount_cmdline_root"  # Don't use the normal mount process
-build_tasks = "export_mount_info"
-functions = "mount_root"
+[imports.init_early]
+"ugrd.fs.livecd" = ["prepare_squashfs_mount"]
 
 [custom_parameters]
 squashfs_image = "Path"  # the path to the squashfs image (at runtime)
