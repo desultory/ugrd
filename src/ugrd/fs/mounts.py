@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "5.4.2"
+__version__ = "5.5.0"
 
 from pathlib import Path
 
@@ -14,6 +14,7 @@ MOUNT_PARAMETERS = [
     "options",
     "no_validate",
     "no_validate_options",
+    "no_umount",
     "base_mount",
     *SOURCE_TYPES,
 ]
@@ -211,10 +212,11 @@ def generate_fstab(self, mount_class="mounts", filename="/etc/fstab") -> None:
 
 
 def umount_fstab(self) -> list[str]:
-    """Generates a function to unmount all mounts in the fstab."""
+    """Generates a function to unmount all mounts which are not base_mounts
+    and do not have no_umount set"""
     mountpoints = []
     for mount_info in self["mounts"].values():
-        if mount_info.get("base_mount"):
+        if mount_info.get("base_mount") or mount_info.get("no_umount"):
             continue
         if str(mount_info.get("destination")) == str(self["mounts"]["root"]["destination"]):
             continue
@@ -223,7 +225,7 @@ def umount_fstab(self) -> list[str]:
     if not mountpoints:
         return []
 
-    out = [f"einfo 'Unmounting filesystems: {' ,'.join(mountpoints)}'"]
+    out = [f"einfo 'Unmounting filesystems: {', '.join(mountpoints)}'"]
     for mountpoint in mountpoints:
         out.append(f"umount {mountpoint} || ewarn 'Failed to unmount: {mountpoint}'")
 
