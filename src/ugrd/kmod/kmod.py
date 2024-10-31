@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '2.16.1'
+__version__ = '2.16.2'
 
 from pathlib import Path
 from subprocess import run
@@ -124,7 +124,7 @@ def _autodetect_modules_lsmod(self) -> None:
 
 
 @unset('no_kmod', "no_kmod is enabled, skipping.", log_level=30)
-@contains('hostonly', "hostonly is not enabled, skipping.", log_level=30)
+@contains('hostonly', "Skipping kmod autodetection, hostonly is disabled.", log_level=30)
 def autodetect_modules(self) -> None:
     """ Autodetects kernel modules from lsmod and/or lspci -k. """
     if not self['kmod_autodetect_lsmod'] and not self['kmod_autodetect_lspci']:
