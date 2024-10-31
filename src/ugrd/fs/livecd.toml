@@ -1,16 +1,12 @@
 modules = ["ugrd.fs.overlayfs"]
 
 squashfs_image = 'image.squashfs'
-lowerdir = "/run/squashfs"
 hostonly = false
 
 kmod_init = ['hfsplus', 'nls_utf8', 'squashfs', 'isofs', 'loop']
 
 [imports.build_pre]
 "ugrd.fs.livecd" = ["generate_livecd_mount", "set_squashfs_mount"]
-
-[imports.init_early]
-"ugrd.fs.livecd" = ["prepare_squashfs_mount"]
 
 [custom_parameters]
 squashfs_image = "Path"  # the path to the squashfs image (at runtime)
