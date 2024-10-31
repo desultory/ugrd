@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "3.2.3"
+__version__ = "3.2.4"
 
 from pathlib import Path
 
@@ -311,6 +311,8 @@ def open_crypt_device(self, name: str, parameters: dict) -> list[str]:
         "    fi",
     ]
 
+
+    reset_command = parameters.get("reset_command", 'continue')
     # When there is a key command, evaluate it into $key_data
     if "key_command" in parameters:
         self.logger.debug("[%s] Using key command: %s" % (name, parameters["key_command"]))
@@ -318,16 +320,17 @@ def open_crypt_device(self, name: str, parameters: dict) -> list[str]:
             f"    einfo 'Attempting to open LUKS key: {parameters['key_file']}'",
             f"    edebug 'Using key command: {parameters['key_command']}'",
         ]
+
         if "plymouth_key_command" in parameters and "ugrd.base.plymouth" in self["modules"]:
             out += [
                 "    if plymouth --ping; then",
-                f'        plymouth ask-for-password --prompt "[${{i}} / {retries}] Enter passphrase to unlock key for: {name}" --command "{parameters["plymouth_key_command"]}" --number-of-tries 1 > /run/vars/key_data || continue',
+                f'        plymouth ask-for-password --prompt "[${{i}} / {retries}] Enter passphrase to unlock key for: {name}" --command "{parameters["plymouth_key_command"]}" --number-of-tries 1 > /run/vars/key_data || {reset_command}',
                 "    else",
-                f'        {parameters["key_command"]} > /run/vars/key_data || continue',
+                f'        {parameters["key_command"]} > /run/vars/key_data || {reset_command}',
                 "    fi",
             ]
         else:
-            out += [f"    {parameters['key_command']} > /run/vars/key_data || continue"]
+            out += [f"    {parameters['key_command']} > /run/vars/key_data || {reset_command}"]
 
     cryptsetup_command = "cryptsetup open --tries 1"  # Set tries to 1 since it runs in the loop
     cryptsetup_target = f'"$crypt_dev" {name}'  # Add a variable for the source device and mapped name
@@ -364,7 +367,7 @@ def open_crypt_device(self, name: str, parameters: dict) -> list[str]:
     if not self["cryptsetup_autoretry"]:
         out += ['    prompt_user "Press enter to retry"']
     # Add the reset command if it exists
-    if reset_command := parameters.get("reset_command"):
+    if reset_command != "continue":
         out += ['    einfo "Running key reset command"', f"    {reset_command}"]
     out += ["done\n"]
 
