@@ -569,8 +569,6 @@ def autodetect_root(self) -> None:
         root_dev = root_dev.split(":")[0]
         for alt_devices in root_dev.split(":")[1:]:  # But ensure kmods are loaded for all devices
             autodetect_mount_kmods(self, alt_devices)
-    if root_dev not in self["_blkid_info"]:
-        get_blkid_info(self, root_dev)
     _autodetect_mount(self, "/")
 
 
