@@ -82,6 +82,8 @@ The following root filesystems have been tested:
 * XFS
 * NILFS2
 
+> The root mount can automatically be mounted under an overlay filesystem by using the `ugrd.fs.overlayfs` module.
+
 Additionally, the following filesystems have been tested for non-root mounts:
 
 * FAT32
