@@ -8,9 +8,9 @@ binaries = [
 ]
 
 cmdline_bools = [ "rootwait" ]
-cmdline_strings = [
-  "root", "roottype", "rootflags", "rootdelay"
-]
+cmdline_strings =  ["root", "roottype", "rootflags", "rootdelay" ]
+
+run_dirs = [ "vars" ]
 
 mount_wait = false
 mount_retries = 5
@@ -23,7 +23,10 @@ autodetect_init_mount = true
 late_fstab = "/etc/fstab.late"
 
 [imports.config_processing]
-"ugrd.fs.mounts" = [ "_process_mounts_multi", "_process_late_mounts_multi", "_process_mount_timeout" ]
+"ugrd.fs.mounts" = [ "_process_run_dirs_multi",
+		     "_process_mounts_multi",
+		     "_process_late_mounts_multi",
+		     "_process_mount_timeout" ]
 
 [imports.build_enum]
 "ugrd.fs.mounts" = [ "get_mounts_info", "get_virtual_block_info", "get_blkid_info",
@@ -36,7 +39,7 @@ late_fstab = "/etc/fstab.late"
 "ugrd.fs.mounts" = [ "check_mounts", "generate_fstab" ]
 
 [imports.init_pre]
-"ugrd.fs.mounts" = [ "mount_base" ]
+"ugrd.fs.mounts" = [ "mount_base", "make_run_dirs" ]
 
 [imports.init_main]
 "ugrd.fs.mounts" = [ "mount_fstab" ]
@@ -49,6 +52,7 @@ late_fstab = "/etc/fstab.late"
 
 [custom_parameters]
 mounts = "dict"  # Add the mounts property, used to define the mounts to be made in the fstab
+run_dirs = "NoDupFlatList"  # A list of directories to be created under /run
 late_mounts = "dict"  # Like mounts, but run after the root is mounted
 late_fstab = "str"  # The path to the late_fstab file
 auto_mounts = "NoDupFlatList"  # A list of mounts to be automatically added to the mounts list

@@ -29,6 +29,3 @@ def set_squashfs_mount(self):
             "no_validate": True,
         }
     }
-
-def init_livecd(self):
-    return "mkdir -p /run/livecd"

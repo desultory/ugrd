@@ -4,12 +4,10 @@ squashfs_image = 'image.squashfs'
 hostonly = false
 
 kmod_init = ['hfsplus', 'nls_utf8', 'squashfs', 'isofs', 'loop']
+run_dirs = ['livecd']
 
 [imports.build_pre]
 "ugrd.fs.livecd" = ["generate_livecd_mount", "set_squashfs_mount"]
-
-[imports.init_early]
-"ugrd.fs.livecd" = ["init_livecd"]
 
 [custom_parameters]
 squashfs_image = "Path"  # the path to the squashfs image (at runtime)

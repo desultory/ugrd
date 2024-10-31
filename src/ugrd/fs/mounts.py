@@ -2,6 +2,7 @@ __author__ = "desultory"
 __version__ = "5.5.0"
 
 from pathlib import Path
+from typing import Union
 
 from zenlib.util import contains, pretty_print
 
@@ -609,8 +610,27 @@ def mount_base(self) -> list[str]:
     for mount in self["mounts"].values():
         if mount.get("base_mount"):
             out += _to_mount_cmd(self, mount)
-    out += ["mkdir -p /run/vars", f'einfo "Mounted base mounts, version: {__version__}"']
+    out += [f'einfo "Mounted base mounts, version: {__version__}"']
     return out
+
+
+def _process_run_dirs_multi(self, run_dir: Union[str, Path]) -> None:
+    """Processes run_dirs items.
+    Ensures the path starts with /run, adds it if it does not"""
+    run_dir = Path(run_dir)
+    if run_dir.is_absolute():
+        if run_dir.parts[1] == "run":
+            pass
+        run_dir = "/run" / run_dir.relative_to("/")
+    else:
+        run_dir = "/run" / run_dir
+    self.data["run_dirs"].append(run_dir)
+
+
+@contains("run_dirs")
+def make_run_dirs(self) -> list[str]:
+    """Generates commands to create the run directories."""
+    return ['edebug Creating run dir: "$(mkdir -pv %s)"' % run_dir for run_dir in self["run_dirs"]]
 
 
 @contains("late_mounts", "Skipping late mounts, late_mounts is empty.")

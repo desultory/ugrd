@@ -67,7 +67,6 @@ def _get_plymouthd_args(self) -> str:
 def start_plymouth(self) -> list[str]:
     """Returns bash lines to run plymouthd"""
     return [
-        "mkdir -p /run/plymouth",
         f"plymouthd {_get_plymouthd_args(self)}",
         "if ! plymouth --ping; then",
         '    eerror "Failed to start plymouthd"',
