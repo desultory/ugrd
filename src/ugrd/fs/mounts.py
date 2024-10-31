@@ -364,8 +364,8 @@ def _autodetect_dm(self, mountpoint, device=None) -> None:
     if device:
         self.logger.debug("[%s] Using provided device for mount autodetection: %s" % (mountpoint, device))
         source_device = device
-    elif mountpoint in self["_mounts"]:
-        source_device = self["_mounts"][mountpoint]["device"]
+    elif mountpoint:
+        source_device = _resolve_overlay_lower_device(self, mountpoint)
     else:
         raise FileNotFoundError("Mountpoint not found in host mounts: %s" % mountpoint)
 
