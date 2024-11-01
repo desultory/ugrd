@@ -203,6 +203,7 @@ def _process_kernel_version(self, kver: str) -> None:
     self.data["_kmod_dir"] = kmod_dir
 
 
+@contains("validate")
 def _check_arch_kernel(self, kver) -> None:
     """Checks that an arch package owns the kernel version directory."""
     kmod_dir = Path("/lib/modules") / kver
@@ -229,6 +230,7 @@ def get_kernel_version(self) -> None:
     try:
         self._run(["pacman", "-V"], fail_silent=True)
         self["kernel_version"] = _get_kver_from_header(self)
+        _check_arch_kernel(self, self["kernel_version"])
     except FileNotFoundError:
         try:
             self["kernel_version"] = cmd.stdout.decode("utf-8").strip()
