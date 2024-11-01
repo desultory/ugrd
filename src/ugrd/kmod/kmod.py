@@ -203,17 +203,15 @@ def _process_kernel_version(self, kver: str) -> None:
     self.data["_kmod_dir"] = kmod_dir
 
 
-@contains("validate")
-def _check_arch_kernel(self, kver) -> None:
+def _handle_arch_kernel(self) -> None:
     """Checks that an arch package owns the kernel version directory."""
-    kmod_dir = Path("/lib/modules") / kver
-    try:  # If pacman is available, check that the kmod directory is owned by the kernel package
-        self._run(["pacman", "-V"], fail_silent=True)  # Check if pacman is available
-        cmd = self._run(["pacman", "-Qqo", str(kmod_dir)], fail_hard=False)
-        if cmd.returncode != 0:
-            raise DependencyResolutionError("Kernel module directory is not owned by a package: %s" % kmod_dir)
-    except FileNotFoundError:
-        self.logger.debug("Pacman is not available, skipping kmod directory ownership check.")
+    kmod_dir = Path("/lib/modules") / self["kernel_version"]
+    try:
+        cmd = self._run(["pacman", "-Qqo", str(kmod_dir)])
+        self["out_file"] = f"/boot/initramfs-{cmd.stdout.decode().strip()}.img"
+        self.logger.info("Setting out_file to: %s" % self["out_file"])
+    except RuntimeError as e:
+        raise DependencyResolutionError("Failed to check ownership of kernel module directory") from e
 
 
 @unset("kernel_version", "Kernel version is already set, skipping.", log_level=30)
@@ -230,7 +228,7 @@ def get_kernel_version(self) -> None:
     try:
         self._run(["pacman", "-V"], fail_silent=True)
         self["kernel_version"] = _get_kver_from_header(self)
-        _check_arch_kernel(self, self["kernel_version"])
+        _handle_arch_kernel(self)
     except FileNotFoundError:
         try:
             self["kernel_version"] = cmd.stdout.decode("utf-8").strip()
