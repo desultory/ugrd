@@ -4,7 +4,7 @@ from typing import Union
 
 from zenlib.util import pretty_print
 
-__version__ = "1.3.5"
+__version__ = "1.3.6"
 __author__ = "desultory"
 
 
@@ -21,6 +21,7 @@ def get_subpath(path: Path, subpath: Union[Path, str]) -> Path:
 
 class GeneratorHelpers:
     """Mixin class for the InitramfsGenerator class."""
+
     def _get_out_path(self, path: Union[Path, str]) -> Path:
         """Takes a filename, if the out_dir is relative, returns the path relative to the tmpdir.
         If the out_dir is absolute, returns the path relative to the out_dir."""
@@ -147,7 +148,7 @@ class GeneratorHelpers:
         self.logger.debug("Creating symlink: %s -> %s" % (target, source))
         symlink(source, target)
 
-    def _run(self, args: list[str], timeout=15) -> CompletedProcess:
+    def _run(self, args: list[str], timeout=15, fail_silent=False) -> CompletedProcess:
         """Runs a command, returns the CompletedProcess object"""
         cmd_args = [str(arg) for arg in args]
         self.logger.debug("Running command: %s" % " ".join(cmd_args))
@@ -157,9 +158,10 @@ class GeneratorHelpers:
             raise RuntimeError("[%ds] Command timed out: %s" % (timeout, [str(arg) for arg in cmd_args])) from e
 
         if cmd.returncode != 0:
-            self.logger.error("Failed to run command: %s" % " ".join(cmd.args))
-            self.logger.error("Command output:\n%s" % cmd.stdout.decode())
-            self.logger.error("Command error:\n%s" % cmd.stderr.decode())
+            if not fail_silent:
+                self.logger.error("Failed to run command: %s" % " ".join(cmd.args))
+                self.logger.error("Command output:\n%s" % cmd.stdout.decode())
+                self.logger.error("Command error:\n%s" % cmd.stderr.decode())
             raise RuntimeError("Failed to run command: %s" % " ".join(cmd.args))
 
         return cmd
