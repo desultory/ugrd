@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "3.0.1"
+__version__ = "3.0.2"
 
 from pathlib import Path
 from subprocess import run
@@ -143,9 +143,9 @@ def autodetect_modules(self) -> None:
 
 def _find_kernel_image(self) -> None:
     """Finds the kernel image,
-    Searches /boot, then /efi for
-    'vmlinuz' then 'vmlinuz-<version>'.
-    If multiple are found, use the last modified."""
+    Searches /boot, then /efi for prefixes 'vmlinuz', 'linux', and 'bzImage'.
+    Searches for the file with the prefix, then files starting with the prefix and a hyphen.
+    If multiple files are found, uses the last modified."""
 
     def search_prefix(prefix: str) -> Path:
         for path in ["/boot", "/efi"]:
@@ -185,26 +185,41 @@ def _get_kver_from_header(self) -> str:
     kver_offset = unpack("<h", kernel_path.read_bytes()[0x020E:0x0210])[0] + 512
     header = kernel_path.read_bytes()[kver_offset : kver_offset + 127]
     # Cut at the first null byte, decode to utf-8, and split at the first space
-    return header[: header.index(0)].decode("utf-8").split()[0]
+    kver = header[: header.index(0)].decode("utf-8").split()[0]
+    return kver
 
 
 def _process_kernel_version(self, kver: str) -> None:
     """Sets the kerenl_version, checks that the kmod directory exits, sets the _kmod_dir variable."""
-    if self['no_kmod']:
+    if self["no_kmod"]:
         self.logger.error("kernel_version is set, but no_kmod is enabled.")
     kmod_dir = Path("/lib/modules") / kver
     if not kmod_dir.exists():
         if self["no_kmod"]:
             return self.logger.warning("[%s] Kernel module directory does not exist, but no_kmod is set." % kver)
         raise DependencyResolutionError(f"Kernel module directory does not exist for kernel: {kver}")
+
     self.data["kernel_version"] = kver
     self.data["_kmod_dir"] = kmod_dir
+
+
+def _check_arch_kernel(self, kver) -> None:
+    """Checks that an arch package owns the kernel version directory."""
+    kmod_dir = Path("/lib/modules") / kver
+    try:  # If pacman is available, check that the kmod directory is owned by the kernel package
+        self._run(["pacman", "-V"], fail_silent=True)  # Check if pacman is available
+        cmd = self._run(["pacman", "-Qqo", str(kmod_dir)], fail_hard=False)
+        if cmd.returncode != 0:
+            raise DependencyResolutionError("Kernel module directory is not owned by a package: %s" % kmod_dir)
+    except FileNotFoundError:
+        self.logger.debug("Pacman is not available, skipping kmod directory ownership check.")
 
 
 @unset("kernel_version", "Kernel version is already set, skipping.", log_level=30)
 @unset("no_kmod", "no_kmod is enabled, skipping.", log_level=30)
 def get_kernel_version(self) -> None:
     """Gets the kernel version using  uname -r.
+    On arch systems, uses the kernel version from the kernel image.
     If the kmod directory doesnt't exit, attempts to find the kernel version from the kernel image."""
     try:
         cmd = self._run(["uname", "-r"])
@@ -212,9 +227,13 @@ def get_kernel_version(self) -> None:
         raise DependencyResolutionError("Failed to get running kernel version") from e
 
     try:
-        self["kernel_version"] = cmd.stdout.decode("utf-8").strip()
-    except DependencyResolutionError:
+        self._run(["pacman", "-V"], fail_silent=True)
         self["kernel_version"] = _get_kver_from_header(self)
+    except FileNotFoundError:
+        try:
+            self["kernel_version"] = cmd.stdout.decode("utf-8").strip()
+        except DependencyResolutionError:
+            self["kernel_version"] = _get_kver_from_header(self)
     self.logger.info("Detected kernel version: %s" % self["kernel_version"])
 
 
