@@ -21,10 +21,13 @@ kmod_init = "NoDupFlatList"  # Kernel modules to load at initramfs startup
 no_kmod = "bool" # Disables kernel modules entirely
 
 [imports.config_processing]
-"ugrd.kmod.kmod" = [ "_process_kmod_init_multi", "_process_kernel_modules_multi", "_process__kmod_auto_multi" ]
+"ugrd.kmod.kmod" = [ "_process_kernel_version",
+		     "_process_kmod_init_multi",
+		     "_process_kernel_modules_multi",
+		     "_process__kmod_auto_multi" ]
 
 [imports.build_enum]
-"ugrd.kmod.kmod" = [ "get_kernel_metadata", "autodetect_modules" ]
+"ugrd.kmod.kmod" = [ "get_kernel_version", "autodetect_modules" ]
 
 [imports.build_late]
 "ugrd.kmod.kmod" = [ "process_modules", "process_ignored_modules", "process_module_metadata" ]

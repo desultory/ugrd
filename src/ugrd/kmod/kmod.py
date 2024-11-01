@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "2.16.2"
+__version__ = "3.0.0"
 
 from pathlib import Path
 from subprocess import run
@@ -141,25 +141,77 @@ def autodetect_modules(self) -> None:
         self.logger.warning("No kernel modules were autodetected.")
 
 
-def get_kernel_metadata(self) -> None:
-    """Gets metadata for all kernel modules."""
-    if not self.get("kernel_version"):
-        try:
-            cmd = self._run(["uname", "-r"])
-        except RuntimeError as e:
-            raise DependencyResolutionError("Failed to get kernel version") from e
+def _find_kernel_image(self) -> None:
+    """Finds the kernel image,
+    Searches /boot, then /efi for
+    'vmlinuz' then 'vmlinuz-<version>'.
+    If multiple are found, use the last modified."""
+    for path in ["/boot", "/efi"]:
+        kernel_path = Path(path) / "vmlinuz"
+        if kernel_path.exists():  # If vmlinuz exists, use it
+            break
+        kernel_path = None
+        # Find the newest vmlinuz-<version> file
+        for file in Path(path).glob("vmlinuz-*"):
+            file = file.resolve()  # Get the full path, resolve symlinks
+            if not file.is_file():
+                continue
 
+            if not kernel_path:
+                kernel_path = file
+            elif file.stat().st_mtime > kernel_path.stat().st_mtime:
+                kernel_path = file
+        if kernel_path:  # If we found a kernel image, break
+            break
+    else:
+        raise DependencyResolutionError("Failed to find kernel image")
+    self.logger.info("Detected kernel image: %s" % kernel_path)
+    return kernel_path
+
+
+def _get_kver_from_header(self) -> str:
+    """Tries to read the kernel version from the kernel header.
+    The offset of the kernel version is stored in 2 bytes at 0x020E.
+    An additional sector is skipped, so the offset is increased by 512.
+    The version string can be up to 127 bytes long and is null-terminated.
+    https://www.kernel.org/doc/html/v6.7/arch/x86/boot.html#the-real-mode-kernel-header
+    """
+    from struct import unpack
+
+    kernel_path = _find_kernel_image(self)
+    kver_offset = unpack("<h", kernel_path.read_bytes()[0x020E:0x0210])[0] + 512
+    header = kernel_path.read_bytes()[kver_offset : kver_offset + 127]
+    # Cut at the first null byte, decode to utf-8, and split at the first space
+    return header[: header.index(0)].decode("utf-8").split()[0]
+
+
+def _process_kernel_version(self, kver: str) -> None:
+    """Sets the kerenl_version, checks that the kmod directory exits, sets the _kmod_dir variable."""
+    if self['no_kmod']:
+        self.logger.error("kernel_version is set, but no_kmod is enabled.")
+    kmod_dir = Path("/lib/modules") / kver
+    if not kmod_dir.exists():
+        if self["no_kmod"]:
+            return self.logger.warning("[%s] Kernel module directory does not exist, but no_kmod is set." % kver)
+        raise DependencyResolutionError(f"Kernel module directory does not exist for kernel: {kver}")
+    self.data["kernel_version"] = kver
+    self.data["_kmod_dir"] = kmod_dir
+
+
+@unset("kernel_version", "Kernel version is already set, skipping.", log_level=30)
+@unset("no_kmod", "no_kmod is enabled, skipping.", log_level=30)
+def get_kernel_version(self) -> None:
+    """Gets the kernel version using  uname -r.
+    If the kmod directory doesnt't exit, attempts to find the kernel version from the kernel image."""
+    try:
+        cmd = self._run(["uname", "-r"])
+    except RuntimeError as e:
+        raise DependencyResolutionError("Failed to get running kernel version") from e
+
+    try:
         self["kernel_version"] = cmd.stdout.decode("utf-8").strip()
-        self.logger.info(f"Using detected kernel version: {self['kernel_version']}")
-
-    self["_kmod_dir"] = Path("/lib/modules") / self["kernel_version"]
-    if not self["_kmod_dir"].exists():
-        if self["no_kmod"]:  # Just warn if no_kmod is set
-            self.logger.warning("Kernel module directory does not exist, but no_kmod is set.")
-        else:
-            raise DependencyResolutionError(
-                f"Kernel module directory does not exist for kernel: {self['kernel_version']}"
-            )
+    except DependencyResolutionError:
+        self["kernel_version"] = _get_kver_from_header(self)
 
 
 @contains("kmod_init", "kmod_init is empty, skipping.")
