@@ -4,7 +4,7 @@ from typing import Union
 
 from zenlib.util import pretty_print
 
-__version__ = "1.3.6"
+__version__ = "1.3.7"
 __author__ = "desultory"
 
 
@@ -148,7 +148,7 @@ class GeneratorHelpers:
         self.logger.debug("Creating symlink: %s -> %s" % (target, source))
         symlink(source, target)
 
-    def _run(self, args: list[str], timeout=15, fail_silent=False) -> CompletedProcess:
+    def _run(self, args: list[str], timeout=15, fail_silent=False, fail_hard=True) -> CompletedProcess:
         """Runs a command, returns the CompletedProcess object"""
         cmd_args = [str(arg) for arg in args]
         self.logger.debug("Running command: %s" % " ".join(cmd_args))
@@ -162,7 +162,8 @@ class GeneratorHelpers:
                 self.logger.error("Failed to run command: %s" % " ".join(cmd.args))
                 self.logger.error("Command output:\n%s" % cmd.stdout.decode())
                 self.logger.error("Command error:\n%s" % cmd.stderr.decode())
-            raise RuntimeError("Failed to run command: %s" % " ".join(cmd.args))
+            if fail_hard:
+                raise RuntimeError("Failed to run command: %s" % " ".join(cmd.args))
 
         return cmd
 
