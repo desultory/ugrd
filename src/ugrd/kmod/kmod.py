@@ -205,9 +205,9 @@ def _process_kernel_version(self, kver: str) -> None:
 
 def _handle_arch_kernel(self) -> None:
     """Checks that an arch package owns the kernel version directory."""
-    kmod_dir = Path("/lib/modules") / self["kernel_version"]
+    kernel_path = Path("/lib/modules") / self["kernel_version"] / "vmlinuz"
     try:
-        cmd = self._run(["pacman", "-Qqo", str(kmod_dir)])
+        cmd = self._run(["pacman", "-Qqo", kernel_path])
         self["out_file"] = f"/boot/initramfs-{cmd.stdout.decode().strip()}.img"
         self.logger.info("Setting out_file to: %s" % self["out_file"])
     except RuntimeError as e:
