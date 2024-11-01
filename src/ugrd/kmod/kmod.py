@@ -215,6 +215,7 @@ def get_kernel_version(self) -> None:
         self["kernel_version"] = cmd.stdout.decode("utf-8").strip()
     except DependencyResolutionError:
         self["kernel_version"] = _get_kver_from_header(self)
+    self.logger.info("Detected kernel version: %s" % self["kernel_version"])
 
 
 @contains("kmod_init", "kmod_init is empty, skipping.")
