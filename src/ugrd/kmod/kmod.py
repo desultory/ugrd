@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "3.0.0"
+__version__ = "3.0.1"
 
 from pathlib import Path
 from subprocess import run
@@ -146,27 +146,30 @@ def _find_kernel_image(self) -> None:
     Searches /boot, then /efi for
     'vmlinuz' then 'vmlinuz-<version>'.
     If multiple are found, use the last modified."""
-    for path in ["/boot", "/efi"]:
-        kernel_path = Path(path) / "vmlinuz"
-        if kernel_path.exists():  # If vmlinuz exists, use it
-            break
-        kernel_path = None
-        # Find the newest vmlinuz-<version> file
-        for file in Path(path).glob("vmlinuz-*"):
-            file = file.resolve()  # Get the full path, resolve symlinks
-            if not file.is_file():
-                continue
 
-            if not kernel_path:
-                kernel_path = file
-            elif file.stat().st_mtime > kernel_path.stat().st_mtime:
-                kernel_path = file
-        if kernel_path:  # If we found a kernel image, break
-            break
-    else:
-        raise DependencyResolutionError("Failed to find kernel image")
-    self.logger.info("Detected kernel image: %s" % kernel_path)
-    return kernel_path
+    def search_prefix(prefix: str) -> Path:
+        for path in ["/boot", "/efi"]:
+            kernel_path = (Path(path) / f"{prefix}").resolve()
+            if kernel_path.exists():
+                return kernel_path
+            kernel_path = None
+            for file in Path(path).glob(f"{prefix}-*"):
+                file = file.resolve()
+                if not file.is_file():
+                    continue
+                if not kernel_path:
+                    kernel_path = file
+                elif file.stat().st_mtime > kernel_path.stat().st_mtime:
+                    kernel_path = file
+            if kernel_path:
+                return kernel_path
+        self.logger.debug("Failed to find kernel image with prefix: %s" % prefix)
+
+    for prefix in ["vmlinuz", "linux", "bzImage"]:
+        if kernel_path := search_prefix(prefix):
+            self.logger.info("Detected kernel image: %s" % kernel_path)
+            return kernel_path
+    raise DependencyResolutionError("Failed to find kernel image")
 
 
 def _get_kver_from_header(self) -> str:
