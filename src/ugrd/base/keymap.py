@@ -57,7 +57,7 @@ def _add_keymap_file(self, keymap_file: str) -> None:
         self["dependencies"] = keymap_file
         keymap_data = open(keymap_file, "rb").read()
 
-    keymap_data = keymap_data.decode()
+    keymap_data = keymap_data.decode(errors="ignore")
 
     for line in keymap_data.splitlines():
         if line.startswith("include"):
