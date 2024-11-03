@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "3.10.0"
+__version__ = "3.10.1"
 
 from pathlib import Path
 from typing import Union
@@ -169,11 +169,16 @@ def find_libgcc(self) -> None:
     """
     from pathlib import Path
 
-    try:
-        ldconfig = self._run(["ldconfig", "-p"]).stdout.decode().split("\n")
-    except RuntimeError:
-        self.logger.critical("Unable to run ldconfig -p, if GCC is being used, this is fatal!")
-        return self.logger.critical("This check can be disabled by setting `find_libgcc = false` in the configuration.")
+    cmd = self._run(["ldconfig", "-p"], fail_silent=True, fail_hard=False)
+
+    if b"Unimplemented option: -p" in cmd.stderr:  # Probably musl libc
+        self.logger.warning("This check can be disabled by setting `find_libgcc = false` in the configuration.")
+        return self.logger.warning("Unable to run ldconfig -p, if GCC is being used, this is fatal!")
+
+    if cmd.returncode != 0:
+        return self.logger.critical("Unable to run ldconfig -p, if GCC is being used, this is fatal!")
+
+    ldconfig = cmd.stdout.decode("utf-8").splitlines()
 
     libgcc = [lib for lib in ldconfig if "libgcc_s" in lib and "(libc6," in lib][0]
     source_path = Path(libgcc.partition("=> ")[-1])
