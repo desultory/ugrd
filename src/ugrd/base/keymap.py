@@ -1,11 +1,17 @@
 __author__ = "desultory"
-__version__ = "0.3.2"
+__version__ = "0.4.0"
 
 from zenlib.util import contains
 
 
 def _find_keymap_include(self, base_path, included_file, no_recurse=False) -> str:
-    """Finds the included file in the keymap file."""
+    """Finds the included file in the keymap file.
+    This function recursively searches for the included file based on the base path.
+    If the base path is not a directory, uses the parent directory.
+    When not found, searches the 'include' directory, if in the parent directory.
+    Stopping at the 'keymaps' directory, if not found, recursively searches the parent directory.
+    Keeps recursively searching if the included file does not end with '.inc'.
+    """
     from pathlib import Path
 
     if not isinstance(base_path, Path):
@@ -53,14 +59,14 @@ def _add_keymap_file(self, keymap_file: str) -> None:
         with gzip.open(keymap_file, "rb") as f:
             keymap_data = f.read()
             keymap_file = keymap_file[:-3]
-    else:
+    else:  # Add the keymap file as a dependency, reading the data
         self["dependencies"] = keymap_file
         keymap_data = open(keymap_file, "rb").read()
 
     keymap_data = keymap_data.decode(errors="ignore")
 
     for line in keymap_data.splitlines():
-        if line.startswith("include"):
+        if line.startswith("include"):  # Handle keymap includes
             include_name = line.split()[1].replace('"', "")
             include_file = _find_keymap_include(self, keymap_file, include_name)
             self.logger.info("Detected keymap include, adding file: %s" % include_file)
@@ -70,7 +76,7 @@ def _add_keymap_file(self, keymap_file: str) -> None:
 def _process_keymap_file(self, keymap_file: str) -> None:
     """Sets the keymap file, adding it to the list of files to be copied to the new root."""
     _add_keymap_file(self, keymap_file)
-    self.data["keymap_file"] = keymap_file.replace(".gz", "")
+    self.data["keymap_file"] = keymap_file.replace(".gz", "")  # GZipped files are decompressed before copying
 
 
 @contains("keymap_file", "keymap_file must be set to use the keymap module", raise_exception=True)
