@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "3.2.4"
+__version__ = "3.4.0"
 
 from pathlib import Path
 
@@ -147,17 +147,79 @@ def _process_cryptsetup_multi(self, mapped_name: str, config: dict) -> None:
     self["cryptsetup"][mapped_name] = config
 
 
+def _get_dm_info(self, mapped_name: str) -> dict:
+    """Gets the device mapper information for a particular device."""
+    for device_info in self["_vblk_info"].values():
+        if device_info["name"] == mapped_name:
+            return device_info
+    raise KeyError("No device mapper information found for: %s" % mapped_name)
+
+
+def _get_dm_slave_info(self, device_info: dict) -> (str, dict):
+    """Gets the device mapper slave information for a particular device."""
+    slave_source = device_info["slaves"][0]
+    try:
+        slave_device = f"/dev/{slave_source}"
+        return slave_device, self["_blkid_info"][slave_device]
+    except KeyError:
+        slave_device = f"/dev/mapper/{slave_source}"
+        return slave_device, self["_blkid_info"][slave_device]
+
+
+def _read_cryptsetup_header(self, mapped_name: str, slave_device: str = None) -> dict:
+    """Reads LUKS header information from a device or header file into a dict"""
+    from json import loads
+
+    header_file = self["cryptsetup"][mapped_name].get("header_file")
+    if not header_file:
+        if slave_device:
+            header_file = slave_device
+        else:
+            slave_device, _ = _get_dm_slave_info(self, _get_dm_info(self, mapped_name))
+            header_file = slave_device
+    try:  # Try to read the header, return data, decoded and loaded, as a dictionary
+        luks_info = loads(self._run(["cryptsetup", "luksDump", "--dump-json-metadata", header_file]).stdout.decode())
+        self.logger.debug("[%s] LUKS header information: %s" % (mapped_name, luks_info))
+        raw_luks_info = self._run(["cryptsetup", "luksDump", header_file]).stdout.decode().split("\n")
+        # --dump-json-metadata does not include the UUID, so we need to parse it from the raw output
+        for line in raw_luks_info:
+            if "UUID" in line:
+                luks_info["uuid"] = line.split()[1]
+                break
+        return luks_info
+    except RuntimeError as e:
+        if not self["cryptsetup"][mapped_name].get("header_file"):
+            self.logger.error("Unable to read LUKS header: %s" % e)
+        else:
+            self.logger.warning("Cannot read detached LUKS header for validation: %s" % e)
+    return {}
+
+def _check_luks_header_aes(self, luks_info: dict) -> dict:
+    """Checks for aes requirements in the LUKS header"""
+    for keyslot in luks_info.get("keyslots", {}).values():
+        if keyslot.get("area", {}).get("encryption") == "aes-xts-plain64":
+            return True
+    for segment in luks_info.get("segments", {}).values():
+        if segment.get("encryption") == "aes-xts-plain64":
+            return True
+
+def _detect_luks_header_sha(self, luks_info: dict) -> dict:
+    """Reads the hash algorithm from the LUKS header,
+    enables the corresponding kernel module using _crypto_ciphers"""
+    for keyslot in luks_info.get("keyslots", {}).values():
+        if keyslot.get("af", {}).get("hash").startswith("sha"):
+            self["kernel_modules"] = self._crypto_ciphers[keyslot["af"]["hash"]]["driver"]
+    for digest in luks_info.get("digests", {}).values():
+        if digest.get("hash").startswith("sha"):
+            self["kernel_modules"] = self._crypto_ciphers[digest["hash"]]["driver"]
+
+
 @contains("hostonly", "Skipping cryptsetup device check.", log_level=30)
 def _validate_cryptsetup_device(self, mapped_name) -> None:
     """Validates a cryptsetup device against the device mapper information,
     blkid information, and cryptsetup information.
     Uses `cryptsetup luksDump` to check that the device is a LUKS device."""
-    for device_info in self["_vblk_info"].values():
-        if device_info["name"] == mapped_name:
-            dm_info = device_info  # Get the device mapper information
-            break
-    else:
-        raise ValueError("No device mapper information found for: %s" % mapped_name)
+    dm_info = _get_dm_info(self, mapped_name)
 
     if not dm_info["uuid"].startswith("CRYPT-LUKS"):  # Ensure the device is a crypt device
         raise ValueError("Device is not a crypt device: %s" % dm_info)
@@ -165,14 +227,8 @@ def _validate_cryptsetup_device(self, mapped_name) -> None:
     cryptsetup_info = self["cryptsetup"][mapped_name]  # Get the cryptsetup information
     if cryptsetup_info.get("validate") is False:
         return self.logger.warning("Skipping cryptsetup device validation: %s" % mapped_name)
-    slave_source = dm_info["slaves"][0]  # Get the slave source
 
-    try:  # Get the blkid information
-        slave_device = f"/dev/{slave_source}"
-        blkid_info = self["_blkid_info"][slave_device]
-    except KeyError:
-        slave_device = f"/dev/mapper/{slave_source}"
-        blkid_info = self["_blkid_info"][slave_device]
+    slave_device, blkid_info = _get_dm_slave_info(self, dm_info)  # Get the blkid information
 
     for token_type in ["partuuid", "uuid"]:  # Validate the uuid/partuuid token
         if cryptsetup_token := cryptsetup_info.get(token_type):
@@ -185,39 +241,27 @@ def _validate_cryptsetup_device(self, mapped_name) -> None:
     else:
         raise ValueError("[%s] No UUID or PARTUUID set for LUKS source: %s" % (mapped_name, cryptsetup_info))
 
-    try:
-        # Get the luks header info, remove tabs, and split the output
-        luks_header_source = cryptsetup_info.get("header_file") or slave_device
-        luks_info = (
-            self._run(["cryptsetup", "luksDump", luks_header_source]).stdout.decode().replace("\t", "").split("\n")
-        )  # Check that the device is a LUKS device
-        self.logger.debug("[%s] LUKS information:\n%s" % (mapped_name, luks_info))
-    except RuntimeError as e:
-        luks_info = []
-        if not cryptsetup_info.get("header_file"):
-            return self.logger.error("[%s] Unable to read LUKS header: %s" % (mapped_name, e))
-        self.logger.warning("[%s] Cannot read detached LUKS header for validation: %s" % (mapped_name, e))
+    luks_info = _read_cryptsetup_header(self, mapped_name, slave_device)  # Read the LUKS header information
 
     if token_type == "uuid":  # Validate the LUKS UUID using the header
-        for line in luks_info:
-            if "UUID" in line:
-                if line.split()[1] != cryptsetup_token:
-                    raise ValueError(
-                        "[%s] LUKS UUID mismatch, found '%s', expected: %s"
-                        % (mapped_name, line.split()[1], cryptsetup_token)
-                    )
-                break
-        else:
-            raise ValueError("[%s] Unable to validate LUKS UUID: %s" % (mapped_name, cryptsetup_token))
+        luks_uuid = luks_info.get("uuid")
+        if luks_uuid != cryptsetup_token:
+            raise ValueError(
+                "[%s] LUKS UUID mismatch, found '%s', expected: %s" % (mapped_name, luks_uuid, cryptsetup_token)
+            )
 
-    if "Cipher:     aes-xts-plain64" in luks_info:
-        self["kernel_modules"] = "crypto_xts"
+    if _check_luks_header_aes(self, luks_info):
+        self.logger.debug("[%s] LUKS uses aes-xts-plain64" % mapped_name)
+        self["kernel_modules"] = self._crypto_ciphers["xts(aes)"]["driver"]
 
-    if not self["argon2"]:
+    _detect_luks_header_sha(self, luks_info)
+
+    if not self["argon2"]:  # if argon support was not detected, check if the header wants it
         if cryptsetup_info.get("header_file"):  # A header may be specified but unavailable
             self.logger.error("[%s] Unable to check: libargon2.so" % mapped_name)
-        if "PBKDF:      argon2id" in luks_info:  # If luks info is found, and argon is used, raise an error
-            raise FileNotFoundError("[%s] Missing cryptsetup dependency: libargon2.so" % mapped_name)
+        for keyslot in luks_info.get("keyslots", {}).values():
+            if keyslot.get("kdf", {}).get("type") == "argon2id":
+                raise FileNotFoundError("[%s] Missing cryptsetup dependency: libargon2.so" % mapped_name)
         self.logger.error("[%s] Unable to validate argon support for LUKS: %s" % (mapped_name, luks_info))
 
 
@@ -234,6 +278,23 @@ def detect_argon2(self) -> None:
                 if kdf.lstrip().startswith("argon2id") and "default" in kdf:
                     argon = True
     self["argon2"] = argon
+
+
+@contains("hostonly")
+def detect_ciphers(self) -> None:
+    """Populates _crypto_ciphers using /proc/crypto"""
+    def get_value(line):
+        return line.split(":")[1].strip()
+    with open("/proc/crypto") as crypto_file:
+        current_name = None
+        for line in crypto_file:
+            if line.startswith("name"):
+                current_name = get_value(line)
+                self._crypto_ciphers[current_name] = {}
+            elif not current_name:
+                continue  # Skip lines until a name is found
+            elif line.startswith("driver"):
+                self._crypto_ciphers[current_name]["driver"] = get_value(line)
 
 
 @contains("validate", "Skipping cryptsetup configuration validation.", log_level=30)
@@ -311,8 +372,7 @@ def open_crypt_device(self, name: str, parameters: dict) -> list[str]:
         "    fi",
     ]
 
-
-    reset_command = parameters.get("reset_command", 'continue')
+    reset_command = parameters.get("reset_command", "continue")
     # When there is a key command, evaluate it into $key_data
     if "key_command" in parameters:
         self.logger.debug("[%s] Using key command: %s" % (name, parameters["key_command"]))
