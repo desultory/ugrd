@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "3.3.0"
+__version__ = "3.4.0"
 
 from pathlib import Path
 
@@ -203,6 +203,16 @@ def _check_luks_header_aes(self, luks_info: dict) -> dict:
         if segment.get("encryption") == "aes-xts-plain64":
             return True
 
+def _detect_luks_header_sha(self, luks_info: dict) -> dict:
+    """Reads the hash algorithm from the LUKS header,
+    enables the corresponding kernel module using _crypto_ciphers"""
+    for keyslot in luks_info.get("keyslots", {}).values():
+        if keyslot.get("af", {}).get("hash").startswith("sha"):
+            self["kernel_modules"] = self._crypto_ciphers[keyslot["af"]["hash"]]["driver"]
+    for digest in luks_info.get("digests", {}).values():
+        if digest.get("hash").startswith("sha"):
+            self["kernel_modules"] = self._crypto_ciphers[digest["hash"]]["driver"]
+
 
 @contains("hostonly", "Skipping cryptsetup device check.", log_level=30)
 def _validate_cryptsetup_device(self, mapped_name) -> None:
@@ -242,7 +252,9 @@ def _validate_cryptsetup_device(self, mapped_name) -> None:
 
     if _check_luks_header_aes(self, luks_info):
         self.logger.debug("[%s] LUKS uses aes-xts-plain64" % mapped_name)
-        self["kernel_modules"] = "crypto_xts"
+        self["kernel_modules"] = self._crypto_ciphers["xts(aes)"]["driver"]
+
+    _detect_luks_header_sha(self, luks_info)
 
     if not self["argon2"]:  # if argon support was not detected, check if the header wants it
         if cryptsetup_info.get("header_file"):  # A header may be specified but unavailable
@@ -266,6 +278,23 @@ def detect_argon2(self) -> None:
                 if kdf.lstrip().startswith("argon2id") and "default" in kdf:
                     argon = True
     self["argon2"] = argon
+
+
+@contains("hostonly")
+def detect_ciphers(self) -> None:
+    """Populates _crypto_ciphers using /proc/crypto"""
+    def get_value(line):
+        return line.split(":")[1].strip()
+    with open("/proc/crypto") as crypto_file:
+        current_name = None
+        for line in crypto_file:
+            if line.startswith("name"):
+                current_name = get_value(line)
+                self._crypto_ciphers[current_name] = {}
+            elif not current_name:
+                continue  # Skip lines until a name is found
+            elif line.startswith("driver"):
+                self._crypto_ciphers[current_name]["driver"] = get_value(line)
 
 
 @contains("validate", "Skipping cryptsetup configuration validation.", log_level=30)
