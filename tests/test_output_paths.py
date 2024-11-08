@@ -35,6 +35,25 @@ class TestOutFile(TestCase):
         generator.build()
         self.assertTrue(out_path.exists())
         out_path.unlink()
+        test_image = Path(generator["test_rootfs_name"])
+        self.assertTrue(test_image.exists())
+        test_image.unlink()
+
+    def test_TMPDIR(self):
+        """Tests that the TMPDIR environment variable is respected"""
+        from tempfile import TemporaryDirectory
+        from os import environ
+        try:
+            with TemporaryDirectory() as tmpdir:
+                environ["TMPDIR"] = tmpdir
+                generator = InitramfsGenerator(logger=self.logger, config="tests/fullauto.toml")
+                generator.build()
+                self.assertTrue(Path(tmpdir).exists())
+                self.assertTrue((Path(tmpdir) / 'initramfs_test' / generator.out_file).exists())
+        except Exception as e:
+            self.fail(f"Exception: {e}")
+        finally:
+            environ.pop("TMPDIR")
 
 
 if __name__ == "__main__":
