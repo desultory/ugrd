@@ -1,8 +1,8 @@
-__version__ = "1.1.0"
+__version__ = "1.1.1"
 
 from zenlib.util import unset
 
-COPY_CONFIG = ["mounts", "tmpdir", "clean", "test_image_size", "test_flag", "cryptsetup"]
+COPY_CONFIG = ["mounts", "out_dir", "tmpdir", "clean", "test_image_size", "test_flag", "cryptsetup"]
 
 
 @unset("test_kernel")
