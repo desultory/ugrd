@@ -1,0 +1,10 @@
+[Trigger]
+Type = Path
+Operation = Install
+Operation = Upgrade
+Target = usr/lib/modules/*/vmlinuz
+
+[Action]
+Description = Regenerating initramfs with ugrd
+When = PostTransaction
+Exec = /usr/bin/ugrd
