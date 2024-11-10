@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "2.2.1"
+__version__ = "2.2.2"
 
 from collections import UserDict
 from pathlib import Path
@@ -140,14 +140,17 @@ class InitramfsConfigDict(UserDict):
         """
         from pycpio import PyCPIO
 
-        self["custom_parameters"][parameter_name] = eval(parameter_type)
+        if isinstance(parameter_type, str):
+            parameter_type = eval(parameter_type)
+
+        self["custom_parameters"][parameter_name] = parameter_type
         self.logger.debug("Registered custom parameter '%s' with type: %s" % (parameter_name, parameter_type))
 
-        match parameter_type:
+        match parameter_type.__name__:
             case "NoDupFlatList":
                 self.data[parameter_name] = NoDupFlatList(no_warn=True, log_bump=5, logger=self.logger)
             case "list" | "dict":
-                self.data[parameter_name] = eval(parameter_type)()
+                self.data[parameter_name] = parameter_type()
             case "bool":
                 self.data[parameter_name] = False
             case "int":
