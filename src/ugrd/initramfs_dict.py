@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "2.2.1"
+__version__ = "2.2.2"
 
 from collections import UserDict
 from pathlib import Path
@@ -50,6 +50,9 @@ class InitramfsConfigDict(UserDict):
     def import_args(self, args: dict) -> None:
         """Imports data from an argument dict."""
         for arg, value in args.items():
+            if self[arg] == value:
+                self.logger.debug("Skipping argument '%s' with unchanged value: %s" % (arg, value))
+                continue
             self.logger.info("Importing argument '%s' with value: %s" % (arg, value))
             if arg == "modules":  # allow loading modules by name from the command line
                 for module in value.split(","):
