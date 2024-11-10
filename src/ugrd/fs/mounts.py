@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "5.7.0"
+__version__ = "5.7.1"
 
 from pathlib import Path
 from typing import Union
@@ -608,7 +608,10 @@ def _autodetect_mount(self, mountpoint) -> None:
             get_blkid_info(self, mount_device)
 
     # Add kmods for the mount device type
-    autodetect_mount_kmods(self, mount_device)
+    if fs_type == "zfs":
+        autodetect_zfs_device_kmods(self, mount_device)
+    else:
+        autodetect_mount_kmods(self, mount_device)
     # Attempt to get the blkid info, for the mount source
     mount_info = self["_blkid_info"].get(mount_device, {})
     # force the name "root" for the root mount, remove the leading slash for other mounts
@@ -806,6 +809,26 @@ def export_mount_info(self) -> None:
     self["exports"]["MOUNTS_ROOT_TYPE"] = self["mounts"]["root"].get("type", "auto")
     self["exports"]["MOUNTS_ROOT_OPTIONS"] = ",".join(self["mounts"]["root"]["options"])
     self["exports"]["MOUNTS_ROOT_TARGET"] = self["mounts"]["root"]["destination"]
+
+
+def autodetect_zfs_device_kmods(self, poolname) -> list[str]:
+    """Given a ZFS pool name, resolves kmods needed for underlying devices and adds them to _kmod_auto."""
+    # If there is a '/' in the poolname, get the first part
+    if "/" in poolname:
+        poolname = poolname.split("/")[0]
+
+    # Get the devices in the pool
+    pool_info = self._run(["zpool", "list", "-vPH", "-o", "name"]).stdout.decode().strip().split("\n")
+    capture_pool = False
+    for line in pool_info:
+        if line == poolname:
+            capture_pool = True
+            continue
+        if capture_pool:
+            if line[0] != "\t":
+                break  # Stop once a line doesn't begin with a tab
+            # Resolve the kmod for the device, add to device_kmods
+            self["_kmod_auto"] = resolve_blkdev_kmod(self, line.strip().split()[0])
 
 
 def autodetect_mount_kmods(self, device) -> None:
