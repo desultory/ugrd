@@ -111,6 +111,7 @@ def _process_mount(self, mount_name: str, mount_config, mount_class="mounts") ->
             if "ugrd.fs.zfs" not in self["modules"]:
                 self.logger.info("Auto-enabling module: zfs")
                 self["modules"] = "ugrd.fs.zfs"
+                mount_config["options"].add("zfsutil")
         elif mount_type not in ["proc", "sysfs", "devtmpfs", "tmpfs", "devpts"]:
             self.logger.warning("Unknown mount type: %s" % mount_type)
 
