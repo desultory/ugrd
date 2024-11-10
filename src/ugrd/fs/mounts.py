@@ -213,6 +213,11 @@ def _process_mount(self, mount_name: str, mount_config, mount_class="mounts") ->
             if "ugrd.fs.bcachefs" not in self["modules"]:
                 self.logger.info("Auto-enabling module: %s", colorize("bcachefs", "cyan"))
                 self["modules"] = "ugrd.fs.bcachefs"
+        elif mount_type == "zfs":
+            if "ugrd.fs.zfs" not in self["modules"]:
+                self.logger.info("Auto-enabling module: zfs")
+                self["modules"] = "ugrd.fs.zfs"
+                mount_config["options"].add("zfsutil")
         elif mount_type not in ["proc", "sysfs", "devtmpfs", "squashfs", "tmpfs", "devpts"]:
             self.logger.warning("Unknown mount type: %s" % colorize(mount_type, "red", bold=True))
 
@@ -865,6 +870,10 @@ def _validate_host_mount(self, mount, destination_path=None) -> bool:
             break  # Skip host option validation if this is set
         if option == "ro":  # Allow the ro option to be set in the config
             continue
+        if option == "zfsutil":
+            if self["_mounts"][destination_path]["fstype"] == "zfs":
+                continue
+            raise ValueError("Cannot set 'zfsutil' option for non-zfs mount: %s" % destination_path)
         if option not in host_mount_options:
             raise ValidationError(
                 "Host mount options mismatch. Expected: %s, Found: %s" % (mount["options"], host_mount_options)

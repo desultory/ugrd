@@ -1,0 +1,9 @@
+binaries = ["zfs", "zpool"]
+kmod_init = ["zfs"]
+
+
+[imports.init_main]
+"ugrd.fs.zfs" = [ "zpool_import" ]
+
+[import_order.after]
+zpool_import = ["mount_fstab", "crypt_init", "init_lvm"]
