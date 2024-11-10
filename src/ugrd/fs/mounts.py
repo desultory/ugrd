@@ -754,7 +754,7 @@ def _validate_host_mount(self, mount, destination_path=None) -> bool:
         if option == "zfsutil":
             if self["_mounts"][destination_path]["fstype"] == "zfs":
                 continue
-            raise ValueError("Cannoty set 'zfsutil' option for non-zfs mount: %s" % destination_path)
+            raise ValueError("Cannot set 'zfsutil' option for non-zfs mount: %s" % destination_path)
         if option not in host_mount_options:
             raise ValueError(
                 "Host mount options mismatch. Expected: %s, Found: %s" % (mount["options"], host_mount_options)
