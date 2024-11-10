@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "5.6.2"
+__version__ = "5.7.0"
 
 from pathlib import Path
 from typing import Union
@@ -595,14 +595,21 @@ def _autodetect_mount(self, mountpoint) -> None:
     if ":" in mount_device:  # Handle bcachefs
         mount_device = mount_device.split(":")[0]
 
+    # blkid may need to be re-run if the mount device is not in the blkid info
+    # zfs devices are not in blkid, so we don't need to check for them
     if mount_device not in self["_blkid_info"]:
         fs_type = _get_mount_dev_fs_type(self, mount_device)
         if fs_type != "zfs":
             get_blkid_info(self, mount_device)
 
+    # Add kmods for the mount device type
     autodetect_mount_kmods(self, mount_device)
-    mount_info = self["_blkid_info"].get(mount_device, {})  # Attempt to get the blkid info, for the mount source
+    # Attempt to get the blkid info, for the mount source
+    mount_info = self["_blkid_info"].get(mount_device, {})
+    # force the name "root" for the root mount, remove the leading slash for other mounts
     mount_name = "root" if mountpoint == "/" else mountpoint.removeprefix("/")
+
+    # Don't overwrite existing mounts if a source type is already set
     if mount_name in self["mounts"] and any(s_type in self["mounts"][mount_name] for s_type in SOURCE_TYPES):
         return self.logger.warning(
             "[%s] Mount config already set: %s" % (mountpoint, pretty_print(self["mounts"][mount_name]))
@@ -610,8 +617,15 @@ def _autodetect_mount(self, mountpoint) -> None:
 
     mount_config = {mount_name: {"type": "auto", "options": ["ro"]}}  # Default to auto and ro
     if mount_type := mount_info.get("type"):
-        self.logger.info("Autodetected mount type: %s" % mount_type)
+        self.logger.info("Autodetected mount type from blkid info: %s" % mount_type)
         mount_config[mount_name]["type"] = mount_type.lower()
+    elif mount_type := _get_mount_dev_fs_type(self, mount_device):
+        self.logger.info("Autodetected mount type from mount info: %s" % mount_type)
+        mount_config[mount_name]["type"] = mount_type.lower()
+
+    # for zfs mounts, set the path to the pool name
+    if mount_type == "zfs":
+        mount_config[mount_name]["path"] = mount_device
 
     for source_type in SOURCE_TYPES:
         if source := mount_info.get(source_type):
@@ -619,7 +633,8 @@ def _autodetect_mount(self, mountpoint) -> None:
             mount_config[mount_name][source_type] = source
             break
     else:
-        raise ValueError("[%s] Failed to autodetect mount source." % mountpoint)
+        if mount_type != "zfs":  # For ZFS, the source is the pool name
+            raise ValueError("[%s] Failed to autodetect mount source." % mountpoint)
 
     self["mounts"] = mount_config
 
