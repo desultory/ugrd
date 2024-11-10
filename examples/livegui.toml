@@ -1,2 +1,3 @@
 modules = [ "ugrd.fs.livecd" ]
+kmod_init = ["hfsplus"]  # Needed for the Gentoo LiveCD
 livecd_label = "gentoo-amd64-livegui"

@@ -3,7 +3,7 @@ modules = ["ugrd.fs.overlayfs"]
 squashfs_image = 'image.squashfs'
 hostonly = false
 
-kmod_init = ['hfsplus', 'nls_utf8', 'squashfs', 'isofs', 'loop']
+kmod_init = ['nls_utf8', 'squashfs', 'isofs', 'loop']
 run_dirs = ['livecd']
 
 test_copy_config = ["squashfs_image", "livecd_label"]
