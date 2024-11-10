@@ -22,5 +22,9 @@ class TestCpio(TestCase):
         generator = InitramfsGenerator(logger=self.logger, config="tests/fs/overlayfs.toml")
         generator.build()
 
+    def test_squashfs(self):
+        generator = InitramfsGenerator(logger=self.logger, config="tests/fs/squashfs.toml")
+        generator.build()
+
 if __name__ == "__main__":
     main()
