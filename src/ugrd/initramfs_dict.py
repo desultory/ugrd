@@ -47,13 +47,16 @@ class InitramfsConfigDict(UserDict):
         else:
             self["modules"] = "ugrd.base.core"
 
-    def import_args(self, args: dict) -> None:
+    def import_args(self, args: dict, quiet=False) -> None:
         """Imports data from an argument dict."""
         for arg, value in args.items():
             if self[arg] == value:
                 self.logger.debug("Skipping argument '%s' with unchanged value: %s" % (arg, value))
                 continue
-            self.logger.info("Importing argument '%s' with value: %s" % (arg, value))
+            if not quiet:
+                self.logger.info("Importing argument '%s' with value: %s" % (arg, value))
+            else:
+                self.logger.debug("Importing argument '%s' with value: %s" % (arg, value))
             if arg == "modules":  # allow loading modules by name from the command line
                 for module in value.split(","):
                     self[arg] = module
