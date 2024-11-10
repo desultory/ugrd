@@ -136,6 +136,14 @@ def _process_late_mounts_multi(self, mount_name: str, mount_config) -> None:
     _process_mount(self, mount_name, mount_config, "late_mounts")
 
 
+def _get_mount_dev_fs_type(self, device: str) -> str:
+    """ Taking the device of an active mount, returns the filesystem type."""
+    for info in self["_mounts"].values():
+        if info["device"] == device:
+            return info["fstype"]
+    raise ValueError("No mount found for device: %s" % device)
+
+
 def _get_mount_source_type(self, mount: dict, with_val=False) -> str:
     """Gets the source from the mount config."""
     for source_type in SOURCE_TYPES:
@@ -582,10 +590,12 @@ def _autodetect_mount(self, mountpoint) -> None:
         mount_device = mount_device.split(":")[0]
 
     if mount_device not in self["_blkid_info"]:
-        get_blkid_info(self, mount_device)
+        fs_type = _get_mount_dev_fs_type(self, mount_device)
+        if fs_type != "zfs":
+            get_blkid_info(self, mount_device)
 
-    mount_info = self["_blkid_info"][mount_device]
     autodetect_mount_kmods(self, mount_device)
+    mount_info = self["_blkid_info"].get(mount_device, {})  # Attempt to get the blkid info, for the mount source
     mount_name = "root" if mountpoint == "/" else mountpoint.removeprefix("/")
     if mount_name in self["mounts"] and any(s_type in self["mounts"][mount_name] for s_type in SOURCE_TYPES):
         return self.logger.warning(
