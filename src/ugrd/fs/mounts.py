@@ -137,7 +137,7 @@ def _process_late_mounts_multi(self, mount_name: str, mount_config) -> None:
 
 
 def _get_mount_dev_fs_type(self, device: str) -> str:
-    """ Taking the device of an active mount, returns the filesystem type."""
+    """Taking the device of an active mount, returns the filesystem type."""
     for info in self["_mounts"].values():
         if info["device"] == device:
             return info["fstype"]
@@ -545,20 +545,23 @@ def _resolve_dev(self, device_path) -> str:
     return self["_mounts"][device_path]["device"]
 
 
-
 def _resolve_overlay_lower_dir(self, mountpoint) -> str:
     for option in self["_mounts"][mountpoint]["options"]:
         if option.startswith("lowerdir="):
             return option.removeprefix("lowerdir=")
-    raise ValueError("[%s] No lower overlayfs mountpoint found: %s" % mountpoint, self["_mounts"][mountpoint]["options"])
+    raise ValueError(
+        "[%s] No lower overlayfs mountpoint found: %s" % mountpoint, self["_mounts"][mountpoint]["options"]
+    )
+
 
 def _resolve_overlay_lower_device(self, mountpoint) -> dict:
-    """ Returns device for the lower overlayfs mountpoint."""
+    """Returns device for the lower overlayfs mountpoint."""
     if self["_mounts"][mountpoint]["fstype"] != "overlay":
         return self["_mounts"][mountpoint]["device"]
 
     lowerdir = _resolve_overlay_lower_dir(self, mountpoint)
     return self["_mounts"][lowerdir]["device"]
+
 
 @contains("autodetect_root", "Skipping root autodetection, autodetect_root is disabled.", log_level=30)
 @contains("hostonly", "Skipping root autodetection, hostonly mode is disabled.", log_level=30)
