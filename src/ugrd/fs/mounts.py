@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "5.6.0"
+__version__ = "5.6.1"
 
 from pathlib import Path
 from typing import Union
@@ -107,7 +107,7 @@ def _process_mount(self, mount_name: str, mount_config, mount_class="mounts") ->
             if "ugrd.fs.bcachefs" not in self["modules"]:
                 self.logger.info("Auto-enabling module: bcachefs")
                 self["modules"] = "ugrd.fs.bcachefs"
-        elif mount_type not in ["proc", "sysfs", "devtmpfs", "tmpfs", "devpts"]:
+        elif mount_type not in ["proc", "sysfs", "devtmpfs", "squashfs", "tmpfs", "devpts"]:
             self.logger.warning("Unknown mount type: %s" % mount_type)
 
     self[mount_class][mount_name] = mount_config

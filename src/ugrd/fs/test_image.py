@@ -91,6 +91,8 @@ def make_test_image(self):
                 self._run(["umount", tmp_dir])
         except RuntimeError as e:
             raise RuntimeError("Could not mount the XFS test image: %s", e)
+    elif rootfs_type == "squashfs":
+        self._run(["mksquashfs", build_dir, image_path])
     else:
         raise NotImplementedError("Unsupported test rootfs type: %s" % rootfs_type)
 
