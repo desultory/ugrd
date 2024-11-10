@@ -751,6 +751,10 @@ def _validate_host_mount(self, mount, destination_path=None) -> bool:
             break  # Skip host option validation if this is set
         if option == "ro":  # Allow the ro option to be set in the config
             continue
+        if option == "zfsutil":
+            if self["_mounts"][destination_path]["fstype"] == "zfs":
+                continue
+            raise ValueError("Cannoty set 'zfsutil' option for non-zfs mount: %s" % destination_path)
         if option not in host_mount_options:
             raise ValueError(
                 "Host mount options mismatch. Expected: %s, Found: %s" % (mount["options"], host_mount_options)
