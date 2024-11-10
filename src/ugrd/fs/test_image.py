@@ -1,4 +1,4 @@
-__version__ = "1.0.1"
+__version__ = "1.1.0"
 
 from zenlib.util import contains
 
@@ -67,8 +67,13 @@ def make_test_image(self):
     build_dir = self._get_build_path("/").resolve()
     self.logger.info("Creating test image from: %s" % build_dir)
 
-    rootfs_uuid = self["mounts"]["root"]["uuid"]
     rootfs_type = self["mounts"]["root"]["type"]
+    try:
+        rootfs_uuid = self["mounts"]["root"]["uuid"]
+    except KeyError:
+        if rootfs_type != "squashfs":
+            raise ValueError("Root filesystem UUID is required for non-squashfs rootfs")
+
     image_path = self._get_out_path(self["out_file"])
 
     if self.get("cryptsetup"):  # If there is cryptsetup config, create a LUKS image
@@ -92,7 +97,11 @@ def make_test_image(self):
         except RuntimeError as e:
             raise RuntimeError("Could not mount the XFS test image: %s", e)
     elif rootfs_type == "squashfs":
-        self._run(["mksquashfs", build_dir, image_path])
+        # First, make the inner squashfs image
+        squashfs_image = self._get_out_path(f'squash/{self["squashfs_image"]}')
+        self._run(["mksquashfs", build_dir, squashfs_image])
+        # Then pack it into an ext4 container
+        self._run(["mkfs.ext4", "-d", squashfs_image, "-L", self["livecd_label"], image_path])
     else:
         raise NotImplementedError("Unsupported test rootfs type: %s" % rootfs_type)
 
