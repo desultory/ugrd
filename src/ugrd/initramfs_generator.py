@@ -35,7 +35,7 @@ class InitramfsGenerator(GeneratorHelpers):
         self.config_dict.import_args(kwargs)
         try:
             self.load_config(config)  # The user config is loaded over the base config, clobbering kwargs
-            self.config_dict.import_args(kwargs)  # Re-import kwargs (cmdline params) to apply them over the config
+            self.config_dict.import_args(kwargs, quiet=True)  # Re-import kwargs (cmdline params) to apply them over the config
         except FileNotFoundError:
             self.logger.warning("[%s] Config file not found, using the base config." % config)
         except TOMLDecodeError as e:
