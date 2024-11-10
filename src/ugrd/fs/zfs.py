@@ -1,6 +1,7 @@
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 
-def zpool_import(self) -> str:
+def zpool_import(self) -> list[str]:
     """ Returns bash lines to import all ZFS pools """
-    return "zpool import -a"
+    return ["edebug 'Importing all ZFS pools'",
+            'einfo "$(zpool import -a)"']
