@@ -29,7 +29,7 @@ late_fstab = "/etc/fstab.late"
 		     "_process_late_mounts_multi"]
 
 [imports.build_enum]
-"ugrd.fs.mounts" = [ "get_mounts_info", "get_virtual_block_info", "get_blkid_info",
+"ugrd.fs.mounts" = [ "get_mounts_info", "get_virtual_block_info", "get_blkid_info", "get_zpool_info",
 		     "autodetect_root", "autodetect_mounts", "autodetect_init_mount" ]
 
 [imports.build_tasks]
@@ -80,6 +80,7 @@ no_fsck = "bool"  # Whether or not to skip fsck on the root device when applicab
 _mounts = "dict"  # The mounts information
 _vblk_info = "dict"  # Virtual block device information
 _blkid_info = "dict"  # The blkid information
+_zpool_info = "dict"  # The zpool information
 
 # Define the base of the root mount
 [mounts.root]

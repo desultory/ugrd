@@ -33,6 +33,8 @@ def _resolve_dev(self, device_path) -> str:
 
     Takes the device path, such as /dev/root, and resolves it to a device indexed in blkid.
     If the device is an overlayfs, resolves the lowerdir device.
+
+    If the device is a ZFS device, returns the device path.
     """
     if str(device_path) in self["_blkid_info"]:
         self.logger.debug("Device already resolved to blkid indexed device: %s" % device_path)
@@ -43,8 +45,13 @@ def _resolve_dev(self, device_path) -> str:
     device_path = _resolve_overlay_lower_device(self, mountpoint)
     mountpoint = _resolve_device_mountpoint(self, device_path)  # May have changed if it was an overlayfs
 
+    if self["_mounts"][mountpoint]["fstype"] == "zfs":
+        self.logger.info("Resolved ZFS device: %s" % colorize(device_path, "cyan"))
+        return device_path
+
     mount_dev = self["_mounts"][mountpoint]["device"]
     major, minor = _get_device_id(mount_dev.split(":")[0] if ":" in mount_dev else mount_dev)
+
     for device in self["_blkid_info"]:
         check_major, check_minor = _get_device_id(device)
         if (major, minor) == (check_major, check_minor):
@@ -102,6 +109,31 @@ def _resolve_overlay_lower_device(self, mountpoint) -> dict:
             raise AutodetectError("Lowerdir mount not found: %s" % lowerdir)
 
     return self["_mounts"][mountpoint]["device"]
+
+
+def _get_mount_dev_fs_type(self, device: str, raise_exception=True) -> str:
+    """Taking the device of an active mount, returns the filesystem type."""
+    for info in self["_mounts"].values():
+        if info["device"] == device:
+            return info["fstype"]
+    if not device.startswith("/dev/"):
+        # Try again with /dev/ prepended if it wasn't already
+        return _get_mount_dev_fs_type(self, f"/dev/{device}", raise_exception)
+
+    if raise_exception:
+        raise ValueError("No mount found for device: %s" % device)
+    else:
+        self.logger.debug("No mount found for device: %s" % device)
+
+
+def _get_mount_source_type(self, mount: dict, with_val=False) -> str:
+    """Gets the source from the mount config."""
+    for source_type in SOURCE_TYPES:
+        if source_type in mount:
+            if with_val:
+                return source_type, mount[source_type]
+            return source_type
+    raise ValueError("No source type found in mount: %s" % mount)
 
 
 def _merge_mounts(self, mount_name: str, mount_config, mount_class) -> None:
@@ -198,16 +230,6 @@ def _process_mounts_multi(self, mount_name: str, mount_config) -> None:
 
 def _process_late_mounts_multi(self, mount_name: str, mount_config) -> None:
     _process_mount(self, mount_name, mount_config, "late_mounts")
-
-
-def _get_mount_source_type(self, mount: dict, with_val=False) -> str:
-    """Gets the source from the mount config."""
-    for source_type in SOURCE_TYPES:
-        if source_type in mount:
-            if with_val:
-                return source_type, mount[source_type]
-            return source_type
-    raise ValueError("No source type found in mount: %s" % mount)
 
 
 def _get_mount_str(self, mount: dict, pad=False, pad_size=44) -> str:
@@ -343,6 +365,44 @@ def get_blkid_info(self, device=None) -> dict:
 
     self.logger.debug("Blkid info: %s" % pretty_print(self["_blkid_info"]))
     return self["_blkid_info"][device] if device else self["_blkid_info"]
+
+
+def get_zpool_info(self, poolname=None) -> Union[dict, None]:
+    """Enumerates ZFS pools and devices, adds them to the zpools dict."""
+    if poolname:  # If a pool name is passed, try to get the pool info
+        if "/" in poolname:
+            # If a dataset is passed, get the pool name only
+            poolname = poolname.split("/")[0]
+        if poolname in self["_zpool_info"]:
+            return self["_zpool_info"][poolname]
+
+    # Always try to get zpool info, but only raise an error if a poolname is passed or the ZFS module is enabled
+    try:
+        pool_info = self._run(["zpool", "list", "-vPH", "-o", "name"]).stdout.decode().strip().split("\n")
+    except FileNotFoundError:
+        if "ugrd.fs.zfs" not in self["modules"]:
+            return self.logger.debug("ZFS pool detection failed, but ZFS module not enabled, skipping.")
+        if poolname:
+            raise AutodetectError("Failed to get zpool list for pool: %s" % colorize(poolname, "red"))
+
+    capture_pool = False
+    for line in pool_info:
+        if not capture_pool:
+            poolname = line  # Get the pool name using the first line
+            self["_zpool_info"][poolname] = {"devices": set()}
+            capture_pool = True
+            continue
+        else:  # Otherwise, add devices listed in the pool
+            if line[0] != "\t":
+                capture_pool = False
+                continue  # Keep going
+            # The device name has a tab before it, and may have a space/tab after it
+            device_name = line[1:].split("\t")[0].strip()
+            self.logger.debug("[%s] Found ZFS device: %s" % (colorize(poolname, "blue"), colorize(device_name, "cyan")))
+            self["_zpool_info"][poolname]["devices"].add(device_name)
+
+    if poolname:  # If a poolname was passed, try return the pool info, raise an error if not found
+        return self["_zpool_info"][poolname]
 
 
 @contains("hostonly", "Skipping init mount autodetection, hostonly mode is disabled.", log_level=30)
@@ -621,8 +681,12 @@ def autodetect_root(self) -> None:
     if self["autodetect_root_dm"]:
         if self["mounts"]["root"]["type"] == "btrfs":
             from ugrd.fs.btrfs import _get_btrfs_mount_devices
+
             # Btrfs volumes may be backed by multiple dm devices
             for device in _get_btrfs_mount_devices(self, "/", root_dev):
+                _autodetect_dm(self, "/", device)
+        elif self["mounts"]["root"]["type"] == "zfs":
+            for device in get_zpool_info(self, root_dev)["devices"]:
                 _autodetect_dm(self, "/", device)
         else:
             _autodetect_dm(self, "/")
@@ -636,8 +700,17 @@ def _autodetect_mount(self, mountpoint) -> str:
         self.logger.error("Host mounts:\n%s" % pretty_print(self["_mounts"]))
         raise AutodetectError("auto_mount mountpoint not found in host mounts: %s" % mountpoint)
 
-    mount_device = _resolve_dev(self, self["_mounts"][mountpoint]["device"])
-    mount_info = self["_blkid_info"][mount_device]
+    mountpoint_device = self["_mounts"][mountpoint]["device"]
+    # get the fs type from the device as it appears in /proc/mounts
+    fs_type = _get_mount_dev_fs_type(self, mountpoint_device, raise_exception=False)
+    # resolve the device down to the "real" device path, one that has blkid info
+    mount_device = _resolve_dev(self, mountpoint_device)
+    # blkid may need to be re-run if the mount device is not in the blkid info
+    # zfs devices are not in blkid, so we don't need to check for them
+    if fs_type == "zfs":
+        mount_info = {"type": "zfs", "path": mount_device}
+    else:
+        mount_info = get_blkid_info(self, mount_device)  # Raises an exception if the device is not found
 
     if ":" in mount_device:  # Handle bcachefs
         for alt_devices in mount_device.split(":"):
@@ -646,7 +719,10 @@ def _autodetect_mount(self, mountpoint) -> str:
     else:
         autodetect_mount_kmods(self, mount_device)
 
+    # force the name "root" for the root mount, remove the leading slash for other mounts
     mount_name = "root" if mountpoint == "/" else mountpoint.removeprefix("/")
+
+    # Don't overwrite existing mounts if a source type is already set
     if mount_name in self["mounts"] and any(s_type in self["mounts"][mount_name] for s_type in SOURCE_TYPES):
         return self.logger.warning(
             "[%s] Skipping autodetection, mount config already set:\n%s"
@@ -654,9 +730,16 @@ def _autodetect_mount(self, mountpoint) -> str:
         )
 
     mount_config = {mount_name: {"type": "auto", "options": ["ro"]}}  # Default to auto and ro
-    if mount_type := mount_info.get("type"):
-        self.logger.info("Autodetected mount type: %s" % colorize(mount_type, "cyan"))
-        mount_config[mount_name]["type"] = mount_type.lower()
+    fs_type = mount_info.get("type", fs_type) or "auto"
+    if fs_type == "auto":
+        self.logger.warning("Failed to autodetect mount type for mountpoint:" % (colorize(mountpoint, "yellow")))
+    else:
+        self.logger.info("[%s] Autodetected mount type from device: %s" % (mount_device, colorize(fs_type, "cyan")))
+    mount_config[mount_name]["type"] = fs_type.lower()
+
+    # for zfs mounts, set the path to the pool name
+    if fs_type == "zfs":
+        mount_config[mount_name]["path"] = mount_device
 
     for source_type in SOURCE_TYPES:
         if source := mount_info.get(source_type):
@@ -667,7 +750,8 @@ def _autodetect_mount(self, mountpoint) -> str:
             mount_config[mount_name][source_type] = source
             break
     else:
-        raise AutodetectError("[%s] Failed to autodetect mount source." % mountpoint)
+        if fs_type != "zfs":  # For ZFS, the source is the pool name
+            raise AutodetectError("[%s] Failed to autodetect mount source." % mountpoint)
 
     self["mounts"] = mount_config
     return mount_device
@@ -864,13 +948,36 @@ def export_mount_info(self) -> None:
     self["exports"]["MOUNTS_ROOT_TARGET"] = self["mounts"]["root"]["destination"]
 
 
+def autodetect_zfs_device_kmods(self, poolname) -> list[str]:
+    """Gets kmods for all devices in a ZFS pool and adds them to _kmod_auto."""
+    for device in get_zpool_info(self, poolname)["devices"]:
+        if device_kmods := resolve_blkdev_kmod(self, device):
+            self.logger.info(
+                "[%s:%s] Auto-enabling kernel modules for ZFS device: %s"
+                % (
+                    colorize(poolname, "blue"),
+                    colorize(device, "blue", bold=True),
+                    colorize(", ".join(device_kmods), "cyan"),
+                )
+            )
+            self["_kmod_auto"] = device_kmods
+
+
 def autodetect_mount_kmods(self, device) -> None:
     """Autodetects the kernel modules for a block device."""
+    if fs_type := _get_mount_dev_fs_type(self, device, raise_exception=False):
+        # This will fail for most non-zfs devices
+        if fs_type == "zfs":
+            return autodetect_zfs_device_kmods(self, device)
+
     if "/" not in str(device):
         device = f"/dev/{device}"
 
     if device_kmods := resolve_blkdev_kmod(self, device):
-        self.logger.info("Auto-enabling kernel modules for device: %s" % colorize(", ".join(device_kmods), "cyan"))
+        self.logger.info(
+            "[%s] Auto-enabling kernel modules for device: %s"
+            % (colorize(device, "blue"), colorize(", ".join(device_kmods), "cyan"))
+        )
         self["_kmod_auto"] = device_kmods
 
 
