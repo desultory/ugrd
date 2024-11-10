@@ -99,9 +99,17 @@ def make_test_image(self):
     elif rootfs_type == "squashfs":
         # First, make the inner squashfs image
         squashfs_image = self._get_out_path(f'squash/{self["squashfs_image"]}')
+        if squashfs_image.exists():
+            if self.clean:
+                self.logger.warning("Removing existing squashfs image file: %s" % squashfs_image)
+                squashfs_image.unlink()
+            else:
+                raise Exception("File already exists and 'clean' is off: %s" % squashfs_image)
+        if not squashfs_image.parent.exists():  # Make sure the parent directory exists
+            squashfs_image.parent.mkdir(parents=True)
         self._run(["mksquashfs", build_dir, squashfs_image])
         # Then pack it into an ext4 container
-        self._run(["mkfs.ext4", "-d", squashfs_image, "-L", self["livecd_label"], image_path])
+        self._run(["mkfs.ext4", "-d", squashfs_image.parent, "-L", self["livecd_label"], image_path])
     else:
         raise NotImplementedError("Unsupported test rootfs type: %s" % rootfs_type)
 
