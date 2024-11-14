@@ -2,7 +2,7 @@ test_rootfs_name = 'ugrd-test-rootfs'
 test_rootfs_build_dir = 'initramfs_test_rootfs'
 test_image_size = 16
 
-test_copy_config = ["mounts", "out_dir", "tmpdir", "clean", "test_image_size", "test_flag", "cryptsetup"]
+test_copy_config = ["mounts", "force_out", "out_dir", "tmpdir", "clean", "test_image_size", "test_flag", "cryptsetup"]
 
 test_memory = '256M'
 test_cpu = 'host'
