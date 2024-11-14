@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "3.10.1"
+__version__ = "3.11.0"
 
 from pathlib import Path
 from typing import Union
@@ -190,10 +190,13 @@ def find_libgcc(self) -> None:
 
 def _process_out_file(self, out_file: str) -> None:
     """Processes the out_file.
+
     If set to the current directory, resolves and sets the out_dir to the current directory.
     If it starts with './', resolves it to the current directory.
-    If it is a directory, sets the out_dir to the directory.
+    If out_file is a directory, sets the out_dir to the directory, stops processing.
+
     If it's an absolute path, sets the out_dir to the parent directory.
+    otherise, force_out is enabled, sets the out_dir to the resolved parent directory.
     """
     out_file = str(out_file)
     if out_file == "./" or out_file == ".":
@@ -217,6 +220,9 @@ def _process_out_file(self, out_file: str) -> None:
     if out_file.parent.is_dir() and str(out_file.parent) != ".":
         self["out_dir"] = out_file.parent
         self.logger.info("Resolved out_dir to: %s" % self["out_dir"])
+        out_file = out_file.name
+    elif self["force_out"]:
+        self["out_dir"] = out_file.parent.resolve()
         out_file = out_file.name
 
     self.data["out_file"] = out_file
