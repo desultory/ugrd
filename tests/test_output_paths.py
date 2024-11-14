@@ -55,6 +55,20 @@ class TestOutFile(TestCase):
         finally:
             environ.pop("TMPDIR")
 
+    def test_force_out(self):
+        """ Tests force_out which ignores the tmpdir prefix """
+        out_file = "implied/relative/path/initrd"
+        generator = InitramfsGenerator(logger=self.logger, config="tests/fullauto.toml", out_file=out_file, force_out=True)
+        out_path = Path(out_file)
+        if out_path.exists():
+            self.fail(f"File {out_file} already exists")
+        generator.build()
+        self.assertTrue(out_path.exists())
+        out_path.unlink()
+        test_image = out_path.parent / generator["test_rootfs_name"]
+        self.assertTrue(test_image.exists())
+        test_image.unlink()
+
 
 if __name__ == "__main__":
     main()

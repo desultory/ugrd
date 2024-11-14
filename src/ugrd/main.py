@@ -131,6 +131,7 @@ def main():
             "help": "Tests the image with qemu using a specific kernel file.",
         },
         {"flags": {"--livecd-label"}, "action": "store", "help": "Sets the label for the livecd"},
+        {"flags": ["--force-out"], "action": "store_true", "help": "Force set the output file/dir, do not use a tmpdir."},
         {"flags": ["out_file"], "action": "store", "help": "set the output image location", "nargs": "?"},
     ]
 

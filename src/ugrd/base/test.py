@@ -1,8 +1,6 @@
-__version__ = "1.1.1"
+__version__ = "1.1.2"
 
 from zenlib.util import unset
-
-COPY_CONFIG = ["mounts", "out_dir", "tmpdir", "clean", "test_image_size", "test_flag", "cryptsetup"]
 
 
 @unset("test_kernel")
@@ -62,6 +60,9 @@ def _get_qemu_cmd_args(self, test_image):
 
     return arglist
 
+def get_copy_config_types(self) -> dict:
+    """ Returns the 'custom_parameters' name, type pairs for config to be copied to the test image """
+    return {key: self["custom_parameters"][key] for key in self["test_copy_config"] if key in self["custom_parameters"]}
 
 def make_test_image(self):
     """Creates a new initramfs generator to create the test image"""
@@ -75,7 +76,8 @@ def make_test_image(self):
         "modules": "ugrd.fs.test_image",
         "out_file": self["test_rootfs_name"],
         "build_dir": self["test_rootfs_build_dir"],
-        **{key: self.get(key) for key in COPY_CONFIG if self.get(key) is not None},
+        "custom_parameters": get_copy_config_types(self),
+        **{key: self.get(key) for key in self["test_copy_config"] if self.get(key) is not None},
     }
 
     target_fs = InitramfsGenerator(**kwargs)

@@ -1,0 +1,9 @@
+# Squashfs (livecd) test
+modules = ["ugrd.fs.livecd", "ugrd.base.test"]
+
+out_dir = "initramfs_test"
+cpio_compression = false
+hostonly = false
+
+livecd_label = "UGRD_test_LiveCD"
+squashfs_image = "ugrd_test.squashfs"

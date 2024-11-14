@@ -43,6 +43,7 @@ Modules write to a shared config dict that is accessible by other modules.
 * `find_libgcc` (true) Automatically locates libgcc using ldconfig -p and adds it to the initramfs.
 * `out_dir` (initramfs_out) If relative, it will be placed under `tmpdir`, defines the output directory.
 * `out_file` Sets the name of the output file, under `out_dir`.
+* `force_out` (false) Forces out_file/dir to ignore the defined TMPDIR.
 * `clean` (true) forces the build dir to be cleaned on each run.
 * `old_count` (1) Sets the number of old file to keep when running the `_rotate_old` function.
 * `binaries` - A list used to define programs to be pulled into the initrams. `which` is used to find the path of added entries, and `lddtree` is used to resolve dependendies.
