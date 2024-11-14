@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "2.2.2"
+__version__ = "2.2.3"
 
 from collections import UserDict
 from pathlib import Path
@@ -47,10 +47,12 @@ class InitramfsConfigDict(UserDict):
         else:
             self["modules"] = "ugrd.base.core"
 
-    def import_args(self, args: dict) -> None:
+    def import_args(self, args: dict, quiet=False) -> None:
         """Imports data from an argument dict."""
+        log_level = 10 if quiet else 20
         for arg, value in args.items():
-            self.logger.info("Importing argument '%s' with value: %s" % (arg, value))
+            self.logger.log(log_level, "Importing argument '%s' with value: %s" % (arg, value))
+
             if arg == "modules":  # allow loading modules by name from the command line
                 for module in value.split(","):
                     self[arg] = module
