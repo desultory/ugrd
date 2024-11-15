@@ -3,5 +3,12 @@ cmdline_strings = [ "resume" ]
 [imports.init_main] 
 "ugrd.fs.resume" = [ "handle_resume" ]
 
+[imports.init_premount]
+"ugrd.fs.resume" = [ "handle_late_resume"]
+
+[custom_parameters]
+late_resume = "bool"
+
 [import_order.before]
 handle_resume = "mount_fstab"
+
