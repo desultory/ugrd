@@ -1,8 +1,14 @@
 __version__ = "0.4.2"
 
+from zenlib.util import contains, unset
 
+<<<<<<< HEAD
 def handle_resume(self) -> None:
     """Returns a shell script handling resume from hibernation.
+=======
+def _resume(self) -> None:
+    """Returns a bash script handling resume from hibernation.
+>>>>>>> 6a2834b (adds support for late resume)
     Checks that /sys/power/resume is writable, resume= is set, and noresume is not set, if so,
     checks if PARTUUID= is in the resume var, and tries to use blkid to find the resume device.
     If the specified device exists, writes resume device to /sys/power/resume.
@@ -17,7 +23,7 @@ def handle_resume(self) -> None:
     return [
         "resumeval=$(readvar resume)",  # read the cmdline resume var
         'if ! check_var noresume && [ -n "$resumeval" ] && [ -w /sys/power/resume ]; then',
-        '    if echo "$resumeval" | grep -q "PARTUUID="; then',  # resolve partuuid to device
+        '    if echo "$resumeval" | grep -q -E "^PARTUUID=|^UUID="; then',  # resolve partuuid to device
         '        resume=$(blkid -t "$resumeval" -o device)',
         "    else",
         "        resume=$resumeval",
@@ -35,3 +41,12 @@ def handle_resume(self) -> None:
         "    fi",
         "fi",
     ]
+
+@unset('late_resume')
+def handle_resume(self) -> None:
+    return _resume(self)
+
+@contains('late_resume')
+def handle_late_resume(self) -> None:
+    self.logger.warning("WARNING: Late resume enabled, can cause instability if not used with caution. Highly recommended to read configuration documentation before use.")
+    return _resume(self)
