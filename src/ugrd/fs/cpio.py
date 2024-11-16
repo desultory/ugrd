@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "3.5.0"
+__version__ = "3.5.1"
 
 
 from zenlib.util import contains, unset
@@ -58,9 +58,12 @@ def get_archive_name(self) -> str:
         out_file = "ugrd.cpio"
 
     if compression_type := self["cpio_compression"]:
-        if (
-            compression_type.lower() != "false"
-        ):  # The variable is a string, so we need to check for the string 'false'
+        # if --compress or --no-compress is set, the type string will be a bool
+        if compression_type.lower() != "false":
+            # Ignore the extention if compression is set to false
+            if compression_type.lower() == "true":
+                # If set to true, xz is the default compression type
+                compression_type = "xz"
             out_file += f".{compression_type}"
     self["out_file"] = out_file
 
