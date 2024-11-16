@@ -6,6 +6,7 @@ cryptsetup_retries = 5
 cryptsetup_autoretry = true
 
 cryptsetup_keyfile_validation = true
+cryptsetup_header_validation = true
 
 [imports.config_processing]
 "ugrd.crypto.cryptsetup" = [ "_process_cryptsetup_multi", "_process_cryptsetup_key_types_multi" ]
@@ -25,6 +26,7 @@ cryptsetup_keyfile_validation = true
 [custom_parameters]
 cryptsetup_key_type = "str"  # The default key type to use for unlocking devices
 cryptsetup_keyfile_validation = "bool"  # Whether to validate the key file
+cryptsetup_header_validation = "bool"  # Whether to validate the header of the device
 cryptsetup_key_types = "dict"  # Dict containing key types and their associated mount commands
 cryptsetup_retries = "int"  # Number of times to retry unlocking a device
 cryptsetup_prompt = "bool"  # Whether to prompt the user to press enter before unlocking devices
