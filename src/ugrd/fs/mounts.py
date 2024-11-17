@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "5.6.1"
+__version__ = "5.6.2"
 
 from pathlib import Path
 from typing import Union
@@ -428,6 +428,9 @@ def _autodetect_dm(self, mountpoint, device=None) -> None:
     elif blkid_info.get("type") == "linux_raid_member":
         autodetect_raid(self, source_device, dev_name, blkid_info)
     else:
+        if "type" not in blkid_info:
+            self.logger.error("If LUKS headers are detached, they must be configured with the corresponding mapped device name.")
+            raise RuntimeError("No type found for device mapper device: %s" % source_device)
         raise RuntimeError("Unknown device mapper device type: %s" % blkid_info.get("type"))
 
     autodetect_mount_kmods(self, slave_source)
