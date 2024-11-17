@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "3.7.1"
+__version__ = "3.7.2"
 
 from pathlib import Path
 
@@ -20,6 +20,7 @@ CRYPTSETUP_PARAMETERS = [
     *CRYPTSETUP_KEY_PARAMETERS,
     "try_nokey",
     "include_key",
+    "include_header",
     "validate_key",
     "validate_header",
 ]
@@ -122,9 +123,10 @@ def _process_cryptsetup_multi(self, mapped_name: str, config: dict) -> None:
             if value := self["cryptsetup_key_types"][key_type].get(parameter):
                 config[parameter] = value.format(**config)
 
-    # Include the key file if include_key is set
-    if config.get("include_key"):
-        self["dependencies"] = config["key_file"]
+    # Include the key file or header if set
+    for file_type in ["key", "header"]:
+        if config.get(f"include_{file_type}"):
+            self["dependencies"] = config[f"{file_type}_file"]
 
     if not config.get("retries"):
         self.logger.info(
