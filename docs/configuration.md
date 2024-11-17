@@ -317,6 +317,7 @@ Cryptsetup mounts can be configured with the following options:
 * `retries` (5) The number of times to attempt to unlock a key or cryptsetup volume.
 * `try_nokey` (false) Whether or not to attempt unlocking with a passphrase if key usage fails
 * `include_key` (false) Whether or not to include the key file in the initramfs.
+* `include_header` (false) Whether or not to include the header file in the initramfs.
 * `validate_key` (true) Whether or not to validate that the key file exists.
 * `validate_header` (true) Whether or not to validate the LUKS header.
 
