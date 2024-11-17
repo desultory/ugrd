@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "3.6.1"
+__version__ = "3.7.0"
 
 from pathlib import Path
 
@@ -55,32 +55,19 @@ def _process_cryptsetup_key_types_multi(self, key_type: str, config: dict) -> No
 
 
 @contains("validate", "Skipping cryptsetup keyfile validation.", log_level=30)
-def _validate_crypysetup_key(self, key_paramters: dict) -> None:
+def _validate_crypysetup_key(self, key_parameters: dict) -> None:
     """Validates the cryptsetup key"""
-    if key_paramters.get("include_key"):
+    if key_parameters.get("include_key"):
         return self.logger.info("Skipping key validation for included key.")
-    elif key_paramters.get("validate_key") is False:
-        return self.logger.info("Skipping key validation for: %s" % key_paramters["key_file"])
+    elif key_parameters.get("validate_key") is False:
+        return self.logger.info("Skipping key validation for: %s" % key_parameters["key_file"])
 
-    key_path = Path(key_paramters["key_file"])
+    key_path = Path(key_parameters["key_file"])
 
-    if not key_path.is_file():
-        if self["cryptsetup_keyfile_validation"]:
+    if self["cryptsetup_keyfile_validation"] and key_parameters.get("validate_key") is not False:
+        if not key_path.exists():  # Do a preliminary check to see if the key file exists
             raise FileNotFoundError("Key file not found: %s" % key_path)
-        else:
-            return self.logger.error("Key file not found: %s" % key_path)
-
-    key_copy = key_path
-    while parent := key_copy.parent:
-        if parent == Path("/"):
-            if self["cryptsetup_keyfile_validation"]:
-                raise ValueError("No mount is defined for external key file: %s" % key_path)
-            else:
-                return self.logger.critical("No mount is defined for external key file: %s" % key_path)
-        if str(parent).lstrip("/") in self["mounts"]:
-            self.logger.debug("Found mount for key file: %s" % parent)
-            break
-        key_copy = parent
+        self["check_included_or_mounted"] = key_path  # Add a proper check for later
 
 
 @contains("validate", "Skipping cryptsetup configuration validation.", log_level=30)
