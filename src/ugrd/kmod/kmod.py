@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "3.0.5"
+__version__ = "3.0.6"
 
 from pathlib import Path
 from subprocess import run
@@ -73,7 +73,9 @@ def _get_kmod_info(self, module: str):
             else:
                 module_info["depends"] = _normalize_kmod_name([line.split()[1]])
         elif line.startswith("softdep:"):
-            module_info["softdep"] = line.split()[2::2]
+            if "softdep" not in module_info:
+                module_info["softdep"] = []
+            module_info["softdep"] += line.split()[2::2]
         elif line.startswith("firmware:"):
             # Firmware is a list, so append to it, making sure it exists first
             if "firmware" not in module_info:
