@@ -310,19 +310,24 @@ def _process_kmod_dependencies(self, kmod: str) -> None:
 
     for dependency in dependencies:
         if dependency in self["kmod_ignore"]:  # Don't add modules with ignored dependencies
+            _get_kmod_info(self, dependency)  # Make sure modinfo is queried in case it's built-in
             if modinfo := self["_kmod_modinfo"].get(dependency):
-                if modinfo["filename"] != "(builtin)":  # But if it's ignored because it's built-in, that's fine
+                if modinfo["filename"] == "(builtin)":  # If it's ignored because builtin, that's fine
+                    self.logger.debug("[%s] Ignored dependency is a built-in module: %s" % (kmod, dependency))
+                    continue
+                else:  # Otherwise, raise a dependency error
                     raise DependencyResolutionError(
                         "[%s] Kernel module dependency is in ignore list: %s" % (kmod, dependency)
                     )
+            # If modinfo doesn't exist, simply raise an ignored module error
             raise IgnoredModuleError("[%s] Kernel module dependency is in ignore list: %s" % (kmod, dependency))
         if dependency in self["kernel_modules"]:
             self.logger.debug("[%s] Dependency is already in kernel_modules: %s" % (kmod, dependency))
             continue
         self.logger.debug("[%s] Processing dependency: %s" % (kmod, dependency))
-        self["kernel_modules"] = dependency
         try:
             _process_kmod_dependencies(self, dependency)
+            self["kernel_modules"] = dependency
         except BuiltinModuleError as e:
             self.logger.debug(e)
             continue
