@@ -430,7 +430,7 @@ def _autodetect_dm(self, mountpoint, device=None) -> None:
     else:
         if "type" not in blkid_info:
             self.logger.error("If LUKS headers are detached, they must be configured with the corresponding mapped device name.")
-            raise RuntimeError("No type found for device mapper device: %s" % source_device)
+            raise RuntimeError("[%s] No type found for device mapper device: %s" % (dev_name, source_device))
         raise RuntimeError("Unknown device mapper device type: %s" % blkid_info.get("type"))
 
     autodetect_mount_kmods(self, slave_source)
