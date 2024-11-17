@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "3.0.4"
+__version__ = "3.0.6"
 
 from pathlib import Path
 from subprocess import run
@@ -73,7 +73,9 @@ def _get_kmod_info(self, module: str):
             else:
                 module_info["depends"] = _normalize_kmod_name([line.split()[1]])
         elif line.startswith("softdep:"):
-            module_info["softdep"] = line.split()[2::2]
+            if "softdep" not in module_info:
+                module_info["softdep"] = []
+            module_info["softdep"] += line.split()[2::2]
         elif line.startswith("firmware:"):
             # Firmware is a list, so append to it, making sure it exists first
             if "firmware" not in module_info:
@@ -297,6 +299,11 @@ def _process_kmod_dependencies(self, kmod: str) -> None:
     """Processes a kernel module's dependencies."""
     kmod = _normalize_kmod_name(kmod)
     _get_kmod_info(self, kmod)
+
+    if self["_kmod_modinfo"][kmod]["filename"] == "(builtin)":  # for built-in modules, just add firmware and return
+        _add_kmod_firmware(self, kmod)
+        raise BuiltinModuleError("Not adding built-in module to dependencies: %s" % kmod)
+
     # Add dependencies of the module
     dependencies = []
     if harddeps := self["_kmod_modinfo"][kmod].get("depends"):
@@ -324,19 +331,18 @@ def _process_kmod_dependencies(self, kmod: str) -> None:
         if dependency in self["kernel_modules"]:
             self.logger.debug("[%s] Dependency is already in kernel_modules: %s" % (kmod, dependency))
             continue
-        self.logger.debug("[%s] Processing dependency: %s" % (kmod, dependency))
         try:
+            self.logger.debug("[%s] Processing dependency: %s" % (kmod, dependency))
             _process_kmod_dependencies(self, dependency)
-            self["kernel_modules"] = dependency
         except BuiltinModuleError as e:
             self.logger.debug(e)
             continue
+        self["kernel_modules"] = dependency
 
-    if self["_kmod_modinfo"][kmod]["filename"] == "(builtin)":
-        raise BuiltinModuleError("Not adding built-in module to dependencies: %s" % kmod)
-
+    # Process firmware now that dependencies are resolved
     _add_kmod_firmware(self, kmod)
 
+    # Add the kmod file to the initramfs dependenceis
     filename = self["_kmod_modinfo"][kmod]["filename"]
     if filename.endswith(".ko"):
         self["dependencies"] = filename
