@@ -1,4 +1,4 @@
-__version__ = "0.3.0"
+__version__ = "0.3.1"
 
 from pathlib import Path
 from zenlib.util import contains
@@ -39,7 +39,8 @@ def _find_in_mounts(self, file) -> str:
     file_path = Path(file)
     while parent := file_path.parent:
         if str(parent) in ["/", "."]:
-            raise ValueError("File '%s' not found in any mounts" % file)
+            self.logger.warning("Configured mounts:\n%s" % self.mounts)
+            raise ValueError("File '%s' not found under any configured mounts" % file)
         if str(parent).lstrip("/") in self.mounts:
             return str(parent).lstrip("/")
         file_path = parent
