@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "3.5.0"
+__version__ = "3.6.0"
 
 from pathlib import Path
 
@@ -195,14 +195,15 @@ def _read_cryptsetup_header(self, mapped_name: str, slave_device: str = None) ->
             self.logger.warning("Cannot read detached LUKS header for validation: %s" % e)
     return {}
 
-def _check_luks_header_aes(self, luks_info: dict) -> dict:
-    """Checks for aes requirements in the LUKS header"""
+def _detect_luks_header_aes(self, luks_info: dict) -> dict:
+    """Checks the cipher type in the LUKS header, reads /proc/crypto to find the
+    corresponding driver. If it's not builtin, adds the module to the kernel modules."""
     for keyslot in luks_info.get("keyslots", {}).values():
-        if keyslot.get("area", {}).get("encryption") == "aes-xts-plain64":
-            return True
+        if keyslot.get("area", {}).get("encryption").startswith("aes"):
+            self["_kmod_auto"] = "aes"
     for segment in luks_info.get("segments", {}).values():
-        if segment.get("encryption") == "aes-xts-plain64":
-            return True
+        if segment.get("encryption").startswith("aes"):
+            self["_kmod_auto"] = "aes"
 
 def _detect_luks_header_sha(self, luks_info: dict) -> dict:
     """Reads the hash algorithm from the LUKS header,
@@ -229,10 +230,7 @@ def _validate_cryptsetup_header(self, mapped_name: str) -> None:
         if luks_info.get("uuid") != uuid:
             raise ValueError("[%s] LUKS UUID mismatch, found '%s', expected: %s" % (mapped_name, luks_info["uuid"], uuid))
 
-    if _check_luks_header_aes(self, luks_info):
-        self.logger.debug("[%s] LUKS uses aes-xts-plain64" % mapped_name)
-        self["kernel_modules"] = self._crypto_ciphers["xts(aes)"]["driver"]  # Placeholder, this driver is wrong!
-
+    _detect_luks_header_aes(self, luks_info)
     _detect_luks_header_sha(self, luks_info)
 
     if not self["argon2"]:  # if argon support was not detected, check if the header wants it
