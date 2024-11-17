@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "3.5.1"
+__version__ = "3.6.0"
 
 
 from zenlib.util import contains, unset
@@ -30,12 +30,13 @@ def check_in_cpio(self) -> None:
     return "All files and lines found in CPIO."
 
 
-def _check_in_cpio(self, file, lines=[]):
+def _check_in_cpio(self, file, lines=[], quiet=False):
     """Checks that the file is in the CPIO archive, and it contains the specified lines."""
     cpio = self._cpio_archive
     file = str(file).lstrip("/")  # Normalize as it may be a path
     if file not in cpio.entries:
-        self.logger.warning("CPIO entries:\n%s" % "\n".join(cpio.entries.keys()))
+        if not quiet:
+            self.logger.warning("CPIO entries:\n%s" % "\n".join(cpio.entries.keys()))
         raise FileNotFoundError("File not found in CPIO: %s" % file)
     else:
         self.logger.debug("File found in CPIO: %s" % file)
