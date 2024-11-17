@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "3.7.2"
+__version__ = "3.7.3"
 
 from pathlib import Path
 
@@ -191,9 +191,6 @@ def _read_cryptsetup_header(self, mapped_name: str, slave_device: str = None) ->
 
 def _detect_luks_aes_module(self, luks_cipher_name: str) -> None:
     """Using the cipher name from the LUKS header, detects the corresponding kernel module."""
-    if luks_cipher_name.startswith("aes"):
-        self["_kmod_auto"] = "aes"  # Try to enable the aesni module for any aes type
-
     aes_type = luks_cipher_name.split("-")[1]  # Get the cipher type from the name
     self["_kmod_auto"] = aes_type  # Add the aes type to the kernel modules
 
