@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "3.0.3"
+__version__ = "3.0.4"
 
 from pathlib import Path
 from subprocess import run
@@ -315,6 +315,7 @@ def _process_kmod_dependencies(self, kmod: str) -> None:
                     raise DependencyResolutionError(
                         "[%s] Kernel module dependency is in ignore list: %s" % (kmod, dependency)
                     )
+            raise IgnoredModuleError("[%s] Kernel module dependency is in ignore list: %s" % (kmod, dependency))
         if dependency in self["kernel_modules"]:
             self.logger.debug("[%s] Dependency is already in kernel_modules: %s" % (kmod, dependency))
             continue
