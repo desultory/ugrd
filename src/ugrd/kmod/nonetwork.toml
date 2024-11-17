@@ -2,6 +2,7 @@ kmod_ignore = [
 'rfkill', 'bluetooth', 'cfg80211', 'mac80211', # Wireless
 'iwlwifi', 'iwlmvm', 'btusb', 'btintel', 'btrtl', 'btbcm', 'btmtk',  # wireless vendor
 'mt76', 'mt76x2_common', 'mt7921_common', 'mt76x0_common', 'mt76_usb', 'mt76x02_lib',  # mediatek
+'rtw89_core', 'rtw89_pci',  # realtek
 'cdc_acm', 'cdc_ncm', 'cdc_wdm', 'cdc_ether',  # USB CDC
 'stp', '8021q', 'llc', 'garp', 'mrp', 'bridge', 'bonding',  # Ethernet
 'r8169', 'r8152', 'r8153_ecm', 'igb', 'ixgbe', 'tg3', 'e1000e', 'e1000',  # Ethernet cards
