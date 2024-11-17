@@ -195,16 +195,31 @@ def _read_cryptsetup_header(self, mapped_name: str, slave_device: str = None) ->
             self.logger.warning("Cannot read detached LUKS header for validation: %s" % e)
     return {}
 
+def _detect_luks_aes_module(self, luks_cipher_name: str) -> None:
+    """Using the cipher name from the LUKS header, detects the corresponding kernel module."""
+    if luks_cipher_name.startswith("aes"):
+        self["_kmod_auto"] = "aes"  # Try to enable the aesni module for any aes type
+
+    aes_type = luks_cipher_name.split("-")[1]  # Get the cipher type from the name
+    self["_kmod_auto"] = aes_type  # Add the aes type to the kernel modules
+
+    crypto_name = f"{aes_type}(aes)"  # Format the name like the /proc/crypto entry
+    crypto_config = self["_crypto_ciphers"][crypto_name]
+    if crypto_config["module"] == "kernel":
+        self.logger.debug("Cipher kernel modules are builtin: %s" % crypto_name)
+    else:
+        self.logger.info("[%s] Adding kernel module for LUKS cipher: %s" % (crypto_name, crypto_config["module"]))
+        self["_kmod_auto"] = crypto_config["module"]
 
 def _detect_luks_header_aes(self, luks_info: dict) -> dict:
     """Checks the cipher type in the LUKS header, reads /proc/crypto to find the
     corresponding driver. If it's not builtin, adds the module to the kernel modules."""
     for keyslot in luks_info.get("keyslots", {}).values():
         if keyslot.get("area", {}).get("encryption").startswith("aes"):
-            self["_kmod_auto"] = "aes"
+            _detect_luks_aes_module(self, keyslot["area"]["encryption"])
     for segment in luks_info.get("segments", {}).values():
         if segment.get("encryption").startswith("aes"):
-            self["_kmod_auto"] = "aes"
+            _detect_luks_aes_module(self, segment["encryption"])
 
 def _detect_luks_header_sha(self, luks_info: dict) -> dict:
     """Reads the hash algorithm from the LUKS header,
