@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "3.6.0"
+__version__ = "3.6.1"
 
 from pathlib import Path
 
@@ -195,6 +195,7 @@ def _read_cryptsetup_header(self, mapped_name: str, slave_device: str = None) ->
             self.logger.warning("Cannot read detached LUKS header for validation: %s" % e)
     return {}
 
+
 def _detect_luks_header_aes(self, luks_info: dict) -> dict:
     """Checks the cipher type in the LUKS header, reads /proc/crypto to find the
     corresponding driver. If it's not builtin, adds the module to the kernel modules."""
@@ -300,6 +301,8 @@ def detect_ciphers(self) -> None:
                 continue  # Skip lines until a name is found
             elif line.startswith("driver"):
                 self._crypto_ciphers[current_name]["driver"] = get_value(line)
+            elif line.startswith("module"):
+                self._crypto_ciphers[current_name]["module"] = get_value(line)
 
 
 @contains("validate", "Skipping cryptsetup configuration validation.", log_level=30)
