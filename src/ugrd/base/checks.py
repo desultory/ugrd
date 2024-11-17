@@ -1,4 +1,4 @@
-__version__ = "0.3.1"
+__version__ = "0.3.2"
 
 from pathlib import Path
 from zenlib.util import contains
@@ -33,16 +33,22 @@ def _check_in_file(self, file, lines):
         if check_line not in file_lines:
             raise ValueError("Failed to find line '%s' in file '%s'" % (check_line, file))
 
+def _find_mount_with_dest(self, check_path: Path) -> str:
+    """Returns the mount name which has a destination matching the check path."""
+    for mount_name, mount_config in self.mounts.items():
+        if mount_config["destination"] == check_path:
+            return mount_name
+
 def _find_in_mounts(self, file) -> str:
-    """Checks if a file is under a defined mount.
-    Returns the mount point if found, otherwise raises an error."""
+    """Finds a corresponding mount config for a file, if defined."""
     file_path = Path(file)
     while parent := file_path.parent:
         if str(parent) in ["/", "."]:
             self.logger.warning("Configured mounts:\n%s" % self.mounts)
             raise ValueError("File '%s' not found under any configured mounts" % file)
-        if str(parent).lstrip("/") in self.mounts:
-            return str(parent).lstrip("/")
+
+        if mount_name := _find_mount_with_dest(self, parent):
+            return mount_name
         file_path = parent
 
 
