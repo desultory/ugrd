@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "3.7.0"
+__version__ = "3.7.1"
 
 from pathlib import Path
 
@@ -166,7 +166,11 @@ def _read_cryptsetup_header(self, mapped_name: str, slave_device: str = None) ->
             slave_device, _ = _get_dm_slave_info(self, _get_dm_info(self, mapped_name))
             header_file = slave_device
     try:  # Try to read the header, return data, decoded and loaded, as a dictionary
-        luks_info = loads(self._run(["cryptsetup", "luksDump", "--dump-json-metadata", header_file], fail_silent=True, fail_hard=True).stdout.decode())
+        luks_info = loads(
+            self._run(
+                ["cryptsetup", "luksDump", "--dump-json-metadata", header_file], fail_silent=True, fail_hard=True
+            ).stdout.decode()
+        )
         self.logger.debug("[%s] LUKS header information: %s" % (mapped_name, luks_info))
         raw_luks_info = self._run(["cryptsetup", "luksDump", header_file]).stdout.decode().split("\n")
         # --dump-json-metadata does not include the UUID, so we need to parse it from the raw output
@@ -181,6 +185,7 @@ def _read_cryptsetup_header(self, mapped_name: str, slave_device: str = None) ->
         else:
             self.logger.warning("Cannot read detached LUKS header for validation: %s" % e)
     return {}
+
 
 def _detect_luks_aes_module(self, luks_cipher_name: str) -> None:
     """Using the cipher name from the LUKS header, detects the corresponding kernel module."""
@@ -198,6 +203,7 @@ def _detect_luks_aes_module(self, luks_cipher_name: str) -> None:
         self.logger.info("[%s] Adding kernel module for LUKS cipher: %s" % (crypto_name, crypto_config["module"]))
         self["_kmod_auto"] = crypto_config["module"]
 
+
 def _detect_luks_header_aes(self, luks_info: dict) -> dict:
     """Checks the cipher type in the LUKS header, reads /proc/crypto to find the
     corresponding driver. If it's not builtin, adds the module to the kernel modules."""
@@ -208,6 +214,7 @@ def _detect_luks_header_aes(self, luks_info: dict) -> dict:
         if segment.get("encryption").startswith("aes"):
             _detect_luks_aes_module(self, segment["encryption"])
 
+
 def _detect_luks_header_sha(self, luks_info: dict) -> dict:
     """Reads the hash algorithm from the LUKS header,
     enables the corresponding kernel module using _crypto_ciphers"""
@@ -217,6 +224,7 @@ def _detect_luks_header_sha(self, luks_info: dict) -> dict:
     for digest in luks_info.get("digests", {}).values():
         if digest.get("hash").startswith("sha"):
             self["kernel_modules"] = self._crypto_ciphers[digest["hash"]]["driver"]
+
 
 @contains("cryptsetup_header_validation", "Skipping cryptsetup header validation.", log_level=30)
 def _validate_cryptsetup_header(self, mapped_name: str) -> None:
@@ -231,7 +239,9 @@ def _validate_cryptsetup_header(self, mapped_name: str) -> None:
 
     if uuid := cryptsetup_info.get("uuid"):
         if luks_info.get("uuid") != uuid:
-            raise ValueError("[%s] LUKS UUID mismatch, found '%s', expected: %s" % (mapped_name, luks_info["uuid"], uuid))
+            raise ValueError(
+                "[%s] LUKS UUID mismatch, found '%s', expected: %s" % (mapped_name, luks_info["uuid"], uuid)
+            )
 
     _detect_luks_header_aes(self, luks_info)
     _detect_luks_header_sha(self, luks_info)
@@ -241,6 +251,8 @@ def _validate_cryptsetup_header(self, mapped_name: str) -> None:
             if keyslot.get("kdf", {}).get("type") == "argon2id":
                 raise FileNotFoundError("[%s] Missing cryptsetup dependency: libargon2.so" % mapped_name)
 
+    if 'header_file' in cryptsetup_info:
+        self["check_included_or_mounted"] = cryptsetup_info["header_file"]  # Add the header file to the check list
 
 
 @contains("hostonly", "Skipping cryptsetup device check.", log_level=30)
@@ -270,7 +282,7 @@ def _validate_cryptsetup_device(self, mapped_name) -> None:
     else:
         raise ValueError("[%s] No UUID or PARTUUID set for LUKS source: %s" % (mapped_name, cryptsetup_info))
 
-    _validate_cryptsetup_header(self, mapped_name) # Run header validation, mostly for crypto modules
+    _validate_cryptsetup_header(self, mapped_name)  # Run header validation, mostly for crypto modules
 
 
 def detect_argon2(self) -> None:
@@ -291,8 +303,10 @@ def detect_argon2(self) -> None:
 @contains("hostonly")
 def detect_ciphers(self) -> None:
     """Populates _crypto_ciphers using /proc/crypto"""
+
     def get_value(line):
         return line.split(":")[1].strip()
+
     with open("/proc/crypto") as crypto_file:
         current_name = None
         for line in crypto_file:
