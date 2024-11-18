@@ -1,6 +1,0 @@
-modules = [ "ugrd.crypto.pcscd", "ugrd.crypto.cryptsetup" ]
-
-binaries = [ "opensc-tool", "openssl" ]
-
-[imports.init_pre]
-"ugrd.crypto.opensc" = [ "check_card" ]
