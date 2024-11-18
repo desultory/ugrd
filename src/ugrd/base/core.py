@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "3.11.0"
+__version__ = "3.11.1"
 
 from pathlib import Path
 from typing import Union
@@ -192,11 +192,8 @@ def _process_out_file(self, out_file: str) -> None:
     """Processes the out_file.
 
     If set to the current directory, resolves and sets the out_dir to the current directory.
-    If it starts with './', resolves it to the current directory.
+    If a '/' is present, resolves the path and sets the out_dir to the parent directory.
     If out_file is a directory, sets the out_dir to the directory, stops processing.
-
-    If it's an absolute path, sets the out_dir to the parent directory.
-    otherise, force_out is enabled, sets the out_dir to the resolved parent directory.
     """
     out_file = str(out_file)
     if out_file == "./" or out_file == ".":
@@ -205,10 +202,9 @@ def _process_out_file(self, out_file: str) -> None:
         self["out_dir"] = current_dir
         return
 
-    if out_file.startswith("./"):
-        cwd = Path(".").resolve()
-        self.logger.info("Resolved relative out_file path: %s" % cwd)
-        out_file = cwd / out_file[2:]
+    if "/" in out_file: # If the out_file contains a path, resolve it
+        out_file = Path(out_file).resolve()
+        self.logger.info("Resolved relative output path: %s" % out_file)
     else:
         out_file = Path(out_file)
 
@@ -217,12 +213,9 @@ def _process_out_file(self, out_file: str) -> None:
         self["out_dir"] = out_file
         return
 
-    if out_file.parent.is_dir() and str(out_file.parent) != ".":
+    if str(out_file.parent) != ".":  # If the parent isn't the curent dir, set the out_dir to the parent
         self["out_dir"] = out_file.parent
         self.logger.info("Resolved out_dir to: %s" % self["out_dir"])
-        out_file = out_file.name
-    elif self["force_out"]:
-        self["out_dir"] = out_file.parent.resolve()
         out_file = out_file.name
 
     self.data["out_file"] = out_file

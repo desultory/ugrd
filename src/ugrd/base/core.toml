@@ -74,6 +74,5 @@ masks = "dict"  # Imports to be masked in the initramfs
 make_nodes = "bool"  # If true, actual device nodes will be created in the build dir
 out_dir = "Path"  # The directory where the initramfs is packed/output. If no packer is used, this is the final output directory.
 out_file = "str"  # The name of the output file, if absolute, overrides out dir with the path, and sets out_file to the filename
-force_out = "bool"  # If true, the out_dir will be interpreted literally, and the initramfs will be output there
 old_count = "int"  # The number of times to cycle old files before deleting
 clean = "bool"  # Add the clean property, used to define if the mounts should be cleaned up after boot
