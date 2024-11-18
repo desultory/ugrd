@@ -4,7 +4,7 @@ from typing import Union
 
 from zenlib.util import pretty_print
 
-__version__ = "1.3.8"
+__version__ = "1.3.9"
 __author__ = "desultory"
 
 
@@ -25,7 +25,7 @@ class GeneratorHelpers:
     def _get_out_path(self, path: Union[Path, str]) -> Path:
         """Takes a filename, if the out_dir is relative, returns the path relative to the tmpdir.
         If the out_dir is absolute, returns the path relative to the out_dir."""
-        if self.out_dir.is_absolute() or self.get("force_out"):
+        if self.out_dir.is_absolute():
             return get_subpath(self.out_dir, path)
         return get_subpath(get_subpath(self.tmpdir, self.out_dir), path)
 

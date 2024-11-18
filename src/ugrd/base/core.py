@@ -194,9 +194,6 @@ def _process_out_file(self, out_file: str) -> None:
     If set to the current directory, resolves and sets the out_dir to the current directory.
     If a '/' is present, resolves the path and sets the out_dir to the parent directory.
     If out_file is a directory, sets the out_dir to the directory, stops processing.
-
-    If it's an absolute path, sets the out_dir to the parent directory.
-    otherise, force_out is enabled, sets the out_dir to the resolved parent directory.
     """
     out_file = str(out_file)
     if out_file == "./" or out_file == ".":
@@ -219,9 +216,6 @@ def _process_out_file(self, out_file: str) -> None:
     if str(out_file.parent) != ".":  # If the parent isn't the curent dir, set the out_dir to the parent
         self["out_dir"] = out_file.parent
         self.logger.info("Resolved out_dir to: %s" % self["out_dir"])
-        out_file = out_file.name
-    elif self["force_out"]:
-        self["out_dir"] = out_file.parent.resolve()
         out_file = out_file.name
 
     self.data["out_file"] = out_file
