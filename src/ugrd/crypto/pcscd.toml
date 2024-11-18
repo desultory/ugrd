@@ -1,4 +1,0 @@
-binaries = [ "pcscd" ]
-
-[imports.init_early]
-"ugrd.crypto.pcscd" = [ "start_pcscd" ]
