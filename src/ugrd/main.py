@@ -124,19 +124,27 @@ def main():
         {"flags": ["--no-kmod"], "action": "store_true", "help": "Allow images to be built without kmods/kernel info"},
         {"flags": ["--print-config"], "action": "store_true", "help": "print the final config dict"},
         {"flags": ["--print-init"], "action": "store_true", "help": "print the final init structure"},
-        {"flags": {"--test"}, "action": "store_true", "help": "Tests the image with qemu"},
+        {"flags": ["--test"], "action": "store_true", "help": "Tests the image with qemu"},
         {
-            "flags": {"--test-kernel"},
+            "flags": ["--test-kernel"],
             "action": "store",
             "help": "Tests the image with qemu using a specific kernel file.",
         },
-        {"flags": {"--livecd-label"}, "action": "store", "help": "Sets the label for the livecd"},
-        {"flags": ["--force-out"], "action": "store_true", "help": "Force set the output file/dir, do not use a tmpdir."},
+        {"flags": ["--livecd-label"], "action": "store", "help": "Sets the label for the livecd"},
+        {
+            "flags": ["--force-out"],
+            "action": "store_true",
+            "help": "Force set the output file/dir, do not use a tmpdir.",
+        },
         {"flags": ["out_file"], "action": "store", "help": "set the output image location", "nargs": "?"},
     ]
 
     args, logger = get_args_n_logger(
-        package=__package__, description="MicrogRAM disk initramfs generator", arguments=arguments, drop_default=True
+        package=__package__,
+        description="MicrogRAM disk initramfs generator",
+        arguments=arguments,
+        drop_default=True,
+        strict=True,
     )
     kwargs = get_kwargs_from_args(args, logger=logger)
     kwargs.pop("print_config", None)  # This is not a valid kwarg for InitramfsGenerator
