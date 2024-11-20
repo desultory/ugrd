@@ -101,4 +101,5 @@ base_mount = true
 [mounts.run]
 type = "tmpfs"
 path = "tmpfs"
+options = ["nosuid", "noexec", "nodev", "mode=0755"]
 base_mount = true
