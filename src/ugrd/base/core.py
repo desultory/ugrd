@@ -1,11 +1,11 @@
 __author__ = "desultory"
-__version__ = "3.11.1"
+__version__ = "3.11.2"
 
 from pathlib import Path
 from typing import Union
 
-from zenlib.util import NoDupFlatList, contains
-
+from zenlib.util import contains
+from zenlib.types import NoDupFlatList
 
 def detect_tmpdir(self) -> None:
     """Reads TMPDIR from the environment, sets it as the temporary directory."""

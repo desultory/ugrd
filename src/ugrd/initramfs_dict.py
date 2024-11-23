@@ -7,7 +7,9 @@ from queue import Queue
 from tomllib import TOMLDecodeError, load
 
 from zenlib.logging import loggify
-from zenlib.util import NoDupFlatList, handle_plural, pretty_print
+from zenlib.types import NoDupFlatList
+from zenlib.util import handle_plural, pretty_print
+
 
 
 @loggify
@@ -39,7 +41,7 @@ class InitramfsConfigDict(UserDict):
         # Define the default parameters
         for parameter, default_type in self.builtin_parameters.items():
             if default_type == NoDupFlatList:
-                self.data[parameter] = default_type(no_warn=True, log_bump=5, logger=self.logger)
+                self.data[parameter] = default_type(no_warn=True, _log_bump=5, logger=self.logger)
             else:
                 self.data[parameter] = default_type()
         if not NO_BASE:
@@ -150,7 +152,7 @@ class InitramfsConfigDict(UserDict):
 
         match parameter_type.__name__:
             case "NoDupFlatList":
-                self.data[parameter_name] = NoDupFlatList(no_warn=True, log_bump=5, logger=self.logger)
+                self.data[parameter_name] = NoDupFlatList(no_warn=True, _log_bump=5, logger=self.logger)
             case "list" | "dict":
                 self.data[parameter_name] = parameter_type()
             case "bool":
@@ -214,7 +216,7 @@ class InitramfsConfigDict(UserDict):
 
             if import_type not in self["imports"]:
                 self.logger.log(5, "Creating import type: %s" % import_type)
-                self["imports"][import_type] = NoDupFlatList(log_bump=10, logger=self.logger)
+                self["imports"][import_type] = NoDupFlatList(_log_bump=10, logger=self.logger)
 
             if import_type == "custom_init":
                 if self["imports"]["custom_init"]:
