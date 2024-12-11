@@ -1,10 +1,14 @@
 cmdline_strings = [ "resume" ]
+binaries = [ 'lsblk' ]
 
 [imports.init_main] 
-"ugrd.fs.resume" = [ "handle_resume" ]
+"ugrd.fs.resume" = [ "handle_early_resume" ]
 
 [imports.init_premount]
 "ugrd.fs.resume" = [ "handle_late_resume"]
+
+[imports.functions]
+"ugrd.fs.resume" = ["resume"]
 
 [custom_parameters]
 late_resume = "bool"
