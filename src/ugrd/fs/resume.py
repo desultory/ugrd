@@ -23,7 +23,7 @@ def resume(self) -> None:
         '[[ ! "$(cat /sys/power/resume)" == "0:0" ]] || ewarn "/sys/power/resume not empty, resume has already been attempted!"',
 
         # Safety checks
-        'if [ ! -z $(lsblk -Q MOUNTPOINT)] ; then',
+        'if ! [ -z $(lsblk -Q MOUNTPOINT)] ; then',
         r'    eerror "Cannot safely resume with mounted block devices:\n$(lsblk -Q MOUNTPOINT -no PATH)"',
         '    return 1',
         'fi',
@@ -46,7 +46,7 @@ def handle_early_resume(self) -> None:
         '        resume="$resumeval"',
         '    fi',
 
-        '    if [ -n $resume ] ; then',
+        '    if ! [ -z $resume ] ; then',
         '        if ! resume "$resume" ; then',
         '            eerror "If you wish to continue booting, remove the resume= kernel parameter."',
         '''             eerror " or run 'setvar noresume 1' from the recovery shell to skip resuming."''',
