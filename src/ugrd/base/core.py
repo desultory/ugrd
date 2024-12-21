@@ -1,10 +1,10 @@
 __author__ = "desultory"
-__version__ = "3.11.2"
+__version__ = "3.11.3"
 
 from pathlib import Path
 from typing import Union
 
-from zenlib.util import contains
+from zenlib.util import contains, colorize
 from zenlib.types import NoDupFlatList
 
 def detect_tmpdir(self) -> None:
@@ -12,7 +12,7 @@ def detect_tmpdir(self) -> None:
     from os import environ
 
     if tmpdir := environ.get("TMPDIR"):
-        self.logger.info("Detected TMPDIR: %s" % tmpdir)
+        self.logger.info("Detected TMPDIR: %s" % (colorize(tmpdir, "cyan")))
         self["tmpdir"] = Path(tmpdir)
 
 
@@ -24,7 +24,7 @@ def clean_build_dir(self) -> None:
     build_dir = self._get_build_path("/")
 
     if build_dir.is_dir():
-        self.logger.warning("Cleaning build directory: %s" % build_dir)
+        self.logger.warning("Cleaning build directory: %s" % colorize(build_dir, "yellow"))
         rmtree(build_dir)
     else:
         self.logger.info("Build directory does not exist, skipping cleaning: %s" % build_dir)
@@ -54,7 +54,7 @@ def calculate_dependencies(self, binary: str) -> list[Path]:
     dependencies = run(["lddtree", "-l", str(binary_path)], capture_output=True)
 
     if dependencies.returncode != 0:
-        self.logger.warning("Unable to calculate dependencies for: %s" % binary)
+        self.logger.warning("Unable to calculate dependencies for: %s" % colorize(binary, "red", bold=True, bright=True))
         raise RuntimeError("Unable to resolve dependencies, error: %s" % dependencies.stderr.decode("utf-8"))
 
     dependency_paths = []
@@ -198,7 +198,7 @@ def _process_out_file(self, out_file: str) -> None:
     out_file = str(out_file)
     if out_file == "./" or out_file == ".":
         current_dir = Path(".").resolve()
-        self.logger.info("Setting out_dir to current directory: %s" % current_dir)
+        self.logger.info("Setting out_dir to current directory: %s" % colorize(current_dir, "cyan", bold=True))
         self["out_dir"] = current_dir
         return
 
@@ -215,7 +215,7 @@ def _process_out_file(self, out_file: str) -> None:
 
     if str(out_file.parent) != ".":  # If the parent isn't the curent dir, set the out_dir to the parent
         self["out_dir"] = out_file.parent
-        self.logger.info("Resolved out_dir to: %s" % self["out_dir"])
+        self.logger.info("Resolved out_dir to: %s" % colorize(self["out_dir"], "green"))
         out_file = out_file.name
 
     self.data["out_file"] = out_file
@@ -402,7 +402,7 @@ def _process_masks_multi(self, runlevel: str, function: str) -> None:
     if runlevel not in self["masks"]:
         self.logger.debug("Creating new mask: %s" % runlevel)
         self["masks"][runlevel] = NoDupFlatList(logger=self.logger)
-    self.logger.info("[%s] Adding mask: %s" % (runlevel, function))
+    self.logger.info("[%s] Adding mask: %s" % (runlevel, colorize(function, "red")))
     self["masks"][runlevel] = function
 
 

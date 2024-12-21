@@ -1,10 +1,10 @@
 __author__ = "desultory"
-__version__ = "5.2.0"
+__version__ = "5.2.1"
 
 from importlib.metadata import version
 from pathlib import Path
 
-from zenlib.util import contains, unset
+from zenlib.util import contains, unset, colorize
 
 
 @contains("hostonly")
@@ -40,7 +40,7 @@ def autodetect_init(self) -> None:
     from shutil import which
 
     if init := which("init"):
-        self.logger.info("Detected init at: %s", init)
+        self.logger.info("Detected init at: %s", colorize(init, "cyan", bright=True))
         self["init_target"] = init
     else:
         raise FileNotFoundError("init_target is not specified and could not be detected.")

@@ -2,9 +2,9 @@ from pathlib import Path
 from subprocess import CompletedProcess, TimeoutExpired, run
 from typing import Union
 
-from zenlib.util import pretty_print
+from zenlib.util import pretty_print, colorize
 
-__version__ = "1.3.9"
+__version__ = "1.4.0"
 __author__ = "desultory"
 
 
@@ -77,9 +77,9 @@ class GeneratorHelpers:
             self._mkdir(file_path.parent, resolve_build=False)
 
         if file_path.is_file():
-            self.logger.warning("File already exists: %s" % file_path)
+            self.logger.warning("File already exists: %s" % colorize(file_path, "yellow"))
             if self.clean:
-                self.logger.warning("Deleting file: %s" % file_path)
+                self.logger.warning("Deleting file: %s" % colorize(file_path, "red"))
                 file_path.unlink()
 
         self.logger.debug("[%s] Writing contents:\n%s" % (file_path, contents))
@@ -93,7 +93,7 @@ class GeneratorHelpers:
             except RuntimeError as e:
                 raise RuntimeError("Failed to validate bash script: %s" % pretty_print(contents)) from e
 
-        self.logger.info("Wrote file: %s" % file_path)
+        self.logger.info("Wrote file: %s" % colorize(file_path, "green", bright=True))
         chmod(file_path, chmod_mask)
         self.logger.debug("[%s] Set file permissions: %s" % (file_path, chmod_mask))
 
@@ -159,7 +159,7 @@ class GeneratorHelpers:
 
         if cmd.returncode != 0:
             if not fail_silent:
-                self.logger.error("Failed to run command: %s" % " ".join(cmd.args))
+                self.logger.error("Failed to run command: %s" % colorize(" ".join(cmd.args), "red", bright=True))
                 self.logger.error("Command output:\n%s" % cmd.stdout.decode())
                 self.logger.error("Command error:\n%s" % cmd.stderr.decode())
             if fail_hard:
@@ -177,7 +177,7 @@ class GeneratorHelpers:
         # If the cycle count is not set, attempt to clean
         if not self.old_count:
             if self.clean:
-                self.logger.warning("Deleting file: %s" % file_name)
+                self.logger.warning("Deleting file: %s" % colorize(file_name, "red", bold=True))
                 file_name.unlink()
                 return
             else:
@@ -199,7 +199,7 @@ class GeneratorHelpers:
             if sequence >= self.old_count:
                 # Clean the last file in the sequence if clean is enabled
                 if self.clean:
-                    self.logger.warning("Deleting old file: %s" % target_file)
+                    self.logger.warning("Deleting old file: %s" % colorize(target_file, "red", bold=True))
                     target_file.unlink()
                 else:
                     self.logger.debug("Cycle limit reached")

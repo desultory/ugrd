@@ -1,7 +1,7 @@
 __author__ = "desultory"
-__version__ = "1.2.0"
+__version__ = "1.2.1"
 
-from zenlib.util import contains
+from zenlib.util import contains, colorize
 from pathlib import Path
 
 
@@ -11,7 +11,7 @@ def _process_sc_public_key(self, key: str) -> None:
     if not key_path.exists():
         raise FileNotFoundError(f"Smartcard public key file not found: {key}")
     self.data["sc_public_key"] = key_path
-    self.logger.info("Using smartcard public key file: %s", key_path)
+    self.logger.info("Using smartcard public key file: %s", colorize(key_path, "green"))
     self["dependencies"] = key_path
 
 
