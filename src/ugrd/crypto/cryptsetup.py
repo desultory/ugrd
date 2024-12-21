@@ -1,9 +1,9 @@
 __author__ = "desultory"
-__version__ = "3.7.3"
+__version__ = "3.8.0"
 
 from pathlib import Path
 
-from zenlib.util import contains
+from zenlib.util import colorize, contains
 
 _module_name = "ugrd.crypto.cryptsetup"
 
@@ -61,7 +61,7 @@ def _validate_crypysetup_key(self, key_parameters: dict) -> None:
     if key_parameters.get("include_key"):
         return self.logger.info("Skipping key validation for included key.")
     elif key_parameters.get("validate_key") is False:
-        return self.logger.info("Skipping key validation for: %s" % key_parameters["key_file"])
+        return self.logger.info("Skipping key validation for: %s" % colorize(key_parameters["key_file"], "yellow"))
 
     key_path = Path(key_parameters["key_file"])
 
@@ -92,7 +92,9 @@ def _validate_cryptsetup_config(self, mapped_name: str) -> None:
         if not Path(
             config["header_file"]
         ).exists():  # Make sure the header file exists, it may not be present at build time
-            self.logger.warning("[%s] Header file not found: %s" % (mapped_name, config["header_file"]))
+            self.logger.warning(
+                "[%s] Header file not found: %s" % (mapped_name, colorize(config["header_file"], "yellow"))
+            )
     elif not any([config.get("partuuid"), config.get("uuid"), config.get("path")]):
         if not self["autodetect_root_luks"]:
             raise ValueError(
@@ -107,7 +109,7 @@ def _process_cryptsetup_multi(self, mapped_name: str, config: dict) -> None:
     """Processes the cryptsetup configuration"""
     for parameter in config:
         if parameter not in CRYPTSETUP_PARAMETERS:
-            self.logger.error("[%s] Unknown parameter: %s" % (mapped_name, parameter))
+            self.logger.error("[%s] Unknown parameter: %s" % (mapped_name, colorize(parameter, "red", bold=True)))
 
     config = _merge_cryptsetup(self, mapped_name, config)  # Merge the config with the existing configuration
     self.logger.debug("[%s] Processing cryptsetup configuration: %s" % (mapped_name, config))
@@ -183,9 +185,9 @@ def _read_cryptsetup_header(self, mapped_name: str, slave_device: str = None) ->
         return luks_info
     except RuntimeError as e:
         if not self["cryptsetup"][mapped_name].get("header_file"):
-            self.logger.error("Unable to read LUKS header: %s" % e)
+            self.logger.error("Unable to read LUKS header: %s" % colorize(e, "red", bold=True, bright=True))
         else:
-            self.logger.warning("Cannot read detached LUKS header for validation: %s" % e)
+            self.logger.warning("Cannot read detached LUKS header for validation: %s" % colorize(e, "yellow"))
     return {}
 
 
@@ -199,7 +201,7 @@ def _detect_luks_aes_module(self, luks_cipher_name: str) -> None:
     if crypto_config["module"] == "kernel":
         self.logger.debug("Cipher kernel modules are builtin: %s" % crypto_name)
     else:
-        self.logger.info("[%s] Adding kernel module for LUKS cipher: %s" % (crypto_name, crypto_config["module"]))
+        self.logger.info("[%s] Adding kernel module for LUKS cipher: %s" % (crypto_name, colorize(crypto_config["module"], "cyan")))
         self["_kmod_auto"] = crypto_config["module"]
 
 
@@ -230,7 +232,7 @@ def _validate_cryptsetup_header(self, mapped_name: str) -> None:
     """Validates configured cryptsetup volumes against the LUKS header."""
     cryptsetup_info = self["cryptsetup"][mapped_name]
     if cryptsetup_info.get("validate_header") is False:
-        return self.logger.warning("Skipping cryptsetup header validation for: %s" % mapped_name)
+        return self.logger.warning("Skipping cryptsetup header validation for: %s" % colorize(mapped_name, "yellow"))
 
     luks_info = _read_cryptsetup_header(self, mapped_name)
     if not luks_info:
@@ -250,7 +252,7 @@ def _validate_cryptsetup_header(self, mapped_name: str) -> None:
             if keyslot.get("kdf", {}).get("type") == "argon2id":
                 raise FileNotFoundError("[%s] Missing cryptsetup dependency: libargon2.so" % mapped_name)
 
-    if 'header_file' in cryptsetup_info:
+    if "header_file" in cryptsetup_info:
         self["check_included_or_mounted"] = cryptsetup_info["header_file"]  # Add the header file to the check list
 
 
@@ -266,7 +268,7 @@ def _validate_cryptsetup_device(self, mapped_name) -> None:
 
     cryptsetup_info = self["cryptsetup"][mapped_name]  # Get the cryptsetup information
     if cryptsetup_info.get("validate") is False:
-        return self.logger.warning("Skipping cryptsetup device validation: %s" % mapped_name)
+        return self.logger.warning("Skipping cryptsetup device validation: %s" % colorize(mapped_name, "yellow"))
 
     slave_device, blkid_info = _get_dm_slave_info(self, dm_info)  # Get the blkid information
 

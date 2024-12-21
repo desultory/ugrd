@@ -1,7 +1,7 @@
 from tomllib import TOMLDecodeError, load
 
 from zenlib.logging import loggify
-from zenlib.util import pretty_print
+from zenlib.util import colorize, pretty_print
 
 from ugrd.initramfs_dict import InitramfsConfigDict
 
@@ -35,7 +35,9 @@ class InitramfsGenerator(GeneratorHelpers):
         self.config_dict.import_args(kwargs)
         try:
             self.load_config(config)  # The user config is loaded over the base config, clobbering kwargs
-            self.config_dict.import_args(kwargs, quiet=True)  # Re-import kwargs (cmdline params) to apply them over the config
+            self.config_dict.import_args(
+                kwargs, quiet=True
+            )  # Re-import kwargs (cmdline params) to apply them over the config
         except FileNotFoundError:
             self.logger.warning("[%s] Config file not found, using the base config." % config)
         except TOMLDecodeError as e:
@@ -51,7 +53,7 @@ class InitramfsGenerator(GeneratorHelpers):
             raise FileNotFoundError("Config file not specified.")
 
         with open(config_filename, "rb") as config_file:
-            self.logger.info("Loading config file: %s" % config_file.name)
+            self.logger.info("Loading config file: %s" % colorize(config_file.name, "magenta"))
             raw_config = load(config_file)
 
         # Process into the config dict, it should handle parsing
@@ -139,7 +141,7 @@ class InitramfsGenerator(GeneratorHelpers):
         for function in self["imports"].get(hook, []):
             # Check that the function is not masked
             if function.__name__ in self["masks"].get(hook, []):
-                self.logger.warning("[%s] Skipping masked function: %s" % (hook, function.__name__))
+                self.logger.warning("[%s] Skipping masked function: %s" % (hook, colorize(function.__name__, "yellow")))
                 continue
             if function_output := self.run_func(function, *args, **kwargs):
                 out.append(function_output)
@@ -263,7 +265,7 @@ class InitramfsGenerator(GeneratorHelpers):
             self.logger.debug("No tests executed.")
 
     def _log_run(self, logline) -> None:
-        self.logger.info(f"-- | {logline}")
+        self.logger.info(f"-- | {colorize(logline, 'blue', bold=True)}")
 
     def __str__(self) -> str:
         return str(self.config_dict)
