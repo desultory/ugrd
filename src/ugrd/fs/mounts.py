@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "5.7.1"
+__version__ = "5.7.2"
 
 from pathlib import Path
 from typing import Union
@@ -496,7 +496,7 @@ def autodetect_luks(self, mount_loc, dm_num, blkid_info) -> None:
     ):
         self.logger.warning(
             "Skipping LUKS autodetection, cryptsetup config already set: %s"
-            % self["cryptsetup"][self["_vblk_info"][dm_num]["name"]]
+            % pretty_print(self["cryptsetup"][self["_vblk_info"][dm_num]["name"]])
         )
         return
 
