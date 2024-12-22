@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "3.1.0"
+__version__ = "3.1.1"
 
 from pathlib import Path
 from subprocess import run
@@ -138,7 +138,7 @@ def autodetect_modules(self) -> None:
     _autodetect_modules_lsmod(self)
     _autodetect_modules_lspci(self)
     if self["_kmod_auto"]:
-        self.logger.info("Autodetected kernel modules: %s" % colorize(", ".join(self["_kmod_auto"], "cyan")))
+        self.logger.info("Autodetected kernel modules: %s" % colorize(", ".join(self["_kmod_auto"]), "cyan"))
     else:
         self.logger.warning("No kernel modules were autodetected.")
 
