@@ -180,24 +180,26 @@ Similarly `ugrd.kmod.novideo` `nonetwork`, and `nosound` exist to ignore video, 
 
 Additional modules include:
 
-`ugrd.fs.btrfs` - Helps with multi-device BTRFS mounts, subvolume selection.
-`ugrd.fs.fakeudev` - Makes 'fake' udev entries for DM devices.
-`ugrd.fs.cpio` - Packs the build dir into a CPIO archive with PyCPIO.
-`ugrd.fs.livecd` - Assists in livecd image creation.
-`ugrd.fs.lvm` - Activates LVM mounts.
-`ugrd.fs.mdraid` - For MDRAID mounts.
-`ugrd.fs.resume` - Handles resume from hibernation.
-`ugrd.fs.test_image` - Creates a test rootfs for automated testing.
+* `ugrd.fs.btrfs` - Helps with multi-device BTRFS mounts, subvolume selection.
+* `ugrd.fs.fakeudev` - Makes 'fake' udev entries for DM devices.
+* `ugrd.fs.cpio` - Packs the build dir into a CPIO archive with PyCPIO.
+* `ugrd.fs.livecd` - Assists in livecd image creation.
+* `ugrd.fs.lvm` - Activates LVM mounts.
+* `ugrd.fs.mdraid` - For MDRAID mounts.
+* `ugrd.fs.resume` - Handles resume from hibernation.
+* `ugrd.fs.test_image` - Creates a test rootfs for automated testing.
 
 #### ugrd.fs.mounts
 
-`autodetect_root` (true) Set the root mount parameter based on the current root label or uuid.
-`autodetect_root_dm` (true) Attempt to automatically configure virtual block devices such as LUKS/LVM/MDRAID.
-`autodetect_root_luks` (true) Attempt to automatically configure LUKS mounts for the root device.
-`autodetect_root_lvm` (true) Attempt to automatically configure LVM mounts for the root device.
-`autodetect_root_mdraid` (true) Attempt to automatically configure MDRAID mounts for the root device.
-`autodetect_init_mount'` (true) Automatically detect the mountpoint for the init binary, and add it to `late_mounts`.
-`run_dirs` A list of directories to create under `/run/` at runtime
+* `autodetect_root` (true) Set the root mount parameter based on the current root label or uuid.
+* `autodetect_root_dm` (true) Attempt to automatically configure virtual block devices such as LUKS/LVM/MDRAID.
+* `autodetect_root_luks` (true) Attempt to automatically configure LUKS mounts for the root device.
+* `autodetect_root_lvm` (true) Attempt to automatically configure LVM mounts for the root device.
+* `autodetect_root_mdraid` (true) Attempt to automatically configure MDRAID mounts for the root device.
+* `autodetect_init_mount'` (true) Automatically detect the mountpoint for the init binary, and add it to `late_mounts`.
+* `run_dirs` A list of directories to create under `/run/` at runtime
+
+> `autodetect_root` is required for `autodetect_root_<type>` to work.
 
 `mounts`: A dictionary containing entries for mounts, with their associated config.
 
