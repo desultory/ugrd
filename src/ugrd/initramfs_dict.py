@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "2.2.3"
+__version__ = "2.2.4"
 
 from collections import UserDict
 from pathlib import Path
@@ -8,8 +8,7 @@ from tomllib import TOMLDecodeError, load
 
 from zenlib.logging import loggify
 from zenlib.types import NoDupFlatList
-from zenlib.util import handle_plural, pretty_print
-
+from zenlib.util import colorize, handle_plural, pretty_print
 
 
 @loggify
@@ -63,7 +62,7 @@ class InitramfsConfigDict(UserDict):
 
     def __setitem__(self, key: str, value) -> None:
         if self["validated"]:
-            return self.logger.error("[%s] Config is validatied, refusing to set value: %s" % (key, value))
+            return self.logger.error("[%s] Config is validated, refusing to set value: %s" % (key, colorize(value, "red")))
         # If the type is registered, use the appropriate update function
         if any(key in d for d in (self.builtin_parameters, self["custom_parameters"])):
             return self.handle_parameter(key, value)
@@ -223,7 +222,10 @@ class InitramfsConfigDict(UserDict):
                     raise ValueError("Custom init function already defined: %s" % self["imports"]["custom_init"])
                 else:
                     self["imports"]["custom_init"] = function_list[0]
-                    self.logger.info("Registered custom init function: %s" % function_list[0].__name__)
+                    self.logger.info(
+                        "Registered custom init function: %s"
+                        % colorize(function_list[0].__name__, "magenta", bold=True)
+                    )
                     continue
 
             if import_type == "funcs":
@@ -244,15 +246,12 @@ class InitramfsConfigDict(UserDict):
 
     @handle_plural
     def _process_modules(self, module: str) -> None:
-        """
-        processes a single module into the config
-        takes list with decorator
-        """
+        """ processes a single module into the config """
         if module in self["modules"]:
             self.logger.debug("Module '%s' already loaded" % module)
             return
 
-        self.logger.info("Processing module: %s" % module)
+        self.logger.info("Processing module: %s" % colorize(module, bold=True))
 
         module_subpath = module.replace(".", "/") + ".toml"
 
@@ -295,7 +294,7 @@ class InitramfsConfigDict(UserDict):
     def validate(self) -> None:
         """Validate config, checks that all values are processed, sets validated flag."""
         if self["_processing"]:
-            self.logger.critical("Unprocessed config values: %s" % ", ".join(list(self["_processing"].keys())))
+            self.logger.critical("Unprocessed config values: %s" % colorize(", ".join(list(self["_processing"].keys()), "red", bold=True)))
         self["validated"] = True
 
     def __str__(self) -> str:
