@@ -1,9 +1,9 @@
 __author__ = "desultory"
-__version__ = "3.8.0"
+__version__ = "3.9.0"
 
 from pathlib import Path
 
-from zenlib.util import colorize, contains
+from zenlib.util import colorize, contains, unset
 
 _module_name = "ugrd.crypto.cryptsetup"
 
@@ -176,7 +176,7 @@ def _read_cryptsetup_header(self, mapped_name: str, slave_device: str = None) ->
             ).stdout.decode()
         )
         self.logger.debug("[%s] LUKS header information: %s" % (mapped_name, luks_info))
-        raw_luks_info = self._run(["cryptsetup", "luksDump", header_file]).stdout.decode().split("\n")
+        raw_luks_info = self._run(["cryptsetup", "luksDump", "--debug", header_file]).stdout.decode().split("\n")
         # --dump-json-metadata does not include the UUID, so we need to parse it from the raw output
         for line in raw_luks_info:
             if "UUID" in line:
@@ -201,7 +201,9 @@ def _detect_luks_aes_module(self, luks_cipher_name: str) -> None:
     if crypto_config["module"] == "kernel":
         self.logger.debug("Cipher kernel modules are builtin: %s" % crypto_name)
     else:
-        self.logger.info("[%s] Adding kernel module for LUKS cipher: %s" % (crypto_name, colorize(crypto_config["module"], "cyan")))
+        self.logger.info(
+            "[%s] Adding kernel module for LUKS cipher: %s" % (crypto_name, colorize(crypto_config["module"], "cyan"))
+        )
         self["_kmod_auto"] = crypto_config["module"]
 
 
@@ -286,19 +288,66 @@ def _validate_cryptsetup_device(self, mapped_name) -> None:
     _validate_cryptsetup_header(self, mapped_name)  # Run header validation, mostly for crypto modules
 
 
+@unset("_cryptsetup_backend")
+def detect_cryptsetup_backend(self) -> None:
+    """Determines the cryptsetup backend by running 'cryptsetup --debug luksDump' on this file"""
+    from re import search
+
+    try:
+        raw_luks_info = (
+            self._run(["cryptsetup", "--debug", "luksDump", __file__], fail_silent=True, fail_hard=False)
+            .stdout.decode()
+            .split("\n")
+        )
+        for line in raw_luks_info:
+            if line.startswith("# Crypto backend"):
+                backend = search(r"backend \((.+)\)", line).group(1)
+                self["_cryptsetup_backend"] = backend.split()[0].lower()
+                return self.logger.info(
+                    "Detected cryptsetup backend: %s" % colorize(self["_cryptsetup_backend"], "cyan")
+                )
+    except RuntimeError as e:
+        self.logger.error("Unable to determine cryptsetup backend: %s" % e)
+
+
+def _get_openssl_kdfs(self) -> list[str]:
+    """Gets the available KDFs from OpenSSL"""
+    kdfs = self._run(["openssl", "list", "-kdf-algorithms"]).stdout.decode().lower().split("\n")
+    self.logger.debug("OpenSSL KDFs: %s" % kdfs)
+    return kdfs
+
+
+@unset("argon2")
 def detect_argon2(self) -> None:
     """Validates that argon2 is available when argon2id is used."""
-    argon = False
-    for dep in self["dependencies"]:  # Ensure argon is installed if argon2id is used
-        if dep.name.startswith("libargon2.so"):
-            argon = True
-        elif dep.name.startswith("libcrypto.so"):
-            openssl_kdfs = self._run(["openssl", "list", "-kdf-algorithms"]).stdout.decode().lower().split("\n")
-            self.logger.debug("OpenSSL KDFs: %s" % openssl_kdfs)
-            for kdf in openssl_kdfs:
-                if kdf.lstrip().startswith("argon2id") and "default" in kdf:
-                    argon = True
-    self["argon2"] = argon
+    from ugrd.base.core import calculate_dependencies
+
+    cryptsetup_deps = calculate_dependencies(self, "cryptsetup")
+
+    match self["_cryptsetup_backend"]:
+        case "openssl":
+            openssl_kdfs = _get_openssl_kdfs(self)
+            self["argon2"] = any(kdf.lstrip().startswith("argon2id") and "default" in kdf for kdf in openssl_kdfs)
+            if not any(dep.name.startswith("libcrypto.so") for dep in cryptsetup_deps):
+                self.logger.error("Cryptsetup is linked against OpenSSL, but libcrypto.so is not in dependencies.")
+        case "gcrypt":
+            gcrypt_version = self._run(["libgcrypt-config", "--version"]).stdout.decode().strip().split("-")[0]
+            maj, minor, patch = map(int, gcrypt_version.split("."))
+            if not any(dep.name.startswith("libgcrypt.so") for dep in cryptsetup_deps):
+                self.logger.error("Cryptsetup is linked against Libgcrypt, but libgcrypt.so is not in dependencies.")
+            if (maj, minor, patch) >= (1, 11, 0):
+                self["argon2"] = True
+            else:
+                self.logger.error("Gcrypt version %s may not support argon2id." % gcrypt_version)
+        case _:
+            self.logger.error("Unable to determine cryptsetup backend.")
+
+    libargon2 = any(dep.name.startswith("libargon2.so") for dep in cryptsetup_deps)
+    if libargon2:
+        self["argon2"] = True
+
+    if not self["argon2"]:
+        self.logger.error("Cryptsetup is not linked against libargon2.")
 
 
 @contains("hostonly")
