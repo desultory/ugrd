@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "5.7.0"
+__version__ = "5.7.1"
 
 from pathlib import Path
 from typing import Union
@@ -466,12 +466,6 @@ def autodetect_raid(self, mount_loc, dm_name, blkid_info) -> None:
         raise ValueError("[%s] Failed to autodetect MDRAID level: %s" % (dm_name, blkid_info))
 
 
-@contains("autodetect_root_dm", "Skipping device mapper autodetection, autodetect_root_dm is disabled.", log_level=30)
-@contains("hostonly", "Skipping device mapper autodetection, hostonly mode is disabled.", log_level=30)
-def autodetect_root_dm(self) -> None:
-    _autodetect_dm(self, "/")
-
-
 @contains("autodetect_root_lvm", "Skipping LVM autodetection, autodetect_root_lvm is disabled.", log_level=20)
 @contains("hostonly", "Skipping LVM autodetection, hostonly mode is disabled.", log_level=30)
 def autodetect_lvm(self, mount_loc, dm_num, blkid_info) -> None:
@@ -585,6 +579,8 @@ def autodetect_root(self) -> None:
         for alt_devices in root_dev.split(":")[1:]:  # But ensure kmods are loaded for all devices
             autodetect_mount_kmods(self, alt_devices)
     _autodetect_mount(self, "/")
+    if self["autodetect_root_dm"]:
+        _autodetect_dm(self, "/")
 
 
 def _autodetect_mount(self, mountpoint) -> None:
