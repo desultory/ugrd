@@ -30,7 +30,7 @@ late_fstab = "/etc/fstab.late"
 
 [imports.build_enum]
 "ugrd.fs.mounts" = [ "get_mounts_info", "get_virtual_block_info", "get_blkid_info",
-		     "autodetect_root", "autodetect_mounts", "autodetect_root_dm", "autodetect_init_mount" ]
+		     "autodetect_root", "autodetect_mounts", "autodetect_init_mount" ]
 
 [imports.build_tasks]
 "ugrd.fs.mounts" = [ "export_mount_info" ]
