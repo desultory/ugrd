@@ -18,7 +18,7 @@ classifiers = [
 ]
 
 dependencies = [
-    "zenlib >= 3.0.0",
+    "zenlib >= 3.0.2",
     "pycpio >= 1.4.0"
 ]
 

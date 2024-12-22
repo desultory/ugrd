@@ -39,7 +39,10 @@ class InitramfsGenerator(GeneratorHelpers):
                 kwargs, quiet=True
             )  # Re-import kwargs (cmdline params) to apply them over the config
         except FileNotFoundError:
-            self.logger.warning("[%s] Config file not found, using the base config." % config)
+            if config:
+                self.logger.warning("[%s] Config file not found, using the base config." % config)
+            else:
+                self.logger.info("No config file specified, using the base config.")
         except TOMLDecodeError as e:
             raise ValueError("[%s] Error decoding config file: %s" % (config, e))
 
@@ -53,7 +56,7 @@ class InitramfsGenerator(GeneratorHelpers):
             raise FileNotFoundError("Config file not specified.")
 
         with open(config_filename, "rb") as config_file:
-            self.logger.info("Loading config file: %s" % colorize(config_file.name, "magenta"))
+            self.logger.info("Loading config file: %s" % colorize(config_file.name, "blue", bold=True, bright=True))
             raw_config = load(config_file)
 
         # Process into the config dict, it should handle parsing
@@ -141,7 +144,9 @@ class InitramfsGenerator(GeneratorHelpers):
         for function in self["imports"].get(hook, []):
             # Check that the function is not masked
             if function.__name__ in self["masks"].get(hook, []):
-                self.logger.warning("[%s] Skipping masked function: %s" % (hook, colorize(function.__name__, "yellow")))
+                self.logger.warning(
+                    "[%s] Skipping masked function: %s" % (hook, colorize(function.__name__, "yellow", bold=True))
+                )
                 continue
             if function_output := self.run_func(function, *args, **kwargs):
                 out.append(function_output)
@@ -235,7 +240,10 @@ class InitramfsGenerator(GeneratorHelpers):
         if self["imports"].get("pack"):
             self.run_hook("pack")
         else:
-            self.logger.warning("No pack functions specified, the final build is present in: %s" % self.build_dir)
+            self.logger.warning(
+                "No pack functions specified, the final build is present in: %s"
+                % colorize(self.build_dir, "green", bold=True, bright=True)
+            )
 
     def run_init_hook(self, level: str) -> list[str]:
         """Runs the specified init hook, returning the output."""
