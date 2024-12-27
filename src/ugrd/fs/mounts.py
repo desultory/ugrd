@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "5.7.2"
+__version__ = "5.8.0"
 
 from pathlib import Path
 from typing import Union
@@ -38,10 +38,11 @@ def _validate_mount_config(self, mount_name: str, mount_config) -> None:
     for parameter, value in mount_config.copy().items():
         self.logger.debug("[%s] Validating parameter: %s" % (mount_name, parameter))
         if parameter == "source" and isinstance(value, dict):
-            self.logger.warning("source dict is deprecated, please define the source type directly.")
-            self.logger.info(
+            self.logger.critical("source dict is deprecated, please define the source type directly.")
+            self.logger.warning(
                 "Simply define the source type directly in the mount config, instead of using the 'source' dict."
             )
+            self.logger.critical(colorize("UPDATE YOUR CONFIG!", "red", bold=True))
             # Break if the source type is valid
             for source_type in SOURCE_TYPES:
                 if source_type in value:
