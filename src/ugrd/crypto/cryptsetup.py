@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "3.9.0"
+__version__ = "3.9.1"
 
 from pathlib import Path
 
@@ -211,10 +211,10 @@ def _detect_luks_header_aes(self, luks_info: dict) -> dict:
     """Checks the cipher type in the LUKS header, reads /proc/crypto to find the
     corresponding driver. If it's not builtin, adds the module to the kernel modules."""
     for keyslot in luks_info.get("keyslots", {}).values():
-        if keyslot.get("area", {}).get("encryption").startswith("aes"):
+        if keyslot.get("area", {}).get("encryption", "").startswith("aes"):
             _detect_luks_aes_module(self, keyslot["area"]["encryption"])
     for segment in luks_info.get("segments", {}).values():
-        if segment.get("encryption").startswith("aes"):
+        if segment.get("encryption", "").startswith("aes"):
             _detect_luks_aes_module(self, segment["encryption"])
 
 
@@ -222,10 +222,10 @@ def _detect_luks_header_sha(self, luks_info: dict) -> dict:
     """Reads the hash algorithm from the LUKS header,
     enables the corresponding kernel module using _crypto_ciphers"""
     for keyslot in luks_info.get("keyslots", {}).values():
-        if keyslot.get("af", {}).get("hash").startswith("sha"):
+        if keyslot.get("af", {}).get("hash", "").startswith("sha"):
             self["kernel_modules"] = self._crypto_ciphers[keyslot["af"]["hash"]]["driver"]
     for digest in luks_info.get("digests", {}).values():
-        if digest.get("hash").startswith("sha"):
+        if digest.get("hash", "").startswith("sha"):
             self["kernel_modules"] = self._crypto_ciphers[digest["hash"]]["driver"]
 
 
