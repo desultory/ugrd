@@ -37,21 +37,7 @@ def _validate_mount_config(self, mount_name: str, mount_config) -> None:
 
     for parameter, value in mount_config.copy().items():
         self.logger.debug("[%s] Validating parameter: %s" % (mount_name, parameter))
-        if parameter == "source" and isinstance(value, dict):
-            self.logger.critical("source dict is deprecated, please define the source type directly.")
-            self.logger.warning(
-                "Simply define the source type directly in the mount config, instead of using the 'source' dict."
-            )
-            self.logger.critical(colorize("UPDATE YOUR CONFIG!", "red", bold=True))
-            # Break if the source type is valid
-            for source_type in SOURCE_TYPES:
-                if source_type in value:
-                    mount_config[source_type] = value[source_type]
-                    break
-            else:
-                self.logger.error("Valid source types: %s" % SOURCE_TYPES)
-                raise ValueError("Invalid source type in mount: %s" % value)
-        elif parameter == "options" and not mount_config.get("no_validate_options"):
+        if parameter == "options" and not mount_config.get("no_validate_options"):
             for option in value:
                 if "subvol=" in option:
                     if mount_name == "root":
