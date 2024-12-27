@@ -588,7 +588,8 @@ def _autodetect_mount(self, mountpoint) -> None:
     mount_name = "root" if mountpoint == "/" else mountpoint.removeprefix("/")
     if mount_name in self["mounts"] and any(s_type in self["mounts"][mount_name] for s_type in SOURCE_TYPES):
         return self.logger.warning(
-            "[%s] Mount config already set: %s" % (mountpoint, pretty_print(self["mounts"][mount_name]))
+            "[%s] Skipping autodetection, mount config already set:\n%s"
+            % (colorize(mountpoint, "yellow"), pretty_print(self["mounts"][mount_name]))
         )
 
     mount_config = {mount_name: {"type": "auto", "options": ["ro"]}}  # Default to auto and ro
