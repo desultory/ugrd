@@ -1,11 +1,12 @@
 __author__ = "desultory"
-__version__ = "3.11.3"
+__version__ = "3.11.4"
 
 from pathlib import Path
 from typing import Union
 
-from zenlib.util import contains, colorize
 from zenlib.types import NoDupFlatList
+from zenlib.util import colorize, contains
+
 
 def detect_tmpdir(self) -> None:
     """Reads TMPDIR from the environment, sets it as the temporary directory."""
@@ -37,7 +38,7 @@ def generate_structure(self) -> None:
 
 
 def calculate_dependencies(self, binary: str) -> list[Path]:
-    """ Calculates the dependencies of a binary using lddtree
+    """Calculates the dependencies of a binary using lddtree
     :param binary: The binary to calculate dependencies for
     :return: A list of dependency paths
     """
@@ -54,7 +55,9 @@ def calculate_dependencies(self, binary: str) -> list[Path]:
     dependencies = run(["lddtree", "-l", str(binary_path)], capture_output=True)
 
     if dependencies.returncode != 0:
-        self.logger.warning("Unable to calculate dependencies for: %s" % colorize(binary, "red", bold=True, bright=True))
+        self.logger.warning(
+            "Unable to calculate dependencies for: %s" % colorize(binary, "red", bold=True, bright=True)
+        )
         raise RuntimeError("Unable to resolve dependencies, error: %s" % dependencies.stderr.decode("utf-8"))
 
     dependency_paths = []
@@ -202,7 +205,7 @@ def _process_out_file(self, out_file: str) -> None:
         self["out_dir"] = current_dir
         return
 
-    if "/" in out_file: # If the out_file contains a path, resolve it
+    if "/" in out_file:  # If the out_file contains a path, resolve it
         out_file = Path(out_file).resolve()
         self.logger.info("Resolved relative output path: %s" % out_file)
     else:
@@ -222,7 +225,7 @@ def _process_out_file(self, out_file: str) -> None:
 
 
 def _process_paths_multi(self, path: Union[Path, str]) -> None:
-    """ Processes a path entry.
+    """Processes a path entry.
     Converts the input to a Path if it is not one.
     Checks if the path is absolute, and if so, converts it to a relative path.
     """
@@ -278,10 +281,9 @@ def _validate_dependency(self, dependency: Union[Path, str]) -> None:
 
 
 def _process_dependencies_multi(self, dependency: Union[Path, str]) -> None:
-    """ Processes dependencies.
+    """Processes dependencies.
     Converts the input to a Path if it is not one, checks if it exists.
-    If the dependency is a symlink, resolve it and add it to the symlinks list.
-    """
+    If the dependency is a symlink, resolve it and add it to the symlinks list."""
     dependency = _validate_dependency(self, dependency)
 
     if dependency.is_dir():
@@ -315,7 +317,7 @@ def _process_opt_dependencies_multi(self, dependency: Union[Path, str]) -> None:
 
 
 def _process_xz_dependencies_multi(self, dependency: Union[Path, str]) -> None:
-    """ Processes xz dependencies.
+    """Processes xz dependencies.
     Checks that the file is a xz file, and adds it to the xz dependencies list.
     !! Resolves symlinks implicitly !!
     """
@@ -326,7 +328,7 @@ def _process_xz_dependencies_multi(self, dependency: Union[Path, str]) -> None:
 
 
 def _process_gz_dependencies_multi(self, dependency: Union[Path, str]) -> None:
-    """ Processes gzip dependencies.
+    """Processes gzip dependencies.
     Checks that the file is a gz file, and adds it to the gz dependencies list.
     !! Resolves symlinks implicitly !!
     """
@@ -349,9 +351,7 @@ def _process_build_logging(self, log_build: bool) -> None:
 
 
 def _process_copies_multi(self, name: str, parameters: dict) -> None:
-    """Processes a copy from the copies parameter
-    Ensures the source and target are defined in the parameters.
-    """
+    """Processes a copy from the copies parameter. Ensures the source and target are defined in the parameters."""
     self.logger.log(5, "[%s] Processing copies: %s" % (name, parameters))
     if "source" not in parameters:
         raise ValueError("[%s] No source specified" % name)
@@ -363,9 +363,7 @@ def _process_copies_multi(self, name: str, parameters: dict) -> None:
 
 
 def _process_symlinks_multi(self, name: str, parameters: dict) -> None:
-    """Processes a symlink.
-    Ensures the source and target are defined in the parameters.
-    """
+    """Processes a symlink. Ensures the source and target are defined in the parameters."""
     self.logger.log(5, "[%s] Processing symlink: %s" % (name, parameters))
     if "source" not in parameters:
         raise ValueError("[%s] No source specified" % name)
@@ -377,9 +375,7 @@ def _process_symlinks_multi(self, name: str, parameters: dict) -> None:
 
 
 def _process_nodes_multi(self, name: str, config: dict) -> None:
-    """Process a device node.
-    Validates the major and minor are defined in the parameters.
-    """
+    """Process a device node. Ensures the major and minor are defined in the parameters."""
     if "major" not in config:
         raise ValueError("[%s] No major specified" % name)
     if "minor" not in config:
@@ -398,7 +394,7 @@ def _process_nodes_multi(self, name: str, config: dict) -> None:
 
 
 def _process_masks_multi(self, runlevel: str, function: str) -> None:
-    """Processes a mask definition."""
+    """Processes a mask definition. Masks are used to prevent functions from being run at a specific runlevel."""
     if runlevel not in self["masks"]:
         self.logger.debug("Creating new mask: %s" % runlevel)
         self["masks"][runlevel] = NoDupFlatList(logger=self.logger)
@@ -408,8 +404,7 @@ def _process_masks_multi(self, runlevel: str, function: str) -> None:
 
 def _process_hostonly(self, hostonly: bool) -> None:
     """Processes the hostonly parameter.
-    If validation is enabled, and hostonly mode is set to disabled, disable validation and warn.
-    """
+    If validation is enabled, and hostonly mode is set to disabled, disable validation and warn."""
     self.logger.debug("Processing hostonly: %s" % hostonly)
     self.data["hostonly"] = hostonly
     if not hostonly and self["validate"]:
@@ -419,8 +414,7 @@ def _process_hostonly(self, hostonly: bool) -> None:
 
 def _process_validate(self, validate: bool) -> None:
     """Processes the validate parameter.
-    It should only be allowed if hostonly mode is enabled.
-    """
+    Only allowed if hostonly mode is enabled."""
     self.logger.debug("Processing validate: %s" % validate)
     if not self["hostonly"] and validate:
         raise ValueError("Cannot enable validation when hostonly mode is disabled")
