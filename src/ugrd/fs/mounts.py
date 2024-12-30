@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "5.8.0"
+__version__ = "5.9.0"
 
 from pathlib import Path
 from typing import Union
@@ -243,6 +243,7 @@ def get_blkid_info(self, device=None) -> dict:
         else:
             blkid_output = self._run(["blkid"]).stdout.decode().strip()
     except RuntimeError:
+        self.logger.error("Blkid output: %s" % blkid_output)
         raise AutodetectError("Failed to get blkid info for: %s" % device)
 
     if not blkid_output:
@@ -558,7 +559,8 @@ def _resolve_overlay_lower_device(self, mountpoint) -> dict:
 def autodetect_root(self) -> None:
     """Sets self['mounts']['root']'s source based on the host mount."""
     if "/" not in self["_mounts"]:
-        raise FileNotFoundError(
+        self.logger.error("Host mounts: %s" % pretty_print(self["_mounts"]))
+        raise AutodetectError(
             "Root mount not found in host mounts.\nCurrent mounts: %s" % pretty_print(self["_mounts"])
         )
     # Sometimes the root device listed in '/proc/mounts' differs from the blkid info
@@ -577,7 +579,8 @@ def autodetect_root(self) -> None:
 def _autodetect_mount(self, mountpoint) -> None:
     """Sets mount config for the specified mountpoint."""
     if mountpoint not in self["_mounts"]:
-        raise FileNotFoundError("auto_mount mountpoint not found in host mounts: %s" % mountpoint)
+        self.logger.error("Host mounts: %s" % pretty_print(self["_mounts"]))
+        raise AutodetectError("auto_mount mountpoint not found in host mounts: %s" % mountpoint)
 
     mount_device = _resolve_overlay_lower_device(self, mountpoint)
 
