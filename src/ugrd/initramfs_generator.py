@@ -258,11 +258,16 @@ class InitramfsGenerator(GeneratorHelpers):
     def run_checks(self) -> None:
         """Runs checks if defined in self['imports']['checks']."""
         self._log_run("Running checks")
-        if check_output := self.run_hook("checks"):
-            for check in check_output:
-                self.logger.debug(check)
-        else:
-            self.logger.warning("No checks executed.")
+        try:
+            if check_output := self.run_hook("checks"):
+                for check in check_output:
+                    self.logger.debug(check)
+            else:
+                self.logger.warning("No checks executed.")
+        except (FileNotFoundError, ValueError) as e:
+            from . import ValidationError
+
+            raise ValidationError(f"Error running checks: {e}") from e
 
     def run_tests(self) -> None:
         """Runs tests if defined in self['imports']['tests']."""

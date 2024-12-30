@@ -1,8 +1,9 @@
 __author__ = "desultory"
-__version__ = "3.9.1"
+__version__ = "3.10.0"
 
 from pathlib import Path
 
+from ugrd import AutodetectError, ValidationError
 from zenlib.util import colorize, contains, unset
 
 _module_name = "ugrd.crypto.cryptsetup"
@@ -51,7 +52,7 @@ def _process_cryptsetup_key_types_multi(self, key_type: str, config: dict) -> No
     else:
         # Make sure the key type has a key command
         if "key_command" not in config:
-            raise ValueError("Missing key_command for key type: %s" % key_type)
+            raise ValidationError("Missing key_command for key type: %s" % key_type)
         self["cryptsetup_key_types"][key_type] = config
 
 
@@ -97,7 +98,7 @@ def _validate_cryptsetup_config(self, mapped_name: str) -> None:
             )
     elif not any([config.get("partuuid"), config.get("uuid"), config.get("path")]):
         if not self["autodetect_root_luks"]:
-            raise ValueError(
+            raise ValidationError(
                 "A device uuid, partuuid, or path must be specified for cryptsetup mount: %s" % mapped_name
             )
 
@@ -144,7 +145,7 @@ def _get_dm_info(self, mapped_name: str) -> dict:
     for device_info in self["_vblk_info"].values():
         if device_info["name"] == mapped_name:
             return device_info
-    raise KeyError("No device mapper information found for: %s" % mapped_name)
+    raise AutodetectError("No device mapper information found for: %s" % mapped_name)
 
 
 def _get_dm_slave_info(self, device_info: dict) -> (str, dict):
@@ -238,11 +239,11 @@ def _validate_cryptsetup_header(self, mapped_name: str) -> None:
 
     luks_info = _read_cryptsetup_header(self, mapped_name)
     if not luks_info:
-        raise ValueError("[%s] Unable to read LUKS header." % mapped_name)
+        raise ValidationError("[%s] Unable to read LUKS header." % mapped_name)
 
     if uuid := cryptsetup_info.get("uuid"):
         if luks_info.get("uuid") != uuid:
-            raise ValueError(
+            raise ValidationError(
                 "[%s] LUKS UUID mismatch, found '%s', expected: %s" % (mapped_name, luks_info["uuid"], uuid)
             )
 
@@ -252,7 +253,7 @@ def _validate_cryptsetup_header(self, mapped_name: str) -> None:
     if not self["argon2"]:  # if argon support was not detected, check if the header wants it
         for keyslot in luks_info.get("keyslots", {}).values():
             if keyslot.get("kdf", {}).get("type") == "argon2id":
-                raise FileNotFoundError("[%s] Missing cryptsetup dependency: libargon2.so" % mapped_name)
+                raise ValidationError("[%s] Missing cryptsetup dependency: libargon2.so" % mapped_name)
 
     if "header_file" in cryptsetup_info:
         self["check_included_or_mounted"] = cryptsetup_info["header_file"]  # Add the header file to the check list
@@ -277,7 +278,7 @@ def _validate_cryptsetup_device(self, mapped_name) -> None:
     for token_type in ["partuuid", "uuid"]:  # Validate the uuid/partuuid token against blkid info
         if cryptsetup_token := cryptsetup_info.get(token_type):
             if blkid_info.get(token_type) != cryptsetup_token:
-                raise ValueError(
+                raise ValidationError(
                     "[%s] LUKS %s mismatch, found '%s', expected: %s"
                     % (mapped_name, token_type, cryptsetup_token, blkid_info[token_type])
                 )
@@ -312,8 +313,11 @@ def detect_cryptsetup_backend(self) -> None:
 
 def _get_openssl_kdfs(self) -> list[str]:
     """Gets the available KDFs from OpenSSL"""
-    kdfs = self._run(["openssl", "list", "-kdf-algorithms"]).stdout.decode().lower().split("\n")
-    self.logger.debug("OpenSSL KDFs: %s" % kdfs)
+    kdfs = self._run(["openssl", "list", "-kdf-algorithms"], fail_hard=False, fail_silent=True).stdout.decode().lower().split("\n")
+    if not kdfs:
+        self.logger.warning("Unable to determine available OpenSSL KDFs.")
+    else:
+        self.logger.debug("OpenSSL KDFs: %s" % kdfs)
     return kdfs
 
 
@@ -331,7 +335,10 @@ def detect_argon2(self) -> None:
             if not any(dep.name.startswith("libcrypto.so") for dep in cryptsetup_deps):
                 self.logger.error("Cryptsetup is linked against OpenSSL, but libcrypto.so is not in dependencies.")
         case "gcrypt":
-            gcrypt_version = self._run(["libgcrypt-config", "--version"]).stdout.decode().strip().split("-")[0]
+            try:
+                gcrypt_version = self._run(["libgcrypt-config", "--version"]).stdout.decode().strip().split("-")[0]
+            except RuntimeError as e:
+                raise AutodetectError("Unable to determine Libgcrypt version: %s" % e)
             maj, minor, patch = map(int, gcrypt_version.split("."))
             if not any(dep.name.startswith("libgcrypt.so") for dep in cryptsetup_deps):
                 self.logger.error("Cryptsetup is linked against Libgcrypt, but libgcrypt.so is not in dependencies.")
@@ -394,9 +401,9 @@ def export_crypt_sources(self) -> list[str]:
                 self["exports"]["CRYPTSETUP_SOURCE_%s" % name] = parameters["path"]
                 self.logger.info("Set CRYPTSETUP_SOURCE_%s: %s" % (name, parameters.get("path")))
                 continue
-            raise ValueError("Validation must be disabled to use device paths with the cryptsetup module.")
+            raise ValidationError("Validation must be disabled to use device paths with the cryptsetup module.")
         elif not parameters.get("partuuid") and not parameters.get("uuid") and parameters.get("path"):
-            raise ValueError("Device source for cryptsetup mount must be specified: %s" % name)
+            raise ValidationError("Device source for cryptsetup mount must be specified: %s" % name)
 
         for token_type in ["partuuid", "uuid"]:
             if token := parameters.get(token_type):
@@ -404,7 +411,7 @@ def export_crypt_sources(self) -> list[str]:
                 self.logger.debug("Set CRYPTSETUP_TOKEN_%s: %s=%s" % (name, token_type.upper(), token))
                 break
         else:
-            raise ValueError("A partuuid or uuid must be specified for cryptsetup mount: %s" % name)
+            raise ValidationError("A partuuid or uuid must be specified for cryptsetup mount: %s" % name)
 
 
 def get_crypt_dev(self) -> list[str]:
