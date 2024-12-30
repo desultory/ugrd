@@ -1,9 +1,10 @@
 __author__ = "desultory"
-__version__ = "3.11.4"
+__version__ = "3.12.0"
 
 from pathlib import Path
 from typing import Union
 
+from ugrd import AutodetectError, ValidationError
 from zenlib.types import NoDupFlatList
 from zenlib.util import colorize, contains
 
@@ -47,7 +48,7 @@ def calculate_dependencies(self, binary: str) -> list[Path]:
 
     binary_path = which(binary)
     if not binary_path:
-        raise RuntimeError("'%s' not found in PATH" % binary)
+        raise AutodetectError("'%s' not found in PATH" % binary)
 
     binary_path = Path(binary_path)
 
@@ -58,7 +59,7 @@ def calculate_dependencies(self, binary: str) -> list[Path]:
         self.logger.warning(
             "Unable to calculate dependencies for: %s" % colorize(binary, "red", bold=True, bright=True)
         )
-        raise RuntimeError("Unable to resolve dependencies, error: %s" % dependencies.stderr.decode("utf-8"))
+        raise AutodetectError("Unable to resolve dependencies, error: %s" % dependencies.stderr.decode("utf-8"))
 
     dependency_paths = []
     for dependency in dependencies.stdout.decode("utf-8").splitlines():
@@ -79,7 +80,7 @@ def handle_usr_symlinks(self) -> None:
         if (build_dir / "usr/bin").is_dir():
             self._symlink("/usr/bin", "/bin/")
         else:
-            raise RuntimeError("Neither /bin nor /usr/bin exist in the build directory")
+            raise ValidationError("Neither /bin nor /usr/bin exist in the build directory")
 
     if not (build_dir / "sbin").is_dir() and (build_dir / "usr/sbin").is_dir():
         self._symlink("/usr/sbin", "/sbin/")
@@ -275,7 +276,7 @@ def _validate_dependency(self, dependency: Union[Path, str]) -> None:
         dependency = Path(dependency)
 
     if not dependency.exists():
-        raise FileNotFoundError("Dependency does not exist: %s" % dependency)
+        raise ValidationError("Dependency does not exist: %s" % dependency)
 
     return dependency
 

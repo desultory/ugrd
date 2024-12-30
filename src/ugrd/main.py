@@ -4,6 +4,8 @@ from zenlib.util import get_args_n_logger, get_kwargs_from_args
 
 from ugrd.initramfs_generator import InitramfsGenerator
 
+from . import AutodetectError, ValidationError
+
 
 def main():
     arguments = [
@@ -165,6 +167,15 @@ def main():
 
     try:
         generator.build()
+    except ValidationError as e:
+        logger.error("Validation error occurred")
+        print(generator.config_dict)
+        logger.error(e, exc_info=True)
+        exit(1)
+    except AutodetectError as e:
+        logger.error("Autodetect error occurred")
+        logger.error(e, exc_info=True)
+        exit(1)
     except Exception as e:
         logger.info("Dumping config dict:\n")
         print(generator.config_dict)

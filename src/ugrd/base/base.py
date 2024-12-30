@@ -1,16 +1,17 @@
 __author__ = "desultory"
-__version__ = "5.2.1"
+__version__ = "5.3.0"
 
 from importlib.metadata import version
 from pathlib import Path
 
-from zenlib.util import contains, unset, colorize
+from ugrd import AutodetectError, ValidationError
+from zenlib.util import colorize, contains, unset
 
 
 @contains("hostonly")
 def _validate_init_target(self) -> None:
     if not self["init_target"].exists():
-        raise FileNotFoundError("init_target not found at: %s" % self["init_target"])
+        raise ValidationError("init_target not found at: %s" % self["init_target"])
     if "systemd" in str(self["init_target"]) and "ugrd.fs.fakeudev" not in self["modules"]:
         self.logger.warning("'ugrd.fs.fakeudev' may be required if systemd mounts stall on boot.")
 
@@ -43,7 +44,7 @@ def autodetect_init(self) -> None:
         self.logger.info("Detected init at: %s", colorize(init, "cyan", bright=True))
         self["init_target"] = init
     else:
-        raise FileNotFoundError("init_target is not specified and could not be detected.")
+        raise AutodetectError("init_target is not specified and could not be detected.")
 
 
 def export_switch_root_target(self) -> None:
@@ -53,6 +54,7 @@ def export_switch_root_target(self) -> None:
     if str(switch_root_target) == ".":  # Handle empty Path
         switch_root_target = self["mounts"]["root"]["destination"]
     self["exports"]["SWITCH_ROOT_TARGET"] = switch_root_target
+
 
 def _find_init(self) -> str:
     """Returns bash to find the init_target."""
