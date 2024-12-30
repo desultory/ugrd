@@ -237,10 +237,13 @@ def get_blkid_info(self, device=None) -> dict:
     The info is stored in self['_blkid_info']."""
     from re import search
 
-    if device:
-        blkid_output = self._run(["blkid", device]).stdout.decode().strip()
-    else:
-        blkid_output = self._run(["blkid"]).stdout.decode().strip()
+    try:
+        if device:
+            blkid_output = self._run(["blkid", device]).stdout.decode().strip()
+        else:
+            blkid_output = self._run(["blkid"]).stdout.decode().strip()
+    except RuntimeError:
+        raise AutodetectError("Failed to get blkid info for: %s" % device)
 
     if not blkid_output:
         raise AutodetectError("Unable to get blkid info.")

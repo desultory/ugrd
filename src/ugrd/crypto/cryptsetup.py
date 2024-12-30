@@ -313,8 +313,11 @@ def detect_cryptsetup_backend(self) -> None:
 
 def _get_openssl_kdfs(self) -> list[str]:
     """Gets the available KDFs from OpenSSL"""
-    kdfs = self._run(["openssl", "list", "-kdf-algorithms"]).stdout.decode().lower().split("\n")
-    self.logger.debug("OpenSSL KDFs: %s" % kdfs)
+    kdfs = self._run(["openssl", "list", "-kdf-algorithms"], fail_hard=False, fail_silent=True).stdout.decode().lower().split("\n")
+    if not kdfs:
+        self.logger.warning("Unable to determine available OpenSSL KDFs.")
+    else:
+        self.logger.debug("OpenSSL KDFs: %s" % kdfs)
     return kdfs
 
 
@@ -332,7 +335,10 @@ def detect_argon2(self) -> None:
             if not any(dep.name.startswith("libcrypto.so") for dep in cryptsetup_deps):
                 self.logger.error("Cryptsetup is linked against OpenSSL, but libcrypto.so is not in dependencies.")
         case "gcrypt":
-            gcrypt_version = self._run(["libgcrypt-config", "--version"]).stdout.decode().strip().split("-")[0]
+            try:
+                gcrypt_version = self._run(["libgcrypt-config", "--version"]).stdout.decode().strip().split("-")[0]
+            except RuntimeError as e:
+                raise AutodetectError("Unable to determine Libgcrypt version: %s" % e)
             maj, minor, patch = map(int, gcrypt_version.split("."))
             if not any(dep.name.startswith("libgcrypt.so") for dep in cryptsetup_deps):
                 self.logger.error("Cryptsetup is linked against Libgcrypt, but libgcrypt.so is not in dependencies.")
