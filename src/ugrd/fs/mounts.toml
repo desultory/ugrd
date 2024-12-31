@@ -7,13 +7,11 @@ binaries = [
   "mkdir",
 ]
 
-cmdline_bools = [ "rootwait" ]
 cmdline_strings =  ["root", "roottype", "rootflags", "rootdelay" ]
 
 run_dirs = [ "vars" ]
 
-mount_wait = false
-mount_retries = 5
+mount_timeout = 1
 autodetect_root = true
 autodetect_root_dm = true
 autodetect_root_luks = true
@@ -25,8 +23,7 @@ late_fstab = "/etc/fstab.late"
 [imports.config_processing]
 "ugrd.fs.mounts" = [ "_process_run_dirs_multi",
 		     "_process_mounts_multi",
-		     "_process_late_mounts_multi",
-		     "_process_mount_timeout" ]
+		     "_process_late_mounts_multi"]
 
 [imports.build_enum]
 "ugrd.fs.mounts" = [ "get_mounts_info", "get_virtual_block_info", "get_blkid_info",
@@ -56,9 +53,8 @@ run_dirs = "NoDupFlatList"  # A list of directories to be created under /run
 late_mounts = "dict"  # Like mounts, but run after the root is mounted
 late_fstab = "str"  # The path to the late_fstab file
 auto_mounts = "NoDupFlatList"  # A list of mounts to be automatically added to the mounts list
-mount_wait = "bool"  # Add the mount_wait property, if defined, user input will be required before attempting to mount entries
-mount_timeout = "float"  # Add the mount_timeout property, used to define the timeout for mount_wait
-mount_retries = "int"  # The number of times to re-attempt mounting the fstab
+mount_timeout = "float"  # The time to wait between mount attempts
+mount_retries = "int"  # The number of times to re-attempt mounting the fstab, infinite if not set
 mount_cmd = "str"  # The mount command called by mount_root, can be overridden
 autodetect_root = "bool"  # Add the autodetect_root property, if defined, the root mount will be autodetected
 autodetect_root_dm = "bool"  # Whether or not to try to autodetect device-mapper partitions

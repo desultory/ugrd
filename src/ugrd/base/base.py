@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "5.3.0"
+__version__ = "5.4.0"
 
 from importlib.metadata import version
 from pathlib import Path
@@ -208,9 +208,9 @@ def prompt_user(self) -> list[str]:
         output += [r'echo -e "\e[1;35m *\e[0m $prompt"']
     output += [
         'if [ -n "$2" ]; then',
-        '    read -t "$2" -rs',
+        '    read -t "$2" -rs && return 0 || return 1',
         "else",
-        "    read -rs",
+        "    read -rs && return 0 || return 1",
         "fi",
     ]
     return output
