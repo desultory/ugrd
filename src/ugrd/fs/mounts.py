@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "5.9.0"
+__version__ = "6.0.0"
 
 from pathlib import Path
 from typing import Union
@@ -104,16 +104,6 @@ def _process_mount(self, mount_name: str, mount_config, mount_class="mounts") ->
     if mount_class == "mounts":
         # Define the mountpoint path for standard mounts
         self["paths"] = mount_config["destination"]
-
-
-def _process_mount_timeout(self, timeout: float) -> None:
-    """Set the mount timeout, enables mount_wait."""
-    if not isinstance(timeout, (int, float)):
-        raise ValueError("Invalid timeout: %s" % timeout)
-    if not self["mount_wait"]:
-        self.logger.info("Enabling mount wait, as a timeout is set: %s" % timeout)
-        self["mount_wait"] = True
-    self.data["mount_timeout"] = timeout
 
 
 def _process_mounts_multi(self, mount_name: str, mount_config) -> None:
@@ -671,31 +661,28 @@ def mount_late(self) -> list[str]:
 
 def mount_fstab(self) -> list[str]:
     """Generates the init function for mounting the fstab.
-    If a mount_timeout is set, sets the default rootdelay.
-    If a mount_wait is set, enables rootwait.
-    mount_retries sets the number of times to retry the mount (for unattended booting).
+    Keeps re-attempting with mount_timeout or rootdelay until successful.
+    mount_retries sets the number of times to retry the mount, infinite otherwise.
     """
-    out = []
-    if timeout := self.get("mount_timeout"):  # Set the timeout, using the defined timeout as the default
-        out.append(f"timeout=$(readvar rootdelay {timeout})")
-    else:
-        out.append("timeout=$(readvar rootdelay)")
-
-    if rootwait := self.get("mount_wait"):  # Set the rootwait bool, using the defined rootwait as the default
-        out.append(f"rootwait=$(readvar rootwait {int(rootwait)})")
-    else:
-        out.append("rootwait=$(readvar rootwait)")
-
-    out += [
-        'if [ -z "$timeout" ]; then',  # If timeout is not set, prompt the user -
-        '    if [ "$rootwait" == "1" ]; then',  # only if rootwait is set to 1
-        '        prompt_user "Press enter once devices have settled."',
-        "    fi",
-        "else",  # If timeout is set, prompt the user with a timeout
-        '    prompt_user "Press enter once devices have settled. [${timeout}s]" "$timeout"',
-        "fi",
-        f'retry {self["mount_retries"]} "${{timeout:-1}}" mount -a || rd_fail "Failed to mount all filesystems."',
+    out = [
+        'einfo "Attempting to mount all filesystems."',
+        f"timeout=$(readvar rootdelay {self.get('mount_timeout', 1)})",
     ]
+
+    if retries := self.get("mount_retries"):
+        out += [
+            f'retry {retries} "$timeout" mount -a || rd_fail "Failed to mount all filesystems."',
+        ]
+    else:
+        out += [
+            "while ! mount -a; do",  # Actually retry forever, retry with a short timeout may fail
+            '    if prompt_user "Press enter to break, waiting: ${timeout}s" "$timeout"; then',
+            '        rd_fail "Failed to mount all filesystems."',
+            "    fi",
+            '    eerror "Failed to mount all filesystems, retrying."',
+            "done",
+            "einfo 'All filesystems mounted.'",
+        ]
 
     return out
 
@@ -766,7 +753,7 @@ def mount_root(self) -> list[str]:
         '    umount "$(readvar MOUNTS_ROOT_TARGET)"',
         "fi",
         '''einfo "Mounting '$(readvar MOUNTS_ROOT_SOURCE)' ($(readvar MOUNTS_ROOT_TYPE)) to '$(readvar MOUNTS_ROOT_TARGET)' with options: $(readvar MOUNTS_ROOT_OPTIONS)"''',
-        f'retry {self["mount_retries"]} {self["mount_timeout"] or 1} mount "$(readvar MOUNTS_ROOT_SOURCE)" -t "$(readvar MOUNTS_ROOT_TYPE)" "$(readvar MOUNTS_ROOT_TARGET)" -o "$(readvar MOUNTS_ROOT_OPTIONS)"',
+        f'retry {self["mount_retries"] or -1} {self["mount_timeout"]} mount "$(readvar MOUNTS_ROOT_SOURCE)" -t "$(readvar MOUNTS_ROOT_TYPE)" "$(readvar MOUNTS_ROOT_TARGET)" -o "$(readvar MOUNTS_ROOT_OPTIONS)"',
     ]
 
 
