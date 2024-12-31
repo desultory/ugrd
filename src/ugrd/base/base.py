@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "5.4.0"
+__version__ = "5.5.0"
 
 from importlib.metadata import version
 from pathlib import Path
@@ -230,7 +230,7 @@ def retry(self) -> list[str]:
         '    "$@"',  # If retries is 0, just run the command
         '    return "$?"',
         'elif [ "$retries" -lt 0 ]; then',
-        "    retries=100",
+        "    retries=1000",
         "fi",
         'i=-1; while [ "$((i += 1))" -lt "$retries" ]; do',
         '    if "$@"; then',
