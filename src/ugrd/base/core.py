@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "3.12.1"
+__version__ = "3.12.2"
 
 from pathlib import Path
 from typing import Union
@@ -179,7 +179,7 @@ def find_libgcc(self) -> None:
     except FileNotFoundError:
         musl_warning = True
 
-    if b"Unimplemented option: -p" in cmd.stderr:  # Probably musl libc
+    if not musl_warning and b"Unimplemented option: -p" in cmd.stderr:  # Probably musl libc
         musl_warning = True
 
     if musl_warning:
