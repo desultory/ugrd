@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "3.12.0"
+__version__ = "3.12.1"
 
 from pathlib import Path
 from typing import Union
@@ -173,9 +173,16 @@ def find_libgcc(self) -> None:
     """
     from pathlib import Path
 
-    cmd = self._run(["ldconfig", "-p"], fail_silent=True, fail_hard=False)
+    musl_warning = False
+    try:
+        cmd = self._run(["ldconfig", "-p"], fail_silent=True, fail_hard=False)
+    except FileNotFoundError:
+        musl_warning = True
 
     if b"Unimplemented option: -p" in cmd.stderr:  # Probably musl libc
+        musl_warning = True
+
+    if musl_warning:
         self.logger.warning("This check can be disabled by setting `find_libgcc = false` in the configuration.")
         return self.logger.warning("Unable to run ldconfig -p, if GCC is being used, this is fatal!")
 

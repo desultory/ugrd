@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "2.2.4"
+__version__ = "2.3.0"
 
 from collections import UserDict
 from pathlib import Path
@@ -57,8 +57,10 @@ class InitramfsConfigDict(UserDict):
             if arg == "modules":  # allow loading modules by name from the command line
                 for module in value.split(","):
                     self[arg] = module
-            else:
+            elif getattr(self, arg, None) != value:  # Only set the value if it differs:
                 self[arg] = value
+            else:
+                self.logger.debug("Skipping unchanged argument '%s' with value: %s" % (arg, value))
 
     def __setitem__(self, key: str, value) -> None:
         if self["validated"]:

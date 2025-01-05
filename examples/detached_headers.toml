@@ -5,10 +5,6 @@ modules = [
   "ugrd.crypto.cryptsetup"
 ]
 
-# Wait a few seconds for storage to settle after modules are loaded if external or slow storage is used
-#mount_wait = true
-#mount_timeout = 3
-
 auto_mounts = ['/boot']  # Automatically create mount config for /boot on the host
 
 [cryptsetup.root]
