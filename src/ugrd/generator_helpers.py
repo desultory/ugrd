@@ -4,7 +4,7 @@ from typing import Union
 
 from zenlib.util import pretty_print, colorize
 
-__version__ = "1.4.0"
+__version__ = "1.4.1"
 __author__ = "desultory"
 
 
@@ -148,8 +148,9 @@ class GeneratorHelpers:
         self.logger.debug("Creating symlink: %s -> %s" % (target, source))
         symlink(source, target)
 
-    def _run(self, args: list[str], timeout=15, fail_silent=False, fail_hard=True) -> CompletedProcess:
+    def _run(self, args: list[str], timeout=None, fail_silent=False, fail_hard=True) -> CompletedProcess:
         """Runs a command, returns the CompletedProcess object"""
+        timeout = timeout or self.timeout
         cmd_args = [str(arg) for arg in args]
         self.logger.debug("Running command: %s" % " ".join(cmd_args))
         try:

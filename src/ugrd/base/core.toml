@@ -8,6 +8,7 @@ hostonly = true
 validate = true
 library_paths = [ "/lib64" ]
 old_count = 1
+timeout = 15
 
 binaries = [ "/bin/bash" ]
 
@@ -54,6 +55,7 @@ minor = 1
 [custom_parameters]
 hostonly = "bool"  # If true, the initramfs will be built specifically for the host building it
 validate = "bool"  # If true, the configuration of the initramfs will be validated against the host
+timeout = "int"  # The timeout for _run commands, defaults to 15 seconds
 _custom_init_file = "str"  # Add the _custom_init_file propety, used to set where the custom init file is located
 tmpdir = "Path"  # The base directory for builds
 build_dir = "Path"  # The directory where the initramfs is built
