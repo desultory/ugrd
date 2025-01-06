@@ -2,9 +2,9 @@ from pathlib import Path
 from subprocess import CompletedProcess, TimeoutExpired, run
 from typing import Union
 
-from zenlib.util import pretty_print
+from zenlib.util import pretty_print, colorize
 
-__version__ = "1.3.9"
+__version__ = "1.4.1"
 __author__ = "desultory"
 
 
@@ -77,9 +77,9 @@ class GeneratorHelpers:
             self._mkdir(file_path.parent, resolve_build=False)
 
         if file_path.is_file():
-            self.logger.warning("File already exists: %s" % file_path)
+            self.logger.warning("File already exists: %s" % colorize(file_path, "yellow"))
             if self.clean:
-                self.logger.warning("Deleting file: %s" % file_path)
+                self.logger.warning("Deleting file: %s" % colorize(file_path, "red", bright=True, bold=True))
                 file_path.unlink()
 
         self.logger.debug("[%s] Writing contents:\n%s" % (file_path, contents))
@@ -93,7 +93,7 @@ class GeneratorHelpers:
             except RuntimeError as e:
                 raise RuntimeError("Failed to validate bash script: %s" % pretty_print(contents)) from e
 
-        self.logger.info("Wrote file: %s" % file_path)
+        self.logger.info("Wrote file: %s" % colorize(file_path, "green", bright=True))
         chmod(file_path, chmod_mask)
         self.logger.debug("[%s] Set file permissions: %s" % (file_path, chmod_mask))
 
@@ -115,7 +115,7 @@ class GeneratorHelpers:
             self._mkdir(dest_path.parent, resolve_build=False)
 
         if dest_path.is_file():
-            self.logger.warning("File already exists: %s" % dest_path)
+            self.logger.warning("File already exists, overwriting: %s" % colorize(dest_path, "yellow", bright=True))
         elif dest_path.is_dir():
             self.logger.debug("Destination is a directory, adding source filename: %s" % source.name)
             dest_path = dest_path / source.name
@@ -140,7 +140,7 @@ class GeneratorHelpers:
             if target.resolve() == source:
                 return self.logger.debug("Symlink already exists: %s -> %s" % (target, source))
             elif self.clean:
-                self.logger.warning("Deleting symlink: %s" % target)
+                self.logger.warning("Deleting symlink: %s" % colorize(target, "red", bright=True))
                 target.unlink()
             else:
                 raise RuntimeError("Symlink already exists: %s -> %s" % (target, target.resolve()))
@@ -148,8 +148,9 @@ class GeneratorHelpers:
         self.logger.debug("Creating symlink: %s -> %s" % (target, source))
         symlink(source, target)
 
-    def _run(self, args: list[str], timeout=15, fail_silent=False, fail_hard=True) -> CompletedProcess:
+    def _run(self, args: list[str], timeout=None, fail_silent=False, fail_hard=True) -> CompletedProcess:
         """Runs a command, returns the CompletedProcess object"""
+        timeout = timeout or self.timeout
         cmd_args = [str(arg) for arg in args]
         self.logger.debug("Running command: %s" % " ".join(cmd_args))
         try:
@@ -159,7 +160,7 @@ class GeneratorHelpers:
 
         if cmd.returncode != 0:
             if not fail_silent:
-                self.logger.error("Failed to run command: %s" % " ".join(cmd.args))
+                self.logger.error("Failed to run command: %s" % colorize(" ".join(cmd.args), "red", bright=True))
                 self.logger.error("Command output:\n%s" % cmd.stdout.decode())
                 self.logger.error("Command error:\n%s" % cmd.stderr.decode())
             if fail_hard:
@@ -177,7 +178,7 @@ class GeneratorHelpers:
         # If the cycle count is not set, attempt to clean
         if not self.old_count:
             if self.clean:
-                self.logger.warning("Deleting file: %s" % file_name)
+                self.logger.warning("Deleting file: %s" % colorize(file_name, "red", bold=True, bright=True))
                 file_name.unlink()
                 return
             else:
@@ -199,7 +200,7 @@ class GeneratorHelpers:
             if sequence >= self.old_count:
                 # Clean the last file in the sequence if clean is enabled
                 if self.clean:
-                    self.logger.warning("Deleting old file: %s" % target_file)
+                    self.logger.warning("Deleting old file: %s" % colorize(target_file, "red", bold=True, bright=True))
                     target_file.unlink()
                 else:
                     self.logger.debug("Cycle limit reached")

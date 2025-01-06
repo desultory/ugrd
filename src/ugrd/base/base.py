@@ -1,16 +1,17 @@
 __author__ = "desultory"
-__version__ = "5.2.0"
+__version__ = "5.5.0"
 
 from importlib.metadata import version
 from pathlib import Path
 
-from zenlib.util import contains, unset
+from ugrd import AutodetectError, ValidationError
+from zenlib.util import colorize, contains, unset
 
 
 @contains("hostonly")
 def _validate_init_target(self) -> None:
     if not self["init_target"].exists():
-        raise FileNotFoundError("init_target not found at: %s" % self["init_target"])
+        raise ValidationError("init_target not found at: %s" % self["init_target"])
     if "systemd" in str(self["init_target"]) and "ugrd.fs.fakeudev" not in self["modules"]:
         self.logger.warning("'ugrd.fs.fakeudev' may be required if systemd mounts stall on boot.")
 
@@ -40,10 +41,10 @@ def autodetect_init(self) -> None:
     from shutil import which
 
     if init := which("init"):
-        self.logger.info("Detected init at: %s", init)
+        self.logger.info("Detected init at: %s", colorize(init, "cyan", bright=True))
         self["init_target"] = init
     else:
-        raise FileNotFoundError("init_target is not specified and could not be detected.")
+        raise AutodetectError("init_target is not specified and could not be detected.")
 
 
 def export_switch_root_target(self) -> None:
@@ -53,6 +54,7 @@ def export_switch_root_target(self) -> None:
     if str(switch_root_target) == ".":  # Handle empty Path
         switch_root_target = self["mounts"]["root"]["destination"]
     self["exports"]["SWITCH_ROOT_TARGET"] = switch_root_target
+
 
 def _find_init(self) -> str:
     """Returns bash to find the init_target."""
@@ -206,9 +208,9 @@ def prompt_user(self) -> list[str]:
         output += [r'echo -e "\e[1;35m *\e[0m $prompt"']
     output += [
         'if [ -n "$2" ]; then',
-        '    read -t "$2" -rs',
+        '    read -t "$2" -rs && return 0 || return 1',
         "else",
-        "    read -rs",
+        "    read -rs && return 0 || return 1",
         "fi",
     ]
     return output
@@ -228,7 +230,7 @@ def retry(self) -> list[str]:
         '    "$@"',  # If retries is 0, just run the command
         '    return "$?"',
         'elif [ "$retries" -lt 0 ]; then',
-        "    retries=100",
+        "    retries=1000",
         "fi",
         'i=-1; while [ "$((i += 1))" -lt "$retries" ]; do',
         '    if "$@"; then',

@@ -1,8 +1,8 @@
 __author__ = "desultory"
-__version__ = "3.6.0"
+__version__ = "3.7.0"
 
 
-from zenlib.util import contains, unset
+from zenlib.util import contains, unset, colorize
 
 
 @contains("check_cpio")
@@ -92,7 +92,7 @@ def make_cpio(self) -> None:
         if self["cpio_rotate"]:
             self._rotate_old(out_cpio)
         elif self["clean"]:
-            self.logger.warning("Removing existing file: %s" % out_cpio)
+            self.logger.warning("Removing existing file: %s" % colorize(out_cpio, "red", bold=True, bright=True))
             out_cpio.unlink()
         else:
             raise FileExistsError("File already exists, and cleaning/rotation are disabled: %s" % out_cpio)

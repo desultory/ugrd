@@ -1,6 +1,8 @@
-__version__ = "0.3.2"
+__version__ = "0.4.0"
 
 from pathlib import Path
+
+from ugrd import ValidationError
 from zenlib.util import contains
 
 
@@ -24,7 +26,7 @@ def _check_in_file(self, file, lines):
     """Checks that all lines are in the file."""
     file = self._get_build_path(file)
     if not file.exists():
-        raise ValueError("File '%s' does not exist" % file)
+        raise FileNotFoundError("File '%s' does not exist" % file)
 
     with open(file, "r") as f:
         file_lines = f.readlines()
@@ -33,11 +35,13 @@ def _check_in_file(self, file, lines):
         if check_line not in file_lines:
             raise ValueError("Failed to find line '%s' in file '%s'" % (check_line, file))
 
+
 def _find_mount_with_dest(self, check_path: Path) -> str:
     """Returns the mount name which has a destination matching the check path."""
     for mount_name, mount_config in self.mounts.items():
         if mount_config["destination"] == check_path:
             return mount_name
+
 
 def _find_in_mounts(self, file) -> str:
     """Finds a corresponding mount config for a file, if defined."""
@@ -45,7 +49,7 @@ def _find_in_mounts(self, file) -> str:
     while parent := file_path.parent:
         if str(parent) in ["/", "."]:
             self.logger.warning("Configured mounts:\n%s" % self.mounts)
-            raise ValueError("File '%s' not found under any configured mounts" % file)
+            raise ValidationError("File '%s' not found under any configured mounts" % file)
 
         if mount_name := _find_mount_with_dest(self, parent):
             return mount_name
@@ -56,12 +60,13 @@ def _find_in_mounts(self, file) -> str:
 def check_included_or_mounted(self):
     """Ensures these files are included in the initramfs, or would be available under a mount"""
     from ugrd.fs.cpio import _check_in_cpio
+
     for file in self["check_included_or_mounted"]:
         try:  # First check if it's in the cpio
             _check_in_cpio(self, file, quiet=True)
         except FileNotFoundError:  # Then check if it's under a mount
             mountpoint = _find_in_mounts(self, file)
             if not Path(file).exists():
-                self.logger.error("File detected under mount '%s' but is not present: %s" % ( mountpoint, file))
+                self.logger.error("File detected under mount '%s' but is not present: %s" % (mountpoint, file))
 
     return "All included files were found."

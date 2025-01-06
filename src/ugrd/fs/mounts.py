@@ -1,10 +1,11 @@
 __author__ = "desultory"
-__version__ = "5.6.2"
+__version__ = "6.0.0"
 
 from pathlib import Path
 from typing import Union
 
-from zenlib.util import contains, pretty_print
+from ugrd import AutodetectError, ValidationError
+from zenlib.util import colorize, contains, pretty_print
 
 BLKID_FIELDS = ["uuid", "partuuid", "label", "type"]
 SOURCE_TYPES = ["uuid", "partuuid", "label", "path"]
@@ -25,7 +26,7 @@ MOUNT_PARAMETERS = [
 def _validate_mount_config(self, mount_name: str, mount_config) -> None:
     """Validate the mount config."""
     if mount_config.get("no_validate"):
-        return self.logger.warning("Skipping mount validation: %s" % mount_name)
+        return self.logger.warning("Skipping mount validation: %s" % colorize(mount_name, "yellow", bold=True))
 
     for source_type in SOURCE_TYPES:
         if source_type in mount_config:
@@ -33,24 +34,11 @@ def _validate_mount_config(self, mount_name: str, mount_config) -> None:
             break
     else:  # If no source type is found, raise an error, unless it's the root mount
         if source_type not in mount_config and mount_name != "root":
-            raise ValueError("[%s] No source type found in mount: %s" % (mount_name, mount_config))
+            raise ValidationError("[%s] No source type found in mount: %s" % (mount_name, mount_config))
 
     for parameter, value in mount_config.copy().items():
         self.logger.debug("[%s] Validating parameter: %s" % (mount_name, parameter))
-        if parameter == "source" and isinstance(value, dict):
-            self.logger.warning("source dict is deprecated, please define the source type directly.")
-            self.logger.info(
-                "Simply define the source type directly in the mount config, instead of using the 'source' dict."
-            )
-            # Break if the source type is valid
-            for source_type in SOURCE_TYPES:
-                if source_type in value:
-                    mount_config[source_type] = value[source_type]
-                    break
-            else:
-                self.logger.error("Valid source types: %s" % SOURCE_TYPES)
-                raise ValueError("Invalid source type in mount: %s" % value)
-        elif parameter == "options" and not mount_config.get("no_validate_options"):
+        if parameter == "options" and not mount_config.get("no_validate_options"):
             for option in value:
                 if "subvol=" in option:
                     if mount_name == "root":
@@ -101,14 +89,14 @@ def _process_mount(self, mount_name: str, mount_config, mount_class="mounts") ->
             self["binaries"] = "mount.nilfs2"
         elif mount_type == "btrfs":
             if "ugrd.fs.btrfs" not in self["modules"]:
-                self.logger.info("Auto-enabling module: btrfs")
+                self.logger.info("Auto-enabling module: %s", colorize("btrfs", "cyan"))
                 self["modules"] = "ugrd.fs.btrfs"
         elif mount_type == "bcachefs":
             if "ugrd.fs.bcachefs" not in self["modules"]:
-                self.logger.info("Auto-enabling module: bcachefs")
+                self.logger.info("Auto-enabling module: %s", colorize("bcachefs", "cyan"))
                 self["modules"] = "ugrd.fs.bcachefs"
         elif mount_type not in ["proc", "sysfs", "devtmpfs", "squashfs", "tmpfs", "devpts"]:
-            self.logger.warning("Unknown mount type: %s" % mount_type)
+            self.logger.warning("Unknown mount type: %s" % colorize(mount_type, "red", bold=True))
 
     self[mount_class][mount_name] = mount_config
     self.logger.debug("[%s] Added mount: %s" % (mount_name, mount_config))
@@ -116,16 +104,6 @@ def _process_mount(self, mount_name: str, mount_config, mount_class="mounts") ->
     if mount_class == "mounts":
         # Define the mountpoint path for standard mounts
         self["paths"] = mount_config["destination"]
-
-
-def _process_mount_timeout(self, timeout: float) -> None:
-    """Set the mount timeout, enables mount_wait."""
-    if not isinstance(timeout, (int, float)):
-        raise ValueError("Invalid timeout: %s" % timeout)
-    if not self["mount_wait"]:
-        self.logger.info("Enabling mount wait, as a timeout is set: %s" % timeout)
-        self["mount_wait"] = True
-    self.data["mount_timeout"] = timeout
 
 
 def _process_mounts_multi(self, mount_name: str, mount_config) -> None:
@@ -249,13 +227,17 @@ def get_blkid_info(self, device=None) -> dict:
     The info is stored in self['_blkid_info']."""
     from re import search
 
-    if device:
-        blkid_output = self._run(["blkid", device]).stdout.decode().strip()
-    else:
-        blkid_output = self._run(["blkid"]).stdout.decode().strip()
+    try:
+        if device:
+            blkid_output = self._run(["blkid", device]).stdout.decode().strip()
+        else:
+            blkid_output = self._run(["blkid"]).stdout.decode().strip()
+    except RuntimeError:
+        self.logger.error("Blkid output: %s" % blkid_output)
+        raise AutodetectError("Failed to get blkid info for: %s" % device)
 
     if not blkid_output:
-        raise ValueError("Unable to get blkid info.")
+        raise AutodetectError("Unable to get blkid info.")
 
     for device_info in blkid_output.split("\n"):
         dev, info = device_info.split(": ")
@@ -285,7 +267,7 @@ def autodetect_init_mount(self, parent=None) -> None:
     if parent == Path("/"):
         return
     if str(parent) in self["_mounts"]:
-        self.logger.info("Detected init mount: %s" % parent)
+        self.logger.info("Detected init mount: %s" % colorize(parent, "cyan"))
         mount_name = str(parent).removeprefix("/")
         mount_dest = str(parent)
         mount_device = self["_mounts"][str(parent)]["device"]
@@ -331,16 +313,18 @@ def get_virtual_block_info(self) -> dict:
                 self["_vblk_info"][virt_device.name]["uuid"] = (virt_device / "md/uuid").read_text().strip()
                 self["_vblk_info"][virt_device.name]["level"] = (virt_device / "md/level").read_text().strip()
             else:
-                raise ValueError("Failed to get virtual device name: %s" % virt_device.name)
+                raise AutodetectError("Failed to get virtual device name: %s" % virt_device.name)
 
             try:
                 self["_vblk_info"][virt_device.name]["name"] = (virt_device / "dm/name").read_text().strip()
             except FileNotFoundError:
-                self.logger.warning("No device mapper name found for: %s" % virt_device.name)
+                self.logger.warning(
+                    "No device mapper name found for: %s" % colorize(virt_device.name, "red", bold=True)
+                )
                 self["_vblk_info"][virt_device.name]["name"] = virt_device.name  # we can pretend
 
     if self["_vblk_info"]:
-        self.logger.info("Found virtual block devices: %s" % ", ".join(self["_vblk_info"].keys()))
+        self.logger.info("Found virtual block devices: %s" % colorize(", ".join(self["_vblk_info"].keys()), "cyan"))
         self.logger.debug("Virtual block device info: %s" % pretty_print(self["_vblk_info"]))
     else:
         self.logger.debug("No virtual block devices found.")
@@ -367,7 +351,7 @@ def _autodetect_dm(self, mountpoint, device=None) -> None:
     elif mountpoint:
         source_device = _resolve_overlay_lower_device(self, mountpoint)
     else:
-        raise FileNotFoundError("Mountpoint not found in host mounts: %s" % mountpoint)
+        raise AutodetectError("Mountpoint not found in host mounts: %s" % mountpoint)
 
     device_name = source_device.split("/")[-1]
     if not any(device_name.startswith(prefix) for prefix in ["dm-", "md"]):
@@ -383,11 +367,11 @@ def _autodetect_dm(self, mountpoint, device=None) -> None:
             elif f"/dev/mapper/{source_name}" in self["_blkid_info"]:
                 source_device = f"/dev/mapper/{source_name}"
             elif not get_blkid_info(self, source_device):
-                raise FileNotFoundError("[%s] No blkid info for virtual device: %s" % (mountpoint, source_device))
+                raise AutodetectError("[%s] No blkid info for virtual device: %s" % (mountpoint, source_device))
         else:
-            raise ValueError("[%s] No blkid info for virtual device: %s" % (mountpoint, source_device))
+            raise AutodetectError("[%s] No blkid info for virtual device: %s" % (mountpoint, source_device))
 
-    self.logger.info("[%s] Detected virtual block device: %s" % (mountpoint, source_device))
+    self.logger.info("[%s] Detected virtual block device: %s" % (mountpoint, colorize(source_device, "cyan")))
     source_device = Path(source_device)
     major, minor = _get_device_id(source_device)
     self.logger.debug("[%s] Major: %s, Minor: %s" % (source_device, major, minor))
@@ -397,12 +381,12 @@ def _autodetect_dm(self, mountpoint, device=None) -> None:
             dev_name = name
             break
     else:
-        raise RuntimeError(
+        raise AutodetectError(
             "[%s] Unable to find device mapper device with maj: %s min: %s" % (source_device, major, minor)
         )
 
     if len(self["_vblk_info"][dev_name]["slaves"]) == 0:
-        raise RuntimeError("No slaves found for device mapper device, unknown type: %s" % source_device.name)
+        raise AutodetectError("No slaves found for device mapper device, unknown type: %s" % source_device.name)
     slave_source = self["_vblk_info"][dev_name]["slaves"][0]
 
     try:
@@ -411,9 +395,9 @@ def _autodetect_dm(self, mountpoint, device=None) -> None:
         if slave_source in self["_vblk_info"]:
             blkid_info = self["_blkid_info"][f"/dev/mapper/{self['_vblk_info'][slave_source]['name']}"]
         else:
-            raise KeyError("Unable to find blkid info for device mapper slave: %s" % slave_source)
+            raise AutodetectError("Unable to find blkid info for device mapper slave: %s" % slave_source)
     if source_device.name != self["_vblk_info"][dev_name]["name"] and source_device.name != dev_name:
-        raise ValueError(
+        raise ValidationError(
             "Device mapper device name mismatch: %s != %s" % (source_device.name, self["_vblk_info"][dev_name]["name"])
         )
 
@@ -429,16 +413,20 @@ def _autodetect_dm(self, mountpoint, device=None) -> None:
         autodetect_raid(self, source_device, dev_name, blkid_info)
     else:
         if "type" not in blkid_info:
-            self.logger.error("If LUKS headers are detached, they must be configured with the corresponding mapped device name.")
-            raise RuntimeError("[%s] No type found for device mapper device: %s" % (dev_name, source_device))
-        raise RuntimeError("Unknown device mapper device type: %s" % blkid_info.get("type"))
+            self.logger.error(
+                "If LUKS headers are detached, they must be configured with the corresponding mapped device name."
+            )
+            raise AutodetectError("[%s] No type found for device mapper device: %s" % (dev_name, source_device))
+        raise ValidationError("Unknown device mapper device type: %s" % blkid_info.get("type"))
 
     autodetect_mount_kmods(self, slave_source)
 
     for slave in self["_vblk_info"][dev_name]["slaves"]:
         try:
             _autodetect_dm(self, mountpoint, slave)  # Just pass the slave device name, as it will be re-detected
-            self.logger.info("[%s] Autodetected device mapper container: %s" % (source_device.name, slave))
+            self.logger.info(
+                "[%s] Autodetected device mapper container: %s" % (source_device.name, colorize(slave, "cyan"))
+            )
         except KeyError:
             self.logger.debug("Slave does not appear to be a DM device: %s" % slave)
 
@@ -450,20 +438,14 @@ def autodetect_raid(self, mount_loc, dm_name, blkid_info) -> None:
     Adds kmods for the raid level to the autodetect list.
     """
     if "ugrd.fs.mdraid" not in self["modules"]:
-        self.logger.info("Autodetected MDRAID mount, enabling the mdraid module.")
+        self.logger.info("Autodetected MDRAID mount, enabling the %s module." % colorize("mdraid", "cyan"))
         self["modules"] = "ugrd.fs.mdraid"
 
     if level := self["_vblk_info"][dm_name].get("level"):
-        self.logger.info("[%s] MDRAID level: %s" % (mount_loc.name, level))
+        self.logger.info("[%s] MDRAID level: %s" % (mount_loc.name, colorize(level, "cyan")))
         self["_kmod_auto"] = level
     else:
-        raise ValueError("[%s] Failed to autodetect MDRAID level: %s" % (dm_name, blkid_info))
-
-
-@contains("autodetect_root_dm", "Skipping device mapper autodetection, autodetect_root_dm is disabled.", log_level=30)
-@contains("hostonly", "Skipping device mapper autodetection, hostonly mode is disabled.", log_level=30)
-def autodetect_root_dm(self) -> None:
-    _autodetect_dm(self, "/")
+        raise AutodetectError("[%s] Failed to autodetect MDRAID level: %s" % (dm_name, blkid_info))
 
 
 @contains("autodetect_root_lvm", "Skipping LVM autodetection, autodetect_root_lvm is disabled.", log_level=20)
@@ -471,14 +453,14 @@ def autodetect_root_dm(self) -> None:
 def autodetect_lvm(self, mount_loc, dm_num, blkid_info) -> None:
     """Autodetects LVM mounts and sets the lvm config."""
     if "ugrd.fs.lvm" not in self["modules"]:
-        self.logger.info("Autodetected LVM mount, enabling the lvm module.")
+        self.logger.info("Autodetected LVM mount, enabling the %s module." % colorize("lvm", "cyan"))
         self["modules"] = "ugrd.fs.lvm"
 
     if uuid := blkid_info.get("uuid"):
-        self.logger.info("[%s] LVM volume contianer uuid: %s" % (mount_loc.name, uuid))
+        self.logger.info("[%s] LVM volume contianer uuid: %s" % (mount_loc.name, colorize(uuid, "cyan")))
         self["lvm"] = {self["_vblk_info"][dm_num]["name"]: {"uuid": uuid}}
     else:
-        raise ValueError("Failed to autodetect LVM volume uuid: %s" % mount_loc.name)
+        raise AutodetectError("Failed to autodetect LVM volume uuid: %s" % mount_loc.name)
 
 
 @contains("autodetect_root_luks", "Skipping LUKS autodetection, autodetect_root_luks is disabled.", log_level=30)
@@ -486,7 +468,9 @@ def autodetect_lvm(self, mount_loc, dm_num, blkid_info) -> None:
 def autodetect_luks(self, mount_loc, dm_num, blkid_info) -> None:
     """Autodetects LUKS mounts and sets the cryptsetup config."""
     if "ugrd.crypto.cryptsetup" not in self["modules"]:
-        self.logger.info("Autodetected LUKS mount, enabling the cryptsetup module: %s" % mount_loc.name)
+        self.logger.info(
+            "Autodetected LUKS mount, enabling the cryptsetup module: %s" % colorize(mount_loc.name, "cyan")
+        )
         self["modules"] = "ugrd.crypto.cryptsetup"
 
     if "cryptsetup" in self and any(
@@ -494,30 +478,30 @@ def autodetect_luks(self, mount_loc, dm_num, blkid_info) -> None:
     ):
         self.logger.warning(
             "Skipping LUKS autodetection, cryptsetup config already set: %s"
-            % self["cryptsetup"][self["_vblk_info"][dm_num]["name"]]
+            % pretty_print(self["cryptsetup"][self["_vblk_info"][dm_num]["name"]])
         )
         return
 
     if len(self["_vblk_info"][dm_num]["slaves"]) > 1:
-        self.logger.error("Device mapper slaves: %s" % self["_vblk_info"][dm_num]["slaves"])
-        raise RuntimeError("Multiple slaves found for device mapper device, unknown type: %s" % mount_loc.name)
+        self.logger.error("Device mapper slaves: %s" % colorize(self["_vblk_info"][dm_num]["slaves"], "red", bold=True))
+        raise AutodetectError("Multiple slaves found for device mapper device, unknown type: %s" % mount_loc.name)
 
     dm_type = blkid_info.get("type")
     if dm_type != "crypto_LUKS":
         if not blkid_info.get("uuid"):  # No uuid will be defined if there are detached headers
             if not self["cryptsetup"][mount_loc.name].get("header_file"):
-                raise ValueError("[%s] Unknown LUKS mount type: %s" % (mount_loc.name, dm_type))
+                raise AutodetectError("[%s] Unknown LUKS mount type: %s" % (mount_loc.name, dm_type))
         else:  # If there is some uuid and it's not LUKS, that's a problem
-            raise RuntimeError(
+            raise AutodetectError(
                 "[%s] Unknown device mapper slave type: %s" % (self["_vblk_info"][dm_num]["slaves"][0], dm_type)
             )
 
     # Configure cryptsetup based on the LUKS mount
     if uuid := blkid_info.get("uuid"):
-        self.logger.info("[%s] LUKS volume uuid: %s" % (mount_loc.name, uuid))
+        self.logger.info("[%s] LUKS volume uuid: %s" % (mount_loc.name, colorize(uuid, "cyan")))
         self["cryptsetup"] = {self["_vblk_info"][dm_num]["name"]: {"uuid": uuid}}
     elif partuuid := blkid_info.get("partuuid"):
-        self.logger.info("[%s] LUKS volume partuuid: %s" % (mount_loc.name, partuuid))
+        self.logger.info("[%s] LUKS volume partuuid: %s" % (mount_loc.name, colorize(partuuid, "cyan")))
         self["cryptsetup"] = {self["_vblk_info"][dm_num]["name"]: {"partuuid": partuuid}}
 
     self.logger.info(
@@ -534,33 +518,39 @@ def _resolve_dev(self, device_path) -> str:
     for device in self["_blkid_info"]:
         check_major, check_minor = _get_device_id(device)
         if (major, minor) == (check_major, check_minor):
-            self.logger.info("Resolved device: %s -> %s" % (self["_mounts"][device_path]["device"], device))
+            self.logger.info(
+                "Resolved device: %s -> %s" % (self["_mounts"][device_path]["device"], colorize(device, "cyan"))
+            )
             return device
-    self.logger.warning("Failed to resolve device: %s" % self["_mounts"]["/"]["device"])
+    self.logger.warning("Failed to resolve device: %s" % colorize(self["_mounts"]["/"]["device"], "red", bold=True))
     return self["_mounts"][device_path]["device"]
-
 
 
 def _resolve_overlay_lower_dir(self, mountpoint) -> str:
     for option in self["_mounts"][mountpoint]["options"]:
         if option.startswith("lowerdir="):
             return option.removeprefix("lowerdir=")
-    raise ValueError("[%s] No lower overlayfs mountpoint found: %s" % mountpoint, self["_mounts"][mountpoint]["options"])
+    raise AutodetectError(
+        "[%s] No lower overlayfs mountpoint found: %s" % mountpoint, self["_mounts"][mountpoint]["options"]
+    )
+
 
 def _resolve_overlay_lower_device(self, mountpoint) -> dict:
-    """ Returns device for the lower overlayfs mountpoint."""
+    """Returns device for the lower overlayfs mountpoint."""
     if self["_mounts"][mountpoint]["fstype"] != "overlay":
         return self["_mounts"][mountpoint]["device"]
 
     lowerdir = _resolve_overlay_lower_dir(self, mountpoint)
     return self["_mounts"][lowerdir]["device"]
 
+
 @contains("autodetect_root", "Skipping root autodetection, autodetect_root is disabled.", log_level=30)
 @contains("hostonly", "Skipping root autodetection, hostonly mode is disabled.", log_level=30)
 def autodetect_root(self) -> None:
     """Sets self['mounts']['root']'s source based on the host mount."""
     if "/" not in self["_mounts"]:
-        raise FileNotFoundError(
+        self.logger.error("Host mounts: %s" % pretty_print(self["_mounts"]))
+        raise AutodetectError(
             "Root mount not found in host mounts.\nCurrent mounts: %s" % pretty_print(self["_mounts"])
         )
     # Sometimes the root device listed in '/proc/mounts' differs from the blkid info
@@ -572,12 +562,15 @@ def autodetect_root(self) -> None:
         for alt_devices in root_dev.split(":")[1:]:  # But ensure kmods are loaded for all devices
             autodetect_mount_kmods(self, alt_devices)
     _autodetect_mount(self, "/")
+    if self["autodetect_root_dm"]:
+        _autodetect_dm(self, "/")
 
 
 def _autodetect_mount(self, mountpoint) -> None:
     """Sets mount config for the specified mountpoint."""
     if mountpoint not in self["_mounts"]:
-        raise FileNotFoundError("auto_mount mountpoint not found in host mounts: %s" % mountpoint)
+        self.logger.error("Host mounts: %s" % pretty_print(self["_mounts"]))
+        raise AutodetectError("auto_mount mountpoint not found in host mounts: %s" % mountpoint)
 
     mount_device = _resolve_overlay_lower_device(self, mountpoint)
 
@@ -592,21 +585,25 @@ def _autodetect_mount(self, mountpoint) -> None:
     mount_name = "root" if mountpoint == "/" else mountpoint.removeprefix("/")
     if mount_name in self["mounts"] and any(s_type in self["mounts"][mount_name] for s_type in SOURCE_TYPES):
         return self.logger.warning(
-            "[%s] Mount config already set: %s" % (mountpoint, pretty_print(self["mounts"][mount_name]))
+            "[%s] Skipping autodetection, mount config already set:\n%s"
+            % (colorize(mountpoint, "yellow"), pretty_print(self["mounts"][mount_name]))
         )
 
     mount_config = {mount_name: {"type": "auto", "options": ["ro"]}}  # Default to auto and ro
     if mount_type := mount_info.get("type"):
-        self.logger.info("Autodetected mount type: %s" % mount_type)
+        self.logger.info("Autodetected mount type: %s" % colorize(mount_type, "cyan"))
         mount_config[mount_name]["type"] = mount_type.lower()
 
     for source_type in SOURCE_TYPES:
         if source := mount_info.get(source_type):
-            self.logger.info("[%s] Autodetected mount source: %s=%s" % (mount_name, source_type, source))
+            self.logger.info(
+                "[%s] Autodetected mount source: %s=%s"
+                % (mount_name, colorize(source_type, "blue"), colorize(source, "cyan"))
+            )
             mount_config[mount_name][source_type] = source
             break
     else:
-        raise ValueError("[%s] Failed to autodetect mount source." % mountpoint)
+        raise AutodetectError("[%s] Failed to autodetect mount source." % mountpoint)
 
     self["mounts"] = mount_config
 
@@ -664,31 +661,28 @@ def mount_late(self) -> list[str]:
 
 def mount_fstab(self) -> list[str]:
     """Generates the init function for mounting the fstab.
-    If a mount_timeout is set, sets the default rootdelay.
-    If a mount_wait is set, enables rootwait.
-    mount_retries sets the number of times to retry the mount (for unattended booting).
+    Keeps re-attempting with mount_timeout or rootdelay until successful.
+    mount_retries sets the number of times to retry the mount, infinite otherwise.
     """
-    out = []
-    if timeout := self.get("mount_timeout"):  # Set the timeout, using the defined timeout as the default
-        out.append(f"timeout=$(readvar rootdelay {timeout})")
-    else:
-        out.append("timeout=$(readvar rootdelay)")
-
-    if rootwait := self.get("mount_wait"):  # Set the rootwait bool, using the defined rootwait as the default
-        out.append(f"rootwait=$(readvar rootwait {int(rootwait)})")
-    else:
-        out.append("rootwait=$(readvar rootwait)")
-
-    out += [
-        'if [ -z "$timeout" ]; then',  # If timeout is not set, prompt the user -
-        '    if [ "$rootwait" == "1" ]; then',  # only if rootwait is set to 1
-        '        prompt_user "Press enter once devices have settled."',
-        "    fi",
-        "else",  # If timeout is set, prompt the user with a timeout
-        '    prompt_user "Press enter once devices have settled. [${timeout}s]" "$timeout"',
-        "fi",
-        f'retry {self["mount_retries"]} "${{timeout:-1}}" mount -a || rd_fail "Failed to mount all filesystems."',
+    out = [
+        'einfo "Attempting to mount all filesystems."',
+        f"timeout=$(readvar rootdelay {self.get('mount_timeout', 1)})",
     ]
+
+    if retries := self.get("mount_retries"):
+        out += [
+            f'retry {retries} "$timeout" mount -a || rd_fail "Failed to mount all filesystems."',
+        ]
+    else:
+        out += [
+            "while ! mount -a; do",  # Actually retry forever, retry with a short timeout may fail
+            '    if prompt_user "Press enter to break, waiting: ${timeout}s" "$timeout"; then',
+            '        rd_fail "Failed to mount all filesystems."',
+            "    fi",
+            '    eerror "Failed to mount all filesystems, retrying."',
+            "done",
+            "einfo 'All filesystems mounted.'",
+        ]
 
     return out
 
@@ -719,7 +713,7 @@ def _validate_host_mount(self, mount, destination_path=None) -> bool:
         if option == "ro":  # Allow the ro option to be set in the config
             continue
         if option not in host_mount_options:
-            raise ValueError(
+            raise ValidationError(
                 "Host mount options mismatch. Expected: %s, Found: %s" % (mount["options"], host_mount_options)
             )
 
@@ -727,19 +721,19 @@ def _validate_host_mount(self, mount, destination_path=None) -> bool:
         if mount_val == Path(host_source_dev) or mount_val == host_source_dev:
             self.logger.debug("[%s] Host mount validated: %s" % (destination_path, mount))
             return True
-        raise ValueError(
+        raise ValidationError(
             "Host mount path device path does not match config. Expected: %s, Found: %s" % (mount_val, host_source_dev)
         )
     elif mount_type in ["uuid", "partuuid", "label"]:
         # For uuid, partuuid, and label types, check that the source matches the host mount
         if self["_blkid_info"][host_source_dev][mount_type] != mount_val:
-            raise ValueError(
+            raise ValidationError(
                 "Host mount source device mismatch. Expected: %s: %s, Found: %s"
                 % (mount_type, mount_val, host_source_dev)
             )
         self.logger.debug("[%s] Host mount validated: %s" % (destination_path, mount))
         return True
-    raise ValueError("[%s] Unable to validate host mount: %s" % (destination_path, mount))
+    raise ValidationError("[%s] Unable to validate host mount: %s" % (destination_path, mount))
 
 
 @contains("validate", "Skipping host mount validation, validation is disabled.", log_level=30)
@@ -759,7 +753,7 @@ def mount_root(self) -> list[str]:
         '    umount "$(readvar MOUNTS_ROOT_TARGET)"',
         "fi",
         '''einfo "Mounting '$(readvar MOUNTS_ROOT_SOURCE)' ($(readvar MOUNTS_ROOT_TYPE)) to '$(readvar MOUNTS_ROOT_TARGET)' with options: $(readvar MOUNTS_ROOT_OPTIONS)"''',
-        f'retry {self["mount_retries"]} {self["mount_timeout"] or 1} mount "$(readvar MOUNTS_ROOT_SOURCE)" -t "$(readvar MOUNTS_ROOT_TYPE)" "$(readvar MOUNTS_ROOT_TARGET)" -o "$(readvar MOUNTS_ROOT_OPTIONS)"',
+        f'retry {self["mount_retries"] or -1} {self["mount_timeout"]} mount "$(readvar MOUNTS_ROOT_SOURCE)" -t "$(readvar MOUNTS_ROOT_TYPE)" "$(readvar MOUNTS_ROOT_TARGET)" -o "$(readvar MOUNTS_ROOT_OPTIONS)"',
     ]
 
 
@@ -774,7 +768,7 @@ def export_mount_info(self) -> None:
 def autodetect_mount_kmods(self, device) -> None:
     """Autodetects the kernel modules for a block device."""
     if device_kmods := resolve_blkdev_kmod(self, device):
-        self.logger.info("Auto-enabling kernel modules for device: %s" % ", ".join(device_kmods))
+        self.logger.info("Auto-enabling kernel modules for device: %s" % colorize(", ".join(device_kmods), "cyan"))
         self["_kmod_auto"] = device_kmods
 
 
@@ -799,5 +793,8 @@ def resolve_blkdev_kmod(self, device) -> list[str]:
     elif device_name.startswith("md"):
         return ["md_mod"]
     else:
-        self.logger.error("[%s] Unable to determine kernel module for block device: %s" % (device_name, device))
+        self.logger.error(
+            "[%s] Unable to determine kernel module for block device: %s"
+            % (device_name, colorize(device, "red", bold=True))
+        )
         return []
