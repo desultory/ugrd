@@ -296,7 +296,7 @@ class InitramfsConfigDict(UserDict):
     def validate(self) -> None:
         """Validate config, checks that all values are processed, sets validated flag."""
         if self["_processing"]:
-            self.logger.critical("Unprocessed config values: %s" % colorize(", ".join(list(self["_processing"].keys()), "red", bold=True)))
+            self.logger.critical("Unprocessed config values: %s" % colorize(", ".join(list(self["_processing"].keys())), "red", bold=True))
         self["validated"] = True
 
     def __str__(self) -> str:

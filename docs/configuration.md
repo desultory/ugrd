@@ -144,9 +144,12 @@ Defines /dev/ttyS1 as a `vt100` terminal with a `115200` baud rate.
 
 #### base.debug
 
-This module contains debug programs such as `cp`, `mv`, `rm`, `grep`, `dmesg`, `find`, and `nano`,
+This module contains debug programs such as `cp`, `mv`, `rm`, `grep`, `dmesg`, `find`, and an editor,
 
 Setting `start_shell` to `true` will start a bash shell in `init_debug`.
+
+Use `editor` to manually specify the editor binary, otherwise it is autodetected from the `EDITOR` environment variable
+> If `validation` is enabled the editor binary is checked against a list of common editors, use `no_validate_editor` to skip this check if needed
 
 ### Kernel modules
 
