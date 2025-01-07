@@ -6,7 +6,7 @@ from ugrd import AutodetectError, ValidationError
 
 EXPECTED_EDITORS = { "nano", "vim", "vi", "emacs" }
 
-def _detect_editor(self) -> None:
+def detect_editor(self) -> None:
     from os import environ
     editor = self.get("editor") or environ.get("EDITOR") or "nano"
     
@@ -24,7 +24,7 @@ def _detect_editor(self) -> None:
        if self.get("validate") and not self.get("no_validate_editor"):
            raise ValidationError("Use of unrecognised editor %s with validation enabled" % colorize(editor, "cyan"))
        else:
-           self.logger.warn("Editor binary not recognised, can be overridden with 'editor' in config or EDITOR in environment if incorrect, otherwise can be disregarded.")
+           self.logger.warning("Editor binary not recognised, can be overridden with 'editor' in config or EDITOR in environment if incorrect, otherwise can be disregarded.")
 
 
 

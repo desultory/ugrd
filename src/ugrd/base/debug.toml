@@ -7,7 +7,7 @@ binaries = ['cp', 'mv', 'rm', 'find', 'grep', 'dmesg', 'chmod', 'touch']
 start_shell = true
 
 [imports.build_enum]
-"ugrd.base.debug" = [ "_detect_editor" ]
+"ugrd.base.debug" = [ "detect_editor" ]
 
 [imports.init_pre]
 "ugrd.base.debug" = [ "enable_debug" ]
