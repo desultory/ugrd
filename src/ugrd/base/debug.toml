@@ -5,6 +5,7 @@ binaries = ['cp', 'mv', 'rm', 'find', 'grep', 'dmesg', 'chmod', 'touch']
 # 3. fallback to 'nano'
 
 start_shell = true
+no_validate_editor = false
 
 [imports.build_enum]
 "ugrd.base.debug" = [ "_detect_editor" ]
@@ -18,3 +19,4 @@ start_shell = true
 [custom_parameters]
 start_shell = "bool"  # Start a shell after init_early, before init_pre. Can be enabled by the debug cmdline option.
 editor = "str"	# override editor variable
+no_validate_editor = "bool" # will skip validation of the editor binary, when validation is in use. Otherwise does nothing. 

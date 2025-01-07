@@ -2,9 +2,9 @@ __author__ = "desultory"
 __version__ = "1.3.1"
 
 from zenlib.util import contains
-from ugrd import AutodetectError
+from ugrd import AutodetectError, ValidationError
 
-EXPECTED_EDITORS = { 'nano', 'vim', 'vi', 'emacs' }
+EXPECTED_EDITORS = { "nano", "vim", "vi", "emacs" }
 
 def _detect_editor(self) -> None:
     from os import environ
@@ -17,11 +17,15 @@ def _detect_editor(self) -> None:
     try:
         self["binaries"] = editor
     except AutodetectError:
-        raise AutodetectError(f"Failed to locate editor binary '{editor}' in PATH")
+        raise AutodetectError(f"Failed to locate editor binary: '{editor}'")
 
     # Send a warning if the editor it's a common one, but still use it if it exists
     if editor not in EXPECTED_EDITORS:
-       self.logger.warn("Editor binary not recognised, can be overridden with 'editor' in config or EDITOR in environment if incorrect, otherwise can be disregarded.")
+       if self.get("validate") and not self.get("no_validate_editor"):
+           raise ValidationError(f"Use of unrecognised editor {editor} with validation enabled")
+       else:
+           self.logger.warn("Editor binary not recognised, can be overridden with 'editor' in config or EDITOR in environment if incorrect, otherwise can be disregarded.")
+
 
 
 def start_shell(self) -> str:
