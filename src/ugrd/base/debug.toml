@@ -5,7 +5,6 @@ binaries = ['cp', 'mv', 'rm', 'find', 'grep', 'dmesg', 'chmod', 'touch']
 # 3. fallback to 'nano'
 
 start_shell = true
-no_validate_editor = false
 
 [imports.build_enum]
 "ugrd.base.debug" = [ "_detect_editor" ]
