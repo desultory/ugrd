@@ -2,25 +2,25 @@ __author__ = "desultory"
 __version__ = "1.3.1"
 
 from zenlib.util import contains
+from ugrd import AutodetectError
 
-def _determine_editor(self) -> None:
-    # expected values, others raise a warning but still work fine
-    expected_editors = [ 'vim', 'nano', 'emacs' ]
-    
+EXPECTED_EDITORS = { 'nano', 'vim', 'vi', 'emacs' }
+
+def _detect_editor(self) -> None:
     from os import environ
     editor = self.get("editor") or environ.get("EDITOR") or "nano"
+    
+    self.logger.info(f"[debug] Using '{editor}' as editor.")
     
     # setting value will automatically call the hook to validate the path
     # reraising to tell the user it's the editor config to help narrow down the issue
     try:
         self["binaries"] = editor
-    except (ValueError, RuntimeError):
-        raise ValueError(f"Editor binary '{editor}' could not be located in PATH")
-    
-    # Report which binary gets used (send a warning if it's not recognised
-    self.logger.info(f"[debug] Using '{editor}' as editor.")
-    
-    if editor not in expected_editors:
+    except AutodetectError:
+        raise AutodetectError(f"Failed to locate editor binary '{editor}' in PATH")
+
+    # Send a warning if the editor it's a common one, but still use it if it exists
+    if editor not in EXPECTED_EDITORS:
        self.logger.warn("Editor binary not recognised, can be overridden with 'editor' in config or EDITOR in environment if incorrect, otherwise can be disregarded.")
 
 
