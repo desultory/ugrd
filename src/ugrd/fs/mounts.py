@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "6.0.0"
+__version__ = "6.1.0"
 
 from pathlib import Path
 from typing import Union
@@ -563,7 +563,12 @@ def autodetect_root(self) -> None:
             autodetect_mount_kmods(self, alt_devices)
     _autodetect_mount(self, "/")
     if self["autodetect_root_dm"]:
-        _autodetect_dm(self, "/")
+        if self["mounts"]["root"]["type"] == "btrfs":
+            from ugrd.fs.btrfs import _get_btrfs_mount_devices
+            for device in _get_btrfs_mount_devices(self, "/"):
+                _autodetect_dm(self, "/", device)
+        else:
+            _autodetect_dm(self, "/")
 
 
 def _autodetect_mount(self, mountpoint) -> None:

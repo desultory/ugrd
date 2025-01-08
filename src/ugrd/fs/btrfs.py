@@ -1,6 +1,7 @@
-__version__ = "1.10.0"
+__version__ = "1.11.0"
 __author__ = "desultory"
 
+from pathlib import Path
 
 from ugrd import ValidationError
 from zenlib.util import contains, unset
@@ -12,6 +13,13 @@ class SubvolNotFound(Exception):
 
 class SubvolIsRoot(Exception):
     pass
+
+
+def _get_btrfs_mount_devices(self, mountpoint: str) -> list:
+    """Returns a list of device paths for a btfrs mountpoint."""
+    fs_dev = self["_mounts"][mountpoint]["device"]
+    fs_uuid = self["_blkid_info"][fs_dev]["uuid"]
+    return [str(p.name) for p in Path(f"/sys/fs/btrfs/{fs_uuid}/devices").iterdir()]
 
 
 def _get_mount_subvol(self, mountpoint: str) -> list:
