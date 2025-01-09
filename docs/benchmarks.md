@@ -46,10 +46,12 @@ sys     0m2.510s
 
 ugrd makes very small images, even with no compression, it creates smaller images than dracut with zstd compression!
 
-| Generator | Compression   | Size  |
-|-----------|---------------|-------|
-| dracut    | no            | 24M   |
-| dracut    | zstd          | 13M   |
-| ugrd      | no            | 9.41M |
-| ugrd      | xz (default)  | 2.64M |
+| Generator | Compression   | Size  | Mode     |
+|-----------|---------------|-------|----------|
+| dracut    | no            | 30M   | hostonly |
+| dracut    | no            | 24M   | standard |
+| dracut    | zstd          | 13M   | standard |
+| dracut    | zstd          | 8.5M  | hostonly |
+| ugrd      | no            | 9.41M | standard |
+| ugrd      | xz (default)  | 2.64M | standard |
 
