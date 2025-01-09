@@ -83,10 +83,14 @@ def _process_mount(self, mount_name: str, mount_config, mount_class="mounts") ->
 
     # Add imports based on the mount type
     if mount_type := mount_config.get("type"):
-        if mount_type in ["vfat", "ext4", "xfs"]:
+        if mount_type in ["vfat", "xfs"]:
             self["kmod_init"] = mount_type
         elif mount_type == "nilfs2":
             self["binaries"] = "mount.nilfs2"
+        elif mount_type == "ext4":
+            if "ugrd.fs.ext4" not in self["modules"]:
+                self.logger.info("Auto-enabling module: %s", colorize("ext4", "cyan"))
+                self["modules"] = "ugrd.fs.ext4"
         elif mount_type == "btrfs":
             if "ugrd.fs.btrfs" not in self["modules"]:
                 self.logger.info("Auto-enabling module: %s", colorize("btrfs", "cyan"))

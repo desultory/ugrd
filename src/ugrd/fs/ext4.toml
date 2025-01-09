@@ -1,0 +1,5 @@
+binaries = [ "fsck.ext4" ]
+kmod_init = [ "ext4" ]
+
+[imports.init_cleanup]
+"ugrd.fs.ext4" = [ "ext4_fsck" ]
