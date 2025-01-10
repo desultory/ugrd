@@ -8,6 +8,7 @@ binaries = [
 ]
 
 cmdline_strings =  ["root", "roottype", "rootflags", "rootdelay" ]
+cmdline_bools = ["no_fsck"]
 
 run_dirs = [ "vars" ]
 
@@ -45,7 +46,10 @@ late_fstab = "/etc/fstab.late"
 "ugrd.fs.mounts" = [ "mount_root" ]
 
 [imports.init_mount_late]
-"ugrd.fs.mounts" = [ "mount_late", "umount_fstab" ]
+"ugrd.fs.mounts" = [ "mount_late" ]
+
+[imports.init_cleanup]
+"ugrd.fs.mounts" = [ "umount_fstab" ]
 
 [custom_parameters]
 mounts = "dict"  # Add the mounts property, used to define the mounts to be made in the fstab
@@ -63,6 +67,7 @@ autodetect_root_lvm = "bool"  # Whether or not to try to autodetect LVM partitio
 autodetect_root_raid = "bool"  # Whether or not to try to autodetect MDRAID partitions
 autodetect_init_mount = "bool"  # Adds a late_mount for the init target if it exists under a mount on the host
 resolve_root_dev = "bool"  # Whether or not to attempt resolve the root device source
+no_fsck = "bool"  # Whether or not to skip fsck on the root device when applicable
 _mounts = "dict"  # The mounts information
 _vblk_info = "dict"  # Virtual block device information
 _blkid_info = "dict"  # The blkid information
