@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "5.5.0"
+__version__ = "5.6.0"
 
 from importlib.metadata import version
 from pathlib import Path
@@ -102,6 +102,7 @@ def do_switch_root(self) -> list[str]:
         "else",
         f'    einfo "Completed UGRD v{version("ugrd")}."',
         '    einfo "Switching root to: $(readvar SWITCH_ROOT_TARGET) $init_target"',
+        "    echo 'UGRD completed' > /dev/kmsg",
         '    exec switch_root "$(readvar SWITCH_ROOT_TARGET)" "$init_target"',
         "fi",
     ]
