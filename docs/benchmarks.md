@@ -55,3 +55,82 @@ ugrd makes very small images, even with no compression, it creates smaller image
 | ugrd      | no            | 9.41M | standard |
 | ugrd      | xz (default)  | 2.64M | standard |
 
+
+### Boot time
+
+ugrd boots faster than dracut, even without udev:
+
+Dracut boot:
+```
+[    3.106933]     recovery
+[    3.106939]   with environment:
+[    3.106945]     HOME=/
+[    3.106951]     TERM=linux
+[    3.142999] mmc0: host does not support reading read-only switch, assuming write-enable
+[    3.149037] mmc0: Host Software Queue enabled
+[    3.150788] mmc0: new high speed SDHC card at address aaaa
+[    3.154389] mmcblk0: mmc0:aaaa SL16G 14.8 GiB
+[    3.164336]  mmcblk0: p1 p2
+[    3.166987] mmcblk0: mmc0:aaaa SL16G 14.8 GiB (quirks 0x00004000)
+[    3.174279] mmc1: new high speed SDIO card at address 0001
+[    3.177061] usb 1-1: new high-speed USB device number 2 using dwc_otg
+[    3.178984] Indeed it is in host mode hprt0 = 00001101
+[    3.385637] usb 1-1: New USB device found, idVendor=0424, idProduct=9514, bcdDevice= 2.00
+[    3.389174] usb 1-1: New USB device strings: Mfr=0, Product=0, SerialNumber=0
+[    3.392006] hub 1-1:1.0: USB hub found
+[    3.394109] hub 1-1:1.0: 5 ports detected
+[    3.554215] dracut: Gentoo-2.17
+[    3.690010] usb 1-1.1: new high-speed USB device number 3 using dwc_otg
+[    3.792071] usb 1-1.1: New USB device found, idVendor=0424, idProduct=ec00, bcdDevice= 2.00
+[    3.795715] usb 1-1.1: New USB device strings: Mfr=0, Product=0, SerialNumber=0
+[    3.800751] smsc95xx v2.0.0
+[    3.906640] SMSC LAN8700 usb-001:003:01: attached PHY driver (mii_bus:phy_addr=usb-001:003:01, irq=184)
+[    3.911722] smsc95xx 1-1.1:1.0 eth0: register 'smsc95xx' at usb-3f980000.usb-1.1, smsc95xx USB 2.0 Ethernet, b8:27:eb:0c:d0:4b
+[    5.151361] EXT4-fs (mmcblk0p2): mounted filesystem 3b614a3f-4a65-4480-876a-8a998e01ac9b ro with ordered data mode. Quota mode: none.
+[    5.286768] EXT4-fs (mmcblk0p2): unmounting filesystem 3b614a3f-4a65-4480-876a-8a998e01ac9b.
+[    5.337578] dracut: Checking ext4: /dev/mmcblk0p2
+[    5.340808] dracut: issuing e2fsck -a /dev/mmcblk0p2
+[    5.373619] dracut: rootfs: clean, 247841/908960 files, 815408/3757440 blocks
+[    5.389944] dracut: Mounting /dev/mmcblk0p2 with -o defaults
+[    5.466096] EXT4-fs (mmcblk0p2): mounted filesystem 3b614a3f-4a65-4480-876a-8a998e01ac9b r/w with ordered data mode. Quota mode: none.
+[    5.562939] dracut: Mounted root filesystem /dev/mmcblk0p2
+[    5.900654] dracut: Switching root
+```
+
+ugrd boot:
+```
+[    3.106379] Freeing unused kernel memory: 4864K
+[    3.108254] Run /init as init process
+[    3.109895]   with arguments:
+[    3.109902]     /init
+[    3.109909]     recovery
+[    3.109915]   with environment:
+[    3.109921]     HOME=/
+[    3.109927]     TERM=linux
+[    3.144962] mmc0: host does not support reading read-only switch, assuming write-enable
+[    3.150951] mmc0: Host Software Queue enabled
+[    3.152676] mmc0: new high speed SDHC card at address aaaa
+[    3.156096] mmcblk0: mmc0:aaaa SL16G 14.8 GiB
+[    3.165547] mmc1: new high speed SDIO card at address 0001
+[    3.168096]  mmcblk0: p1 p2
+[    3.170596] mmcblk0: mmc0:aaaa SL16G 14.8 GiB (quirks 0x00004000)
+[    3.177101] usb 1-1: new high-speed USB device number 2 using dwc_otg
+[    3.179132] Indeed it is in host mode hprt0 = 00001101
+[    3.385638] usb 1-1: New USB device found, idVendor=0424, idProduct=9514, bcdDevice= 2.00
+[    3.389224] usb 1-1: New USB device strings: Mfr=0, Product=0, SerialNumber=0
+[    3.392200] hub 1-1:1.0: USB hub found
+[    3.394433] hub 1-1:1.0: 5 ports detected
+[    3.685123] usb 1-1.1: new high-speed USB device number 3 using dwc_otg
+[    3.793618] usb 1-1.1: New USB device found, idVendor=0424, idProduct=ec00, bcdDevice= 2.00
+[    3.797330] usb 1-1.1: New USB device strings: Mfr=0, Product=0, SerialNumber=0
+[    3.802269] smsc95xx v2.0.0
+[    3.899272] SMSC LAN8700 usb-001:003:01: attached PHY driver (mii_bus:phy_addr=usb-001:003:01, irq=184)
+[    3.904286] smsc95xx 1-1.1:1.0 eth0: register 'smsc95xx' at usb-3f980000.usb-1.1, smsc95xx USB 2.0 Ethernet, b8:27:eb:0c:d0:4b
+[    4.427679] EXT4-fs (mmcblk0p2): mounted filesystem 3b614a3f-4a65-4480-876a-8a998e01ac9b ro with ordered data mode. Quota mode: none.
+[    4.544220] EXT4-fs (mmcblk0p2): unmounting filesystem 3b614a3f-4a65-4480-876a-8a998e01ac9b.
+[    4.687024] EXT4-fs (mmcblk0p2): mounted filesystem 3b614a3f-4a65-4480-876a-8a998e01ac9b ro with ordered data mode. Quota mode: none.
+[    4.813752] UGRD completed
+```
+
+> Multiple tests were performed, boot timed did not deviate by more than half a second
+> Tests where undervoltages were reported were ignored, but none were detected in ugrd runs
