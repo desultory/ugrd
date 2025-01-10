@@ -1,5 +1,9 @@
-binaries = [ "fsck.ext4" ]
+modules = [ "ugrd.fs.mounts" ]
 kmod_init = [ "ext4" ]
+
+
+[imports.build_final]  # Pull the fsck module if no_fsck is not set
+"ugrd.fs.ext4" = [ "pull_ext4_deps" ]
 
 [imports.init_cleanup]
 "ugrd.fs.ext4" = [ "ext4_fsck" ]

@@ -66,6 +66,7 @@ autodetect_root_lvm = "bool"  # Whether or not to try to autodetect LVM partitio
 autodetect_root_raid = "bool"  # Whether or not to try to autodetect MDRAID partitions
 autodetect_init_mount = "bool"  # Adds a late_mount for the init target if it exists under a mount on the host
 resolve_root_dev = "bool"  # Whether or not to attempt resolve the root device source
+no_fsck = "bool"  # Whether or not to skip fsck on the root device when applicable
 _mounts = "dict"  # The mounts information
 _vblk_info = "dict"  # Virtual block device information
 _blkid_info = "dict"  # The blkid information

@@ -1,9 +1,16 @@
 __version__ = "0.1.1"
 
+from zenlib.util import unset
+
+@unset("no_fsck")
+def pull_ext4_deps(self):
+    """ Adds fsck.ext4 to the list of dependencies if no_fsck is not set """
+    self["dependencies"] = ["fsck.ext4"]
+
+@unset("no_fsck", "Not adding ext4 fsck as no_fsck is set", log_level=30)
 def ext4_fsck(self) -> list[str]:
     """ Returns bash lines to run fsck on the root filesystem
     The root device is determined by checking the source of SWITCH_ROOT_TARGET
-
     """
     return [
         """ROOT_DEV=$(awk -v target="$(readvar SWITCH_ROOT_TARGET)" '$2 == target {print $1}' /proc/mounts)""",
