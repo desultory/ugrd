@@ -175,7 +175,15 @@ Some helper modules have been created to make importing required kernel modules 
 
 `ugrd.kmod.nvme`, `usb`, and `fat` can be used to load modules for NVME's, USB storage, and the FAT file system respectively.
 
-Similarly `ugrd.kmod.novideo` `nonetwork`, and `nosound` exist to ignore video, network, and sound devices that may appear when autodetecting modules.
+#### Kernel module masks
+
+By default, most unnecesaary modules are masked, by the following categories:
+
+* `kmod_ignore_video` (true) - Ignores video modules.
+* `kmod_ignore_network` (true) - Ignores network modules.
+* `kmod_ignore_sound` (true) - Ignores sound modules.
+
+These bools simply import `ugrd.kmod.no<category>` modules during `build_pre`. 
 
 ### Filesystem modules
 

@@ -1,10 +1,9 @@
-# This config module will simply pull/load kmods from the running system
+# This example config demonstrates how kmod autodetection/masking can be configured
 
-modules = [
-  "ugrd.kmod.nosound",
-  "ugrd.kmod.novideo",
-  "ugrd.kmod.nonetwork",
-]
+# By default all kmod categories are ignored
+kmod_ignore_video = true
+kmod_ignore_sound = true
+kmod_ignore_network = true
 
 # Optionally supply a kernel version, uses the current kernel version if not specified
 #kernel_version = "6.1.53-gentoo-dist"

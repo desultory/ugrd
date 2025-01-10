@@ -4,7 +4,6 @@
 # It will try to process the cmdline and mount the rootfs based on the root= parameter
 
 modules = [
-  "ugrd.kmod.standard_mask",
 #  "ugrd.crypto.cryptsetup", # This is included by the gpg module
 #  "ugrd.crypto.gpg", # This is included by the smartcard module
 #  "ugrd.crypto.smartcard",   
@@ -12,6 +11,11 @@ modules = [
 
 # Mask the parse_cmdline function to prevent it from running
 #mask.init_pre = 'parse_cmdline'
+
+# By default, all kmod categories are ignored. This can be disabled by category
+#kmod_ignore_video = false
+#kmod_ignore_sound = false
+#kmod_ignore_network = false
 
 # The initramfs will be built in /tmp/initramfs if "build_dir" is not specified not specified
 #out_dir = "/usr/src/initramfs"

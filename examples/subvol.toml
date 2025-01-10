@@ -1,7 +1,6 @@
 # It will attempt to mount the btrfs subvolume "gentoo" as the system root
 
 modules = [
-  "ugrd.fs.standard_mask",
   "ugrd.fs.btrfs",
 ]
 
