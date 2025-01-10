@@ -1,4 +1,4 @@
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 from zenlib.util import unset
 
@@ -9,6 +9,10 @@ def ext4_fsck(self) -> list[str]:
     The root device is determined by checking the source of SWITCH_ROOT_TARGET
     """
     return [
+        'if check_var no_fsck; then',
+        "    ewarn 'no_fsck is set, skipping fsck'",
+        "    return",
+        "fi",
         """ROOT_DEV=$(awk -v target="$(readvar SWITCH_ROOT_TARGET)" '$2 == target {print $1}' /proc/mounts)""",
         """ROOT_TYPE=$(awk -v target="$(readvar SWITCH_ROOT_TARGET)" '$2 == target {print $3}' /proc/mounts)""",
         """ROOT_OPTS=$(awk -v target="$(readvar SWITCH_ROOT_TARGET)" '$2 == target {print $4}' /proc/mounts)""",
