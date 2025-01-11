@@ -1,7 +1,6 @@
 __author__ = "desultory"
-__version__ = "5.6.0"
+__version__ = "6.0.0"
 
-from importlib.metadata import version
 from pathlib import Path
 
 from ugrd import AutodetectError, ValidationError
@@ -58,68 +57,68 @@ def export_switch_root_target(self) -> None:
 
 def _find_init(self) -> str:
     """Returns bash to find the init_target."""
-    return [
-        'for init_path in "/sbin/init" "/bin/init" "/init"; do',
-        '    if [ -e "$(readvar SWITCH_ROOT_TARGET)$init_path" ] ; then',
-        '        einfo "Found init at: $(readvar SWITCH_ROOT_TARGET)$init_path"',
-        '        setvar init "$init_path"',
-        "        return",
-        "    fi",
-        "done",
-        'eerror "Unable to find init."',
-        "return 1",
-    ]
+    return """
+    for init_path in "/sbin/init" "/bin/init" "/init"; do
+        if [ -e "$(readvar SWITCH_ROOT_TARGET)$init_path" ] ; then
+            einfo "Found init at: $(readvar SWITCH_ROOT_TARGET)$init_path"
+            setvar init "$init_path"
+            return
+        fi
+    done
+    eerror "Unable to find init."
+    return 1
+    """
 
 
-def set_loglevel(self) -> list[str]:
+def set_loglevel(self) -> str:
     """Returns bash to set the log level."""
     return "readvar loglevel > /proc/sys/kernel/printk"
 
 
 @contains("init_target", "init_target must be set.", raise_exception=True)
-def do_switch_root(self) -> list[str]:
+def do_switch_root(self) -> str:
     """Should be the final statement, switches root.
     Checks if the switch_root target is mounted, and that it contains an init.
     If not, it restarts UGRD.
     """
-    return [
-        "if [ $$ -ne 1 ] ; then",
-        '    eerror "Cannot switch_root from PID: $$, exiting."',
-        "    exit 1",
-        "fi",
-        'init_target=$(readvar init) || rd_fail "init_target not set."',  # should be set, if unset, checks fail
-        'einfo "Checking root mount: $(readvar SWITCH_ROOT_TARGET)"',
-        'if ! grep -q " $(readvar SWITCH_ROOT_TARGET) " /proc/mounts ; then',
-        '    rd_fail "Root not found at: $(readvar SWITCH_ROOT_TARGET)"',
-        'elif [ ! -e "$(readvar SWITCH_ROOT_TARGET)${init_target}" ] ; then',
-        '    ewarn "$init_target not found at: $(readvar SWITCH_ROOT_TARGET)"',
-        r'    einfo "Target root contents:\n$(ls -l "$(readvar SWITCH_ROOT_TARGET)")"',
-        "    if _find_init ; then",  # This redefineds the var, so readvar instaed of using $init_target
-        '        einfo "Switching root to: $(readvar SWITCH_ROOT_TARGET) $(readvar init)"',
-        '        exec switch_root "$(readvar SWITCH_ROOT_TARGET)" "$(readvar init)"',
-        "    fi",
-        '    rd_fail "Unable to find init."',
-        "else",
-        f'    einfo "Completed UGRD v{version("ugrd")}."',
-        '    einfo "Switching root to: $(readvar SWITCH_ROOT_TARGET) $init_target"',
-        "    echo 'UGRD completed' > /dev/kmsg",
-        '    exec switch_root "$(readvar SWITCH_ROOT_TARGET)" "$init_target"',
-        "fi",
-    ]
+    from importlib.metadata import version
+    return f"""
+    if [ $$ -ne 1 ] ; then
+        eerror "Cannot switch_root from PID: $$, exiting."
+        exit 1
+    fi
+    init_target=$(readvar init) || rd_fail "init_target not set."  # should be set, if unset, checks fail
+    einfo "Checking root mount: $(readvar SWITCH_ROOT_TARGET)"
+    if ! grep -q " $(readvar SWITCH_ROOT_TARGET) " /proc/mounts ; then
+        rd_fail "Root not found at: $(readvar SWITCH_ROOT_TARGET)"
+    elif [ ! -e "$(readvar SWITCH_ROOT_TARGET)${{init_target}}" ] ; then
+        ewarn "$init_target not found at: $(readvar SWITCH_ROOT_TARGET)"
+        einfo "Target root contents:\n$(ls -l "$(readvar SWITCH_ROOT_TARGET)")"
+        if _find_init ; then  # This redefines the var, so readvar is used instead of $init_target
+            einfo "Switching root to: $(readvar SWITCH_ROOT_TARGET) $(readvar init)"
+            exec switch_root "$(readvar SWITCH_ROOT_TARGET)" "$(readvar init)"
+        fi
+        rd_fail "Unable to find init."
+    else
+        einfo "Completed UGRD v{version("ugrd")}."
+        einfo "Switching root to: $(readvar SWITCH_ROOT_TARGET) $init_target"
+        echo 'UGRD completed' > /dev/kmsg
+        exec switch_root "$(readvar SWITCH_ROOT_TARGET)" "$init_target"
+    fi
+    """
 
 
 def rd_restart(self) -> str:
     """Restart the initramfs, exit if not PID 1, otherwise exec /init."""
-    return [
-        'if [ "$$" -eq 1 ]; then',
-        '    einfo "Restarting init"',
-        "    exec /init ; exit",
-        "else",
-        '    ewarn "PID is not 1, exiting: $$"',
-        "    exit 1",
-        "fi",
-    ]
-
+    return """
+    if [ "$$" -eq 1 ]; then
+        einfo "Restarting init"
+        exec /init ; exit
+    else
+        ewarn "PID is not 1, exiting: $$"
+        exit 1
+    fi
+    """
 
 def rd_fail(self) -> list[str]:
     """Function for when the initramfs fails to function.
@@ -159,8 +158,12 @@ def rd_fail(self) -> list[str]:
 
 def setvar(self) -> str:
     """Returns a bash function that sets a variable in /run/vars/{name}."""
-    return ["if check_var debug; then", '    edebug "Setting $1 to $2"', "fi", 'echo -n "$2" > "/run/vars/${1}"']
-
+    return """
+    if check_var debug; then
+        edebug "Setting $1 to $2"
+    fi
+    echo -n "$2" > "/run/vars/${1}"
+    """
 
 def readvar(self) -> str:
     """Returns a bash function that reads a variable from /run/vars/{name}.
@@ -170,24 +173,22 @@ def readvar(self) -> str:
     return 'cat "/run/vars/${1}" 2>/dev/null || echo "${2}"'
 
 
-def check_var(self) -> list[str]:
+def check_var(self) -> str:
     """Returns a bash function that checks the value of a variable.
-    if it's not set, tries to read the cmdline.
+    if it's not set, tries to read the cmdline."""
+    return """
+    if [ -z "$(readvar "$1")" ]; then  # preferably the variable is set, because this is slower
+        cmdline=$(awk -F '--' '{print $1}' /proc/cmdline)  # Get everything before '--'
+        if grep -qE "(^|\s)$1(\s|$)" <<< "$cmdline"; then
+            return 0
+        fi
+        return 1
+    fi
+    if [ "$(readvar "$1")" == "1" ]; then
+        return 0
+    fi
+    return 1
     """
-    return [
-        'if [ -z "$(readvar "$1")" ]; then',  # preferably the variable is set, because this is slower
-        r"""    cmdline=$(awk -F '--' '{print $1}' /proc/cmdline)""",  # Get everything before '--'
-        r'    if grep -qE "(^|\s)$1(\s|$)" <<< "$cmdline"; then',
-        "        return 0",
-        "    fi",
-        "    return 1",
-        "fi",
-        'if [ "$(readvar "$1")" == "1" ]; then',
-        "    return 0",
-        "fi",
-        "return 1",
-    ]
-
 
 def prompt_user(self) -> list[str]:
     """Returns a bash function that pauses until the user presses enter.
@@ -217,48 +218,47 @@ def prompt_user(self) -> list[str]:
     return output
 
 
-def retry(self) -> list[str]:
+def retry(self) -> str:
     """Returns a bash function that retries a command some number of times.
     The first argument is the number of retries. if 0, it retries 100 times.
     The second argument is the timeout in seconds.
     The remaining arguments represent the command to run.
     """
-    return [
-        "retries=${1}",
-        "timeout=${2}",
-        "shift 2",
-        'if [ "$retries" -eq 0 ]; then',
-        '    "$@"',  # If retries is 0, just run the command
-        '    return "$?"',
-        'elif [ "$retries" -lt 0 ]; then',
-        "    retries=1000",
-        "fi",
-        'i=-1; while [ "$((i += 1))" -lt "$retries" ]; do',
-        '    if "$@"; then',
-        "        return 0",
-        "    fi",
-        r'    ewarn "[${i}/${retries}] Failed: ${*}"',
-        '    if [ "$i" -lt "$((retries - 1))" ]; then',
-        '        prompt_user "Retrying in: ${timeout}s" "$timeout"',
-        "    fi",
-        "done",
-        "return 1",
-    ]
+    return """
+    retries=${1}
+    timeout=${2}
+    shift 2
+    if [ "$retries" -eq 0 ]; then
+        "$@"  # If retries is 0, just run the command
+        return "$?"
+    elif [ "$retries" -lt 0 ]; then
+        retries=1000
+    fi
+    i=-1; while [ "$((i += 1))" -lt "$retries" ]; do
+        if "$@"; then
+            return 0
+        fi
+        ewarn "[${i}/${retries}] Failed: ${*}"
+        if [ "$i" -lt "$((retries - 1))" ]; then
+            prompt_user "Retrying in: ${timeout}s" "$timeout"
+        fi
+    done
+    return 1
+    """
 
 
 # To feel more at home
-def edebug(self) -> list[str]:
+def edebug(self) -> str:
     """Returns a bash function like edebug."""
-    return [
-        "if check_var quiet; then",
-        "    return",
-        "fi",
-        'if [ "$(readvar debug)" != "1" ]; then',
-        "    return",
-        "fi",
-        r'echo -e "\e[1;34m *\e[0m ${*}"',
-    ]
-
+    return """
+    if check_var quiet; then
+        return
+    fi
+    if [ "$(readvar debug)" != "1" ]; then
+        return
+    fi
+    echo -e "\e[1;34m *\e[0m ${*}"
+    """
 
 def einfo(self) -> list[str]:
     """Returns a bash function like einfo."""
@@ -302,12 +302,12 @@ def ewarn(self) -> list[str]:
 def eerror(self) -> str:
     """Returns a bash function like eerror."""
     if "ugrd.base.plymouth" in self["modules"]:
-        return [
-            "if plymouth --ping; then",
-            '    plymouth display-message --text="Error: ${*}"',
-            "    return",
-            "fi",
-            r'echo -e "\e[1;31m *\e[0m ${*}"',
-        ]
+        return r"""
+        if plymouth --ping; then
+            plymouth display-message --text="Error: ${*}"
+            return
+        fi
+        echo -e "\e[1;31m *\e[0m ${*}"
+        """
     else:
         return [r'echo -e "\e[1;31m *\e[0m ${*}"']
