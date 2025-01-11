@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "6.0.0"
+__version__ = "6.1.0"
 
 from pathlib import Path
 
@@ -82,6 +82,7 @@ def do_switch_root(self) -> str:
     If not, it restarts UGRD.
     """
     from importlib.metadata import version
+
     return f"""
     if [ $$ -ne 1 ] ; then
         eerror "Cannot switch_root from PID: $$, exiting."
@@ -96,13 +97,13 @@ def do_switch_root(self) -> str:
         einfo "Target root contents:\n$(ls -l "$(readvar SWITCH_ROOT_TARGET)")"
         if _find_init ; then  # This redefines the var, so readvar is used instead of $init_target
             einfo "Switching root to: $(readvar SWITCH_ROOT_TARGET) $(readvar init)"
-            echo "[UGRD {version("ugrd")}] Running init: $(readvar init)" > /dev/kmsg
+            klog "[UGRD {version("ugrd")}] Running init: $(readvar init)"
             exec switch_root "$(readvar SWITCH_ROOT_TARGET)" "$(readvar init)"
         fi
         rd_fail "Unable to find init."
     else
         einfo "Switching root to: $(readvar SWITCH_ROOT_TARGET) $init_target"
-        echo "[UGRD {version("ugrd")}] Running init: $init_target" > /dev/kmsg
+        klog "[UGRD {version("ugrd")}] Running init: $init_target"
         exec switch_root "$(readvar SWITCH_ROOT_TARGET)" "$init_target"
     fi
     """
@@ -119,6 +120,7 @@ def rd_restart(self) -> str:
         exit 1
     fi
     """
+
 
 def rd_fail(self) -> list[str]:
     """Function for when the initramfs fails to function.
@@ -165,6 +167,7 @@ def setvar(self) -> str:
     echo -n "$2" > "/run/vars/${1}"
     """
 
+
 def readvar(self) -> str:
     """Returns a bash function that reads a variable from /run/vars/{name}.
     The second arg can be a default value.
@@ -189,6 +192,7 @@ def check_var(self) -> str:
     fi
     return 1
     """
+
 
 def prompt_user(self) -> list[str]:
     """Returns a bash function that pauses until the user presses enter.
@@ -247,6 +251,11 @@ def retry(self) -> str:
     """
 
 
+def klog(self) -> str:
+    """Logs a message to the kernel log."""
+    return 'echo "${*}" > /dev/kmsg'
+
+
 # To feel more at home
 def edebug(self) -> str:
     """Returns a bash function like edebug."""
@@ -259,6 +268,7 @@ def edebug(self) -> str:
     fi
     echo -e "\e[1;34m *\e[0m ${*}"
     """
+
 
 def einfo(self) -> list[str]:
     """Returns a bash function like einfo."""
