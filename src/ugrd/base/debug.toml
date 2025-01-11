@@ -1,4 +1,5 @@
 binaries = ['cp', 'mv', 'rm', 'find', 'grep', 'dmesg', 'chmod', 'touch']
+dependencies = [ "/usr/share/terminfo/l/linux" ] # required by most editors
 # EDITOR is determined at build time using (in order):
 # 1. editor config parameter
 # 2. $EDITOR environment variable
@@ -17,5 +18,5 @@ start_shell = true
 
 [custom_parameters]
 start_shell = "bool"  # Start a shell after init_early, before init_pre. Can be enabled by the debug cmdline option.
-editor = "str"	# override editor variable
-no_validate_editor = "bool" # will skip validation of the editor binary, when validation is in use. Otherwise does nothing. 
+editor = "str"  # override editor variable
+no_validate_editor = "bool"  # will skip validation of the editor binary, when validation is in use. Otherwise does nothing.
