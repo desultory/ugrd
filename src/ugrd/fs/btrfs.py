@@ -105,29 +105,29 @@ def autodetect_root_subvol(self):
 def select_subvol(self) -> str:
     """Returns a bash script to list subvolumes on the root volume."""
     # TODO: Figure out a way to make the case prompt more standard
-    return [
-        f'mount -t btrfs -o subvolid=5,ro $(readvar MOUNTS_ROOT_SOURCE) {self["_base_mount_path"]}',
-        f"""if [ -z "$(btrfs subvolume list -o {self['_base_mount_path']})" ]; then""",
-        f'''    ewarn "Failed to list btrfs subvolumes for root volume: {self['_base_mount_path']}"''',
-        "else",
-        "    echo 'Select a subvolume to use as root'",
-        "    PS3='Subvolume: '",
-        f"    select subvol in $(btrfs subvolume list -o {self['_base_mount_path']} " + "| awk '{print $9}'); do",
-        "        case $subvol in",
-        "            *)",
-        "                if [[ -z $subvol ]]; then",
-        "                    ewarn 'Invalid selection'",
-        "                else",
-        '                    einfo "Selected subvolume: $subvol"',
-        '                    echo -n ",subvol=$subvol" >> /run/vars/MOUNTS_ROOT_OPTIONS',
-        "                    break",
-        "                fi",
-        "                ;;",
-        "        esac",
-        "    done",
-        "fi",
-        f"umount -l {self['_base_mount_path']}",
-    ]
+    return f"""
+    mount -t btrfs -o subvolid=5,ro $(readvar MOUNTS_ROOT_SOURCE) {self["_base_mount_path"]}
+    if [ -z "$(btrfs subvolume list -o {self['_base_mount_path']})" ]; then
+        ewarn "Failed to list btrfs subvolumes for root volume: {self['_base_mount_path']}"
+    else
+        echo 'Select a subvolume to use as root'
+        PS3='Subvolume: '
+        select subvol in $(btrfs subvolume list -o {self['_base_mount_path']} " + "| awk '{{print $9}}'); do
+        case $subvol in
+            *)
+                if [[ -z $subvol ]]; then
+                    ewarn 'Invalid selection'
+                else
+                    einfo "Selected subvolume: $subvol"
+                    echo -n ",subvol=$subvol" >> /run/vars/MOUNTS_ROOT_OPTIONS
+                    break
+                fi
+                ;;
+            esac
+        done
+    fi
+    umount -l {self['_base_mount_path']}
+    """
 
 
 @contains("root_subvol", message="root_subvol is not set, skipping.")

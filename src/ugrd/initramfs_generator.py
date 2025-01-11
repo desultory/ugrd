@@ -122,6 +122,13 @@ class InitramfsGenerator(GeneratorHelpers):
                 raise ValueError("Function name collides with defined binary: %s" % (function.__name__))
                 return function_output
 
+            if isinstance(function_output, str) and "\n" in function_output:
+                from textwrap import dedent
+                function_output = dedent(function_output)
+                function_output = [  # If the output string has a newline, split and get rid of empty lines
+                    line for line in function_output.split("\n") if line and line != "\n" and not line.isspace()
+                ]
+
             if isinstance(function_output, str) and not force_include:
                 self.logger.debug("[%s] Function returned string: %s" % (function.__name__, function_output))
                 return function_output
