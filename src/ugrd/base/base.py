@@ -96,13 +96,13 @@ def do_switch_root(self) -> str:
         einfo "Target root contents:\n$(ls -l "$(readvar SWITCH_ROOT_TARGET)")"
         if _find_init ; then  # This redefines the var, so readvar is used instead of $init_target
             einfo "Switching root to: $(readvar SWITCH_ROOT_TARGET) $(readvar init)"
+            echo "[UGRD {version("ugrd")}] Running init: $(readvar init)" > /dev/kmsg
             exec switch_root "$(readvar SWITCH_ROOT_TARGET)" "$(readvar init)"
         fi
         rd_fail "Unable to find init."
     else
-        einfo "Completed UGRD v{version("ugrd")}."
         einfo "Switching root to: $(readvar SWITCH_ROOT_TARGET) $init_target"
-        echo 'UGRD completed' > /dev/kmsg
+        echo "[UGRD {version("ugrd")}] Running init: $init_target" > /dev/kmsg
         exec switch_root "$(readvar SWITCH_ROOT_TARGET)" "$init_target"
     fi
     """
