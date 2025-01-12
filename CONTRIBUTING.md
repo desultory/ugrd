@@ -14,7 +14,8 @@ Log lines info (20) level or greater should be formatted such that:
 Variables should generally be colored using the following scheme:
 
 * `cyan` for autodetected values
-* `green` for written files
+* `blue` for config/stage info
+* `green` for writted/read files
 * `magenta` for kernel/kmod related things
 * `yellow` when cleaning files/build directories
 * `red` for overrides or warnings
