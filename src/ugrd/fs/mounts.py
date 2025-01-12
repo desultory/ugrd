@@ -569,6 +569,7 @@ def autodetect_root(self) -> None:
     if self["autodetect_root_dm"]:
         if self["mounts"]["root"]["type"] == "btrfs":
             from ugrd.fs.btrfs import _get_btrfs_mount_devices
+
             for device in _get_btrfs_mount_devices(self, "/"):
                 _autodetect_dm(self, "/", device)
         else:
@@ -754,16 +755,16 @@ def check_mounts(self) -> None:
         _validate_host_mount(self, mount, "/" if mount_name == "root" else None)
 
 
-def mount_root(self) -> list[str]:
+def mount_root(self) -> str:
     """Mounts the root partition to $MOUNTS_ROOT_TARGET."""
-    return [
-        'if grep -qs "$(readvar MOUNTS_ROOT_TARGET)" /proc/mounts; then',
-        '    ewarn "Root mount already exists, unmounting: $(readvar MOUNTS_ROOT_TARGET)"',
-        '    umount "$(readvar MOUNTS_ROOT_TARGET)"',
-        "fi",
-        '''einfo "Mounting '$(readvar MOUNTS_ROOT_SOURCE)' ($(readvar MOUNTS_ROOT_TYPE)) to '$(readvar MOUNTS_ROOT_TARGET)' with options: $(readvar MOUNTS_ROOT_OPTIONS)"''',
-        f'retry {self["mount_retries"] or -1} {self["mount_timeout"]} mount "$(readvar MOUNTS_ROOT_SOURCE)" -t "$(readvar MOUNTS_ROOT_TYPE)" "$(readvar MOUNTS_ROOT_TARGET)" -o "$(readvar MOUNTS_ROOT_OPTIONS)"',
-    ]
+    return f"""
+    if grep -qs "$(readvar MOUNTS_ROOT_TARGET)" /proc/mounts; then
+        ewarn "Root mount already exists, unmounting: $(readvar MOUNTS_ROOT_TARGET)"
+        umount "$(readvar MOUNTS_ROOT_TARGET)"
+    fi
+    einfo "Mounting '$(readvar MOUNTS_ROOT_SOURCE)' ($(readvar MOUNTS_ROOT_TYPE)) to '$(readvar MOUNTS_ROOT_TARGET)' with options: $(readvar MOUNTS_ROOT_OPTIONS)"
+    retry {self["mount_retries"] or -1} {self["mount_timeout"]} mount "$(readvar MOUNTS_ROOT_SOURCE)" -t "$(readvar MOUNTS_ROOT_TYPE)" "$(readvar MOUNTS_ROOT_TARGET)" -o "$(readvar MOUNTS_ROOT_OPTIONS)"
+    """
 
 
 def export_mount_info(self) -> None:
