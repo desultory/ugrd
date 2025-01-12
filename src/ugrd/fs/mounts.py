@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "6.2.0"
+__version__ = "6.2.1"
 
 from pathlib import Path
 from typing import Union
@@ -602,7 +602,7 @@ def autodetect_root(self) -> None:
         if self["mounts"]["root"]["type"] == "btrfs":
             from ugrd.fs.btrfs import _get_btrfs_mount_devices
 
-            for device in _get_btrfs_mount_devices(self, "/"):
+            for device in _get_btrfs_mount_devices(self, "/", root_dev):
                 _autodetect_dm(self, "/", device)
         else:
             _autodetect_dm(self, "/")

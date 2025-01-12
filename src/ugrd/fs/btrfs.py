@@ -1,4 +1,4 @@
-__version__ = "1.12.1"
+__version__ = "1.12.2"
 __author__ = "desultory"
 
 from pathlib import Path
@@ -16,9 +16,9 @@ class SubvolIsRoot(Exception):
     pass
 
 
-def _get_btrfs_mount_devices(self, mountpoint: str) -> list:
+def _get_btrfs_mount_devices(self, mountpoint: str, dev=None) -> list:
     """Returns a list of device paths for a btfrs mountpoint."""
-    fs_dev = self["_mounts"][mountpoint]["device"]
+    fs_dev = dev or self["_mounts"][mountpoint]["device"]
     fs_uuid = self["_blkid_info"][fs_dev]["uuid"]
     return [str(p.name) for p in Path(f"/sys/fs/btrfs/{fs_uuid}/devices").iterdir()]
 
