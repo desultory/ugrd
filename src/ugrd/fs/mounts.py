@@ -223,6 +223,8 @@ def get_mounts_info(self) -> None:
             device, mountpoint, fstype, options, _, _ = line.split()
             self["_mounts"][mountpoint] = {"device": device, "fstype": fstype, "options": options.split(",")}
 
+    self.logger.debug("Mount info: %s" % pretty_print(self["_mounts"]))
+
 
 @contains("hostonly", "Skipping blkid enumeration, hostonly mode is disabled.", log_level=30)
 def get_blkid_info(self, device=None) -> dict:
