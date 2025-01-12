@@ -4,6 +4,8 @@
 
 People say python is slow, but UGRD is very fast, even on slow hardware.
 
+#### Raspberry pi 3
+
 Using a rpi3 on powersave:
 
 ```
@@ -22,7 +24,7 @@ user    0m3.744s
 sys     0m2.147s
 ```
 
-#### Compression
+##### Compression
 
 ugrd compression is limited by single thread python performance, but still builds faster than dracut which calls zstd:
 
@@ -41,6 +43,44 @@ real    0m37.686s
 user    0m35.386s
 sys     0m2.510s
 ```
+
+#### 7950x
+
+```
+time dracut --no-compress --force 
+
+real	0m7.142s
+user	0m3.233s
+sys     0m4.811s
+```
+
+```
+time ugrd --no-compress
+
+real	0m0.864s
+user	0m0.424s
+sys     0m0.583s
+```
+
+##### Compression
+
+```
+time dracut --force
+
+real	0m9.653s
+user	0m29.121s
+sys     0m5.253s
+```
+
+```
+real	0m13.011s
+user	0m12.349s
+sys     0m0.643s
+```
+
+> Here, dracut is able to run faster by making use of threading with the zstd utility, python xz currently does not thread
+> https://github.com/python/cpython/pull/114954
+
 
 ### Image size
 
