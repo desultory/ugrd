@@ -1,5 +1,5 @@
 __author__ = 'desultory'
-__version__ = '1.3.0'
+__version__ = '1.5.0'
 
 from zenlib.util import contains
 
@@ -17,8 +17,10 @@ def early_init_lvm(self) -> None:
     return init_lvm(self)
 
 @contains('lvm', "Skipping LVM initialization, no LVM configurations found.")
-def init_lvm(self) -> None:
+def init_lvm(self) -> str:
     """ Returns bash lines to initialize LVM """
-    return ['einfo "Initializing LVM, module version %s"' % __version__,
-            'einfo "$(vgchange -ay)"',
-            'einfo "$(vgscan --mknodes)"']
+    return f"""
+    einfo "[UGRD] Initializing LVM, ugrd.fs.lvm module version: {__version__}"
+    einfo "$(vgchange -ay)"
+    einfo "$(vgscan --mknodes)"
+    """
