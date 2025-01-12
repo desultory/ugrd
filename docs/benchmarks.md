@@ -73,6 +73,8 @@ sys     0m5.253s
 ```
 
 ```
+time ugrd
+
 real	0m13.011s
 user	0m12.349s
 sys     0m0.643s
