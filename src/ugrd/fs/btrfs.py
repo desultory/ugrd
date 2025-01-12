@@ -1,9 +1,10 @@
-__version__ = "1.12.0"
+__version__ = "1.12.1"
 __author__ = "desultory"
 
 from pathlib import Path
 
 from ugrd import ValidationError
+from ugrd.fs.mounts import _resolve_overlay_lower_dir
 from zenlib.util import contains, unset
 
 
@@ -25,8 +26,6 @@ def _get_btrfs_mount_devices(self, mountpoint: str) -> list:
 def _get_mount_subvol(self, mountpoint: str) -> list:
     """Returns the subvolume name for a mountpoint."""
     if self["_mounts"][mountpoint]["fstype"] == "overlay":
-        from ugrd.fs.mounts import _resolve_overlay_lower_dir
-
         mountpoint = _resolve_overlay_lower_dir(self, mountpoint)
     elif self["_mounts"][mountpoint]["fstype"] != "btrfs":
         raise ValidationError("Mountpoint is not a btrfs mount: %s" % mountpoint)
