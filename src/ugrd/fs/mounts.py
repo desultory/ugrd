@@ -614,13 +614,13 @@ def _autodetect_mount(self, mountpoint) -> None:
         self.logger.error("Host mounts: %s" % pretty_print(self["_mounts"]))
         raise AutodetectError("auto_mount mountpoint not found in host mounts: %s" % mountpoint)
 
-    mount_device = _resolve_overlay_lower_device(self, mountpoint)
+    mount_device = _resolve_overlay_lower_device(self, mountpoint) # Just resolve the overlayfs device
 
     if ":" in mount_device:  # Handle bcachefs
         mount_device = mount_device.split(":")[0]
 
-    if mount_device not in self["_blkid_info"]:
-        get_blkid_info(self, mount_device)
+    if mount_device not in self["_blkid_info"]:  # Try to get the blkid info
+        get_blkid_info(self, mount_device)  # Raises an exception if it fails
 
     mount_info = self["_blkid_info"][mount_device]
     autodetect_mount_kmods(self, mount_device)
