@@ -93,8 +93,8 @@ ugrd makes very small images, even with no compression, it creates smaller image
 | dracut    | none          | 30M   | hostonly |
 | dracut    | none          | 24M   | standard |
 | dracut    | zstd          | 13M   | standard |
-| dracut    | zstd          | 8.5M  | hostonly |
 | ugrd      | none          | 9.41M | hostonly |
+| dracut    | zstd          | 8.5M  | hostonly |
 | ugrd      | xz (default)  | 2.64M | hostonly |
 
 
