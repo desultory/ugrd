@@ -179,7 +179,7 @@ def readvar(self) -> str:
 def check_var(self) -> str:
     """Returns a bash function that checks the value of a variable.
     if it's not set, tries to read the cmdline."""
-    return """
+    return r"""
     if [ -z "$(readvar "$1")" ]; then  # preferably the variable is set, because this is slower
         cmdline=$(awk -F '--' '{print $1}' /proc/cmdline)  # Get everything before '--'
         if grep -qE "(^|\s)$1(\s|$)" <<< "$cmdline"; then
@@ -259,7 +259,7 @@ def klog(self) -> str:
 # To feel more at home
 def edebug(self) -> str:
     """Returns a bash function like edebug."""
-    return """
+    return r"""
     if check_var quiet; then
         return
     fi
