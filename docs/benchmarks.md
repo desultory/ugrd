@@ -86,15 +86,30 @@ sys     0m0.643s
 
 ugrd makes very small images, even with no compression, it creates smaller images than dracut with zstd compression!
 
+#### Raspberry pi 3
+
 | Generator | Compression   | Size  | Mode     |
 |-----------|---------------|-------|----------|
-| dracut    | no            | 30M   | hostonly |
-| dracut    | no            | 24M   | standard |
+| dracut    | none          | 30M   | hostonly |
+| dracut    | none          | 24M   | standard |
 | dracut    | zstd          | 13M   | standard |
 | dracut    | zstd          | 8.5M  | hostonly |
-| ugrd      | no            | 9.41M | standard |
+| ugrd      | none          | 9.41M | standard |
 | ugrd      | xz (default)  | 2.64M | standard |
 
+
+#### 7950x
+
+| Generator | Compression   | Size   | Mode     |
+|-----------|---------------|--------|----------|
+| dracut    | none          | 392M   | standard |
+| dracut    | none          | 192M   | hostonly |
+| dracut    | zstd          | 91M    | standard |
+| ugrd      | none          | 65.36M | hostonly |
+| dracut    | zstd          | 49M    | hostonly |
+| ugrd      | xz (default)  | 18.89M | hostonly |
+
+> For this image, luks, gpg, and yubikey modules are required, greatly increasing the image size
 
 ### Boot time
 
