@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "2.3.0"
+__version__ = "2.3.1"
 
 from collections import UserDict
 from pathlib import Path
@@ -226,7 +226,7 @@ class InitramfsConfigDict(UserDict):
                     self["imports"]["custom_init"] = function_list[0]
                     self.logger.info(
                         "Registered custom init function: %s"
-                        % colorize(function_list[0].__name__, "magenta", bold=True)
+                        % colorize(function_list[0].__name__, "blue", bold=True)
                     )
                     continue
 
