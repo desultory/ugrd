@@ -142,6 +142,8 @@ class InitramfsGenerator(GeneratorHelpers):
             elif function_output:
                 self.logger.debug("[%s] Function output was not included: %s" % (function.__name__, function_output))
             return function.__name__
+        elif force_include:
+            raise ValueError("Force included function returned no output: %s" % function.__name__)
         else:
             self.logger.debug("[%s] Function returned no output" % function.__name__)
 
