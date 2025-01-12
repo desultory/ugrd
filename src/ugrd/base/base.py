@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "6.1.0"
+__version__ = "6.1.1"
 
 from pathlib import Path
 
@@ -320,4 +320,4 @@ def eerror(self) -> str:
         echo -e "\e[1;31m *\e[0m ${*}"
         """
     else:
-        return [r'echo -e "\e[1;31m *\e[0m ${*}"']
+        return r'echo -e "\e[1;31m *\e[0m ${*}"'
