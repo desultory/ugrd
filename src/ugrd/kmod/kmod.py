@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "3.1.1"
+__version__ = "3.2.0"
 
 from pathlib import Path
 from subprocess import run
@@ -143,7 +143,7 @@ def autodetect_modules(self) -> None:
         self.logger.warning("No kernel modules were autodetected.")
 
 
-def _find_kernel_image(self) -> None:
+def _find_kernel_image(self) -> Path:
     """Finds the kernel image,
     Searches /boot, then /efi for prefixes 'vmlinuz', 'linux', and 'bzImage'.
     Searches for the file with the prefix, then files starting with the prefix and a hyphen.
@@ -416,7 +416,7 @@ def process_modules(self) -> None:
 
 
 @contains("kmod_init", "No kernel modules to load.", log_level=30)
-def load_modules(self) -> None:
+def load_modules(self) -> str:
     """Creates a bash script which loads all kernel modules in kmod_init."""
     self.logger.info(
         "Init kernel modules: %s" % colorize(", ".join(self["kmod_init"]), "magenta", bright=True, bold=True)
@@ -427,11 +427,11 @@ def load_modules(self) -> None:
         self.logger.warning("Ignored kernel modules: %s" % colorize(", ".join(removed_kmods), "red", bold=True))
 
     module_list = " ".join(self["kmod_init"])
-    return [
-        "if check_var quiet ; then",
-        "    modprobe -aq %s" % module_list,
-        "else",
-        '    einfo "Loading kernel modules: %s"' % module_list,
-        "    modprobe -av %s" % module_list,
-        "fi",
-    ]
+    return f"""
+    if check_var quiet ; then
+        modprobe -aq {module_list}
+    else
+        einfo "Loading kernel modules: {module_list}"
+        modprobe -av {module_list}
+    fi
+    """
