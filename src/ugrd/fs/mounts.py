@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "6.1.0"
+__version__ = "6.2.0"
 
 from pathlib import Path
 from typing import Union
@@ -515,9 +515,18 @@ def autodetect_luks(self, mount_loc, dm_num, blkid_info) -> None:
 
 
 def _resolve_dev(self, device_path) -> str:
-    """Resolves a device path, if possible.
-    Useful for cases where the device in blkid differs from the device in /proc/mounts.
+    """Resolves a device to one indexed in blkid.
+
+    Takes the device path, such as /dev/root, and resolves it to a device indexed in blkid.
+    If the device is an overlayfs, resolves the lowerdir device.
     """
+    if device_path in self["_blkid_info"]:
+        self.logger.debug("Device already resolved to blkid indexed device: %s" % device_path)
+        return device_path
+
+    while self["_mounts"][device_path]["fstype"] == "overlay":
+        device_path = _resolve_overlay_lower_device(self, device_path)
+
     major, minor = _get_device_id(self["_mounts"][device_path]["device"])
     for device in self["_blkid_info"]:
         check_major, check_minor = _get_device_id(device)
@@ -526,8 +535,10 @@ def _resolve_dev(self, device_path) -> str:
                 "Resolved device: %s -> %s" % (self["_mounts"][device_path]["device"], colorize(device, "cyan"))
             )
             return device
-    self.logger.warning("Failed to resolve device: %s" % colorize(self["_mounts"]["/"]["device"], "red", bold=True))
-    return self["_mounts"][device_path]["device"]
+    self.logger.critical("Failed to resolve device: %s" % colorize(device_path, "red", bold=True))
+    self.logger.error("Blkid info: %s" % pretty_print(self["_blkid_info"]))
+    self.logger.error("Mount info: %s" % pretty_print(self["_mounts"]))
+    return device_path
 
 
 def _resolve_overlay_lower_dir(self, mountpoint) -> str:
@@ -558,9 +569,7 @@ def autodetect_root(self) -> None:
             "Root mount not found in host mounts.\nCurrent mounts: %s" % pretty_print(self["_mounts"])
         )
     # Sometimes the root device listed in '/proc/mounts' differs from the blkid info
-    root_dev = self["_mounts"]["/"]["device"]
-    if self["resolve_root_dev"]:  # Sometimes the root device listed in '/proc/mounts' differs from the blkid info
-        root_dev = _resolve_dev(self, "/")
+    root_dev = _resolve_dev(self, self["_mounts"]["/"]["device"])
     if ":" in root_dev:  # only use the first device
         root_dev = root_dev.split(":")[0]
         for alt_devices in root_dev.split(":")[1:]:  # But ensure kmods are loaded for all devices
@@ -710,11 +719,9 @@ def _validate_host_mount(self, mount, destination_path=None) -> bool:
     destination_path = str(mount["destination"]) if destination_path is None else destination_path
 
     # Using the mount path, get relevant host mount info
-    host_source_dev = _resolve_overlay_lower_device(self, destination_path)
+    host_source_dev = _resolve_dev(self, destination_path)
     if ":" in host_source_dev:  # Handle bcachefs
         host_source_dev = host_source_dev.split(":")[0]
-    if destination_path == "/" and self["resolve_root_dev"]:
-        host_source_dev = _resolve_dev(self, "/")
 
     host_mount_options = self["_mounts"][destination_path]["options"]
     for option in mount.get("options", []):
