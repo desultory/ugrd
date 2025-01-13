@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "6.3.0"
+__version__ = "6.5.0"
 
 from pathlib import Path
 from typing import Union
@@ -20,6 +20,103 @@ MOUNT_PARAMETERS = [
     "base_mount",
     *SOURCE_TYPES,
 ]
+
+
+def _get_device_id(device: str) -> str:
+    """Gets the device id from the device path."""
+    return Path(device).stat().st_rdev >> 8, Path(device).stat().st_rdev & 0xFF
+
+
+def _resolve_dev(self, device_path) -> str:
+    """Resolves a device to one indexed in blkid.
+
+    Takes the device path, such as /dev/root, and resolves it to a device indexed in blkid.
+    If the device is an overlayfs, resolves the lowerdir device.
+    """
+    if str(device_path) in self["_blkid_info"]:
+        self.logger.debug("Device already resolved to blkid indexed device: %s" % device_path)
+        return device_path
+
+    self.logger.debug("Resolving device: %s" % device_path)
+    mountpoint = _resolve_device_mountpoint(self, device_path)
+    device_path = _resolve_overlay_lower_device(self, mountpoint)
+    mountpoint = _resolve_device_mountpoint(self, device_path)  # May have changed if it was an overlayfs
+
+    major, minor = _get_device_id(self["_mounts"][mountpoint]["device"])
+    for device in self["_blkid_info"]:
+        check_major, check_minor = _get_device_id(device)
+        if (major, minor) == (check_major, check_minor):
+            self.logger.info("Resolved device: %s -> %s" % (device_path, colorize(device, "cyan")))
+            return device
+    self.logger.critical("Failed to resolve device: %s" % colorize(device_path, "red", bold=True))
+    self.logger.error("Blkid info: %s" % pretty_print(self["_blkid_info"]))
+    self.logger.error("Mount info: %s" % pretty_print(self["_mounts"]))
+    return device_path
+
+
+def _find_mountpoint(self, path: str) -> str:
+    """Finds the mountpoint of a file or directory,
+    Checks if the parent dir is a mountpoint, if not, recursively checks the parent dir."""
+    check_path = Path(path).resolve()
+    parent = check_path.parent if not check_path.is_dir() else check_path
+    if str(parent) in self["_mounts"]:
+        return str(parent)
+    elif parent == Path("/"):  # The root mount SHOULD always be found...
+        raise AutodetectError("Mountpoint not found for: %s" % path)
+    return _find_mountpoint(self, parent.parent)
+
+
+def _resolve_device_mountpoint(self, device) -> str:
+    """Gets the mountpoint of a device based on the device path."""
+    for mountpoint, mount_info in self["_mounts"].items():
+        if str(device) == mount_info["device"]:
+            return mountpoint
+    raise AutodetectError("Device mountpoint not found: %s" % device)
+
+
+def _resolve_overlay_lower_dir(self, mountpoint) -> str:
+    for option in self["_mounts"][mountpoint]["options"]:
+        if option.startswith("lowerdir="):
+            return option.removeprefix("lowerdir=")
+    raise AutodetectError(
+        "[%s] No lower overlayfs mountpoint found: %s" % mountpoint, self["_mounts"][mountpoint]["options"]
+    )
+
+
+def _resolve_overlay_lower_device(self, mountpoint) -> dict:
+    """Returns device for the lower overlayfs mountpoint.
+    If it's not an overlayfs, returns the device for the mountpoint.
+
+    If it is, iterate through the lowerdir devices until a non-overlayfs mount is found.
+    """
+    if self["_mounts"][mountpoint]["fstype"] != "overlay":
+        return self["_mounts"][mountpoint]["device"]
+
+    while self["_mounts"][mountpoint]["fstype"] == "overlay":
+        lowerdir = _resolve_overlay_lower_dir(self, mountpoint)
+        mountpoint = _find_mountpoint(self, lowerdir)
+        if mountpoint == "/":  # The lowerdir mount should never be the root mount
+            raise AutodetectError("Lowerdir mount not found: %s" % lowerdir)
+
+    return self["_mounts"][mountpoint]["device"]
+
+
+def _merge_mounts(self, mount_name: str, mount_config, mount_class) -> None:
+    """Merges the passed mount config with the existing mount."""
+    if mount_name not in self[mount_class]:
+        self.logger.debug("[%s] Skipping mount merge, mount not found: %s" % (mount_class, mount_name))
+        return mount_config
+
+    self.logger.info("[%s] Updating mount: %s" % (mount_class, mount_name))
+    self.logger.debug("[%s] Updating mount with: %s" % (mount_name, mount_config))
+    if "options" in self[mount_class][mount_name] and "options" in mount_config:
+        self.logger.debug("Merging options: %s" % mount_config["options"])
+        self[mount_class][mount_name]["options"] = self[mount_class][mount_name]["options"] | set(
+            mount_config["options"]
+        )
+        mount_config.pop("options")
+
+    return dict(self[mount_class][mount_name], **mount_config)
 
 
 @contains("validate", "Skipping mount validation, validation is disabled.", log_level=30)
@@ -49,24 +146,6 @@ def _validate_mount_config(self, mount_name: str, mount_config) -> None:
                         raise ValueError("subvol option can only be used with btrfs or bcachefs mounts.")
         elif parameter not in MOUNT_PARAMETERS:
             raise ValueError("Invalid parameter in mount: %s" % parameter)
-
-
-def _merge_mounts(self, mount_name: str, mount_config, mount_class) -> None:
-    """Merges the passed mount config with the existing mount."""
-    if mount_name not in self[mount_class]:
-        self.logger.debug("[%s] Skipping mount merge, mount not found: %s" % (mount_class, mount_name))
-        return mount_config
-
-    self.logger.info("[%s] Updating mount: %s" % (mount_class, mount_name))
-    self.logger.debug("[%s] Updating mount with: %s" % (mount_name, mount_config))
-    if "options" in self[mount_class][mount_name] and "options" in mount_config:
-        self.logger.debug("Merging options: %s" % mount_config["options"])
-        self[mount_class][mount_name]["options"] = self[mount_class][mount_name]["options"] | set(
-            mount_config["options"]
-        )
-        mount_config.pop("options")
-
-    return dict(self[mount_class][mount_name], **mount_config)
 
 
 def _process_mount(self, mount_name: str, mount_config, mount_class="mounts") -> None:
@@ -262,32 +341,34 @@ def get_blkid_info(self, device=None) -> dict:
 
 
 @contains("init_target", "init_target must be set", raise_exception=True)
-@contains(
-    "autodetect_init_mount", "Skipping init mount autodetection, autodetect_init_mount is disabled.", log_level=30
-)
+@contains("autodetect_init_mount", "Init mount autodetection disabled, skipping.", log_level=30)
 @contains("hostonly", "Skipping init mount autodetection, hostonly mode is disabled.", log_level=30)
-def autodetect_init_mount(self, parent=None) -> None:
+def autodetect_init_mount(self) -> None:
     """Checks the parent directories of init_target, if the path is a mountpoint, add it to late_mounts."""
-    if not parent:
-        parent = self["init_target"].parent
-    if parent == Path("/"):
+    init_mount = _find_mountpoint(self, self["init_target"])
+    if init_mount == "/":
         return
-    if str(parent) in self["_mounts"]:
-        self.logger.info("Detected init mount: %s" % colorize(parent, "cyan"))
-        mount_name = str(parent).removeprefix("/")
-        mount_dest = str(parent)
-        mount_device = self["_mounts"][str(parent)]["device"]
-        mount_type = self["_mounts"][str(parent)]["fstype"]
-        mount_options = self["_mounts"][str(parent)]["options"]
-        blkid_info = self["_blkid_info"][mount_device]
-        mount_source_type, mount_source = _get_mount_source_type(self, blkid_info, with_val=True)
-        self["late_mounts"][mount_name] = {
-            "destination": mount_dest,
-            mount_source_type: mount_source,
-            "type": mount_type,
-            "options": mount_options,
-        }
-    autodetect_init_mount(self, parent.parent)
+
+    if init_mount in self["late_mounts"]:
+        return self.logger.debug("Init mount already detected: %s" % init_mount)
+
+    if init_mount not in self["_mounts"]:
+        raise AutodetectError("Init mount not found in host mounts: %s" % init_mount)
+
+    self.logger.info("Detected init mount: %s" % colorize(init_mount, "cyan"))
+    mount_name = init_mount.removeprefix("/")
+    mount_dest = init_mount
+    mount_device = self["_mounts"][init_mount]["device"]
+    mount_type = self["_mounts"][init_mount]["fstype"]
+    mount_options = self["_mounts"][init_mount]["options"]
+    blkid_info = self["_blkid_info"][mount_device]
+    mount_source_type, mount_source = _get_mount_source_type(self, blkid_info, with_val=True)
+    self["late_mounts"][mount_name] = {
+        "destination": mount_dest,
+        mount_source_type: mount_source,
+        "type": mount_type,
+        "options": mount_options,
+    }
 
 
 @contains("hostonly", "Skipping virtual block device enumeration, hostonly mode is disabled.", log_level=30)
@@ -334,11 +415,6 @@ def get_virtual_block_info(self) -> dict:
         self.logger.debug("Virtual block device info: %s" % pretty_print(self["_vblk_info"]))
     else:
         self.logger.debug("No virtual block devices found.")
-
-
-def _get_device_id(device: str) -> str:
-    """Gets the device id from the device path."""
-    return Path(device).stat().st_rdev >> 8, Path(device).stat().st_rdev & 0xFF
 
 
 @contains("hostonly", "Skipping device mapper autodetection, hostonly mode is disabled.", log_level=30)
@@ -514,71 +590,6 @@ def autodetect_luks(self, mount_loc, dm_num, blkid_info) -> None:
         "[%s] Configuring cryptsetup for LUKS mount (%s) on: %s\n%s"
         % (mount_loc.name, self["_vblk_info"][dm_num]["name"], dm_num, pretty_print(self["cryptsetup"]))
     )
-
-
-def _resolve_dev(self, device_path) -> str:
-    """Resolves a device to one indexed in blkid.
-
-    Takes the device path, such as /dev/root, and resolves it to a device indexed in blkid.
-    If the device is an overlayfs, resolves the lowerdir device.
-    """
-    if str(device_path) in self["_blkid_info"]:
-        self.logger.debug("Device already resolved to blkid indexed device: %s" % device_path)
-        return device_path
-
-    self.logger.debug("Resolving device: %s" % device_path)
-    mountpoint = _resolve_device_mountpoint(self, device_path)
-    device_path = _resolve_overlay_lower_device(self, mountpoint)
-    mountpoint = _resolve_device_mountpoint(self, device_path)  # May have changed if it was an overlayfs
-
-    major, minor = _get_device_id(self["_mounts"][mountpoint]["device"])
-    for device in self["_blkid_info"]:
-        check_major, check_minor = _get_device_id(device)
-        if (major, minor) == (check_major, check_minor):
-            self.logger.info("Resolved device: %s -> %s" % (device_path, colorize(device, "cyan")))
-            return device
-    self.logger.critical("Failed to resolve device: %s" % colorize(device_path, "red", bold=True))
-    self.logger.error("Blkid info: %s" % pretty_print(self["_blkid_info"]))
-    self.logger.error("Mount info: %s" % pretty_print(self["_mounts"]))
-    return device_path
-
-
-def _resolve_device_mountpoint(self, device) -> str:
-    """Gets the mountpoint of a device based on the device path."""
-    for mountpoint, mount_info in self["_mounts"].items():
-        if str(device) == mount_info["device"]:
-            return mountpoint
-    raise AutodetectError("Device mountpoint not found: %s" % device)
-
-
-def _resolve_overlay_lower_dir(self, mountpoint) -> str:
-    for option in self["_mounts"][mountpoint]["options"]:
-        if option.startswith("lowerdir="):
-            return option.removeprefix("lowerdir=")
-    raise AutodetectError(
-        "[%s] No lower overlayfs mountpoint found: %s" % mountpoint, self["_mounts"][mountpoint]["options"]
-    )
-
-
-def _resolve_overlay_lower_device(self, mountpoint) -> dict:
-    """Returns device for the lower overlayfs mountpoint.
-    If it's not an overlayfs, returns the device for the mountpoint.
-
-    If it is, iterate through the lowerdir devices until a non-overlayfs mount is found.
-    """
-    if self["_mounts"][mountpoint]["fstype"] != "overlay":
-        return self["_mounts"][mountpoint]["device"]
-
-    while self["_mounts"][mountpoint]["fstype"] == "overlay":
-        lowerdir = _resolve_overlay_lower_dir(self, mountpoint)
-        lower_path = Path(lowerdir)
-        while str(lower_path) not in self["_mounts"]:
-            lower_path = lower_path.parent
-            if lower_path == Path("/"):
-                raise AutodetectError("Lowerdir mount not found: %s" % lowerdir)
-        mountpoint = str(lower_path)
-
-    return self["_mounts"][mountpoint]["device"]
 
 
 @contains("autodetect_root", "Skipping root autodetection, autodetect_root is disabled.", log_level=30)
@@ -825,7 +836,8 @@ def resolve_blkdev_kmod(self, device) -> list[str]:
         if "/usb" in sys_dev:
             if "ugrd.kmod.usb" not in self["modules"]:
                 self.logger.info(
-                    "Auto-enabling %s for USB device: %s" % (colorize("ugrd.kmod.usb", bold=True), colorize(device, "cyan"))
+                    "Auto-enabling %s for USB device: %s"
+                    % (colorize("ugrd.kmod.usb", bold=True), colorize(device, "cyan"))
                 )
                 self["modules"] = "ugrd.kmod.usb"
     device_name = dev.name
