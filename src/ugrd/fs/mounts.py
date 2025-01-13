@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "6.2.1"
+__version__ = "6.3.0"
 
 from pathlib import Path
 from typing import Union
@@ -535,9 +535,7 @@ def _resolve_dev(self, device_path) -> str:
     for device in self["_blkid_info"]:
         check_major, check_minor = _get_device_id(device)
         if (major, minor) == (check_major, check_minor):
-            self.logger.info(
-                "Resolved device: %s -> %s" % (device_path, colorize(device, "cyan"))
-            )
+            self.logger.info("Resolved device: %s -> %s" % (device_path, colorize(device, "cyan")))
             return device
     self.logger.critical("Failed to resolve device: %s" % colorize(device_path, "red", bold=True))
     self.logger.error("Blkid info: %s" % pretty_print(self["_blkid_info"]))
@@ -546,11 +544,12 @@ def _resolve_dev(self, device_path) -> str:
 
 
 def _resolve_device_mountpoint(self, device) -> str:
-    """ Gets the mountpoint of a device based on the device path."""
+    """Gets the mountpoint of a device based on the device path."""
     for mountpoint, mount_info in self["_mounts"].items():
         if str(device) == mount_info["device"]:
             return mountpoint
     raise AutodetectError("Device mountpoint not found: %s" % device)
+
 
 def _resolve_overlay_lower_dir(self, mountpoint) -> str:
     for option in self["_mounts"][mountpoint]["options"]:
@@ -614,7 +613,7 @@ def _autodetect_mount(self, mountpoint) -> None:
         self.logger.error("Host mounts: %s" % pretty_print(self["_mounts"]))
         raise AutodetectError("auto_mount mountpoint not found in host mounts: %s" % mountpoint)
 
-    mount_device = _resolve_overlay_lower_device(self, mountpoint) # Just resolve the overlayfs device
+    mount_device = _resolve_overlay_lower_device(self, mountpoint)  # Just resolve the overlayfs device
 
     if ":" in mount_device:  # Handle bcachefs
         mount_device = mount_device.split(":")[0]
@@ -805,6 +804,9 @@ def export_mount_info(self) -> None:
 
 def autodetect_mount_kmods(self, device) -> None:
     """Autodetects the kernel modules for a block device."""
+    if "/" not in str(device):
+        device = f"/dev/{device}"
+
     if device_kmods := resolve_blkdev_kmod(self, device):
         self.logger.info("Auto-enabling kernel modules for device: %s" % colorize(", ".join(device_kmods), "cyan"))
         self["_kmod_auto"] = device_kmods
@@ -812,27 +814,39 @@ def autodetect_mount_kmods(self, device) -> None:
 
 def resolve_blkdev_kmod(self, device) -> list[str]:
     """Gets the kmod name for a block device."""
+    kmods = []
     dev = Path(device)
     while dev.is_symlink():
         dev = dev.resolve()
+
+    if dev.is_block_device():
+        major, minor = _get_device_id(device)
+        sys_dev = str(Path(f"/sys/dev/block/{major}:{minor}").resolve())
+        if "/usb" in sys_dev:
+            if "ugrd.kmod.usb" not in self["modules"]:
+                self.logger.info(
+                    "Auto-enabling %s for USB device: %s" % (colorize("ugrd.kmod.usb", bold=True), colorize(device, "cyan"))
+                )
+                self["modules"] = "ugrd.kmod.usb"
     device_name = dev.name
+
     if device_name.startswith("dm-") or dev.parent.name == "mapper" or dev.parent.name.startswith("vg"):
-        return ["dm_mod"]
+        kmods.append("dm_mod")
     elif device_name.startswith("nvme"):
-        return ["nvme"]
+        kmods.append("nvme")
     elif device_name.startswith("vd"):
-        return ["virtio_blk"]
+        kmods.append("virtio_blk")
     elif device_name.startswith("sd"):
-        return ["sd_mod"]
+        kmods.append("sd_mod")
     elif device_name.startswith("mmcblk"):
-        return ["mmc_block"]
+        kmods.append("mmc_block")
     elif device_name.startswith("sr"):
-        return ["sr_mod"]
+        kmods.append("sr_mod")
     elif device_name.startswith("md"):
-        return ["md_mod"]
+        kmods.append("md_mod")
     else:
         self.logger.error(
             "[%s] Unable to determine kernel module for block device: %s"
             % (device_name, colorize(device, "red", bold=True))
         )
-        return []
+    return kmods
