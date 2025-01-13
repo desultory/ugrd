@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "6.4.0"
+__version__ = "6.5.0"
 
 from pathlib import Path
 from typing import Union
@@ -55,7 +55,7 @@ def _resolve_dev(self, device_path) -> str:
 
 
 def _find_mountpoint(self, path: str) -> str:
-    """ Finds the mountpoint of a file or directory,
+    """Finds the mountpoint of a file or directory,
     Checks if the parent dir is a mountpoint, if not, recursively checks the parent dir."""
     check_path = Path(path).resolve()
     parent = check_path.parent if not check_path.is_dir() else check_path
@@ -341,32 +341,34 @@ def get_blkid_info(self, device=None) -> dict:
 
 
 @contains("init_target", "init_target must be set", raise_exception=True)
-@contains(
-    "autodetect_init_mount", "Skipping init mount autodetection, autodetect_init_mount is disabled.", log_level=30
-)
+@contains("autodetect_init_mount", "Init mount autodetection disabled, skipping.", log_level=30)
 @contains("hostonly", "Skipping init mount autodetection, hostonly mode is disabled.", log_level=30)
-def autodetect_init_mount(self, parent=None) -> None:
+def autodetect_init_mount(self) -> None:
     """Checks the parent directories of init_target, if the path is a mountpoint, add it to late_mounts."""
-    if not parent:
-        parent = self["init_target"].parent
-    if parent == Path("/"):
+    init_mount = _find_mountpoint(self, self["init_target"])
+    if init_mount == "/":
         return
-    if str(parent) in self["_mounts"]:
-        self.logger.info("Detected init mount: %s" % colorize(parent, "cyan"))
-        mount_name = str(parent).removeprefix("/")
-        mount_dest = str(parent)
-        mount_device = self["_mounts"][str(parent)]["device"]
-        mount_type = self["_mounts"][str(parent)]["fstype"]
-        mount_options = self["_mounts"][str(parent)]["options"]
-        blkid_info = self["_blkid_info"][mount_device]
-        mount_source_type, mount_source = _get_mount_source_type(self, blkid_info, with_val=True)
-        self["late_mounts"][mount_name] = {
-            "destination": mount_dest,
-            mount_source_type: mount_source,
-            "type": mount_type,
-            "options": mount_options,
-        }
-    autodetect_init_mount(self, parent.parent)
+
+    if init_mount in self["late_mounts"]:
+        return self.logger.debug("Init mount already detected: %s" % init_mount)
+
+    if init_mount not in self["_mounts"]:
+        raise AutodetectError("Init mount not found in host mounts: %s" % init_mount)
+
+    self.logger.info("Detected init mount: %s" % colorize(init_mount, "cyan"))
+    mount_name = init_mount.removeprefix("/")
+    mount_dest = init_mount
+    mount_device = self["_mounts"][init_mount]["device"]
+    mount_type = self["_mounts"][init_mount]["fstype"]
+    mount_options = self["_mounts"][init_mount]["options"]
+    blkid_info = self["_blkid_info"][mount_device]
+    mount_source_type, mount_source = _get_mount_source_type(self, blkid_info, with_val=True)
+    self["late_mounts"][mount_name] = {
+        "destination": mount_dest,
+        mount_source_type: mount_source,
+        "type": mount_type,
+        "options": mount_options,
+    }
 
 
 @contains("hostonly", "Skipping virtual block device enumeration, hostonly mode is disabled.", log_level=30)
