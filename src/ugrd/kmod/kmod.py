@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "3.2.0"
+__version__ = "3.2.1"
 
 from pathlib import Path
 from subprocess import run
@@ -237,7 +237,7 @@ def get_kernel_version(self) -> None:
             self["kernel_version"] = cmd.stdout.decode("utf-8").strip()
         except DependencyResolutionError:
             self["kernel_version"] = _get_kver_from_header(self)
-    self.logger.info("Detected kernel version: %s" % colorize(self["kernel_version"], "cyan", bright=True))
+    self.logger.info("Detected kernel version: %s" % colorize(self["kernel_version"], "magenta", bold=True))
 
 
 @contains("kmod_init", "kmod_init is empty, skipping.")
