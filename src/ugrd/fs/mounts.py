@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "6.3.0"
+__version__ = "6.4.0"
 
 from pathlib import Path
 from typing import Union
@@ -54,6 +54,18 @@ def _resolve_dev(self, device_path) -> str:
     return device_path
 
 
+def _find_mountpoint(self, path: str) -> str:
+    """ Finds the mountpoint of a file or directory,
+    Checks if the parent dir is a mountpoint, if not, recursively checks the parent dir."""
+    check_path = Path(path).resolve()
+    parent = check_path.parent if not check_path.is_dir() else check_path
+    if str(parent) in self["_mounts"]:
+        return str(parent)
+    elif parent == Path("/"):  # The root mount SHOULD always be found...
+        raise AutodetectError("Mountpoint not found for: %s" % path)
+    return _find_mountpoint(self, parent.parent)
+
+
 def _resolve_device_mountpoint(self, device) -> str:
     """Gets the mountpoint of a device based on the device path."""
     for mountpoint, mount_info in self["_mounts"].items():
@@ -82,12 +94,9 @@ def _resolve_overlay_lower_device(self, mountpoint) -> dict:
 
     while self["_mounts"][mountpoint]["fstype"] == "overlay":
         lowerdir = _resolve_overlay_lower_dir(self, mountpoint)
-        lower_path = Path(lowerdir)
-        while str(lower_path) not in self["_mounts"]:
-            lower_path = lower_path.parent
-            if lower_path == Path("/"):
-                raise AutodetectError("Lowerdir mount not found: %s" % lowerdir)
-        mountpoint = str(lower_path)
+        mountpoint = _find_mountpoint(self, lowerdir)
+        if mountpoint == "/":  # The lowerdir mount should never be the root mount
+            raise AutodetectError("Lowerdir mount not found: %s" % lowerdir)
 
     return self["_mounts"][mountpoint]["device"]
 
