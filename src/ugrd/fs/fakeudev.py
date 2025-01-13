@@ -16,6 +16,6 @@ def fake_dm_udev(self) -> str:
         source "${dm}/uevent"
         einfo "Faking udev for: ${DEVNAME}"
         udev_db_file="/run/udev/data/b${MAJOR}:${MINOR}"
-        echo -e 'E:DM_UDEV_PRIMARY_SOURCE_FLAG=1\n' > "${udev_db_file}"
+        printf 'E:DM_UDEV_PRIMARY_SOURCE_FLAG=1\n' > "${udev_db_file}"
     done
     """
