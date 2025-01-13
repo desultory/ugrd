@@ -2,7 +2,6 @@
 
 modules = [
   "ugrd.kmod.usb",
-  "ugrd.kmod.standard_mask",
   "ugrd.crypto.gpg",
 ]
 

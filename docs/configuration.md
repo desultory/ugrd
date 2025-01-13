@@ -144,9 +144,12 @@ Defines /dev/ttyS1 as a `vt100` terminal with a `115200` baud rate.
 
 #### base.debug
 
-This module contains debug programs such as `cp`, `mv`, `rm`, `grep`, `dmesg`, `find`, and `nano`,
+This module contains debug programs such as `cp`, `mv`, `rm`, `grep`, `dmesg`, `find`, and an editor,
 
 Setting `start_shell` to `true` will start a bash shell in `init_debug`.
+
+Use `editor` to manually specify the editor binary, otherwise it is autodetected from the `EDITOR` environment variable
+> If `validation` is enabled the editor binary is checked against a list of common editors, use `no_validate_editor` to skip this check if needed
 
 ### Kernel modules
 
@@ -172,7 +175,15 @@ Some helper modules have been created to make importing required kernel modules 
 
 `ugrd.kmod.nvme`, `usb`, and `fat` can be used to load modules for NVME's, USB storage, and the FAT file system respectively.
 
-Similarly `ugrd.kmod.novideo` `nonetwork`, and `nosound` exist to ignore video, network, and sound devices that may appear when autodetecting modules.
+#### Kernel module masks
+
+By default, most unnecesaary modules are masked, by the following categories:
+
+* `kmod_ignore_video` (true) - Ignores video modules.
+* `kmod_ignore_network` (true) - Ignores network modules.
+* `kmod_ignore_sound` (true) - Ignores sound modules.
+
+These bools simply import `ugrd.kmod.no<category>` modules during `build_pre`. 
 
 ### Filesystem modules
 

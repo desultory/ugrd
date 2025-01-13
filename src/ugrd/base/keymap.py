@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "0.4.0"
+__version__ = "1.0.0"
 
 from zenlib.util import contains
 
@@ -80,6 +80,9 @@ def _process_keymap_file(self, keymap_file: str) -> None:
 
 
 @contains("keymap_file", "keymap_file must be set to use the keymap module", raise_exception=True)
-def set_keymap(self) -> list[str]:
+def set_keymap(self) -> str:
     """Sets the specified keymap."""
-    return [f'einfo "Setting keymap: {self["keymap_file"]}"', f'loadkeys {self["keymap_file"]}']
+    return f"""
+    einfo "Setting keymap: {self["keymap_file"]}"
+    loadkeys {self["keymap_file"]}
+    """

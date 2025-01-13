@@ -1,8 +1,10 @@
-__version__ = "1.10.0"
+__version__ = "1.12.2"
 __author__ = "desultory"
 
+from pathlib import Path
 
 from ugrd import ValidationError
+from ugrd.fs.mounts import _resolve_overlay_lower_dir
 from zenlib.util import contains, unset
 
 
@@ -14,11 +16,16 @@ class SubvolIsRoot(Exception):
     pass
 
 
+def _get_btrfs_mount_devices(self, mountpoint: str, dev=None) -> list:
+    """Returns a list of device paths for a btfrs mountpoint."""
+    fs_dev = dev or self["_mounts"][mountpoint]["device"]
+    fs_uuid = self["_blkid_info"][fs_dev]["uuid"]
+    return [str(p.name) for p in Path(f"/sys/fs/btrfs/{fs_uuid}/devices").iterdir()]
+
+
 def _get_mount_subvol(self, mountpoint: str) -> list:
     """Returns the subvolume name for a mountpoint."""
     if self["_mounts"][mountpoint]["fstype"] == "overlay":
-        from ugrd.fs.mounts import _resolve_overlay_lower_dir
-
         mountpoint = _resolve_overlay_lower_dir(self, mountpoint)
     elif self["_mounts"][mountpoint]["fstype"] != "btrfs":
         raise ValidationError("Mountpoint is not a btrfs mount: %s" % mountpoint)
@@ -61,10 +68,7 @@ def _process_root_subvol(self, root_subvol: str) -> None:
 
 
 def _process_subvol_selector(self, subvol_selector: bool) -> None:
-    """
-    Processes the subvol selector parameter
-    Adds the _base_mount_path to paths if enabled.
-    """
+    """Adds the base mount path to paths if subvol_selector is enabled."""
     if subvol_selector:
         self.data["subvol_selector"] = subvol_selector
         self.logger.debug("Set subvol_selector to: %s", subvol_selector)
@@ -97,29 +101,29 @@ def autodetect_root_subvol(self):
 def select_subvol(self) -> str:
     """Returns a bash script to list subvolumes on the root volume."""
     # TODO: Figure out a way to make the case prompt more standard
-    return [
-        f'mount -t btrfs -o subvolid=5,ro $(readvar MOUNTS_ROOT_SOURCE) {self["_base_mount_path"]}',
-        f"""if [ -z "$(btrfs subvolume list -o {self['_base_mount_path']})" ]; then""",
-        f'''    ewarn "Failed to list btrfs subvolumes for root volume: {self['_base_mount_path']}"''',
-        "else",
-        "    echo 'Select a subvolume to use as root'",
-        "    PS3='Subvolume: '",
-        f"    select subvol in $(btrfs subvolume list -o {self['_base_mount_path']} " + "| awk '{print $9}'); do",
-        "        case $subvol in",
-        "            *)",
-        "                if [[ -z $subvol ]]; then",
-        "                    ewarn 'Invalid selection'",
-        "                else",
-        '                    einfo "Selected subvolume: $subvol"',
-        '                    echo -n ",subvol=$subvol" >> /run/vars/MOUNTS_ROOT_OPTIONS',
-        "                    break",
-        "                fi",
-        "                ;;",
-        "        esac",
-        "    done",
-        "fi",
-        f"umount -l {self['_base_mount_path']}",
-    ]
+    return f"""
+    mount -t btrfs -o subvolid=5,ro $(readvar MOUNTS_ROOT_SOURCE) {self["_base_mount_path"]}
+    if [ -z "$(btrfs subvolume list -o {self['_base_mount_path']})" ]; then
+        ewarn "Failed to list btrfs subvolumes for root volume: {self['_base_mount_path']}"
+    else
+        echo 'Select a subvolume to use as root'
+        PS3='Subvolume: '
+        select subvol in $(btrfs subvolume list -o {self['_base_mount_path']} " + "| awk '{{print $9}}'); do
+        case $subvol in
+            *)
+                if [[ -z $subvol ]]; then
+                    ewarn 'Invalid selection'
+                else
+                    einfo "Selected subvolume: $subvol"
+                    echo -n ",subvol=$subvol" >> /run/vars/MOUNTS_ROOT_OPTIONS
+                    break
+                fi
+                ;;
+            esac
+        done
+    fi
+    umount -l {self['_base_mount_path']}
+    """
 
 
 @contains("root_subvol", message="root_subvol is not set, skipping.")

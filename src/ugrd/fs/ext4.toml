@@ -1,0 +1,9 @@
+modules = [ "ugrd.fs.mounts" ]
+kmod_init = [ "ext4" ]
+
+
+[imports.init_cleanup]
+"ugrd.fs.ext4" = [ "ext4_fsck" ]
+
+[conditional_dependencies]
+"fsck.ext4" = [ "unset", "no_fsck" ]

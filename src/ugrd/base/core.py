@@ -1,12 +1,12 @@
 __author__ = "desultory"
-__version__ = "3.12.2"
+__version__ = "3.13.0"
 
 from pathlib import Path
 from typing import Union
 
 from ugrd import AutodetectError, ValidationError
 from zenlib.types import NoDupFlatList
-from zenlib.util import colorize, contains
+from zenlib.util import colorize, contains, unset
 
 
 def detect_tmpdir(self) -> None:
@@ -36,6 +36,25 @@ def generate_structure(self) -> None:
     """Generates the initramfs directory structure."""
     for subdir in set(self["paths"]):
         self._mkdir(subdir)
+
+
+def add_conditional_dependencies(self) -> None:
+    """Adds conditional dependencies to the dependencies list.
+    Keys are the dependency, values are a tuple of the condition type and value.
+    """
+    def add_dep(dep: str) -> None:
+        try:  # Try to add it as a binary, if it fails, add it as a dependency
+            self["binaries"] = dep
+        except (ValueError, ValidationError):
+            self["dependencies"] = dep
+
+    for dependency, condition in self["conditional_dependencies"].items():
+        condition_type, condition_value = condition
+        match condition_type:
+            case "contains":
+                contains(condition_value)(add_dep(dependency))
+            case "unset":
+                unset(condition_value)(add_dep(dependency))
 
 
 def calculate_dependencies(self, binary: str) -> list[Path]:

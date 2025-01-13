@@ -1,4 +1,4 @@
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 
 from configparser import ConfigParser
 from pathlib import Path
@@ -14,7 +14,7 @@ def find_plymouth_config(self) -> None:
         plymouth_config.read(file)
         if plymouth_config.has_section("Daemon") and plymouth_config.has_option("Daemon", "Theme"):
             self["plymouth_themes"] += plymouth_config["Daemon"]["Theme"]
-            if str(self["plymouth_config"]) == '.':  # Set the first config file found
+            if str(self["plymouth_config"]) == ".":  # Set the first config file found
                 self["plymouth_config"] = file
             continue
         self.logger.debug("Plymouth config file missing theme option: %s" % file)
@@ -41,13 +41,17 @@ def pull_plymouth(self) -> None:
             self["dependencies"] = file
 
     if str(self["plymouth_config"]) != "/usr/share/plymouth/plymouthd.defaults":
-        self["copies"] = {"plymouth_config_file": {"source": self["plymouth_config"], "destination": "/etc/plymouth/plymouthd.conf"}}
+        self["copies"] = {
+            "plymouth_config_file": {"source": self["plymouth_config"], "destination": "/etc/plymouth/plymouthd.conf"}
+        }
 
 
-
-def make_devpts(self) -> list[str]:
+def make_devpts(self) -> str:
     """Creates /dev/pts and mounts the fstab entry"""
-    return ["mkdir -m755 -p /dev/pts", "mount /dev/pts"]
+    return """
+    mkdir -m755 -p /dev/pts
+    mount /dev/pts
+    """
 
 
 def _get_plymouthd_args(self) -> str:
@@ -64,14 +68,14 @@ def _get_plymouthd_args(self) -> str:
     return base_args
 
 
-def start_plymouth(self) -> list[str]:
+def start_plymouth(self) -> str:
     """Returns bash lines to run plymouthd"""
-    return [
-        f"plymouthd {_get_plymouthd_args(self)}",
-        "if ! plymouth --ping; then",
-        '    eerror "Failed to start plymouthd"',
-        "    return 1",
-        'fi',
-        "setvar plymouth 1",
-        "plymouth show-splash",
-    ]
+    return f"""
+    plymouthd {_get_plymouthd_args(self)}
+    if ! plymouth --ping; then
+        eerror "Failed to start plymouthd"
+        return 1
+    fi
+    setvar plymouth 1
+    plymouth show-splash
+    """

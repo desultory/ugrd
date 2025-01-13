@@ -31,7 +31,7 @@ autodetect_init = true
 
 [imports.functions]
 "ugrd.base.base" = [ "check_var", "setvar", "readvar", "prompt_user", "retry",
-                     "edebug", "einfo", "ewarn", "eerror",
+                     "klog", "edebug", "einfo", "ewarn", "eerror",
 		     "rd_fail", "rd_restart", "_find_init" ]
 
 [custom_parameters]

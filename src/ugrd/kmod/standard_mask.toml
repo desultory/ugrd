@@ -1,9 +1,8 @@
-modules = [
-  "ugrd.kmod.nosound",
-  "ugrd.kmod.novideo",
-  "ugrd.kmod.nonetwork"
-]
+kmod_ignore_video = true
+kmod_ignore_sound = true
+kmod_ignore_network = true
 
+# These can always be ignored
 kmod_ignore = [
 'kvm', 'kvm_amd', 'kvm_intel',  # virtualization
 'ch341', 'cp210x', 'joydev', 'binfmt_misc', 'wmi', 'xpad',  # misc
@@ -12,3 +11,12 @@ kmod_ignore = [
 'intel_qat', 'intel_powerclamp', 'intel_cstate', 'rapl', 'intel_rapl_common', 'intel_rapl_msr', 'intel_pmc_bxt',  #intel
 'i2c_piix4', 'spi_intel_pci', 'i2c_ismt', 'i2c_i801'  # i2c
 ]
+
+
+[imports.build_pre]
+"ugrd.kmod.standard_mask" = [ "add_kmod_masks" ]
+
+[custom_parameters]
+kmod_ignore_video = "bool"  # ignore video modules
+kmod_ignore_sound = "bool"  # ignore sound modules
+kmod_ignore_network = "bool"  # ignore network modules

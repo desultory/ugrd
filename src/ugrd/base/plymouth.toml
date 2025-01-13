@@ -13,7 +13,7 @@ run_dirs = ["plymouth"]
 type = "devpts"
 destination = "/dev/pts"
 options = ['noauto', 'nosuid', 'noexec', 'rw', 'mode=620', 'gid=5']
-no_validate_options = true
+no_validate = true
 path = "devpts"
 
 [imports.build_enum]

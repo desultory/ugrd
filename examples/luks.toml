@@ -4,7 +4,6 @@
 
 modules = [
 #  "ugrd.crypto.cryptsetup", # this module will be automatically activated if a LUKS volume is detected
-  "ugrd.kmod.standard_mask"
 ]
 
 # Device mapper autodetection is enabled by default

@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "6.0.0"
+__version__ = "6.5.0"
 
 from pathlib import Path
 from typing import Union
@@ -20,6 +20,103 @@ MOUNT_PARAMETERS = [
     "base_mount",
     *SOURCE_TYPES,
 ]
+
+
+def _get_device_id(device: str) -> str:
+    """Gets the device id from the device path."""
+    return Path(device).stat().st_rdev >> 8, Path(device).stat().st_rdev & 0xFF
+
+
+def _resolve_dev(self, device_path) -> str:
+    """Resolves a device to one indexed in blkid.
+
+    Takes the device path, such as /dev/root, and resolves it to a device indexed in blkid.
+    If the device is an overlayfs, resolves the lowerdir device.
+    """
+    if str(device_path) in self["_blkid_info"]:
+        self.logger.debug("Device already resolved to blkid indexed device: %s" % device_path)
+        return device_path
+
+    self.logger.debug("Resolving device: %s" % device_path)
+    mountpoint = _resolve_device_mountpoint(self, device_path)
+    device_path = _resolve_overlay_lower_device(self, mountpoint)
+    mountpoint = _resolve_device_mountpoint(self, device_path)  # May have changed if it was an overlayfs
+
+    major, minor = _get_device_id(self["_mounts"][mountpoint]["device"])
+    for device in self["_blkid_info"]:
+        check_major, check_minor = _get_device_id(device)
+        if (major, minor) == (check_major, check_minor):
+            self.logger.info("Resolved device: %s -> %s" % (device_path, colorize(device, "cyan")))
+            return device
+    self.logger.critical("Failed to resolve device: %s" % colorize(device_path, "red", bold=True))
+    self.logger.error("Blkid info: %s" % pretty_print(self["_blkid_info"]))
+    self.logger.error("Mount info: %s" % pretty_print(self["_mounts"]))
+    return device_path
+
+
+def _find_mountpoint(self, path: str) -> str:
+    """Finds the mountpoint of a file or directory,
+    Checks if the parent dir is a mountpoint, if not, recursively checks the parent dir."""
+    check_path = Path(path).resolve()
+    parent = check_path.parent if not check_path.is_dir() else check_path
+    if str(parent) in self["_mounts"]:
+        return str(parent)
+    elif parent == Path("/"):  # The root mount SHOULD always be found...
+        raise AutodetectError("Mountpoint not found for: %s" % path)
+    return _find_mountpoint(self, parent.parent)
+
+
+def _resolve_device_mountpoint(self, device) -> str:
+    """Gets the mountpoint of a device based on the device path."""
+    for mountpoint, mount_info in self["_mounts"].items():
+        if str(device) == mount_info["device"]:
+            return mountpoint
+    raise AutodetectError("Device mountpoint not found: %s" % device)
+
+
+def _resolve_overlay_lower_dir(self, mountpoint) -> str:
+    for option in self["_mounts"][mountpoint]["options"]:
+        if option.startswith("lowerdir="):
+            return option.removeprefix("lowerdir=")
+    raise AutodetectError(
+        "[%s] No lower overlayfs mountpoint found: %s" % mountpoint, self["_mounts"][mountpoint]["options"]
+    )
+
+
+def _resolve_overlay_lower_device(self, mountpoint) -> dict:
+    """Returns device for the lower overlayfs mountpoint.
+    If it's not an overlayfs, returns the device for the mountpoint.
+
+    If it is, iterate through the lowerdir devices until a non-overlayfs mount is found.
+    """
+    if self["_mounts"][mountpoint]["fstype"] != "overlay":
+        return self["_mounts"][mountpoint]["device"]
+
+    while self["_mounts"][mountpoint]["fstype"] == "overlay":
+        lowerdir = _resolve_overlay_lower_dir(self, mountpoint)
+        mountpoint = _find_mountpoint(self, lowerdir)
+        if mountpoint == "/":  # The lowerdir mount should never be the root mount
+            raise AutodetectError("Lowerdir mount not found: %s" % lowerdir)
+
+    return self["_mounts"][mountpoint]["device"]
+
+
+def _merge_mounts(self, mount_name: str, mount_config, mount_class) -> None:
+    """Merges the passed mount config with the existing mount."""
+    if mount_name not in self[mount_class]:
+        self.logger.debug("[%s] Skipping mount merge, mount not found: %s" % (mount_class, mount_name))
+        return mount_config
+
+    self.logger.info("[%s] Updating mount: %s" % (mount_class, mount_name))
+    self.logger.debug("[%s] Updating mount with: %s" % (mount_name, mount_config))
+    if "options" in self[mount_class][mount_name] and "options" in mount_config:
+        self.logger.debug("Merging options: %s" % mount_config["options"])
+        self[mount_class][mount_name]["options"] = self[mount_class][mount_name]["options"] | set(
+            mount_config["options"]
+        )
+        mount_config.pop("options")
+
+    return dict(self[mount_class][mount_name], **mount_config)
 
 
 @contains("validate", "Skipping mount validation, validation is disabled.", log_level=30)
@@ -51,24 +148,6 @@ def _validate_mount_config(self, mount_name: str, mount_config) -> None:
             raise ValueError("Invalid parameter in mount: %s" % parameter)
 
 
-def _merge_mounts(self, mount_name: str, mount_config, mount_class) -> None:
-    """Merges the passed mount config with the existing mount."""
-    if mount_name not in self[mount_class]:
-        self.logger.debug("[%s] Skipping mount merge, mount not found: %s" % (mount_class, mount_name))
-        return mount_config
-
-    self.logger.info("[%s] Updating mount: %s" % (mount_class, mount_name))
-    self.logger.debug("[%s] Updating mount with: %s" % (mount_name, mount_config))
-    if "options" in self[mount_class][mount_name] and "options" in mount_config:
-        self.logger.debug("Merging options: %s" % mount_config["options"])
-        self[mount_class][mount_name]["options"] = self[mount_class][mount_name]["options"] | set(
-            mount_config["options"]
-        )
-        mount_config.pop("options")
-
-    return dict(self[mount_class][mount_name], **mount_config)
-
-
 def _process_mount(self, mount_name: str, mount_config, mount_class="mounts") -> None:
     """Processes the passed mount config."""
     mount_config = _merge_mounts(self, mount_name, mount_config, mount_class)
@@ -83,10 +162,14 @@ def _process_mount(self, mount_name: str, mount_config, mount_class="mounts") ->
 
     # Add imports based on the mount type
     if mount_type := mount_config.get("type"):
-        if mount_type in ["vfat", "ext4", "xfs"]:
+        if mount_type in ["vfat", "xfs"]:
             self["kmod_init"] = mount_type
         elif mount_type == "nilfs2":
             self["binaries"] = "mount.nilfs2"
+        elif mount_type == "ext4":
+            if "ugrd.fs.ext4" not in self["modules"]:
+                self.logger.info("Auto-enabling module: %s", colorize("ext4", "cyan"))
+                self["modules"] = "ugrd.fs.ext4"
         elif mount_type == "btrfs":
             if "ugrd.fs.btrfs" not in self["modules"]:
                 self.logger.info("Auto-enabling module: %s", colorize("btrfs", "cyan"))
@@ -219,6 +302,8 @@ def get_mounts_info(self) -> None:
             device, mountpoint, fstype, options, _, _ = line.split()
             self["_mounts"][mountpoint] = {"device": device, "fstype": fstype, "options": options.split(",")}
 
+    self.logger.debug("Mount info: %s" % pretty_print(self["_mounts"]))
+
 
 @contains("hostonly", "Skipping blkid enumeration, hostonly mode is disabled.", log_level=30)
 def get_blkid_info(self, device=None) -> dict:
@@ -256,32 +341,34 @@ def get_blkid_info(self, device=None) -> dict:
 
 
 @contains("init_target", "init_target must be set", raise_exception=True)
-@contains(
-    "autodetect_init_mount", "Skipping init mount autodetection, autodetect_init_mount is disabled.", log_level=30
-)
+@contains("autodetect_init_mount", "Init mount autodetection disabled, skipping.", log_level=30)
 @contains("hostonly", "Skipping init mount autodetection, hostonly mode is disabled.", log_level=30)
-def autodetect_init_mount(self, parent=None) -> None:
+def autodetect_init_mount(self) -> None:
     """Checks the parent directories of init_target, if the path is a mountpoint, add it to late_mounts."""
-    if not parent:
-        parent = self["init_target"].parent
-    if parent == Path("/"):
+    init_mount = _find_mountpoint(self, self["init_target"])
+    if init_mount == "/":
         return
-    if str(parent) in self["_mounts"]:
-        self.logger.info("Detected init mount: %s" % colorize(parent, "cyan"))
-        mount_name = str(parent).removeprefix("/")
-        mount_dest = str(parent)
-        mount_device = self["_mounts"][str(parent)]["device"]
-        mount_type = self["_mounts"][str(parent)]["fstype"]
-        mount_options = self["_mounts"][str(parent)]["options"]
-        blkid_info = self["_blkid_info"][mount_device]
-        mount_source_type, mount_source = _get_mount_source_type(self, blkid_info, with_val=True)
-        self["late_mounts"][mount_name] = {
-            "destination": mount_dest,
-            mount_source_type: mount_source,
-            "type": mount_type,
-            "options": mount_options,
-        }
-    autodetect_init_mount(self, parent.parent)
+
+    if init_mount in self["late_mounts"]:
+        return self.logger.debug("Init mount already detected: %s" % init_mount)
+
+    if init_mount not in self["_mounts"]:
+        raise AutodetectError("Init mount not found in host mounts: %s" % init_mount)
+
+    self.logger.info("Detected init mount: %s" % colorize(init_mount, "cyan"))
+    mount_name = init_mount.removeprefix("/")
+    mount_dest = init_mount
+    mount_device = self["_mounts"][init_mount]["device"]
+    mount_type = self["_mounts"][init_mount]["fstype"]
+    mount_options = self["_mounts"][init_mount]["options"]
+    blkid_info = self["_blkid_info"][mount_device]
+    mount_source_type, mount_source = _get_mount_source_type(self, blkid_info, with_val=True)
+    self["late_mounts"][mount_name] = {
+        "destination": mount_dest,
+        mount_source_type: mount_source,
+        "type": mount_type,
+        "options": mount_options,
+    }
 
 
 @contains("hostonly", "Skipping virtual block device enumeration, hostonly mode is disabled.", log_level=30)
@@ -328,11 +415,6 @@ def get_virtual_block_info(self) -> dict:
         self.logger.debug("Virtual block device info: %s" % pretty_print(self["_vblk_info"]))
     else:
         self.logger.debug("No virtual block devices found.")
-
-
-def _get_device_id(device: str) -> str:
-    """Gets the device id from the device path."""
-    return Path(device).stat().st_rdev >> 8, Path(device).stat().st_rdev & 0xFF
 
 
 @contains("hostonly", "Skipping device mapper autodetection, hostonly mode is disabled.", log_level=30)
@@ -510,40 +592,6 @@ def autodetect_luks(self, mount_loc, dm_num, blkid_info) -> None:
     )
 
 
-def _resolve_dev(self, device_path) -> str:
-    """Resolves a device path, if possible.
-    Useful for cases where the device in blkid differs from the device in /proc/mounts.
-    """
-    major, minor = _get_device_id(self["_mounts"][device_path]["device"])
-    for device in self["_blkid_info"]:
-        check_major, check_minor = _get_device_id(device)
-        if (major, minor) == (check_major, check_minor):
-            self.logger.info(
-                "Resolved device: %s -> %s" % (self["_mounts"][device_path]["device"], colorize(device, "cyan"))
-            )
-            return device
-    self.logger.warning("Failed to resolve device: %s" % colorize(self["_mounts"]["/"]["device"], "red", bold=True))
-    return self["_mounts"][device_path]["device"]
-
-
-def _resolve_overlay_lower_dir(self, mountpoint) -> str:
-    for option in self["_mounts"][mountpoint]["options"]:
-        if option.startswith("lowerdir="):
-            return option.removeprefix("lowerdir=")
-    raise AutodetectError(
-        "[%s] No lower overlayfs mountpoint found: %s" % mountpoint, self["_mounts"][mountpoint]["options"]
-    )
-
-
-def _resolve_overlay_lower_device(self, mountpoint) -> dict:
-    """Returns device for the lower overlayfs mountpoint."""
-    if self["_mounts"][mountpoint]["fstype"] != "overlay":
-        return self["_mounts"][mountpoint]["device"]
-
-    lowerdir = _resolve_overlay_lower_dir(self, mountpoint)
-    return self["_mounts"][lowerdir]["device"]
-
-
 @contains("autodetect_root", "Skipping root autodetection, autodetect_root is disabled.", log_level=30)
 @contains("hostonly", "Skipping root autodetection, hostonly mode is disabled.", log_level=30)
 def autodetect_root(self) -> None:
@@ -554,16 +602,20 @@ def autodetect_root(self) -> None:
             "Root mount not found in host mounts.\nCurrent mounts: %s" % pretty_print(self["_mounts"])
         )
     # Sometimes the root device listed in '/proc/mounts' differs from the blkid info
-    root_dev = self["_mounts"]["/"]["device"]
-    if self["resolve_root_dev"]:  # Sometimes the root device listed in '/proc/mounts' differs from the blkid info
-        root_dev = _resolve_dev(self, "/")
+    root_dev = _resolve_dev(self, self["_mounts"]["/"]["device"])
     if ":" in root_dev:  # only use the first device
         root_dev = root_dev.split(":")[0]
         for alt_devices in root_dev.split(":")[1:]:  # But ensure kmods are loaded for all devices
             autodetect_mount_kmods(self, alt_devices)
     _autodetect_mount(self, "/")
     if self["autodetect_root_dm"]:
-        _autodetect_dm(self, "/")
+        if self["mounts"]["root"]["type"] == "btrfs":
+            from ugrd.fs.btrfs import _get_btrfs_mount_devices
+
+            for device in _get_btrfs_mount_devices(self, "/", root_dev):
+                _autodetect_dm(self, "/", device)
+        else:
+            _autodetect_dm(self, "/")
 
 
 def _autodetect_mount(self, mountpoint) -> None:
@@ -572,13 +624,13 @@ def _autodetect_mount(self, mountpoint) -> None:
         self.logger.error("Host mounts: %s" % pretty_print(self["_mounts"]))
         raise AutodetectError("auto_mount mountpoint not found in host mounts: %s" % mountpoint)
 
-    mount_device = _resolve_overlay_lower_device(self, mountpoint)
+    mount_device = _resolve_overlay_lower_device(self, mountpoint)  # Just resolve the overlayfs device
 
     if ":" in mount_device:  # Handle bcachefs
         mount_device = mount_device.split(":")[0]
 
-    if mount_device not in self["_blkid_info"]:
-        get_blkid_info(self, mount_device)
+    if mount_device not in self["_blkid_info"]:  # Try to get the blkid info
+        get_blkid_info(self, mount_device)  # Raises an exception if it fails
 
     mount_info = self["_blkid_info"][mount_device]
     autodetect_mount_kmods(self, mount_device)
@@ -691,7 +743,6 @@ def _validate_host_mount(self, mount, destination_path=None) -> bool:
     """Checks if a defined mount exists on the host."""
     if mount.get("no_validate"):
         return self.logger.warning("Skipping host mount validation for config:\n%s" % pretty_print(mount))
-
     if mount.get("base_mount"):
         return self.logger.debug("Skipping host mount validation for base mount: %s" % mount)
 
@@ -699,12 +750,9 @@ def _validate_host_mount(self, mount, destination_path=None) -> bool:
     # If a destination path is passed, like for /, use that instead of the mount's destination
     destination_path = str(mount["destination"]) if destination_path is None else destination_path
 
-    # Using the mount path, get relevant host mount info
-    host_source_dev = _resolve_overlay_lower_device(self, destination_path)
+    host_source_dev = _resolve_dev(self, self["_mounts"][destination_path]["device"])
     if ":" in host_source_dev:  # Handle bcachefs
         host_source_dev = host_source_dev.split(":")[0]
-    if destination_path == "/" and self["resolve_root_dev"]:
-        host_source_dev = _resolve_dev(self, "/")
 
     host_mount_options = self["_mounts"][destination_path]["options"]
     for option in mount.get("options", []):
@@ -745,16 +793,16 @@ def check_mounts(self) -> None:
         _validate_host_mount(self, mount, "/" if mount_name == "root" else None)
 
 
-def mount_root(self) -> list[str]:
+def mount_root(self) -> str:
     """Mounts the root partition to $MOUNTS_ROOT_TARGET."""
-    return [
-        'if grep -qs "$(readvar MOUNTS_ROOT_TARGET)" /proc/mounts; then',
-        '    ewarn "Root mount already exists, unmounting: $(readvar MOUNTS_ROOT_TARGET)"',
-        '    umount "$(readvar MOUNTS_ROOT_TARGET)"',
-        "fi",
-        '''einfo "Mounting '$(readvar MOUNTS_ROOT_SOURCE)' ($(readvar MOUNTS_ROOT_TYPE)) to '$(readvar MOUNTS_ROOT_TARGET)' with options: $(readvar MOUNTS_ROOT_OPTIONS)"''',
-        f'retry {self["mount_retries"] or -1} {self["mount_timeout"]} mount "$(readvar MOUNTS_ROOT_SOURCE)" -t "$(readvar MOUNTS_ROOT_TYPE)" "$(readvar MOUNTS_ROOT_TARGET)" -o "$(readvar MOUNTS_ROOT_OPTIONS)"',
-    ]
+    return f"""
+    if grep -qs "$(readvar MOUNTS_ROOT_TARGET)" /proc/mounts; then
+        ewarn "Root mount already exists, unmounting: $(readvar MOUNTS_ROOT_TARGET)"
+        umount "$(readvar MOUNTS_ROOT_TARGET)"
+    fi
+    einfo "Mounting '$(readvar MOUNTS_ROOT_SOURCE)' ($(readvar MOUNTS_ROOT_TYPE)) to '$(readvar MOUNTS_ROOT_TARGET)' with options: $(readvar MOUNTS_ROOT_OPTIONS)"
+    retry {self["mount_retries"] or -1} {self["mount_timeout"]} mount "$(readvar MOUNTS_ROOT_SOURCE)" -t "$(readvar MOUNTS_ROOT_TYPE)" "$(readvar MOUNTS_ROOT_TARGET)" -o "$(readvar MOUNTS_ROOT_OPTIONS)"
+    """
 
 
 def export_mount_info(self) -> None:
@@ -767,6 +815,9 @@ def export_mount_info(self) -> None:
 
 def autodetect_mount_kmods(self, device) -> None:
     """Autodetects the kernel modules for a block device."""
+    if "/" not in str(device):
+        device = f"/dev/{device}"
+
     if device_kmods := resolve_blkdev_kmod(self, device):
         self.logger.info("Auto-enabling kernel modules for device: %s" % colorize(", ".join(device_kmods), "cyan"))
         self["_kmod_auto"] = device_kmods
@@ -774,27 +825,40 @@ def autodetect_mount_kmods(self, device) -> None:
 
 def resolve_blkdev_kmod(self, device) -> list[str]:
     """Gets the kmod name for a block device."""
+    kmods = []
     dev = Path(device)
     while dev.is_symlink():
         dev = dev.resolve()
+
+    if dev.is_block_device():
+        major, minor = _get_device_id(device)
+        sys_dev = str(Path(f"/sys/dev/block/{major}:{minor}").resolve())
+        if "/usb" in sys_dev:
+            if "ugrd.kmod.usb" not in self["modules"]:
+                self.logger.info(
+                    "Auto-enabling %s for USB device: %s"
+                    % (colorize("ugrd.kmod.usb", bold=True), colorize(device, "cyan"))
+                )
+                self["modules"] = "ugrd.kmod.usb"
     device_name = dev.name
+
     if device_name.startswith("dm-") or dev.parent.name == "mapper" or dev.parent.name.startswith("vg"):
-        return ["dm_mod"]
+        kmods.append("dm_mod")
     elif device_name.startswith("nvme"):
-        return ["nvme"]
+        kmods.append("nvme")
     elif device_name.startswith("vd"):
-        return ["virtio_blk"]
+        kmods.append("virtio_blk")
     elif device_name.startswith("sd"):
-        return ["sd_mod"]
+        kmods.append("sd_mod")
     elif device_name.startswith("mmcblk"):
-        return ["mmc_block"]
+        kmods.append("mmc_block")
     elif device_name.startswith("sr"):
-        return ["sr_mod"]
+        kmods.append("sr_mod")
     elif device_name.startswith("md"):
-        return ["md_mod"]
+        kmods.append("md_mod")
     else:
         self.logger.error(
             "[%s] Unable to determine kernel module for block device: %s"
             % (device_name, colorize(device, "red", bold=True))
         )
-        return []
+    return kmods
