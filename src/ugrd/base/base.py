@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "6.1.1"
+__version__ = "6.1.2"
 
 from pathlib import Path
 
@@ -138,7 +138,7 @@ def rd_fail(self) -> list[str]:
         r'eerror "Loaded modules:\n$(cat /proc/modules)"',
         r'eerror "Block devices:\n$(blkid)"',
         r'eerror "Mounts:\n$(mount)"',
-        'if [ "$(readvar recovery)" == "1" ]; then',
+        'if [ "$(readvar recovery)" = "1" ]; then',
         '    einfo "Entering recovery shell"',
     ]
     if "ugrd.base.plymouth" in self["modules"]:
@@ -187,7 +187,7 @@ def check_var(self) -> str:
         fi
         return 1
     fi
-    if [ "$(readvar "$1")" == "1" ]; then
+    if [ "$(readvar "$1")" = "1" ]; then
         return 0
     fi
     return 1
