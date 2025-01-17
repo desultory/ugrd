@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "3.10.0"
+__version__ = "4.0.0"
 
 from pathlib import Path
 
@@ -130,12 +130,6 @@ def _process_cryptsetup_multi(self, mapped_name: str, config: dict) -> None:
     for file_type in ["key", "header"]:
         if config.get(f"include_{file_type}"):
             self["dependencies"] = config[f"{file_type}_file"]
-
-    if not config.get("retries"):
-        self.logger.info(
-            "[%s:%s] No retries specified, using default: %s" % (_module_name, mapped_name, self["cryptsetup_retries"])
-        )
-        config["retries"] = self["cryptsetup_retries"]
 
     self["cryptsetup"][mapped_name] = config
 
@@ -313,7 +307,12 @@ def detect_cryptsetup_backend(self) -> None:
 
 def _get_openssl_kdfs(self) -> list[str]:
     """Gets the available KDFs from OpenSSL"""
-    kdfs = self._run(["openssl", "list", "-kdf-algorithms"], fail_hard=False, fail_silent=True).stdout.decode().lower().split("\n")
+    kdfs = (
+        self._run(["openssl", "list", "-kdf-algorithms"], fail_hard=False, fail_silent=True)
+        .stdout.decode()
+        .lower()
+        .split("\n")
+    )
     if not kdfs:
         self.logger.warning("Unable to determine available OpenSSL KDFs.")
     else:
@@ -390,7 +389,9 @@ def export_crypt_sources(self) -> list[str]:
     Adds the cryptsetup source and token to the exports.
     Sets the token to the partuuid or uuid if it exists.
     Sets the SOURCE when using a path.
-    Only allows using the path if validation is disabled."""
+    Only allows using the path if validation is disabled.
+    sets CRYPTSETUP_HEADER_{name} if a header file is set.
+    """
     for name, parameters in self["cryptsetup"].items():
         _validate_luks_config(self, name)
         if parameters.get("path"):
@@ -412,105 +413,153 @@ def export_crypt_sources(self) -> list[str]:
                 break
         else:
             raise ValidationError("A partuuid or uuid must be specified for cryptsetup mount: %s" % name)
+        if header_file := parameters.get("header_file"):
+            self["exports"]["CRYPTSETUP_HEADER_%s" % name] = header_file
+            self.logger.debug("Set CRYPTSETUP_HEADER_%s: %s" % (name, header_file))
 
 
-def get_crypt_dev(self) -> list[str]:
+def get_crypt_dev(self) -> str:
     """Gets the device path for a particular cryptsetup device at runtime.
     First attempts to read CRYPTSETUP_SOURCE_{name} if it exists.
     If it doesn't exist, or the device is not found, it will attempt to resolve the device using the token.
     If that doesn't exist, it will fail."""
-    return [
-        'source_dev="$(readvar CRYPTSETUP_SOURCE_"$1")"',
-        'source_token="$(readvar CRYPTSETUP_TOKEN_"$1")"',
-        'if [ -n "$source_dev" ]; then',
-        '    if [ -e "$source_dev" ]; then',
-        '        echo -n "$source_dev"',
-        "        return",
-        "    fi",
-        "fi",
-        'if [ -n "$source_token" ]; then',
-        '    source_dev=$(blkid --match-token "$source_token" --output device)',
-        '    if [ -n "$source_dev" ]; then',
-        '        echo -n "$source_dev"',
-        "    fi",
-        "fi",
+    return """
+    source_dev="$(readvar CRYPTSETUP_SOURCE_"$1")"
+    source_token="$(readvar CRYPTSETUP_TOKEN_"$1")"
+    if [ -n "$source_dev" ]; then
+        if [ -e "$source_dev" ]; then
+            echo -n "$source_dev"
+            return
+        fi
+    fi
+    if [ -n "$source_token" ]; then
+        source_dev=$(blkid --match-token "$source_token" --output device)
+        if [ -n "$source_dev" ]; then
+            echo -n "$source_dev"
+        fi
+    fi
+    if [ -z "$source_dev" ]; then
+        rd_fail "Failed to find cryptsetup device: $1"
+    fi
+    """
+
+
+def open_crypt_dev(self) -> str:
+    """Returns a bash script to open a cryptsetup device.
+    The first argument is the device name, for get_crypt_dev, and as the mapped name
+    The second argument is a key file, if it exists.
+        This key file may be a named pipe, previously created by the key_command.
+    """
+    return """
+    crypt_device="$(get_crypt_dev "$1")"
+    header="$(readvar CRYPTSETUP_HEADER_"$1")"
+
+    cryptsetup_args="cryptsetup open --tries 1"
+    if [ -n "$header" ]; then
+        einfo "[$1] Opening cryptsetup device with detached header: $header"
+        cryptsetup_args="$cryptsetup_args --header $header"
+    fi
+    if [ -e /run/vars/key_data ]; then
+        einfo "[$1] Unlocking with key data from: /run/vars/key_data"
+        cryptsetup_args="$cryptsetup_args --key-file /run/vars/key_data"
+    elif [ -n "$2" ]; then
+        einfo "[$1] Unlocking with key file: $2"
+        cryptsetup_args="$cryptsetup_args --key-file $2"
+    fi
+    cryptsetup_args="$cryptsetup_args $crypt_device $1"
+    edebug "[$1] cryptsetup args: $cryptsetup_args"
+    $cryptsetup_args
+    """
+
+
+def _open_crypt_dev(self, name: str, parameters: dict) -> list[str]:
+    """Generates a loop to open a cryptsetup device with the given parameters."""
+    from textwrap import dedent
+
+    retries = parameters.get("retries", self["cryptsetup_retries"])
+    out = [
+        f"einfo 'Opening cryptsetup device: {name}'",
+        f'retries={retries}; i=0; while [ "$((i=i+1))" -le $retries ]; do',
     ]
 
+    key_file = parameters.get("key_file")
+    reset_command = parameters.get("reset_command")
+    reset_lines = [reset_command, "continue"] if reset_command else ["continue"]
+    key_command = parameters.get("key_command")
+    plymouth_key_command = parameters.get("plymouth_key_command") if "ugrd.base.plymouth" in self["modules"] else None
 
-def open_crypt_device(self, name: str, parameters: dict) -> list[str]:
-    """Returns a bash script to open a cryptsetup device."""
-    self.logger.debug("[%s] Processing cryptsetup volume: %s" % (name, parameters))
-    retries = parameters["retries"]
+    _key_command_lines = f"""    einfo "($i/$retries)[{name}] Running key command: {key_command}"
+    if ! {key_command} > /run/vars/key_data; then
+        ewarn 'Failed to run key command: {key_command}'
+        {reset_command}
+        continue
+    fi"""
 
-    out = [f"prompt_user 'Press enter to unlock device: {name}'"] if self["cryptsetup_prompt"] else []
-    out += [f"for ((i = 1; i <= {retries}; i++)); do"]
-
-    # Resolve the device source using get_crypt_dev, if no source is returned, run rd_fail
-    out += [
-        f'    crypt_dev="$(get_crypt_dev {name})"',
-        '    if [ -z "$crypt_dev" ]; then',
-        f'        rd_fail "Failed to resolve device source for cryptsetup mount: {name}"',
-        "    fi",
-    ]
-
-    reset_command = parameters.get("reset_command", "continue")
-    # When there is a key command, evaluate it into $key_data
-    if "key_command" in parameters:
-        self.logger.debug("[%s] Using key command: %s" % (name, parameters["key_command"]))
-        out += [
-            f"    einfo 'Attempting to open LUKS key: {parameters['key_file']}'",
-            f"    edebug 'Using key command: {parameters['key_command']}'",
-        ]
-
-        if "plymouth_key_command" in parameters and "ugrd.base.plymouth" in self["modules"]:
+    if key_command:
+        self.logger.debug("[%s] Using key command: %s" % (name, key_command))
+        out += ["    rm -f /run/vars/key_data"]  # Remove the key data file if it exists
+        if plymouth_key_command:
+            self.logger.debug("[%s] Using plymouth key command: %s" % (name, plymouth_key_command))
             out += [
                 "    if plymouth --ping; then",
-                f'        plymouth ask-for-password --prompt "[${{i}} / {retries}] Enter passphrase to unlock key for: {name}" --command "{parameters["plymouth_key_command"]}" --number-of-tries 1 > /run/vars/key_data || {reset_command}',
+                f'        if ! plymouth ask-for-password --prompt "[${{i}} / ${{retries}}] Enter passphrase to unlock key for: {name}" --command "{parameters["plymouth_key_command"]}" --number-of-tries 1 > /run/vars/key_data; then',
+                *[f"            {line}" for line in reset_lines],
+                "        fi",
                 "    else",
-                f'        {parameters["key_command"]} > /run/vars/key_data || {reset_command}',
+                *[f"        {line}" for line in dedent(_key_command_lines).split("\n")],
                 "    fi",
             ]
         else:
-            out += [f"    {parameters['key_command']} > /run/vars/key_data || {reset_command}"]
-
-    cryptsetup_command = "cryptsetup open --tries 1"  # Set tries to 1 since it runs in the loop
-    cryptsetup_target = f'"$crypt_dev" {name}'  # Add a variable for the source device and mapped name
-
-    if header_file := parameters.get("header_file"):  # Use the header file if it exists
-        out += [f"    einfo 'Using header file: {header_file}'"]
-        cryptsetup_command += f" --header {header_file}"
-
-    if self["cryptsetup_trim"]:
-        cryptsetup_command += " --allow-discards"
-        self.logger.warning("Using --allow-discards can be a security risk.")
-
-    # Check if the device was successfully opened
-    out += [
-        '    einfo "Unlocking device: $crypt_dev"',  # Unlock using key data if it exists
-        "    if [ -e /run/vars/key_data ]; then",
-        f"        if {cryptsetup_command} --key-file=/run/vars/key_data {cryptsetup_target}; then",
-        "            rm /run/vars/key_data",  # Remove the key data file
-        "            break",
-        "        fi",  # Try to open the device using plymouth if it's running
-        "        rm /run/vars/key_data",  # Remove the key data file
-    ]
-    if "ugrd.base.plymouth" in self["modules"]:  # Attempt plain unlock if using plymouth
+            out += [f"        {line}" for line in dedent(_key_command_lines).split("\n")]
+        out += [  # open_crypt_dev will use the key data file if it exists
+            f'    einfo "($i/$retries)[{name}] Unlocked key to var: key_data"',
+            f"    if open_crypt_dev {name}; then",
+            "        rm -f /run/vars/key_data",  # Remove the key data file after opening the device
+        ]
+    elif key_file:  # For plain key files, just use it as arg 2 for open_crypt_dev
         out += [
-            f'    elif plymouth --ping && plymouth ask-for-password --prompt "[${{i}} / {retries}] Enter passphrase to unlock {name}" --command "{cryptsetup_command} {cryptsetup_target}" --number-of-tries 1; then',
-            "        break",
-        ]  # Break if the device was successfully opened
-    if "key_file" in parameters:  # try a key file directly if it exists
-        out += [f'    elif {cryptsetup_command} --key-file {parameters["key_file"]} {cryptsetup_target}; then']
-    else:  # Otherwise, open directly
-        out += [f"    elif {cryptsetup_command} {cryptsetup_target}; then"]
-    out += ["        break", "    fi", f'    ewarn "Failed to open device: {name} ($i / {retries})"']
-    # Halt if the autoretry is disabled
+            f'    einfo "($i/$retries)[{name}] Using key file: {key_file}"',
+            f"    if open_crypt_dev {name} {key_file}; then",
+        ]
+    else:
+        if "ugrd.base.plymouth" in self["modules"]:
+            out += [  # When plymouth is used, write the entered key to the key data file, where it will be used by open_crypt_dev
+                "    if plymouth --ping; then",
+                f'        plymouth ask-for-password --prompt "[${{i}} / ${{retries}}] Enter passphrase to unlock: {name}" > /run/vars/key_data',
+                "    fi",
+                f'    einfo "($i/$retries) Unlocking device: {name}"',
+                f"    if open_crypt_dev {name}; then",
+            ]
+        else:
+            out += [f'    einfo "($i/$retries) Unlocking device: {name}"', f"    if open_crypt_dev {name}; then"]
+    # Break on success
+    out += ["        break", "    fi", f'    ewarn "($i/$retries) Failed to open cryptsetup device: {name}"']
     if not self["cryptsetup_autoretry"]:
-        out += ['    prompt_user "Press enter to retry"']
-    # Add the reset command if it exists
-    if reset_command != "continue":
+        out += ["    prompt_user 'Press enter to retry'"]
+    if reset_command:
         out += ['    einfo "Running key reset command"', f"    {reset_command}"]
-    out += ["done\n"]
+
+    out += [
+        "done",
+        "if [ -e /run/vars/key_data ]; then",
+        "    eerror 'Removing leftover key data file'",
+        "    rm -f /run/vars/key_data",
+        "fi",
+    ]
+
+    if parameters.get("try_nokey") and key_file:
+        new_params = parameters.copy()
+        for parameter in ["key_file", "key_command", "reset_command"]:
+            try:
+                new_params.pop(parameter)
+            except KeyError:
+                pass
+        out += [
+            f"if ! cryptsetup status {name} > /dev/null 2>&1; then",
+            f'    ewarn "[{name}] Failed to open device using key: {key_file}"',
+            *[f"    {bash_line}" for bash_line in _open_crypt_dev(self, name, new_params)],
+            "fi",
+        ]
 
     return out
 
@@ -524,27 +573,11 @@ def crypt_init(self) -> list[str]:
     for name, parameters in self["cryptsetup"].items():
         # Check if the volume is already open, if so, skip it
         out += [
-            f"if cryptsetup status {name} > /dev/null 2>&1; then",
+            f"if ! cryptsetup status {name} > /dev/null 2>&1; then",
+            *[f"    {bash_line}" for bash_line in _open_crypt_dev(self, name, parameters)],
+            "else",
             f'    ewarn "Device already open: {name}"',
-            "    return",
             "fi",
-        ]
-        out += open_crypt_device(self, name, parameters)
-        if "try_nokey" in parameters and parameters.get("key_file"):
-            new_params = parameters.copy()
-            for parameter in ["key_file", "key_command", "reset_command"]:
-                try:
-                    new_params.pop(parameter)
-                except KeyError:
-                    pass
-            out += [
-                f"if ! cryptsetup status {name} > /dev/null 2>&1; then",
-                f'    ewarn "Failed to open device using keys: {name}"',
-            ]
-            out += [f"    {bash_line}" for bash_line in open_crypt_device(self, name, new_params)]
-            out += ["fi"]
-        # Check that the device was successfully opened
-        out += [
             f"if ! cryptsetup status {name} > /dev/null 2>&1; then",
             f'    rd_fail "Failed to open cryptsetup device: {name}"',
             "fi",
