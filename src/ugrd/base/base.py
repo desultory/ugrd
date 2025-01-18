@@ -202,9 +202,9 @@ def wait_enter(self) -> str:
     """
     return r"""
     tty_env=$(stty -g)
-    timeout=${1:-0}
+    timeout=$(printf "%.0f" $((${1:-0} * 10)))
     if [ "$timeout" -gt 0 ]; then
-        stty raw -echo min 0 time $(($timeout * 10))
+        stty raw -echo min 0 time $timeout
     else
         stty raw -echo
     fi
