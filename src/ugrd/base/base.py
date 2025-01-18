@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "6.2.2"
+__version__ = "6.2.3"
 
 from pathlib import Path
 
@@ -180,14 +180,15 @@ def check_var(self) -> str:
     """Returns a bash function that checks the value of a variable.
     if it's not set, tries to read the cmdline."""
     return r"""
-    if [ -z "$(readvar "$1")" ]; then  # preferably the variable is set, because this is slower
+    value=$(readvar "$1")
+    if [ -z "$value" ]; then
         cmdline=$(awk -F '--' '{print $1}' /proc/cmdline)  # Get everything before '--'
-        if grep -qE "(^|\s)$1(\s|$)" <<< "$cmdline"; then
+        if echo "$cmdline" | grep -qE "(^|\s)$1(\s|$)"; then
             return 0
         fi
         return 1
     fi
-    if [ "$(readvar "$1")" = "1" ]; then
+    if [ "$value" = "1" ]; then
         return 0
     fi
     return 1
