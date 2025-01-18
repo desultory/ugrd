@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "4.0.0"
+__version__ = "4.0.1"
 
 from pathlib import Path
 
@@ -450,7 +450,7 @@ def open_crypt_dev(self) -> str:
     The second argument is a key file, if it exists.
         This key file may be a named pipe, previously created by the key_command.
     """
-    return """
+    out =  """
     crypt_device="$(get_crypt_dev "$1")"
     header="$(readvar CRYPTSETUP_HEADER_"$1")"
 
@@ -466,6 +466,10 @@ def open_crypt_dev(self) -> str:
         einfo "[$1] Unlocking with key file: $2"
         cryptsetup_args="$cryptsetup_args --key-file $2"
     fi
+    """
+    if self["cryptsetup_trim"]:
+        out += 'cryptsetup_args="$cryptsetup_args --allow-discards"'
+    return out + """
     cryptsetup_args="$cryptsetup_args $crypt_device $1"
     edebug "[$1] cryptsetup args: $cryptsetup_args"
     $cryptsetup_args
