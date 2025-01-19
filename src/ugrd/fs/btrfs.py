@@ -1,11 +1,11 @@
-__version__ = "1.12.5"
+__version__ = "2.0.0"
 __author__ = "desultory"
 
 from pathlib import Path
 
 from ugrd import ValidationError
 from ugrd.fs.mounts import _resolve_overlay_lower_dir
-from zenlib.util import contains, unset
+from zenlib.util import contains, unset, colorize
 
 
 class SubvolNotFound(Exception):
@@ -88,7 +88,7 @@ def autodetect_root_subvol(self):
     """Detects the root subvolume."""
     try:
         root_subvol = _get_mount_subvol(self, "/")
-        self.logger.info("Detected root subvolume: %s", root_subvol)
+        self.logger.info("[btrfs] Detected root subvolume: %s", colorize(root_subvol, "cyan"))
         self["root_subvol"] = root_subvol
     except SubvolNotFound:
         self.logger.warning("Failed to detect root subvolume.")
