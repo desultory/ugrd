@@ -4,7 +4,7 @@ from typing import Union
 
 from zenlib.util import pretty_print, colorize
 
-__version__ = "1.4.1"
+__version__ = "1.4.2"
 __author__ = "desultory"
 
 
@@ -91,7 +91,7 @@ class GeneratorHelpers:
             try:
                 self._run(["bash", "-n", str(file_path)])
             except RuntimeError as e:
-                raise RuntimeError("Failed to validate bash script: %s" % pretty_print(contents)) from e
+                raise RuntimeError("Failed to validate shell script: %s" % pretty_print(contents)) from e
         elif contents[0].startswith("#!"):
             self.logger.warning("[%s] Skipping bash -n on file with unrecognized shebang: %s" % (file_name, contents[0]))
 

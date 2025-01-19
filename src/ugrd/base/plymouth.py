@@ -69,7 +69,7 @@ def _get_plymouthd_args(self) -> str:
 
 
 def start_plymouth(self) -> str:
-    """Returns bash lines to run plymouthd"""
+    """Returns shell lines to run plymouthd"""
     return f"""
     plymouthd {_get_plymouthd_args(self)}
     if ! plymouth --ping; then

@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "3.7.0"
+__version__ = "3.7.1"
 
 
 from zenlib.util import contains, unset, colorize
@@ -16,8 +16,8 @@ def check_cpio_deps(self) -> None:
 @contains("check_cpio")
 def check_cpio_funcs(self) -> None:
     """Checks that all included functions are in the profile included in the generated CPIO file."""
-    bash_func_names = [func + "() {" for func in self.included_functions]
-    _check_in_cpio(self, "etc/profile", bash_func_names)
+    sh_func_names = [func + "() {" for func in self.included_functions]
+    _check_in_cpio(self, "etc/profile", sh_func_names)
     return "All functions found in CPIO."
 
 

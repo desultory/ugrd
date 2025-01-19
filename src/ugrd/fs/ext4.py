@@ -1,11 +1,11 @@
-__version__ = "0.4.0"
+__version__ = "0.4.1"
 
 from zenlib.util import unset
 
 
 @unset("no_fsck", "Not adding ext4 fsck as no_fsck is set", log_level=30)
 def ext4_fsck(self) -> str:
-    """Returns bash lines to run fsck on the root filesystem
+    """Returns a shell function to run fsck on the root filesystem
     The root device is determined by checking the source of SWITCH_ROOT_TARGET"""
     return """
     if check_var no_fsck; then

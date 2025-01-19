@@ -1,4 +1,4 @@
-__version__ = "0.4.0"
+__version__ = "0.4.1"
 
 from pathlib import Path
 
@@ -9,8 +9,8 @@ from zenlib.util import contains
 @contains("check_included_funcs", "Skipping included funcs check", log_level=30)
 def check_included_funcs(self):
     """Ensures required functions are included in the build dir."""
-    bash_func_names = [func + "() {\n" for func in self.included_functions]
-    _check_in_file(self, "/etc/profile", bash_func_names)
+    sh_func_names = [func + "() {\n" for func in self.included_functions]
+    _check_in_file(self, "/etc/profile", sh_func_names)
     return "All functions found in the build dir."
 
 
