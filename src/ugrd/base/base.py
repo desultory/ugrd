@@ -195,6 +195,30 @@ def check_var(self) -> str:
     """
 
 
+def wait_enter(self) -> str:
+    """Returns a shell script that reads a single character from stdin.
+    If an argument is passed, use that as a timeout in seconds.
+    If enter is pressed, return 0, otherwise return 1.
+    """
+    return r"""
+    tty_env=$(stty -g)
+    t=$(printf "%.0f" $(echo "${1:-0} * 10" | bc))
+    if [ "$t" -gt 300 ]; then
+        stty raw -echo min 0 time 300
+    elif [ "$t" -gt 0 ]; then
+        stty raw -echo min 0 time $t
+    else
+        stty raw -echo
+    fi
+    char="$(dd bs=1 count=1 2>/dev/null)"
+    stty "$tty_env"
+    case "$char" in
+        $(printf '\r')) return 0 ;;
+        *) return 1 ;;
+    esac
+    """
+
+
 def prompt_user(self) -> list[str]:
     """Returns a bash function that pauses until the user presses enter.
     The first argument is the prompt message.
@@ -214,11 +238,8 @@ def prompt_user(self) -> list[str]:
     else:
         output += [r'printf "\e[1;35m *\e[0m %s\n" "$prompt"']
     output += [
-        'if [ -n "$2" ]; then',
-        '    read -t "$2" -rs && return 0 || return 1',
-        "else",
-        "    read -rs && return 0 || return 1",
-        "fi",
+        'wait_enter "$2"',
+        'return "$?"',
     ]
     return output
 
