@@ -1,4 +1,4 @@
-__version__ = "1.12.4"
+__version__ = "1.12.5"
 __author__ = "desultory"
 
 from pathlib import Path
@@ -130,4 +130,4 @@ def select_subvol(self) -> str:
 def set_root_subvol(self) -> str:
     """Adds the root_subvol to the root_mount options."""
     _validate_root_subvol(self)
-    return f"""printfs ",subvol={self['root_subvol']}" >> /run/vars/MOUNTS_ROOT_OPTIONS"""
+    return f"""printf ",subvol={self['root_subvol']}" >> /run/vars/MOUNTS_ROOT_OPTIONS"""
