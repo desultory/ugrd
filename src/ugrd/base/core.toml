@@ -4,13 +4,12 @@ _build_log_level = 10
 out_dir = "initramfs_out"
 clean = true
 find_libgcc = true
+merge_usr = true
 hostonly = true
 validate = true
 library_paths = [ "/lib64" ]
 old_count = 1
 timeout = 15
-
-binaries = [ "/bin/bash" ]
 
 [nodes.console]
 mode = 0o644
@@ -35,7 +34,7 @@ minor = 1
 		   ]
 
 [imports.build_enum]
-"ugrd.base.core" = [ "detect_tmpdir", "find_libgcc" ]
+"ugrd.base.core" = [ "detect_tmpdir", "find_libgcc", "get_shell" ]
 
 [imports.build_pre]
 "ugrd.base.core" = [ "clean_build_dir" ]
@@ -48,10 +47,8 @@ minor = 1
 		     "deploy_gz_dependencies",
 		     "deploy_copies",
 		     "deploy_nodes",
+		     "handle_usr_symlinks",  # These should be set first
 		     "deploy_symlinks" ]
-
-[imports.build_final]
-"ugrd.base.core" = [ "handle_usr_symlinks" ]
 
 [custom_parameters]
 hostonly = "bool"  # If true, the initramfs will be built specifically for the host building it
@@ -63,6 +60,7 @@ build_dir = "Path"  # The directory where the initramfs is built
 build_logging = "bool" # If true, additional build information will be logged to the console
 _build_log_level = "int"  # The level of logging to use for the build log, set to 10 by default and incremeted by if build_log is true (min 20)
 symlinks = "dict"  # Symlinks dict, defines the symlinks to be made in the initramfs
+merge_usr = "bool"  # If true, the usr directory will be merged into the root of the initramfs
 dependencies = "NoDupFlatList"  # Dependencies, used to define the dependencies of the initramfs
 conditional_dependencies = "dict"  # Conditional dependencies, used to define dependencies that are only added if a certain condition is met
 opt_dependencies = "NoDupFlatList"  # Optional dependencies, which will be included if they are found
@@ -80,3 +78,4 @@ out_dir = "Path"  # The directory where the initramfs is packed/output. If no pa
 out_file = "str"  # The name of the output file, if absolute, overrides out dir with the path, and sets out_file to the filename
 old_count = "int"  # The number of times to cycle old files before deleting
 clean = "bool"  # Add the clean property, used to define if the mounts should be cleaned up after boot
+shell = "str"  # Set the shell to use for the init process

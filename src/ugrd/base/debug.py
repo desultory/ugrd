@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "1.3.1"
+__version__ = "1.3.2"
 
 from zenlib.util import contains, colorize
 from ugrd import AutodetectError, ValidationError
@@ -36,14 +36,14 @@ def detect_editor(self) -> None:
 
 
 def start_shell(self) -> str:
-    """Start a bash shell at the start of the initramfs."""
+    """Start a shell at the start of the initramfs."""
     return [
         "if ! check_var debug; then",
         '    ewarn "The debug module is enabled, but debug is not set enabled"',
         "    return",
         "fi",
         'einfo "Starting debug shell"',
-        "bash -l",
+        "sh -l",
     ]
 
 

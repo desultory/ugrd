@@ -13,7 +13,7 @@ class InitramfsGenerator(GeneratorHelpers):
     def __init__(self, config="/etc/ugrd/config.toml", *args, **kwargs):
         self.config_dict = InitramfsConfigDict(NO_BASE=kwargs.pop("NO_BASE", False), logger=self.logger)
 
-        # Used for functions that are added to the bash source file
+        # Used for functions that are added to the shell profile
         self.included_functions = {}
 
         # Used for functions that are run as part of the build process
@@ -103,8 +103,8 @@ class InitramfsGenerator(GeneratorHelpers):
     def run_func(self, function, force_include=False, force_exclude=False) -> list[str]:
         """
         Runs an imported function.
-        If force_include is set, forces the function to be included in the bash source file.
-        if force_exclude is set, does not include the output of the function in the bash source file.
+        If force_include is set, forces the function to be included in the shell profile.
+        if force_exclude is set, does not include the output of the function in the shell profile.
         """
         self.logger.log(self["_build_log_level"], "Running function: %s" % function.__name__)
 
@@ -116,7 +116,7 @@ class InitramfsGenerator(GeneratorHelpers):
                 function_output = function_output[0]
 
             if function.__name__ in self.included_functions:
-                raise ValueError("Function '%s' has already been included in the bash source file" % function.__name__)
+                raise ValueError("Function has already been included in the shell profile: %s" % function.__name__)
 
             if function.__name__ in self["binaries"]:
                 raise ValueError("Function name collides with defined binary: %s" % (function.__name__))
@@ -162,7 +162,7 @@ class InitramfsGenerator(GeneratorHelpers):
         return out
 
     def generate_profile(self) -> list[str]:
-        """Generates the bash profile file based on self.included_functions."""
+        """Generates the shell profile file based on self.included_functions."""
         from importlib.metadata import version
 
         ver = version(__package__) or 9999  # Version won't be found unless the package is installed

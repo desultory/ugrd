@@ -4,7 +4,7 @@ from typing import Union
 
 from zenlib.util import pretty_print, colorize
 
-__version__ = "1.4.1"
+__version__ = "1.4.2"
 __author__ = "desultory"
 
 
@@ -86,12 +86,14 @@ class GeneratorHelpers:
         with open(file_path, "w") as file:
             file.writelines("\n".join(contents))
 
-        if contents[0].startswith("#!/bin/bash"):
+        if contents[0].startswith(self["shebang"].split(" ")[0]):
             self.logger.debug("Running bash -n on file: %s" % file_name)
             try:
                 self._run(["bash", "-n", str(file_path)])
             except RuntimeError as e:
-                raise RuntimeError("Failed to validate bash script: %s" % pretty_print(contents)) from e
+                raise RuntimeError("Failed to validate shell script: %s" % pretty_print(contents)) from e
+        elif contents[0].startswith("#!"):
+            self.logger.warning("[%s] Skipping bash -n on file with unrecognized shebang: %s" % (file_name, contents[0]))
 
         self.logger.info("Wrote file: %s" % colorize(file_path, "green", bright=True))
         chmod(file_path, chmod_mask)
@@ -135,6 +137,10 @@ class GeneratorHelpers:
         if not target.parent.is_dir():
             self.logger.debug("Parent directory for '%s' does not exist: %s" % (target.name, target.parent))
             self._mkdir(target.parent, resolve_build=False)
+
+        while target.parent.is_symlink():
+            self.logger.debug("Resolving symlink: %s" % target.parent)
+            target = self._get_build_path(target.parent.resolve() / target.name)
 
         if target.is_symlink():
             if target.resolve() == source:

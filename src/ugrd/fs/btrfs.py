@@ -1,4 +1,4 @@
-__version__ = "1.12.2"
+__version__ = "1.12.3"
 __author__ = "desultory"
 
 from pathlib import Path
@@ -99,7 +99,7 @@ def autodetect_root_subvol(self):
 @contains("subvol_selector", message="subvol_selector is not enabled, skipping.")
 @unset("root_subvol", message="root_subvol is set, skipping.")
 def select_subvol(self) -> str:
-    """Returns a bash script to list subvolumes on the root volume."""
+    """Returns a shell script to list subvolumes on the root volume."""
     # TODO: Figure out a way to make the case prompt more standard
     return f"""
     mount -t btrfs -o subvolid=5,ro $(readvar MOUNTS_ROOT_SOURCE) {self["_base_mount_path"]}

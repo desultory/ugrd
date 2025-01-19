@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "6.2.3"
+__version__ = "6.3.1"
 
 from pathlib import Path
 
@@ -34,6 +34,16 @@ def _process_autodetect_init(self, state) -> None:
     self.data["autodetect_init"] = state
 
 
+def _get_shell_path(self, shell_name) -> Path:
+    """Gets the real path to the shell binary."""
+    from shutil import which
+
+    if shell := which(shell_name):
+        return Path(shell).resolve()
+    else:
+        raise AutodetectError(f"Shell '{shell_name}' not found.")
+
+
 @contains("autodetect_init", log_level=30)
 def autodetect_init(self) -> None:
     """Autodetects the init_target."""
@@ -46,6 +56,15 @@ def autodetect_init(self) -> None:
         raise AutodetectError("init_target is not specified and could not be detected.")
 
 
+@unset("shebang", "shebang is already set.", log_level=10)
+def set_shebang(self) -> None:
+    """If the shebang is not set, sets it to:
+    #!/bin/sh {self["shebang_args"]}
+    """
+    self["shebang"] = f"#!/bin/sh {self['shebang_args']}"
+    self.logger.info("Setting shebang to: %s", colorize(self["shebang"], "cyan", bright=True))
+
+
 def export_switch_root_target(self) -> None:
     """Adds SWITCH_ROOT_TARGET to exports.
     Uses switch_root_target if set, otherwise uses the rootfs."""
@@ -56,7 +75,7 @@ def export_switch_root_target(self) -> None:
 
 
 def _find_init(self) -> str:
-    """Returns bash to find the init_target."""
+    """Returns a shell script to find the init_target."""
     return """
     for init_path in "/sbin/init" "/bin/init" "/init"; do
         if [ -e "$(readvar SWITCH_ROOT_TARGET)$init_path" ] ; then
@@ -71,7 +90,7 @@ def _find_init(self) -> str:
 
 
 def set_loglevel(self) -> str:
-    """Returns bash to set the log level."""
+    """Returns shell lines to set the log level."""
     return "readvar loglevel > /proc/sys/kernel/printk"
 
 
@@ -146,20 +165,20 @@ def rd_fail(self) -> list[str]:
             "    if plymouth --ping; then",
             '        plymouth display-message --text="Entering recovery shell"',
             "        plymouth hide-splash",
-            "        bash -l",
+            "        sh -l",
             "        plymouth show-splash",
             "    else",
-            "        bash -l",
+            "        sh -l",
             "    fi",
         ]
     else:
-        output += ["    bash -l"]
+        output += ["    sh -l"]
     output += ["fi", 'prompt_user "Press enter to restart init."', "rd_restart"]
     return output
 
 
 def setvar(self) -> str:
-    """Returns a bash function that sets a variable in /run/vars/{name}."""
+    """Returns a shell function that sets a variable in /run/vars/{name}."""
     return """
     if check_var debug; then
         edebug "Setting $1 to $2"
@@ -169,7 +188,7 @@ def setvar(self) -> str:
 
 
 def readvar(self) -> str:
-    """Returns a bash function that reads a variable from /run/vars/{name}.
+    """Returns a shell function that reads a variable from /run/vars/{name}.
     The second arg can be a default value.
     If no default is supplied, and the variable is not found, it returns an empty string.
     """
@@ -177,7 +196,7 @@ def readvar(self) -> str:
 
 
 def check_var(self) -> str:
-    """Returns a bash function that checks the value of a variable.
+    """Returns a shell function that checks the value of a variable.
     if it's not set, tries to read the cmdline."""
     return r"""
     value=$(readvar "$1")
@@ -220,7 +239,7 @@ def wait_enter(self) -> str:
 
 
 def prompt_user(self) -> list[str]:
-    """Returns a bash function that pauses until the user presses enter.
+    """Returns a shell function that pauses until the user presses enter.
     The first argument is the prompt message.
     The second argument is the timeout in seconds.
 
@@ -245,7 +264,7 @@ def prompt_user(self) -> list[str]:
 
 
 def retry(self) -> str:
-    """Returns a bash function that retries a command some number of times.
+    """Returns a shell function that retries a command some number of times.
     The first argument is the number of retries. if 0, it retries 100 times.
     The second argument is the timeout in seconds.
     The remaining arguments represent the command to run.
@@ -280,7 +299,7 @@ def klog(self) -> str:
 
 # To feel more at home
 def edebug(self) -> str:
-    """Returns a bash function like edebug."""
+    """Returns a shell function like edebug."""
     return r"""
     if check_var quiet; then
         return
@@ -293,7 +312,7 @@ def edebug(self) -> str:
 
 
 def einfo(self) -> list[str]:
-    """Returns a bash function like einfo."""
+    """Returns a shell function like einfo."""
     if "ugrd.base.plymouth" in self["modules"]:
         output = [
             "if plymouth --ping; then",
@@ -309,7 +328,7 @@ def einfo(self) -> list[str]:
 
 
 def ewarn(self) -> list[str]:
-    """Returns a bash function like ewarn.
+    """Returns a shell function like ewarn.
     If plymouth is running, it displays a message instead of echoing.
     """
     if "ugrd.base.plymouth" in self["modules"]:
@@ -332,7 +351,7 @@ def ewarn(self) -> list[str]:
 
 
 def eerror(self) -> str:
-    """Returns a bash function like eerror."""
+    """Returns a shell function like eerror."""
     if "ugrd.base.plymouth" in self["modules"]:
         return r"""
         if plymouth --ping; then

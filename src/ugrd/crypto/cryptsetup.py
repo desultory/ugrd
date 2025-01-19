@@ -445,7 +445,7 @@ def get_crypt_dev(self) -> str:
 
 
 def open_crypt_dev(self) -> str:
-    """Returns a bash script to open a cryptsetup device.
+    """Returns a shell script to open a cryptsetup device.
     The first argument is the device name, for get_crypt_dev, and as the mapped name
     The second argument is a key file, if it exists.
         This key file may be a named pipe, previously created by the key_command.
@@ -561,7 +561,7 @@ def _open_crypt_dev(self, name: str, parameters: dict) -> list[str]:
         out += [
             f"if ! cryptsetup status {name} > /dev/null 2>&1; then",
             f'    ewarn "[{name}] Failed to open device using key: {key_file}"',
-            *[f"    {bash_line}" for bash_line in _open_crypt_dev(self, name, new_params)],
+            *[f"    {sh_line}" for sh_line in _open_crypt_dev(self, name, new_params)],
             "fi",
         ]
 
@@ -569,7 +569,7 @@ def _open_crypt_dev(self, name: str, parameters: dict) -> list[str]:
 
 
 def crypt_init(self) -> list[str]:
-    """Generates the bash script portion to prompt for keys."""
+    """Generates the shell script portion to prompt for keys."""
     if self["loglevel"] > 5:
         self.logger.warning("loglevel > 5, cryptsetup prompts may not be visible.")
 
@@ -578,7 +578,7 @@ def crypt_init(self) -> list[str]:
         # Check if the volume is already open, if so, skip it
         out += [
             f"if ! cryptsetup status {name} > /dev/null 2>&1; then",
-            *[f"    {bash_line}" for bash_line in _open_crypt_dev(self, name, parameters)],
+            *[f"    {sh_line}" for sh_line in _open_crypt_dev(self, name, parameters)],
             "else",
             f'    ewarn "Device already open: {name}"',
             "fi",

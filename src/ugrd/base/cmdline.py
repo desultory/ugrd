@@ -1,9 +1,9 @@
 __author__ = "desultory"
-__version__ = "3.0.0"
+__version__ = "3.0.1"
 
 
 def parse_cmdline_bool(self) -> str:
-    """Returns a bash script to parse a boolean value from /proc/cmdline
+    """Returns a shell script to parse a boolean value from /proc/cmdline
     The only argument is the name of the variable to be read/set
     """
     return r"""
@@ -13,7 +13,7 @@ def parse_cmdline_bool(self) -> str:
 
 
 def parse_cmdline_str(self) -> str:
-    """Returns a bash script to parse a string value from /proc/cmdline
+    """Returns a shell script to parse a string value from /proc/cmdline
     The only argument is the name of the variable to be read/set
     """
     return r"""
@@ -27,7 +27,7 @@ def parse_cmdline_str(self) -> str:
 
 
 def parse_cmdline(self) -> str:
-    """Returns bash script to parse /proc/cmdline"""
+    """Returns shell script to parse /proc/cmdline"""
     return rf"""
     cmdline=$(awk -F '--' '{{print $1}}' /proc/cmdline)  # Get everything before '--'
     setvar INIT_ARGS "$(awk -F '--' '{{print $2}}' /proc/cmdline)"  # Get everything after '--'
@@ -42,7 +42,7 @@ def parse_cmdline(self) -> str:
 
 
 def mount_cmdline_root(self) -> str:
-    """Returns bash script to mount root partition based on /proc/cmdline"""
+    """Returns shell script to mount root partition based on /proc/cmdline"""
     return """
     root=$(readvar root)
     if [ -z "$root" ]; then
@@ -61,7 +61,7 @@ def mount_cmdline_root(self) -> str:
 
 
 def export_exports(self) -> list[str]:
-    """Returns a bash script exporting all exports defined in the exports key.
+    """Returns a shell script exporting all exports defined in the exports key.
     Sets 'exported' to 1 once done.
     If 'exported' is set, returns early.
     """

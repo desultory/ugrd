@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "3.2.1"
+__version__ = "3.2.2"
 
 from pathlib import Path
 from subprocess import run
@@ -417,7 +417,7 @@ def process_modules(self) -> None:
 
 @contains("kmod_init", "No kernel modules to load.", log_level=30)
 def load_modules(self) -> str:
-    """Creates a bash script which loads all kernel modules in kmod_init."""
+    """Creates a shell function which loads all kernel modules in kmod_init."""
     self.logger.info(
         "Init kernel modules: %s" % colorize(", ".join(self["kmod_init"]), "magenta", bright=True, bold=True)
     )
