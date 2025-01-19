@@ -41,14 +41,14 @@ minor = 1
 
 [imports.build_deploy]
 "ugrd.base.core" = [ "generate_structure",
+		     "handle_usr_symlinks",  # These should be set first
 		     "add_conditional_dependencies",
 		     "deploy_dependencies",
 		     "deploy_xz_dependencies",
 		     "deploy_gz_dependencies",
 		     "deploy_copies",
-		     "deploy_nodes",
-		     "handle_usr_symlinks",  # These should be set first
-		     "deploy_symlinks" ]
+		     "deploy_symlinks",
+		     "deploy_nodes"]
 
 [custom_parameters]
 hostonly = "bool"  # If true, the initramfs will be built specifically for the host building it

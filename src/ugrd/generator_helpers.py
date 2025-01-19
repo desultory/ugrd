@@ -4,7 +4,7 @@ from typing import Union
 
 from zenlib.util import pretty_print, colorize
 
-__version__ = "1.4.3"
+__version__ = "1.5.0"
 __author__ = "desultory"
 
 
@@ -112,6 +112,10 @@ class GeneratorHelpers:
 
         dest_path = self._get_build_path(dest)
 
+        while dest_path.parent.is_symlink():
+            self.logger.debug("Resolving symlink: %s" % dest_path.parent)
+            dest_path = self._get_build_path(dest_path.parent.resolve() / dest_path.name)
+
         if not dest_path.parent.is_dir():
             self.logger.debug("Parent directory for '%s' does not exist: %s" % (dest_path.name, dest_path.parent))
             self._mkdir(dest_path.parent, resolve_build=False)
@@ -127,8 +131,6 @@ class GeneratorHelpers:
 
     def _symlink(self, source: Union[Path, str], target: Union[Path, str]) -> None:
         """Creates a symlink"""
-        from os import symlink
-
         if not isinstance(source, Path):
             source = Path(source)
 
@@ -152,7 +154,7 @@ class GeneratorHelpers:
                 raise RuntimeError("Symlink already exists: %s -> %s" % (target, target.resolve()))
 
         self.logger.debug("Creating symlink: %s -> %s" % (target, source))
-        symlink(source, target)
+        target.symlink_to(source)
 
     def _run(self, args: list[str], timeout=None, fail_silent=False, fail_hard=True) -> CompletedProcess:
         """Runs a command, returns the CompletedProcess object"""

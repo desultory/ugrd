@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "4.0.0"
+__version__ = "4.0.1"
 
 from pathlib import Path
 from shutil import rmtree, which
@@ -106,7 +106,7 @@ def calculate_dependencies(self, binary: str) -> list[Path]:
             dependency = dependency[1:]
 
         dependency_paths.append(Path(dependency))
-
+    self.logger.debug("[%s] Calculated dependencies: %s" % (binary, dependency_paths))
     return dependency_paths
 
 
@@ -115,15 +115,14 @@ def handle_usr_symlinks(self) -> None:
     """Adds symlinks for /usr/bin and /usr/sbin to /bin and /sbin."""
     build_dir = self._get_build_path("/")
     bin_dir = build_dir / "bin"
+    sbin_dir = build_dir / "sbin"
+    usr_sbin_dir = build_dir / "usr" / "sbin"
 
-    if not bin_dir.is_dir() and not bin_dir.is_symlink():
-        if (build_dir / "usr/bin").is_dir():
-            self._symlink("/usr/bin", "/bin/")
-        elif self["validate"]:
-            raise ValidationError("Neither /bin nor /usr/bin exist in the build directory")
-
-    if not (build_dir / "sbin").is_dir() and (build_dir / "usr/sbin").is_dir():
-        self._symlink("/usr/sbin", "/sbin/")
+    for d in [bin_dir, sbin_dir, usr_sbin_dir]:
+        if not d.is_dir() and not d.is_symlink():
+            target = d.relative_to(build_dir)
+            self.logger.debug("Creating merged-usr symlink to /usr/bin: %s" % target)
+            self._symlink("/usr/bin", target)
 
 
 def deploy_dependencies(self) -> None:
@@ -306,6 +305,7 @@ def _process_binaries_multi(self, binary: str) -> None:
     # The first dependency will be the path of the binary itself, don't add this to the library paths
     self["dependencies"] = dependencies[0]
     for dependency in dependencies[1:]:
+        self.logger.debug("[%s] Adding dependency: %s" % (binary, dependency))
         self["dependencies"] = dependency
         if str(dependency.parent) not in self["library_paths"]:
             self.logger.info("Adding library path: %s" % dependency.parent)
