@@ -30,7 +30,8 @@ Modules write to a shared config dict that is accessible by other modules.
 * `init_target` Sets the init target for `switch_root`.
 * `autodetect_init` (true) Automatically set the init target based `which init`.
 * `loglevel` (5) Sets the kernel log level in the init script.
-* `shebang` (#!/bin/bash) sets the shebang on the init script.
+* `shebang_args` (-l) sets the args for the shebang on the init script.
+* `shebang` (#!/bin/sh) sets the shebang on the init script. (DEPRECATED, use shell and shebang_args)
 
 ### base.core
 
@@ -47,6 +48,7 @@ Modules write to a shared config dict that is accessible by other modules.
 * `old_count` (1) Sets the number of old file to keep when running the `_rotate_old` function.
 * `binaries` - A list used to define programs to be pulled into the initrams. `which` is used to find the path of added entries, and `lddtree` is used to resolve dependendies.
 * `paths` - A list of directores to create in the `build_dir`. They do not need a leading `/`.
+* `shell` (/bin/sh) Sets the shell to be used in the init script.
 
 #### Copying files
 
