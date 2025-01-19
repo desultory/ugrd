@@ -5,15 +5,15 @@
 
 # µgRD
 
-> Microgram Ramdisk is a framework used to generate ramdisks using TOML definitions and python functions
+> Microgram Ramdisk is a framework used to generate POSIX compatible ramdisks using TOML definitions and python functions
 
 ## Design
 
-µgRD is designed to generate a custom initramfs environment to boot the system that built it.
+µgRD is designed to generate a custom initramfs environment to boot the system which built it.
 
 Generated images are as static and secure as possible, only including components and features required to mount the root and switch to it.
 
-µgRD itself is written in pure Python, and uses the `pycpio` library to generate the CPIO archive.
+µgRD itself is written in pure Python, and generates POSIX shell scripts to mount the rootfs and continue booting.
 
 The final build environment is left in the specified `build_dir`, where it can be examined or repacked.
 
@@ -70,6 +70,15 @@ The original goal of this project was to create an initramfs suitable for decryp
 * Garuda linux
 * Debian 12
 * Ubuntu 22.04
+
+### Shells
+
+µgRD was originally designed for bash, but should work for POSIX compatible shells including:
+
+* dash
+* ksh
+
+> Some non-POSIX compatible shells may function, but bash, dash, and ksh are part of automated testing.
 
 ### Filesystems
 
