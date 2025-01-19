@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "6.3.1"
+__version__ = "6.3.3"
 
 from pathlib import Path
 
@@ -183,7 +183,7 @@ def setvar(self) -> str:
     if check_var debug; then
         edebug "Setting $1 to $2"
     fi
-    echo -n "$2" > "/run/vars/${1}"
+    printf "%s" "$2" > "/run/vars/${1}"
     """
 
 
@@ -221,11 +221,11 @@ def wait_enter(self) -> str:
     """
     return r"""
     tty_env=$(stty -g)
-    t=$(printf "%.0f" $(echo "${1:-0} * 10" | bc))
+    t=$(printf "%.0f" "$(echo "${1:-0} * 10" | bc)")
     if [ "$t" -gt 300 ]; then
         stty raw -echo min 0 time 300
     elif [ "$t" -gt 0 ]; then
-        stty raw -echo min 0 time $t
+        stty raw -echo min 0 time "$t"
     else
         stty raw -echo
     fi
