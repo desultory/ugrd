@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "6.2.3"
+__version__ = "6.3.0"
 
 from pathlib import Path
 
@@ -34,6 +34,16 @@ def _process_autodetect_init(self, state) -> None:
     self.data["autodetect_init"] = state
 
 
+def _get_shell_path(self, shell_name) -> Path:
+    """Gets the real path to the shell binary."""
+    from shutil import which
+
+    if shell := which(shell_name):
+        return Path(shell).resolve()
+    else:
+        raise AutodetectError(f"Shell '{shell_name}' not found.")
+
+
 @contains("autodetect_init", log_level=30)
 def autodetect_init(self) -> None:
     """Autodetects the init_target."""
@@ -44,6 +54,15 @@ def autodetect_init(self) -> None:
         self["init_target"] = init
     else:
         raise AutodetectError("init_target is not specified and could not be detected.")
+
+
+@unset("shebang", "shebang is already set.", log_level=10)
+def set_shebang(self) -> None:
+    """If the shebang is not set, sets it to:
+    #!/bin/sh {self["shebang_args"]}
+    """
+    self["shebang"] = f"#!/bin/sh {self['shebang_args']}"
+    self.logger.info("Setting shebang to: %s", colorize(self["shebang"], "cyan", bright=True))
 
 
 def export_switch_root_target(self) -> None:
@@ -146,14 +165,14 @@ def rd_fail(self) -> list[str]:
             "    if plymouth --ping; then",
             '        plymouth display-message --text="Entering recovery shell"',
             "        plymouth hide-splash",
-            "        bash -l",
+            "        sh -l",
             "        plymouth show-splash",
             "    else",
-            "        bash -l",
+            "        sh -l",
             "    fi",
         ]
     else:
-        output += ["    bash -l"]
+        output += ["    sh -l"]
     output += ["fi", 'prompt_user "Press enter to restart init."', "rd_restart"]
     return output
 
