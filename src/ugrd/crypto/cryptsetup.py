@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "4.0.1"
+__version__ = "4.0.2"
 
 from pathlib import Path
 
@@ -428,14 +428,14 @@ def get_crypt_dev(self) -> str:
     source_token="$(readvar CRYPTSETUP_TOKEN_"$1")"
     if [ -n "$source_dev" ]; then
         if [ -e "$source_dev" ]; then
-            echo -n "$source_dev"
+            printf "%s" "$source_dev"
             return
         fi
     fi
     if [ -n "$source_token" ]; then
         source_dev=$(blkid --match-token "$source_token" --output device)
         if [ -n "$source_dev" ]; then
-            echo -n "$source_dev"
+            printf "%s" "$source_dev"
         fi
     fi
     if [ -z "$source_dev" ]; then

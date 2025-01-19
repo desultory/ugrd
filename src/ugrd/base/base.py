@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "6.3.1"
+__version__ = "6.3.2"
 
 from pathlib import Path
 
@@ -183,7 +183,7 @@ def setvar(self) -> str:
     if check_var debug; then
         edebug "Setting $1 to $2"
     fi
-    echo -n "$2" > "/run/vars/${1}"
+    printf "%s" "$2" > "/run/vars/${1}"
     """
 
 

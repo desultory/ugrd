@@ -1,4 +1,4 @@
-__version__ = "0.4.1"
+__version__ = "0.4.2"
 
 
 def handle_resume(self) -> None:
@@ -24,7 +24,7 @@ def handle_resume(self) -> None:
         "    fi",
         '    if [ -e "$resume" ]; then',  # Check if the resume device exists
         '        einfo "Resuming from: $resume"',
-        '        echo -n "$resume" > /sys/power/resume',  # Attempt to resume
+        '        printf "%s" "$resume" > /sys/power/resume',  # Attempt to resume
         '        ewarn "Failed to resume from: $resume"',
         "    else",
         '        ewarn "Resume device not found: $resume)"',  # Warn if the resume device does not exist
