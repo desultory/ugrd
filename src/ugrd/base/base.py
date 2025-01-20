@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "6.3.3"
+__version__ = "6.4.0"
 
 from pathlib import Path
 
@@ -251,11 +251,11 @@ def prompt_user(self) -> list[str]:
             "if plymouth --ping; then",
             '    plymouth display-message --text="$prompt"',
             "else",
-            r'    printf "\e[1;35m *\e[0m %s\n" "$prompt"',
+            r'    printf "\033[1;35m *\033[0m %s\n" "$prompt"',
             "fi",
         ]
     else:
-        output += [r'printf "\e[1;35m *\e[0m %s\n" "$prompt"']
+        output += [r'printf "\033[1;35m *\033[0m %s\n" "$prompt"']
     output += [
         'wait_enter "$2"',
         'return "$?"',
@@ -307,7 +307,7 @@ def edebug(self) -> str:
     if [ "$(readvar debug)" != "1" ]; then
         return
     fi
-    printf "\e[1;34m *\e[0m %s\n" "${*}"
+    printf "\033[1;34m *\033[0m %s\n" "${*}"
     """
 
 
@@ -323,7 +323,7 @@ def einfo(self) -> list[str]:
     else:
         output = []
 
-    output += ["if check_var quiet; then", "    return", "fi", r'printf "\e[1;32m *\e[0m %s\n" "${*}"']
+    output += ["if check_var quiet; then", "    return", "fi", r'printf "\033[1;32m *\033[0m %s\n" "${*}"']
     return output
 
 
@@ -345,7 +345,7 @@ def ewarn(self) -> list[str]:
         "if check_var quiet; then",
         "    return",
         "fi",
-        r'printf "\e[1;33m *\e[0m %s\n" "${*}"',
+        r'printf "\033[1;33m *\033[0m %s\n" "${*}"',
     ]
     return output
 
@@ -358,7 +358,7 @@ def eerror(self) -> str:
             plymouth display-message --text="Error: ${*}"
             return
         fi
-        printf "\e[1;31m *\e[0m %s\n" "${*}"
+        printf "\033[1;31m *\033[0m %s\n" "${*}"
         """
     else:
-        return r'printf "\e[1;31m *\e[0m %s\n" "${*}"'
+        return r'printf "\033[1;31m *\033[0m %s\n" "${*}"'
