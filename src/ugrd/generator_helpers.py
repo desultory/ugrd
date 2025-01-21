@@ -4,7 +4,7 @@ from typing import Union
 
 from zenlib.util import pretty_print, colorize
 
-__version__ = "1.5.0"
+__version__ = "1.5.3"
 __author__ = "desultory"
 
 
@@ -39,9 +39,6 @@ class GeneratorHelpers:
         If resolve_build is True, the path is resolved to the build directory.
         If not, the provided path is used as-is.
         """
-        from os import mkdir
-        from os.path import isdir
-
         if resolve_build:
             path = self._get_build_path(path)
 
@@ -52,12 +49,15 @@ class GeneratorHelpers:
         else:
             path_dir = path
 
-        if not isdir(path_dir.parent):
+        if path_dir.is_symlink():
+            return self.logger.debug("Skipping symlink directory: %s" % path_dir)
+
+        if not path_dir.parent.is_dir():
             self.logger.debug("Parent directory does not exist: %s" % path_dir.parent)
             self._mkdir(path_dir.parent, resolve_build=False)
 
-        if not isdir(path_dir):
-            mkdir(path)
+        if not path_dir.is_dir():
+            path_dir.mkdir()
             self.logger.log(self["_build_log_level"], "Created directory: %s" % path)
         else:
             self.logger.debug("Directory already exists: %s" % path_dir)
@@ -100,7 +100,14 @@ class GeneratorHelpers:
         self.logger.debug("[%s] Set file permissions: %s" % (file_path, chmod_mask))
 
     def _copy(self, source: Union[Path, str], dest=None) -> None:
-        """Copies a file into the initramfs build directory."""
+        """Copies a file into the initramfs build directory.
+        If a destination is not provided, the source is used, under the build directory.
+
+        If the destination parent is a symlink, the symlink is resolved.
+        Crates parent directories if they do not exist
+
+        Raises a RuntimeError if the destination path is not within the build directory.
+        """
         from shutil import copy2
 
         if not isinstance(source, Path):
@@ -111,10 +118,12 @@ class GeneratorHelpers:
             dest = source
 
         dest_path = self._get_build_path(dest)
+        build_base = self._get_build_path("/")
 
         while dest_path.parent.is_symlink():
-            self.logger.debug("Resolving symlink: %s" % dest_path.parent)
-            dest_path = self._get_build_path(dest_path.parent.resolve() / dest_path.name)
+            resolved_path = dest_path.parent.resolve() / dest_path.name
+            self.logger.debug("Resolved symlink: %s -> %s" % (dest_path.parent, resolved_path))
+            dest_path = self._get_build_path(resolved_path)
 
         if not dest_path.parent.is_dir():
             self.logger.debug("Parent directory for '%s' does not exist: %s" % (dest_path.name, dest_path.parent))
@@ -126,23 +135,41 @@ class GeneratorHelpers:
             self.logger.debug("Destination is a directory, adding source filename: %s" % source.name)
             dest_path = dest_path / source.name
 
+        try:  # Ensure the target is in the build directory
+            dest_path.relative_to(build_base)
+        except ValueError as e:
+            raise RuntimeError("Destination path is not within the build directory: %s" % dest_path) from e
+
         self.logger.log(self["_build_log_level"], "Copying '%s' to '%s'" % (source, dest_path))
         copy2(source, dest_path)
 
     def _symlink(self, source: Union[Path, str], target: Union[Path, str]) -> None:
-        """Creates a symlink"""
+        """Creates a symlink in the build directory.
+        If the target is a directory, the source filename is appended to the target path.
+
+        Creates parent directories if they do not exist.
+        If the symlink path is under a symlink, resolve to the actual path.
+
+        If the symlink source is under a symlink in the build directory, resolve to the actual path.
+        """
         if not isinstance(source, Path):
             source = Path(source)
 
         target = self._get_build_path(target)
 
+        while target.parent.is_symlink():
+            self.logger.debug("Resolving target parent symlink: %s" % target.parent)
+            target = self._get_build_path(target.parent.resolve() / target.name)
+
         if not target.parent.is_dir():
             self.logger.debug("Parent directory for '%s' does not exist: %s" % (target.name, target.parent))
             self._mkdir(target.parent, resolve_build=False)
 
-        while target.parent.is_symlink():
-            self.logger.debug("Resolving symlink: %s" % target.parent)
-            target = self._get_build_path(target.parent.resolve() / target.name)
+        build_source = self._get_build_path(source)
+        while build_source.parent.is_symlink():
+            self.logger.debug("Resolving source parent symlink: %s" % build_source.parent)
+            build_source = self._get_build_path(build_source.parent.resolve() / build_source.name)
+            source = build_source.relative_to(self._get_build_path("/"))
 
         if target.is_symlink():
             if target.resolve() == source:
@@ -152,6 +179,9 @@ class GeneratorHelpers:
                 target.unlink()
             else:
                 raise RuntimeError("Symlink already exists: %s -> %s" % (target, target.resolve()))
+
+        if target.relative_to(self._get_build_path("/")) == source:
+            return self.logger.debug("Cannot symlink to self: %s -> %s" % (target, source))
 
         self.logger.debug("Creating symlink: %s -> %s" % (target, source))
         target.symlink_to(source)
