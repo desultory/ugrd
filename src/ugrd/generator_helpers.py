@@ -4,7 +4,7 @@ from typing import Union
 
 from zenlib.util import pretty_print, colorize
 
-__version__ = "1.5.1"
+__version__ = "1.5.2"
 __author__ = "desultory"
 
 
@@ -39,9 +39,6 @@ class GeneratorHelpers:
         If resolve_build is True, the path is resolved to the build directory.
         If not, the provided path is used as-is.
         """
-        from os import mkdir
-        from os.path import isdir
-
         if resolve_build:
             path = self._get_build_path(path)
 
@@ -52,12 +49,15 @@ class GeneratorHelpers:
         else:
             path_dir = path
 
-        if not isdir(path_dir.parent):
+        if path_dir.is_symlink():
+            return self.logger.debug("Skipping symlink directory: %s" % path_dir)
+
+        if not path_dir.parent.is_dir():
             self.logger.debug("Parent directory does not exist: %s" % path_dir.parent)
             self._mkdir(path_dir.parent, resolve_build=False)
 
-        if not isdir(path_dir):
-            mkdir(path)
+        if not path_dir.is_dir():
+            path_dir.mkdir()
             self.logger.log(self["_build_log_level"], "Created directory: %s" % path)
         else:
             self.logger.debug("Directory already exists: %s" % path_dir)
