@@ -4,7 +4,7 @@ from typing import Union
 
 from zenlib.util import pretty_print, colorize
 
-__version__ = "1.5.2"
+__version__ = "1.5.3"
 __author__ = "desultory"
 
 
@@ -179,6 +179,9 @@ class GeneratorHelpers:
                 target.unlink()
             else:
                 raise RuntimeError("Symlink already exists: %s -> %s" % (target, target.resolve()))
+
+        if target.relative_to(self._get_build_path("/")) == source:
+            return self.logger.debug("Cannot symlink to self: %s -> %s" % (target, source))
 
         self.logger.debug("Creating symlink: %s -> %s" % (target, source))
         target.symlink_to(source)
