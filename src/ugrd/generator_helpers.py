@@ -100,7 +100,14 @@ class GeneratorHelpers:
         self.logger.debug("[%s] Set file permissions: %s" % (file_path, chmod_mask))
 
     def _copy(self, source: Union[Path, str], dest=None) -> None:
-        """Copies a file into the initramfs build directory."""
+        """Copies a file into the initramfs build directory.
+        If a destination is not provided, the source is used, under the build directory.
+
+        If the destination parent is a symlink, the symlink is resolved.
+        Crates parent directories if they do not exist
+
+        Raises a RuntimeError if the destination path is not within the build directory.
+        """
         from shutil import copy2
 
         if not isinstance(source, Path):
@@ -111,10 +118,12 @@ class GeneratorHelpers:
             dest = source
 
         dest_path = self._get_build_path(dest)
+        build_base = self._get_build_path("/")
 
         while dest_path.parent.is_symlink():
-            self.logger.debug("Resolving symlink: %s" % dest_path.parent)
-            dest_path = self._get_build_path(dest_path.parent.resolve() / dest_path.name)
+            resolved_path = dest_path.parent.resolve() / dest_path.name
+            self.logger.debug("Resolved symlink: %s -> %s" % (dest_path.parent, resolved_path))
+            dest_path = self._get_build_path(resolved_path)
 
         if not dest_path.parent.is_dir():
             self.logger.debug("Parent directory for '%s' does not exist: %s" % (dest_path.name, dest_path.parent))
@@ -125,6 +134,11 @@ class GeneratorHelpers:
         elif dest_path.is_dir():
             self.logger.debug("Destination is a directory, adding source filename: %s" % source.name)
             dest_path = dest_path / source.name
+
+        try:  # Ensure the target is in the build directory
+            dest_path.relative_to(build_base)
+        except ValueError as e:
+            raise RuntimeError("Destination path is not within the build directory: %s" % dest_path) from e
 
         self.logger.log(self["_build_log_level"], "Copying '%s' to '%s'" % (source, dest_path))
         copy2(source, dest_path)
@@ -144,7 +158,7 @@ class GeneratorHelpers:
         target = self._get_build_path(target)
 
         while target.parent.is_symlink():
-            self.logger.debug("Resolving target symlink: %s" % target.parent)
+            self.logger.debug("Resolving target parent symlink: %s" % target.parent)
             target = self._get_build_path(target.parent.resolve() / target.name)
 
         if not target.parent.is_dir():
@@ -153,9 +167,9 @@ class GeneratorHelpers:
 
         build_source = self._get_build_path(source)
         while build_source.parent.is_symlink():
-            self.logger.debug("Resolving source symlink: %s" % build_source.parent)
+            self.logger.debug("Resolving source parent symlink: %s" % build_source.parent)
             build_source = self._get_build_path(build_source.parent.resolve() / build_source.name)
-        source = build_source.relative_to(self._get_build_path("/"))
+            source = build_source.relative_to(self._get_build_path("/"))
 
         if target.is_symlink():
             if target.resolve() == source:
