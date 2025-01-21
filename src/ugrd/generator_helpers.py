@@ -4,7 +4,7 @@ from typing import Union
 
 from zenlib.util import pretty_print, colorize
 
-__version__ = "1.5.0"
+__version__ = "1.5.1"
 __author__ = "desultory"
 
 
@@ -130,19 +130,32 @@ class GeneratorHelpers:
         copy2(source, dest_path)
 
     def _symlink(self, source: Union[Path, str], target: Union[Path, str]) -> None:
-        """Creates a symlink"""
+        """Creates a symlink in the build directory.
+        If the target is a directory, the source filename is appended to the target path.
+
+        Creates parent directories if they do not exist.
+        If the symlink path is under a symlink, resolve to the actual path.
+
+        If the symlink source is under a symlink in the build directory, resolve to the actual path.
+        """
         if not isinstance(source, Path):
             source = Path(source)
 
         target = self._get_build_path(target)
 
+        while target.parent.is_symlink():
+            self.logger.debug("Resolving target symlink: %s" % target.parent)
+            target = self._get_build_path(target.parent.resolve() / target.name)
+
         if not target.parent.is_dir():
             self.logger.debug("Parent directory for '%s' does not exist: %s" % (target.name, target.parent))
             self._mkdir(target.parent, resolve_build=False)
 
-        while target.parent.is_symlink():
-            self.logger.debug("Resolving symlink: %s" % target.parent)
-            target = self._get_build_path(target.parent.resolve() / target.name)
+        build_source = self._get_build_path(source)
+        while build_source.parent.is_symlink():
+            self.logger.debug("Resolving source symlink: %s" % build_source.parent)
+            build_source = self._get_build_path(build_source.parent.resolve() / build_source.name)
+        source = build_source.relative_to(self._get_build_path("/"))
 
         if target.is_symlink():
             if target.resolve() == source:
