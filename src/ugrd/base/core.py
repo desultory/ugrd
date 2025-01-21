@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "4.0.1"
+__version__ = "4.1.0"
 
 from pathlib import Path
 from shutil import rmtree, which
@@ -112,17 +112,22 @@ def calculate_dependencies(self, binary: str) -> list[Path]:
 
 @contains("merge_usr", "Skipping /usr merge", log_level=30)
 def handle_usr_symlinks(self) -> None:
-    """Adds symlinks for /usr/bin and /usr/sbin to /bin and /sbin."""
+    """Adds symlinks for /usr/bin and /usr/sbin to /bin and /sbin.
+    Warns if the symlink path is a directory on the host system.
+    """
     build_dir = self._get_build_path("/")
-    bin_dir = build_dir / "bin"
-    sbin_dir = build_dir / "sbin"
-    usr_sbin_dir = build_dir / "usr" / "sbin"
+    bin_dir = Path("bin")
+    sbin_dir = Path("sbin")
+    usr_sbin_dir = Path("usr/sbin")
 
     for d in [bin_dir, sbin_dir, usr_sbin_dir]:
-        if not d.is_dir() and not d.is_symlink():
-            target = d.relative_to(build_dir)
-            self.logger.debug("Creating merged-usr symlink to /usr/bin: %s" % target)
-            self._symlink("/usr/bin", target)
+        if d.is_dir() and not d.is_symlink():
+            self.logger.warning("Merged-usr symlink target is a directory: %s" % d)
+            self.logger.warning("Set `merge_usr = false` to disable /usr merge.")
+        build_d = build_dir / d
+        if not build_d.is_dir() and not build_d.is_symlink():
+            self.logger.log(5, "Creating merged-usr symlink to /usr/bin: %s" % build_d)
+            self._symlink("/usr/bin", d)
 
 
 def deploy_dependencies(self) -> None:
