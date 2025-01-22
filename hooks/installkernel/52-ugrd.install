@@ -4,7 +4,7 @@
 
 ver=${1}
 img=${2}
-initrd=${INSTALLKERNEL_STAGING_AREA}/initrd
+initrd=${INSTALLKERNEL_STAGING_AREA:-$(dirname "${img}")}/initrd
 
 # familiar helpers, we intentionally don't use Gentoo functions.sh
 die() {
