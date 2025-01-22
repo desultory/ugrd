@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "4.1.0"
+__version__ = "4.1.1"
 
 from pathlib import Path
 from shutil import rmtree, which
@@ -258,8 +258,11 @@ def _process_out_file(self, out_file: str) -> None:
         return
 
     if "/" in out_file:  # If the out_file contains a path, resolve it
-        out_file = Path(out_file).resolve()
-        self.logger.info("Resolved relative output path: %s" % out_file)
+        out_file = Path(out_file)
+        resolved_out_file = out_file.resolve()
+        if resolved_out_file != out_file:
+            out_file = resolved_out_file
+            self.logger.info("Resolved relative output path: %s" % out_file)
     else:
         out_file = Path(out_file)
 
