@@ -4,7 +4,7 @@ from typing import Union
 
 from zenlib.util import pretty_print, colorize
 
-__version__ = "1.5.3"
+__version__ = "1.5.5"
 __author__ = "desultory"
 
 
@@ -13,10 +13,12 @@ def get_subpath(path: Path, subpath: Union[Path, str]) -> Path:
     if not isinstance(subpath, Path):
         subpath = Path(subpath)
 
+    if subpath.is_relative_to(path):
+        return subpath
+
     if subpath.is_absolute():
-        return path / subpath.relative_to("/")
-    else:
-        return path / subpath
+        subpath = subpath.relative_to("/")
+    return path / subpath
 
 
 class GeneratorHelpers:
@@ -49,8 +51,9 @@ class GeneratorHelpers:
         else:
             path_dir = path
 
-        if path_dir.is_symlink():
-            return self.logger.debug("Skipping symlink directory: %s" % path_dir)
+        while path_dir.is_symlink():
+            path_dir = self._get_build_path(path_dir.resolve())
+            self.logger.debug("[%s] Resolved directory symlink: %s" % (path, path_dir))
 
         if not path_dir.parent.is_dir():
             self.logger.debug("Parent directory does not exist: %s" % path_dir.parent)
@@ -122,7 +125,7 @@ class GeneratorHelpers:
 
         while dest_path.parent.is_symlink():
             resolved_path = dest_path.parent.resolve() / dest_path.name
-            self.logger.debug("Resolved symlink: %s -> %s" % (dest_path.parent, resolved_path))
+            self.logger.debug("Resolved symlink: %s -> %s" % (dest_path, resolved_path))
             dest_path = self._get_build_path(resolved_path)
 
         if not dest_path.parent.is_dir():
@@ -159,7 +162,8 @@ class GeneratorHelpers:
 
         while target.parent.is_symlink():
             self.logger.debug("Resolving target parent symlink: %s" % target.parent)
-            target = self._get_build_path(target.parent.resolve() / target.name)
+            resolved_target = target.parent.resolve() / target.name
+            target = self._get_build_path(resolved_target)
 
         if not target.parent.is_dir():
             self.logger.debug("Parent directory for '%s' does not exist: %s" % (target.name, target.parent))

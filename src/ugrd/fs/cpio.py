@@ -1,9 +1,10 @@
 __author__ = "desultory"
-__version__ = "3.7.1"
+__version__ = "3.7.2"
 
 from pathlib import Path
-from zenlib.util import contains, unset, colorize
+
 from pycpio.cpio.symlink import CPIO_Symlink
+from zenlib.util import colorize, contains, unset
 
 
 @contains("check_cpio")
@@ -35,6 +36,7 @@ def _check_in_cpio(self, file, lines=[], quiet=False):
     """Checks that the file is in the CPIO archive, and it contains the specified lines."""
     cpio = self._cpio_archive
     file = str(file).lstrip("/")  # Normalize as it may be a path
+    self.logger.debug("Checking CPIO for dependency: %s" % file)
     if file not in cpio.entries:
         fp = Path(file)
         while str(fp) not in ["/", "."]:

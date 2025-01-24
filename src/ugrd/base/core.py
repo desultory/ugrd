@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "4.1.1"
+__version__ = "4.1.3"
 
 from pathlib import Path
 from shutil import rmtree, which
@@ -112,22 +112,25 @@ def calculate_dependencies(self, binary: str) -> list[Path]:
 
 @contains("merge_usr", "Skipping /usr merge", log_level=30)
 def handle_usr_symlinks(self) -> None:
-    """Adds symlinks for /usr/bin and /usr/sbin to /bin and /sbin.
+    """
+    Adds symlinks for /bin and /sbin to /usr/bin
+    Adds a symlink for /usr/sbin to /usr/bin (-> bin)
+    Adds smlinks for /lib to /usr/lib and /lib64 to /usr/lib64
     Warns if the symlink path is a directory on the host system.
     """
-    build_dir = self._get_build_path("/")
-    bin_dir = Path("bin")
-    sbin_dir = Path("sbin")
-    usr_sbin_dir = Path("usr/sbin")
+    bin_symlink = ("bin", "usr/bin")
+    sbin_symlink = ("sbin", "usr/bin")
+    usr_sbin_symlink = ("usr/sbin", "bin")  # Make it relative
+    lib_symlink = ("lib", "usr/lib")
+    lib64_symlink = ("lib64", "usr/lib64")
+    symlinks = [bin_symlink, sbin_symlink, usr_sbin_symlink, lib_symlink, lib64_symlink]
 
-    for d in [bin_dir, sbin_dir, usr_sbin_dir]:
-        if d.is_dir() and not d.is_symlink():
-            self.logger.warning("Merged-usr symlink target is a directory: %s" % d)
+    for target, source in symlinks:
+        host_path = Path("/").joinpath(target)
+        if host_path.is_dir() and not host_path.is_symlink():
+            self.logger.warning("Host path is a directory: %s" % host_path)
             self.logger.warning("Set `merge_usr = false` to disable /usr merge.")
-        build_d = build_dir / d
-        if not build_d.is_dir() and not build_d.is_symlink():
-            self.logger.log(5, "Creating merged-usr symlink to /usr/bin: %s" % build_d)
-            self._symlink("/usr/bin", d)
+        self._symlink(source, target)
 
 
 def deploy_dependencies(self) -> None:
@@ -358,6 +361,10 @@ def _process_dependencies_multi(self, dependency: Union[Path, str]) -> None:
             self.logger.debug("Dependency is a symlink, adding to symlinks: %s -> %s" % (dependency, resolved_path))
             self["symlinks"][f"_auto_{dependency.name}"] = {"source": resolved_path, "target": dependency}
             dependency = resolved_path
+
+    if dependency.is_symlink():
+        dependency = dependency.resolve()
+        self.logger.debug("Dependency target is a symlink, resolved to: %s" % dependency)
 
     self.logger.debug("Added dependency: %s" % dependency)
     self["dependencies"].append(dependency)
