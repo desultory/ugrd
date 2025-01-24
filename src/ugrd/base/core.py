@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "4.1.1"
+__version__ = "4.1.3"
 
 from pathlib import Path
 from shutil import rmtree, which
@@ -358,6 +358,10 @@ def _process_dependencies_multi(self, dependency: Union[Path, str]) -> None:
             self.logger.debug("Dependency is a symlink, adding to symlinks: %s -> %s" % (dependency, resolved_path))
             self["symlinks"][f"_auto_{dependency.name}"] = {"source": resolved_path, "target": dependency}
             dependency = resolved_path
+
+    if dependency.is_symlink():
+        dependency = dependency.resolve()
+        self.logger.debug("Dependency target is a symlink, resolved to: %s" % dependency)
 
     self.logger.debug("Added dependency: %s" % dependency)
     self["dependencies"].append(dependency)

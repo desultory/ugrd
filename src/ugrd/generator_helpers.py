@@ -124,7 +124,7 @@ class GeneratorHelpers:
 
         while dest_path.parent.is_symlink():
             resolved_path = dest_path.parent.resolve() / dest_path.name
-            self.logger.debug("Resolved symlink: %s -> %s" % (dest_path.parent, resolved_path))
+            self.logger.debug("Resolved symlink: %s -> %s" % (dest_path, resolved_path))
             dest_path = self._get_build_path(resolved_path)
 
         if not dest_path.parent.is_dir():
@@ -161,7 +161,8 @@ class GeneratorHelpers:
 
         while target.parent.is_symlink():
             self.logger.debug("Resolving target parent symlink: %s" % target.parent)
-            target = self._get_build_path(target.parent.resolve() / target.name)
+            resolved_target = target.parent.resolve() / target.name
+            target = self._get_build_path(resolved_target)
 
         if not target.parent.is_dir():
             self.logger.debug("Parent directory for '%s' does not exist: %s" % (target.name, target.parent))
