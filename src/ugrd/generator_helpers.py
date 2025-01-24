@@ -51,8 +51,9 @@ class GeneratorHelpers:
         else:
             path_dir = path
 
-        if path_dir.is_symlink():
-            return self.logger.debug("Skipping symlink directory: %s" % path_dir)
+        while path_dir.is_symlink():
+            path_dir = self._get_build_path(path_dir.resolve())
+            self.logger.debug("[%s] Resolved directory symlink: %s" % (path, path_dir))
 
         if not path_dir.parent.is_dir():
             self.logger.debug("Parent directory does not exist: %s" % path_dir.parent)
