@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "4.0.2"
+__version__ = "4.0.3"
 
 from pathlib import Path
 
@@ -145,12 +145,18 @@ def _get_dm_info(self, mapped_name: str) -> dict:
 def _get_dm_slave_info(self, device_info: dict) -> (str, dict):
     """Gets the device mapper slave information for a particular device."""
     slave_source = device_info["slaves"][0]
-    try:
-        slave_device = f"/dev/{slave_source}"
-        return slave_device, self["_blkid_info"][slave_device]
-    except KeyError:
-        slave_device = f"/dev/mapper/{slave_source}"
-        return slave_device, self["_blkid_info"][slave_device]
+    slave_name = self["_vblk_info"].get(slave_source, {}).get("name")
+    search_paths = ["/dev/", "/dev/mapper/"]
+
+    for path in search_paths:
+        slave_device = path + slave_source
+        if slave_device in self["_blkid_info"]:
+            return slave_device, self["_blkid_info"][slave_device]
+        if slave_name:
+            slave_device = path + slave_name
+            if slave_device in self["_blkid_info"]:
+                return slave_device, self["_blkid_info"][slave_device]
+    raise AutodetectError("No slave device information found for: %s" % device_info)
 
 
 def _read_cryptsetup_header(self, mapped_name: str, slave_device: str = None) -> dict:
@@ -253,7 +259,7 @@ def _validate_cryptsetup_header(self, mapped_name: str) -> None:
         self["check_included_or_mounted"] = cryptsetup_info["header_file"]  # Add the header file to the check list
 
 
-@contains("hostonly", "Skipping cryptsetup device check.", log_level=30)
+@contains("validate", "Skipping cryptsetup device check.", log_level=30)
 def _validate_cryptsetup_device(self, mapped_name) -> None:
     """Validates a cryptsetup device against the device mapper information,
     blkid information, and cryptsetup information.
@@ -450,7 +456,7 @@ def open_crypt_dev(self) -> str:
     The second argument is a key file, if it exists.
         This key file may be a named pipe, previously created by the key_command.
     """
-    out =  """
+    out = """
     crypt_device="$(get_crypt_dev "$1")"
     header="$(readvar CRYPTSETUP_HEADER_"$1")"
 
@@ -469,11 +475,14 @@ def open_crypt_dev(self) -> str:
     """
     if self["cryptsetup_trim"]:
         out += 'cryptsetup_args="$cryptsetup_args --allow-discards"'
-    return out + """
+    return (
+        out
+        + """
     cryptsetup_args="$cryptsetup_args $crypt_device $1"
     edebug "[$1] cryptsetup args: $cryptsetup_args"
     $cryptsetup_args
     """
+    )
 
 
 def _open_crypt_dev(self, name: str, parameters: dict) -> list[str]:
