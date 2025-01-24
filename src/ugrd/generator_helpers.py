@@ -4,7 +4,7 @@ from typing import Union
 
 from zenlib.util import pretty_print, colorize
 
-__version__ = "1.5.3"
+__version__ = "1.5.5"
 __author__ = "desultory"
 
 
@@ -13,10 +13,12 @@ def get_subpath(path: Path, subpath: Union[Path, str]) -> Path:
     if not isinstance(subpath, Path):
         subpath = Path(subpath)
 
+    if subpath.is_relative_to(path):
+        return subpath
+
     if subpath.is_absolute():
-        return path / subpath.relative_to("/")
-    else:
-        return path / subpath
+        subpath = subpath.relative_to("/")
+    return path / subpath
 
 
 class GeneratorHelpers:
