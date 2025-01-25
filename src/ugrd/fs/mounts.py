@@ -540,11 +540,17 @@ def autodetect_lvm(self, source_dev, dm_num, blkid_info) -> None:
         self.logger.info("Autodetected LVM mount, enabling the %s module." % colorize("lvm", "cyan"))
         self["modules"] = "ugrd.fs.lvm"
 
+    lvm_config = {}
     if uuid := blkid_info.get("uuid"):
         self.logger.info("[%s] LVM volume contianer uuid: %s" % (source_dev.name, colorize(uuid, "cyan")))
-        self["lvm"] = {self["_vblk_info"][dm_num]["name"]: {"uuid": uuid}}
+        lvm_config["uuid"] = uuid
     else:
-        raise AutodetectError("Failed to autodetect LVM volume uuid: %s" % source_dev.name)
+        raise AutodetectError("Failed to autodetect LVM volume uuid for device: %s" % colorize(source_dev.name, "red"))
+
+    if holders := self["_vblk_info"][dm_num]["holders"]:
+        lvm_config["holders"] = holders
+
+    self["lvm"] = {source_dev.name: lvm_config}
 
 
 @contains("autodetect_root_luks", "Skipping LUKS autodetection, autodetect_root_luks is disabled.", log_level=30)

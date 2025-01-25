@@ -1,13 +1,17 @@
 binaries = ['pvscan', 'vgscan', 'vgchange', 'lvscan']
 
 [imports.config_processing]
-"ugrd.fs.lvm" = [ "_process_lvm_multi" ]
+"ugrd.fs.lvm" = [ "_process_lvm_multi" ] 
 
-[imports.init_early]
-"ugrd.fs.lvm" = [ "early_init_lvm" ]
+[imports.init_main]
+"ugrd.fs.lvm" = [ "early_lvm", "init_lvm" ]
 
-[imports.init_late]
-"ugrd.fs.lvm" = [ "init_lvm" ]
+[import_order.before]
+"early_lvm" = "mount_fstab"
+
+[import_order.after]
+"early_lvm" = "md_init"
+"init_lvm" = ["early_lvm", "crypt_init"]
 
 [custom_parameters]
 early_lvm = "bool"  # Run an early lvm scan
