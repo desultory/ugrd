@@ -24,14 +24,15 @@ Variables should generally be colored using the following scheme:
 
 bools to disable validation should be named in the format: `no_validate_<attr>`.
 
-> bools are initialized to `False` so does not need to be set unless defaulting to `True`
+> bools are initialized to `False` so do not need to be set unless defaulting to `True`
 
 ### Function names
 
 * Variable processing functions MUST be named in the format: `_process_<attr>`.
 * Functions which are not used outside of the module should be prefixed with an underscore.
 * Autodetection functions should be named in the format: `autodetect_<attr>`.
+* Enumeration functions should be named `get_<thing>`. such as `get_blkid_info`.
 * Validation functions should be named in the format: `validate_<attr>`.
+* Check functions should be named in the format: `check_<attr>`.
 * Functions which move files into the build dir or image should be named `deploy_<thing>`.
 * Functions which update the exports should be named `export_<thing>`. such as `export_mount_info`.
-* Enumeration functions should be named `get_<thing>`. such as `get_blkid_info`.

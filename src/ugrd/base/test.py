@@ -1,13 +1,13 @@
 __version__ = "1.2.0"
 
+from pathlib import Path
+from uuid import uuid4
 from zenlib.util import colorize, unset
 
 
 @unset("test_kernel")
 def find_kernel_path(self):
     """Finds the kernel path for the current system"""
-    from pathlib import Path
-
     self.logger.info("Trying to find the kernel path for: %s", colorize(self["kernel_version"], "blue"))
     kernel_path = Path(self["_kmod_dir"]) / "vmlinuz"  # try this first
     if not (self["_kmod_dir"] / "vmlinuz").exists():
@@ -27,8 +27,6 @@ def find_kernel_path(self):
 
 def init_test_vars(self):
     """Initializes the test variables"""
-    from uuid import uuid4
-
     find_kernel_path(self)
     if not self["test_flag"]:
         self["test_flag"] = uuid4()

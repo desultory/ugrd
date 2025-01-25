@@ -1,8 +1,11 @@
 __author__ = "desultory"
 __version__ = "4.1.3"
 
+from os import environ, makedev, mknod
 from pathlib import Path
 from shutil import rmtree, which
+from stat import S_IFCHR
+from subprocess import run
 from typing import Union
 
 from ugrd import AutodetectError, ValidationError
@@ -10,10 +13,8 @@ from zenlib.types import NoDupFlatList
 from zenlib.util import colorize, contains, unset
 
 
-def detect_tmpdir(self) -> None:
+def get_tmpdir(self) -> None:
     """Reads TMPDIR from the environment, sets it as the temporary directory."""
-    from os import environ
-
     if tmpdir := environ.get("TMPDIR"):
         self.logger.info("Detected TMPDIR: %s" % (colorize(tmpdir, "cyan")))
         self["tmpdir"] = Path(tmpdir)
@@ -57,11 +58,10 @@ def generate_structure(self) -> None:
         self._mkdir(subdir)
 
 
-def add_conditional_dependencies(self) -> None:
+def get_conditional_dependencies(self) -> None:
     """Adds conditional dependencies to the dependencies list.
     Keys are the dependency, values are a tuple of the condition type and value.
     """
-
     def add_dep(dep: str) -> None:
         try:  # Try to add it as a binary, if it fails, add it as a dependency
             self["binaries"] = dep
@@ -82,8 +82,6 @@ def calculate_dependencies(self, binary: str) -> list[Path]:
     :param binary: The binary to calculate dependencies for
     :return: A list of dependency paths
     """
-    from subprocess import run
-
     binary_path = which(binary)
     if not binary_path:
         raise AutodetectError("'%s' not found in PATH" % binary)
@@ -193,9 +191,6 @@ def deploy_symlinks(self) -> None:
 @contains("make_nodes", "Skipping real device node creation with mknod, as make_nodes is not specified.", log_level=20)
 def deploy_nodes(self) -> None:
     """Generates specified device nodes."""
-    from os import makedev, mknod
-    from stat import S_IFCHR
-
     for node, config in self["nodes"].items():
         node_path_abs = Path(config["path"])
 
@@ -214,12 +209,10 @@ def deploy_nodes(self) -> None:
 
 
 @contains("find_libgcc", "Skipping libgcc_s dependency resolution", log_level=20)
-def find_libgcc(self) -> None:
+def autodetect_libgcc(self) -> None:
     """Finds libgcc.so, adds a 'dependencies' item for it.
     Adds the parent directory to 'library_paths'
     """
-    from pathlib import Path
-
     musl_warning = False
     try:
         cmd = self._run(["ldconfig", "-p"], fail_silent=True, fail_hard=False)

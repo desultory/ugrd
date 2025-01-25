@@ -107,7 +107,7 @@ def _merge_mounts(self, mount_name: str, mount_config, mount_class) -> None:
         self.logger.debug("[%s] Skipping mount merge, mount not found: %s" % (mount_class, mount_name))
         return mount_config
 
-    self.logger.info("[%s] Updating mount: %s" % (mount_class, mount_name))
+    self.logger.info("[%s] Updating mount: %s" % (mount_class, colorize(mount_name, "blue")))
     self.logger.debug("[%s] Updating mount with: %s" % (mount_name, mount_config))
     if "options" in self[mount_class][mount_name] and "options" in mount_config:
         self.logger.debug("Merging options: %s" % mount_config["options"])
@@ -515,7 +515,7 @@ def _autodetect_dm(self, mountpoint, device=None) -> None:
 
 @contains("autodetect_root_raid", "Skipping RAID autodetection, autodetect_root_raid is disabled.", log_level=30)
 @contains("hostonly", "Skipping RAID autodetection, hostonly mode is disabled.", log_level=30)
-def autodetect_raid(self, mount_loc, dm_name, blkid_info) -> None:
+def autodetect_raid(self, source_dev, dm_name, blkid_info) -> None:
     """Autodetects MD RAID mounts and sets the raid config.
     Adds kmods for the raid level to the autodetect list.
     """
@@ -524,7 +524,7 @@ def autodetect_raid(self, mount_loc, dm_name, blkid_info) -> None:
         self["modules"] = "ugrd.fs.mdraid"
 
     if level := self["_vblk_info"][dm_name].get("level"):
-        self.logger.info("[%s] MDRAID level: %s" % (mount_loc.name, colorize(level, "cyan")))
+        self.logger.info("[%s] MDRAID level: %s" % (source_dev.name, colorize(level, "cyan")))
         self["_kmod_auto"] = level
     else:
         raise AutodetectError("[%s] Failed to autodetect MDRAID level: %s" % (dm_name, blkid_info))
@@ -532,26 +532,26 @@ def autodetect_raid(self, mount_loc, dm_name, blkid_info) -> None:
 
 @contains("autodetect_root_lvm", "Skipping LVM autodetection, autodetect_root_lvm is disabled.", log_level=20)
 @contains("hostonly", "Skipping LVM autodetection, hostonly mode is disabled.", log_level=30)
-def autodetect_lvm(self, mount_loc, dm_num, blkid_info) -> None:
+def autodetect_lvm(self, source_dev, dm_num, blkid_info) -> None:
     """Autodetects LVM mounts and sets the lvm config."""
     if "ugrd.fs.lvm" not in self["modules"]:
         self.logger.info("Autodetected LVM mount, enabling the %s module." % colorize("lvm", "cyan"))
         self["modules"] = "ugrd.fs.lvm"
 
     if uuid := blkid_info.get("uuid"):
-        self.logger.info("[%s] LVM volume contianer uuid: %s" % (mount_loc.name, colorize(uuid, "cyan")))
+        self.logger.info("[%s] LVM volume contianer uuid: %s" % (source_dev.name, colorize(uuid, "cyan")))
         self["lvm"] = {self["_vblk_info"][dm_num]["name"]: {"uuid": uuid}}
     else:
-        raise AutodetectError("Failed to autodetect LVM volume uuid: %s" % mount_loc.name)
+        raise AutodetectError("Failed to autodetect LVM volume uuid: %s" % source_dev.name)
 
 
 @contains("autodetect_root_luks", "Skipping LUKS autodetection, autodetect_root_luks is disabled.", log_level=30)
 @contains("hostonly", "Skipping LUKS autodetection, hostonly mode is disabled.", log_level=30)
-def autodetect_luks(self, mount_loc, dm_num, blkid_info) -> None:
+def autodetect_luks(self, source_dev, dm_num, blkid_info) -> None:
     """Autodetects LUKS mounts and sets the cryptsetup config."""
     if "ugrd.crypto.cryptsetup" not in self["modules"]:
         self.logger.info(
-            "Autodetected LUKS mount, enabling the cryptsetup module: %s" % colorize(mount_loc.name, "cyan")
+            "Autodetected LUKS mount, enabling the cryptsetup module: %s" % colorize(source_dev.name, "cyan")
         )
         self["modules"] = "ugrd.crypto.cryptsetup"
 
@@ -566,13 +566,13 @@ def autodetect_luks(self, mount_loc, dm_num, blkid_info) -> None:
 
     if len(self["_vblk_info"][dm_num]["slaves"]) > 1:
         self.logger.error("Device mapper slaves: %s" % colorize(self["_vblk_info"][dm_num]["slaves"], "red", bold=True))
-        raise AutodetectError("Multiple slaves found for device mapper device, unknown type: %s" % mount_loc.name)
+        raise AutodetectError("Multiple slaves found for device mapper device, unknown type: %s" % source_dev.name)
 
     dm_type = blkid_info.get("type")
     if dm_type != "crypto_LUKS":
         if not blkid_info.get("uuid"):  # No uuid will be defined if there are detached headers
-            if not self["cryptsetup"][mount_loc.name].get("header_file"):
-                raise AutodetectError("[%s] Unknown LUKS mount type: %s" % (mount_loc.name, dm_type))
+            if not self["cryptsetup"][source_dev.name].get("header_file"):
+                raise AutodetectError("[%s] Unknown LUKS mount type: %s" % (source_dev.name, dm_type))
         else:  # If there is some uuid and it's not LUKS, that's a problem
             raise AutodetectError(
                 "[%s] Unknown device mapper slave type: %s" % (self["_vblk_info"][dm_num]["slaves"][0], dm_type)
@@ -580,15 +580,20 @@ def autodetect_luks(self, mount_loc, dm_num, blkid_info) -> None:
 
     # Configure cryptsetup based on the LUKS mount
     if uuid := blkid_info.get("uuid"):
-        self.logger.info("[%s] LUKS volume uuid: %s" % (mount_loc.name, colorize(uuid, "cyan")))
+        self.logger.info("[%s] LUKS volume uuid: %s" % (source_dev.name, colorize(uuid, "cyan")))
         self["cryptsetup"] = {self["_vblk_info"][dm_num]["name"]: {"uuid": uuid}}
     elif partuuid := blkid_info.get("partuuid"):
-        self.logger.info("[%s] LUKS volume partuuid: %s" % (mount_loc.name, colorize(partuuid, "cyan")))
+        self.logger.info("[%s] LUKS volume partuuid: %s" % (source_dev.name, colorize(partuuid, "cyan")))
         self["cryptsetup"] = {self["_vblk_info"][dm_num]["name"]: {"partuuid": partuuid}}
 
     self.logger.info(
         "[%s] Configuring cryptsetup for LUKS mount (%s) on: %s\n%s"
-        % (mount_loc.name, self["_vblk_info"][dm_num]["name"], dm_num, pretty_print(self["cryptsetup"]))
+        % (
+            source_dev.name,
+            colorize(self["_vblk_info"][dm_num]["name"], "cyan"),
+            colorize(dm_num, "blue"),
+            pretty_print(self["cryptsetup"]),
+        )
     )
 
 

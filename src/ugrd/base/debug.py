@@ -1,50 +1,54 @@
 __author__ = "desultory"
-__version__ = "1.3.2"
+__version__ = "1.4.0"
 
-from zenlib.util import contains, colorize
-from ugrd import AutodetectError, ValidationError
-from pathlib import Path
 from os import environ
+from pathlib import Path
+
+from ugrd import AutodetectError, ValidationError
+from zenlib.util import colorize, contains, unset
 
 EXPECTED_EDITORS = {"nano", "vim", "vi"}
 # removed emacs, it doesn't work without lots of scripts and info from /usr/share, hard to keep the image a reasonable size
 
 
-def detect_editor(self) -> None:
-    editor = self.get("editor") or environ.get("EDITOR") or "nano"
+@unset("editor")
+def autodetect_editor(self):
+    """ Auto-detect the editor from the environment. """
+    self["editor"] = environ.get("EDITOR", "nano")
 
-    self.logger.info("[debug] Using editor: %s" % colorize(editor, "cyan"))
+def _process_editor(self, editor: str):
+    """ Process the editor configuration. """
+    _validate_editor(self, editor)
 
-    # setting value will automatically call the hook to validate the path/deps
-    try:
+    try:  # setting value will automatically call the hook to validate the path/deps
         self["binaries"] = editor
     except AutodetectError:
         # reraise to specifically flag editor config
-        raise AutodetectError("Failed to locate editor binary: %s" % colorize(editor, "cyan"))
+        raise AutodetectError("Failed to locate editor binary and dependencies: %s" % colorize(editor, "red"))
+    self.logger.info("[debug] Using editor: %s" % colorize(editor, "cyan"))
+    self.data["editor"] = editor
 
-    # Send a warning if the editor it's a common one, but still use it if it exists
-    # check basename specifically in case a path is given
-    base = Path(editor).name
-    if base not in EXPECTED_EDITORS:
-        if self.get("validate") and not self.get("no_validate_editor"):
-            # validate the basename of the editor, in case full path is specified
-            raise ValidationError("Use of unrecognised editor %s with validation enabled" % colorize(base, "cyan"))
+def _validate_editor(self, editor: str):
+    """ Checks that the configured editor has been tested and is known to work. """
+    editor_name = Path(editor).name  # validate the basename of the editor, in case full path is specified
+    if editor_name not in EXPECTED_EDITORS:
+        if self["validate"] and not self["no_validate_editor"]:
+            raise ValidationError("Unrecognized editor: %s" % colorize(editor_name, "red"))
         else:
-            self.logger.warning(
-                "Editor binary not recognised, can be overridden with 'editor' in config or EDITOR in environment if incorrect, otherwise can be disregarded."
-            )
+            self.logger.warning("Configured editor is not recognized: %s" % colorize(editor_name, "yellow"))
+            self.logger.warning("If this is intentional, set 'no_validate_editor' to suppress this warning.")
 
 
 def start_shell(self) -> str:
     """Start a shell at the start of the initramfs."""
-    return [
-        "if ! check_var debug; then",
-        '    ewarn "The debug module is enabled, but debug is not set enabled"',
-        "    return",
-        "fi",
-        'einfo "Starting debug shell"',
-        "sh -l",
-    ]
+    return """
+    if ! check_var debug; then
+        ewarn "The debug module is enabled, but debug is not set enabled"
+        return
+    fi
+    einfo "Starting debug shell"
+    sh -l
+    """
 
 
 @contains("start_shell", "Not enabling the debug shell, as the start_shell option is not set.", log_level=30)

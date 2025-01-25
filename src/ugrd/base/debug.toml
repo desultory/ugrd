@@ -7,8 +7,11 @@ dependencies = [ "/usr/share/terminfo/l/linux" ] # required by most editors
 
 start_shell = true
 
+[imports.config_processing]
+"ugrd.base.debug" = [ "_process_editor" ]
+
 [imports.build_enum]
-"ugrd.base.debug" = [ "detect_editor" ]
+"ugrd.base.debug" = [ "autodetect_editor" ]
 
 [imports.init_pre]
 "ugrd.base.debug" = [ "enable_debug" ]

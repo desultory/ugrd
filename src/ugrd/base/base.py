@@ -2,6 +2,7 @@ __author__ = "desultory"
 __version__ = "6.4.0"
 
 from pathlib import Path
+from shutil import which
 
 from ugrd import AutodetectError, ValidationError
 from zenlib.util import colorize, contains, unset
@@ -36,8 +37,6 @@ def _process_autodetect_init(self, state) -> None:
 
 def _get_shell_path(self, shell_name) -> Path:
     """Gets the real path to the shell binary."""
-    from shutil import which
-
     if shell := which(shell_name):
         return Path(shell).resolve()
     else:
@@ -47,8 +46,6 @@ def _get_shell_path(self, shell_name) -> Path:
 @contains("autodetect_init", log_level=30)
 def autodetect_init(self) -> None:
     """Autodetects the init_target."""
-    from shutil import which
-
     if init := which("init"):
         self.logger.info("Detected init at: %s", colorize(init, "cyan", bright=True))
         self["init_target"] = init
