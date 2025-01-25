@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "6.4.0"
+__version__ = "6.5.0"
 
 from pathlib import Path
 from shutil import which
@@ -60,6 +60,13 @@ def set_shebang(self) -> None:
     """
     self["shebang"] = f"#!/bin/sh {self['shebang_args']}"
     self.logger.info("Setting shebang to: %s", colorize(self["shebang"], "cyan", bright=True))
+
+
+def set_init_final_order(self) -> None:
+    """Adds a "before" do_switch_root order to everything in the init_final hook, excep do_switch_root."""
+    for hook in self["imports"]["init_final"]:
+        if hook.__name__ != "do_switch_root":
+            self["import_order"] = {"before": {hook.__name__: "do_switch_root"}}
 
 
 def export_switch_root_target(self) -> None:

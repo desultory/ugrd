@@ -23,6 +23,9 @@ autodetect_init = true
 [imports.build_tasks]
 "ugrd.base.base" = [ "set_shebang", "export_switch_root_target" ]
 
+[imports.build_final]
+"ugrd.base.base" = [ "set_init_final_order" ]
+
 [imports.init_pre]
 "ugrd.base.base" = [ "set_loglevel" ]
 

@@ -85,9 +85,7 @@ By default, the following init hooks are available:
 * `init_pre` - Where the base initramfs environment is set up; basic mounts are initialized and the kernel cmdline is read.
 * `init_debug` - Where a shell is started if `start_shell` is enabled in the debug module.
 * `init_main` - Most important initramfs activities should take place here.
-* `init_late` - Space for late initramfs actions, such as activating LVM volumes.
 * `init_mount` - Where the root filesystem mount takes place
-* `init_cleanup` - Currently unused, where cleanup before `switch_root` should take place.
 * `init_final` - Where `switch_root` is executed.
 
 > These hooks are defined under the `init_types` list in the `InitramfsGenerator` object.

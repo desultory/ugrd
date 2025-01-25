@@ -23,9 +23,7 @@ class InitramfsGenerator(GeneratorHelpers):
         self.init_types = [
             "init_debug",
             "init_main",
-            "init_late",
             "init_mount",
-            "init_cleanup",
         ]
 
         # Passed kwargs must be imported early, so they will be processed against the base configuration

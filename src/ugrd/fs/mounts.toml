@@ -48,7 +48,7 @@ late_fstab = "/etc/fstab.late"
 [imports.functions]
 "ugrd.fs.mounts" = [ "mount_root" ]
 
-[imports.init_cleanup]
+[imports.init_final]
 "ugrd.fs.mounts" = [ "umount_fstab" ]
 
 [import_order.after]
