@@ -1,7 +1,7 @@
 check_included_funcs = true
 
 [imports.checks]
-"ugrd.base.checks" = [ "check_included_funcs", "check_in_file", "check_included_or_mounted" ]
+"ugrd.base.checks" = [ "check_init_order", "check_included_funcs", "check_in_file", "check_included_or_mounted" ]
 
 [custom_parameters]
 check_included_funcs = 'bool'  # Checks that all included functions are in the profile

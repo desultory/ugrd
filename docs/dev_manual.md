@@ -18,6 +18,16 @@ UGRD allows python functions to be imported from modules using the `imports` dic
 
 `imports` entries have a key which is the name of the hook to import into, and a value which is a dict of module names and lists of functions to import.
 
+## Import order
+
+Imports can be ordered using the `import_order` dict.
+
+The key name defined in `before` will be run before values in the `after` list (value) by name.
+
+Likewise, keys in the `after` list will be run after the key in the `before` value.
+
+> `after` targets are moved before the key when creating the hook order, not literally after.
+
 ### Import types
 
 There are two primary categories for imports, `build` and `init`. Build imports are used to mutate the config and build the base structure of the initramfs, while init imports are used to generate the init scripts.

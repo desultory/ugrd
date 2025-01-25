@@ -124,6 +124,7 @@ class InitramfsGenerator(GeneratorHelpers):
 
             if isinstance(function_output, str) and "\n" in function_output:
                 from textwrap import dedent
+
                 function_output = dedent(function_output)
                 function_output = [  # If the output string has a newline, split and get rid of empty lines
                     line for line in function_output.split("\n") if line and line != "\n" and not line.isspace()
@@ -147,16 +148,100 @@ class InitramfsGenerator(GeneratorHelpers):
         else:
             self.logger.debug("[%s] Function returned no output" % function.__name__)
 
+    def sort_hook_functions(self, hook: str) -> None:
+        """Sorts the functions for the specified hook based on the import order.
+        "before" functions are moved before the target function,
+        "after" functions' target function is moved before the current function.
+
+        Filters orders which do not contain functions or targets in the current hook.
+        """
+        func_names = [func.__name__ for func in self["imports"].get(hook, [])]
+        if not func_names:
+            return self.logger.debug("No functions for hook: %s" % hook)
+
+        b = self["import_order"].get("before", {})
+        before = {k: v for k, v in b.items() if k in func_names and any(subv in func_names for subv in b[k])}
+        a = self["import_order"].get("after", {})
+        after = {k: v for k, v in a.items() if k in func_names and any(subv in func_names for subv in a[k])}
+
+        if not before and not after:
+            return self.logger.debug("No import order specified for hook: %s" % hook)
+
+        def iter_order(order, direction):
+            # Iterate over all before/after functions
+            # If the function is not in the correct position, move it
+            # Use the index of the function to determine the position
+            # Move the function in the imports list as well
+            changed = False
+
+            for func_name, other_funcs in order.items():
+                func_index = func_names.index(func_name)
+                assert func_index >= 0, "Function not found in import list: %s" % func_name
+                for other_func in other_funcs:
+                    try:
+                        other_index = func_names.index(other_func)
+                    except ValueError:
+                        continue
+                    assert other_index >= 0, "Function not found in import list: %s" % other_func
+
+                    def reorder_func(direction):
+                        """ Reorders the function based on the direction. """
+                        self.logger.debug("Moving %s %s %s" % (func_name, direction, other_func))
+                        if direction == "before":  # Move the function before the other function
+                            self.logger.debug("[%s] Moving function before: %s" % (func_name, other_func))
+                            func_names.insert(other_index, func_names.pop(func_index))
+                            self["imports"][hook].insert(other_index, self["imports"][hook].pop(func_index))
+                        elif direction == "after":  # Move the other function before the current function
+                            self.logger.debug("[%s] Moving function before: %s" % (other_func, func_name))
+                            func_names.insert(func_index, func_names.pop(other_index))
+                            self["imports"][hook].insert(func_index, self["imports"][hook].pop(other_index))
+                        else:
+                            raise ValueError("Invalid direction: %s" % direction)
+
+                    self.logger.log(5, "[%s] Imports:\n%s", hook, ", ".join(i.__name__ for i in self["imports"][hook]))
+                    if direction == "before":  # func_index should be before other_index
+                        if func_index > other_index:  # If the current function is after the other function
+                            reorder_func("before")  # Move the current function before the other function)
+                            changed = True
+                        else:  # Log otherwise
+                            self.logger.log(5, "Function %s already before: %s" % (func_name, other_func))
+                    elif direction == "after":  # func_index should be after other_index
+                        if func_index < other_index:  # If the current function is before the other function
+                            reorder_func("after")  # Move the current function after the other function
+                            changed = True
+                        else:
+                            self.logger.log(5, "Function %s already after: %s" % (func_name, other_func))
+                    else:
+                        raise ValueError("Invalid direction: %s" % direction)
+            return changed
+
+        max_iterations = len(func_names) * (len(before) + 1) * (len(after) + 1)  # Prevent infinite loops
+        iterations = max_iterations
+        while iterations:
+            iterations -= 1
+            if not any([iter_order(before, "before"), iter_order(after, "after")]):
+                self.logger.debug("[%s] Import order converged after %s iterations" % (hook, max_iterations - iterations))
+                break  # Keep going until no changes are made
+        else:
+            self.logger.error("Import list: %s" % func_names)
+            self.logger.error("Before: %s" % before)
+            self.logger.error("After: %s" % after)
+            raise ValueError("Import order did not converge after %s iterations" % max_iterations)
+
     def run_hook(self, hook: str, *args, **kwargs) -> list[str]:
-        """Runs a hook for imported functions."""
+        """Runs all functions for the specified hook.
+        If the function is masked, it will be skipped.
+        If the function is in import_order, handle the ordering
+        """
+        self.sort_hook_functions(hook)
         out = []
         for function in self["imports"].get(hook, []):
-            # Check that the function is not masked
             if function.__name__ in self["masks"].get(hook, []):
                 self.logger.warning(
                     "[%s] Skipping masked function: %s" % (hook, colorize(function.__name__, "yellow", bold=True))
                 )
                 continue
+
             if function_output := self.run_func(function, *args, **kwargs):
                 out.append(function_output)
         return out

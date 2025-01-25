@@ -70,3 +70,33 @@ def check_included_or_mounted(self):
                 self.logger.error("File detected under mount '%s' but is not present: %s" % (mountpoint, file))
 
     return "All included files were found."
+
+
+def check_init_order(self):
+    """Ensures that init functions are ordered respecting import_order"""
+    for hook, hook_funcs in self["imports"].items():  # Iterate through all imported functions
+        if hook == "custom_init":
+            continue  # Only one function should be in herE
+        hook_funcs = [func.__name__ for func in hook_funcs]
+        a = self["import_order"].get("after", {})
+        after = {k: v for k, v in a.items() if k in hook_funcs and any(subv in hook_funcs for subv in v)}
+        b = self["import_order"].get("before", {})
+        before = {k: v for k, v in b.items() if k in hook_funcs and any(subv in hook_funcs for subv in v)}
+        for func, targets in before.items():
+            for target in targets:
+                func_index = hook_funcs.index(func)
+                try:
+                    target_index = hook_funcs.index(target)
+                except ValueError:
+                    continue  # Ignore targets that are not imported
+                if func_index > target_index:
+                    raise ValidationError("[%s] Function must be before: %s" % (func, target))
+        for func, targets in after.items():
+            for target in targets:
+                func_index = hook_funcs.index(func)
+                try:
+                    target_index = hook_funcs.index(target)
+                except ValueError:
+                    continue  # Ignore targets that are not imported
+                if func_index < target_index:
+                    raise ValidationError("[%s] Function must be after: %s" % (func, target))

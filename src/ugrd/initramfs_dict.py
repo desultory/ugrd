@@ -7,6 +7,7 @@ from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 from queue import Queue
 from tomllib import TOMLDecodeError, load
+from typing import Callable
 
 from zenlib.logging import loggify
 from zenlib.types import NoDupFlatList
@@ -31,6 +32,7 @@ class InitramfsConfigDict(UserDict):
     builtin_parameters = {
         "modules": NoDupFlatList,  # A list of the names of modules which have been loaded, mostly used for dependency checking
         "imports": dict,  # A dict of functions to be imported into the initramfs, under their respective hooks
+        "import_order": dict,  # A dict containing order requirements for imports
         "validated": bool,  # A flag to indicate if the config has been validated, mostly used for log levels
         "custom_parameters": dict,  # Custom parameters loaded from imports
         "custom_processing": dict,  # Custom processing functions which will be run to validate and process parameters
@@ -45,6 +47,7 @@ class InitramfsConfigDict(UserDict):
                 self.data[parameter] = default_type(no_warn=True, _log_bump=5, logger=self.logger)
             else:
                 self.data[parameter] = default_type()
+        self["import_order"] = {"before": {}, "after": {}}
         if not NO_BASE:
             self["modules"] = "ugrd.base.base"
         else:
@@ -191,20 +194,70 @@ class InitramfsConfigDict(UserDict):
                 self.logger.debug("[%s] Processing queued value: %s" % (parameter_name, value))
             self[parameter_name] = value
 
+
+    def _process_import_order(self, import_order: dict) -> None:
+        """Processes the import order, setting the order requirements for import functions.
+        Ensures the order type is valid (before, after),
+        that the function is not ordered after itself.
+        Ensures that the same function/target is not in another order type.
+        """
+        self.logger.debug("Processing import order:\n%s" % pretty_print(import_order))
+        order_types = ["before", "after"]
+        for order_type, order_dict in import_order.items():
+            if order_type not in order_types:
+                raise ValueError("Invalid import order type: %s" % order_type)
+            for function in order_dict:
+                targets = order_dict[function]
+                if not isinstance(targets, list):
+                    targets = [targets]
+                if function in targets:
+                    raise ValueError("Function cannot be ordered after itself: %s" % function)
+                for other_target in[self["import_order"].get(ot, {}) for ot in order_types if ot != order_type]:
+                    if function in other_target and any(target in other_target[function] for target in targets):
+                        raise ValueError("Function cannot be ordered in multiple types: %s" % function)
+                order_dict[function] = targets
+
+            if order_type not in self["import_order"]:
+                self["import_order"][order_type] = {}
+            self["import_order"][order_type].update(order_dict)
+
+        self.logger.debug("Registered import order requirements: %s" % import_order)
+
+    def _process_import_functions(self, module, functions: list) -> list[Callable]:
+        """Processes defined import functions, importing them and adding them to the returned list.
+        the 'function' key is required if dicts are used,
+        'before' and 'after' keys can be used to specify order requirements."""
+        function_list = []
+        for f in functions:
+            match type(f).__name__:
+                case "str":
+                    function_list.append(getattr(module, f))
+                case "dict":
+                    if "function" not in f:
+                        raise ValueError("Function key not found in import dict: %s" % functions)
+                    func = f["function"]
+                    function_list.append(getattr(module, func))
+                    if "before" in f:
+                        self["import_order"] = {"before": {func: f["before"]}}
+                    if "after" in f:
+                        self["import_order"] = {"after": {func: f["after"]}}
+                case _:
+                    raise ValueError("Invalid type for import function: %s" % type(f))
+        return function_list
+
     @handle_plural
     def _process_imports(self, import_type: str, import_value: dict) -> None:
         """Processes imports in a module, importing the functions and adding them to the appropriate list."""
-
         for module_name, function_names in import_value.items():
             self.logger.debug("[%s]<%s> Importing module functions : %s" % (module_name, import_type, function_names))
-            try:
+            try:  # First, the module must be imported, so its functions can be accessed
                 module = import_module(module_name)
             except ModuleNotFoundError as e:
                 module_path = Path("/var/lib/ugrd/" + module_name.replace(".", "/")).with_suffix(".py")
                 self.logger.debug("Attempting to sideload module from: %s" % module_path)
                 if not module_path.exists():
                     raise ModuleNotFoundError("Module not found: %s" % module_name) from e
-                try:
+                try:  # If the module is not built in, try to lade it from /var/lib/ugrd
                     spec = spec_from_file_location(module_name, module_path)
                     module = module_from_spec(spec)
                     spec.loader.exec_module(module)
@@ -215,13 +268,12 @@ class InitramfsConfigDict(UserDict):
             if "_module_name" in dir(module) and module._module_name != module_name:
                 self.logger.warning("Module name mismatch: %s != %s" % (module._module_name, module_name))
 
-            function_list = [getattr(module, function_name) for function_name in function_names]
-
-            if import_type not in self["imports"]:
+            if import_type not in self["imports"]:  # Import types are only actually created when needed
                 self.logger.log(5, "Creating import type: %s" % import_type)
                 self["imports"][import_type] = NoDupFlatList(_log_bump=10, logger=self.logger)
 
-            if import_type == "custom_init":
+            function_list = self._process_import_functions(module, function_names)
+            if import_type == "custom_init":  # Only get the first function for custom init (should be 1)
                 if self["imports"]["custom_init"]:
                     raise ValueError("Custom init function already defined: %s" % self["imports"]["custom_init"])
                 else:
@@ -231,21 +283,22 @@ class InitramfsConfigDict(UserDict):
                     )
                     continue
 
-            if import_type == "funcs":
+            if import_type == "funcs":  # Check for collisions with defined binaries and functions
                 for function in function_list:
                     if function.__name__ in self["imports"]["funcs"]:
                         raise ValueError("Function '%s' already registered" % function.__name__)
                     if function.__name__ in self["binaries"]:
                         raise ValueError("Function collides with defined binary: %s'" % function.__name__)
 
+            # Append the functions to the appropriate list
             self["imports"][import_type] += function_list
             self.logger.debug("[%s] Updated import functions: %s" % (import_type, function_list))
 
-            if import_type == "config_processing":
+            if import_type == "config_processing":  # Register the functions for processing after all imports are done
                 for function in function_list:
                     self["custom_processing"][function.__name__] = function
                     self.logger.debug("Registered config processing function: %s" % function.__name__)
-                    self._process_unprocessed(function.__name__.removeprefix("_process_"))
+                    self._process_unprocessed(function.__name__.removeprefix("_process_"))  # Re-process any queued values
 
     @handle_plural
     def _process_modules(self, module: str) -> None:
