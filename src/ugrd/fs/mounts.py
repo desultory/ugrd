@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "6.6.0"
+__version__ = "6.6.1"
 
 from pathlib import Path
 from typing import Union
@@ -800,12 +800,21 @@ def check_mounts(self) -> None:
 def mount_default_root(self) -> str:
     """Mounts the root partition to $MOUNTS_ROOT_TARGET."""
     return f"""
-    if grep -qs "$(readvar MOUNTS_ROOT_TARGET)" /proc/mounts; then
-        ewarn "Root mount already exists, unmounting: $(readvar MOUNTS_ROOT_TARGET)"
-        umount "$(readvar MOUNTS_ROOT_TARGET)"
+    mount_source=$(readvar MOUNTS_ROOT_SOURCE)
+    mount_type=$(readvar MOUNTS_ROOT_TYPE auto)
+    mount_options=$(readvar MOUNTS_ROOT_OPTIONS 'defaults,ro')
+    mount_target=$(readvar MOUNTS_ROOT_TARGET)
+    if grep -qs "$mount_target" /proc/mounts; then
+        ewarn "Root mount already exists, adding 'remount' option: $mount_options"
+        mount_options="remount,$mount_options"
     fi
-    einfo "Mounting '$(readvar MOUNTS_ROOT_SOURCE)' ($(readvar MOUNTS_ROOT_TYPE)) to '$(readvar MOUNTS_ROOT_TARGET)' with options: $(readvar MOUNTS_ROOT_OPTIONS)"
-    retry {self["mount_retries"] or -1} {self["mount_timeout"]} mount "$(readvar MOUNTS_ROOT_SOURCE)" -t "$(readvar MOUNTS_ROOT_TYPE)" "$(readvar MOUNTS_ROOT_TARGET)" -o "$(readvar MOUNTS_ROOT_OPTIONS)"
+    einfo "[/] Mounting '$mount_source' ($mount_type) to '$mount_target' with options: $mount_options"
+    while ! mount "$mount_source" -t "$mount_type" -o "$mount_options" "$mount_target"; do
+        eerror "Failed to mount root partition."
+        if prompt_user "Press enter to break, waiting: {self["mount_timeout"]}s" {self["mount_timeout"]}; then
+            rd_fail "Failed to mount root partition."
+        fi
+    done
     """
 
 
