@@ -797,7 +797,7 @@ def check_mounts(self) -> None:
         _validate_host_mount(self, mount, "/" if mount_name == "root" else None)
 
 
-def mount_root(self) -> str:
+def mount_default_root(self) -> str:
     """Mounts the root partition to $MOUNTS_ROOT_TARGET."""
     return f"""
     if grep -qs "$(readvar MOUNTS_ROOT_TARGET)" /proc/mounts; then
@@ -806,6 +806,27 @@ def mount_root(self) -> str:
     fi
     einfo "Mounting '$(readvar MOUNTS_ROOT_SOURCE)' ($(readvar MOUNTS_ROOT_TYPE)) to '$(readvar MOUNTS_ROOT_TARGET)' with options: $(readvar MOUNTS_ROOT_OPTIONS)"
     retry {self["mount_retries"] or -1} {self["mount_timeout"]} mount "$(readvar MOUNTS_ROOT_SOURCE)" -t "$(readvar MOUNTS_ROOT_TYPE)" "$(readvar MOUNTS_ROOT_TARGET)" -o "$(readvar MOUNTS_ROOT_OPTIONS)"
+    """
+
+
+def mount_root(self) -> str:
+    """Returns a shell script to mount the root partition.
+    Uses root options defined in the cmdline if set, otherwise uses mount_default_root.
+    """
+    return """
+    root=$(readvar root)
+    if [ -z "$root" ]; then
+        edebug "No root partition specified in /proc/cmdline, falling back to mount_root"
+        mount_default_root
+        return
+    fi
+    roottype="$(readvar roottype auto)"
+    rootflags="$(readvar rootflags 'defaults,ro')"
+    einfo "Mounting root partition based on /proc/cmdline: $root -t $roottype -o $rootflags"
+    if ! mount "$root" "$(readvar MOUNTS_ROOT_TARGET)" -t "$roottype" -o "$rootflags"; then
+        eerror "Failed to mount the root partition using /proc/cmdline: $root -t $roottype -o $rootflags"
+        mount_default_root
+    fi
     """
 
 

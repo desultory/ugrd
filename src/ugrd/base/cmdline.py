@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "3.0.1"
+__version__ = "3.1.0"
 
 
 def parse_cmdline_bool(self) -> str:
@@ -31,32 +31,13 @@ def parse_cmdline(self) -> str:
     return rf"""
     cmdline=$(awk -F '--' '{{print $1}}' /proc/cmdline)  # Get everything before '--'
     setvar INIT_ARGS "$(awk -F '--' '{{print $2}}' /proc/cmdline)"  # Get everything after '--'
-    for bool in {" ".join([f'"{bool}"' for bool in self['cmdline_bools']])}; do
+    for bool in {" ".join([f'"{bool}"' for bool in self["cmdline_bools"]])}; do
         parse_cmdline_bool "$bool"
     done
-    for string in {" ".join([f'"{string}"' for string in self['cmdline_strings']])}; do
+    for string in {" ".join([f'"{string}"' for string in self["cmdline_strings"]])}; do
         parse_cmdline_str "$string"
     done
     einfo "Parsed cmdline: $cmdline"
-    """
-
-
-def mount_cmdline_root(self) -> str:
-    """Returns shell script to mount root partition based on /proc/cmdline"""
-    return """
-    root=$(readvar root)
-    if [ -z "$root" ]; then
-        edebug "No root partition specified in /proc/cmdline, falling back to mount_root"
-        mount_root
-        return
-    fi
-    roottype="$(readvar roottype auto)"
-    rootflags="$(readvar rootflags 'defaults,ro')"
-    einfo "Mounting root partition based on /proc/cmdline: $root -t $roottype -o $rootflags"
-    if ! mount "$root" "$(readvar MOUNTS_ROOT_TARGET)" -t "$roottype" -o "$rootflags"; then
-        eerror "Failed to mount the root partition using /proc/cmdline: $root -t $roottype -o $rootflags"
-        mount_root
-    fi
     """
 
 

@@ -4,4 +4,4 @@ run_dirs = ['udev/data']
 'ugrd.fs.fakeudev' = ['fake_dm_udev']
 
 [import_order.after]
-fake_dm_udev = ["mount_late", "mount_cmdline_root"]
+fake_dm_udev = ["mount_late", "mount_root"]

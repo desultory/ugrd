@@ -46,16 +46,16 @@ late_fstab = "/etc/fstab.late"
 "ugrd.fs.mounts" = [ "mount_fstab" ]
 
 [imports.init_mount]
-"ugrd.fs.mounts" = [ "mount_late" ]
+"ugrd.fs.mounts" = [ "mount_root" ]
 
 [imports.functions]
-"ugrd.fs.mounts" = [ "mount_root" ]
+"ugrd.fs.mounts" = [ "mount_default_root" ]
 
 [imports.init_final]
 "ugrd.fs.mounts" = [ "umount_fstab" ]
 
 [import_order.after]
-mount_late = ["mount_root", "mount_cmdline_root"]
+mount_late = "mount_root"
 make_run_dirs = "mount_base"
 
 [custom_parameters]
