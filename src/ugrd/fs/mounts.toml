@@ -34,7 +34,10 @@ late_fstab = "/etc/fstab.late"
 "ugrd.fs.mounts" = [ "export_mount_info" ]
 
 [imports.build_final]
-"ugrd.fs.mounts" = [ "check_mounts", "generate_fstab" ]
+"ugrd.fs.mounts" = [ "generate_fstab" ]
+
+[imports.checks]
+"ugrd.fs.mounts" = [ "check_mounts" ]
 
 [imports.init_pre]
 "ugrd.fs.mounts" = [ "mount_base", "make_run_dirs" ]
