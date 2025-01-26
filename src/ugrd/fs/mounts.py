@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "6.5.0"
+__version__ = "6.6.0"
 
 from pathlib import Path
 from typing import Union
@@ -42,7 +42,8 @@ def _resolve_dev(self, device_path) -> str:
     device_path = _resolve_overlay_lower_device(self, mountpoint)
     mountpoint = _resolve_device_mountpoint(self, device_path)  # May have changed if it was an overlayfs
 
-    major, minor = _get_device_id(self["_mounts"][mountpoint]["device"])
+    mount_dev = self["_mounts"][mountpoint]["device"]
+    major, minor = _get_device_id(mount_dev.split(":")[0] if ":" in mount_dev else mount_dev)
     for device in self["_blkid_info"]:
         check_major, check_minor = _get_device_id(device)
         if (major, minor) == (check_major, check_minor):
@@ -71,7 +72,8 @@ def _resolve_device_mountpoint(self, device) -> str:
     for mountpoint, mount_info in self["_mounts"].items():
         if str(device) == mount_info["device"]:
             return mountpoint
-    raise AutodetectError("Device mountpoint not found: %s" % device)
+    self.logger.error("Mount info:\n%s" % pretty_print(self["_mounts"]))
+    raise AutodetectError("Device mountpoint not found: %s" % repr(device))
 
 
 def _resolve_overlay_lower_dir(self, mountpoint) -> str:
@@ -602,43 +604,39 @@ def autodetect_luks(self, source_dev, dm_num, blkid_info) -> None:
 def autodetect_root(self) -> None:
     """Sets self['mounts']['root']'s source based on the host mount."""
     if "/" not in self["_mounts"]:
-        self.logger.error("Host mounts: %s" % pretty_print(self["_mounts"]))
+        self.logger.error("Host mounts:\n%s" % pretty_print(self["_mounts"]))
         raise AutodetectError(
             "Root mount not found in host mounts.\nCurrent mounts: %s" % pretty_print(self["_mounts"])
         )
-    # Sometimes the root device listed in '/proc/mounts' differs from the blkid info
-    root_dev = _resolve_dev(self, self["_mounts"]["/"]["device"])
-    if ":" in root_dev:  # only use the first device
-        root_dev = root_dev.split(":")[0]
-        for alt_devices in root_dev.split(":")[1:]:  # But ensure kmods are loaded for all devices
-            autodetect_mount_kmods(self, alt_devices)
-    _autodetect_mount(self, "/")
+    root_dev = _autodetect_mount(self, "/")
     if self["autodetect_root_dm"]:
         if self["mounts"]["root"]["type"] == "btrfs":
             from ugrd.fs.btrfs import _get_btrfs_mount_devices
-
+            # Btrfs volumes may be backed by multiple dm devices
             for device in _get_btrfs_mount_devices(self, "/", root_dev):
                 _autodetect_dm(self, "/", device)
         else:
             _autodetect_dm(self, "/")
 
 
-def _autodetect_mount(self, mountpoint) -> None:
-    """Sets mount config for the specified mountpoint."""
+def _autodetect_mount(self, mountpoint) -> str:
+    """Sets mount config for the specified mountpoint.
+    Returns the "real" device path for the mountpoint.
+    """
     if mountpoint not in self["_mounts"]:
-        self.logger.error("Host mounts: %s" % pretty_print(self["_mounts"]))
+        self.logger.error("Host mounts:\n%s" % pretty_print(self["_mounts"]))
         raise AutodetectError("auto_mount mountpoint not found in host mounts: %s" % mountpoint)
 
-    mount_device = _resolve_overlay_lower_device(self, mountpoint)  # Just resolve the overlayfs device
+    mount_device = _resolve_dev(self, self["_mounts"][mountpoint]["device"])
+    mount_info = self["_blkid_info"][mount_device]
 
     if ":" in mount_device:  # Handle bcachefs
+        for alt_devices in mount_device.split(":"):
+            autodetect_mount_kmods(self, alt_devices)
         mount_device = mount_device.split(":")[0]
+    else:
+        autodetect_mount_kmods(self, mount_device)
 
-    if mount_device not in self["_blkid_info"]:  # Try to get the blkid info
-        get_blkid_info(self, mount_device)  # Raises an exception if it fails
-
-    mount_info = self["_blkid_info"][mount_device]
-    autodetect_mount_kmods(self, mount_device)
     mount_name = "root" if mountpoint == "/" else mountpoint.removeprefix("/")
     if mount_name in self["mounts"] and any(s_type in self["mounts"][mount_name] for s_type in SOURCE_TYPES):
         return self.logger.warning(
@@ -663,6 +661,7 @@ def _autodetect_mount(self, mountpoint) -> None:
         raise AutodetectError("[%s] Failed to autodetect mount source." % mountpoint)
 
     self["mounts"] = mount_config
+    return mount_device
 
 
 @contains("auto_mounts", "Skipping auto mounts, auto_mounts is empty.", log_level=10)
