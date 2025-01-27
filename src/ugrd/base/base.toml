@@ -37,6 +37,9 @@ autodetect_init = true
                      "klog", "edebug", "einfo", "ewarn", "eerror",
 		     "rd_fail", "rd_restart", "_find_init" ]
 
+[imports.checks]
+"ugrd.base.base" = [ "check_init_target" ]
+
 [import_order.after]
 set_loglevel = "parse_cmdline"
 

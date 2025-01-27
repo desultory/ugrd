@@ -342,9 +342,9 @@ def get_blkid_info(self, device=None) -> dict:
     return self["_blkid_info"][device] if device else self["_blkid_info"]
 
 
-@contains("init_target", "init_target must be set", raise_exception=True)
-@contains("autodetect_init_mount", "Init mount autodetection disabled, skipping.", log_level=30)
 @contains("hostonly", "Skipping init mount autodetection, hostonly mode is disabled.", log_level=30)
+@contains("autodetect_init_mount", "Init mount autodetection disabled, skipping.", log_level=30)
+@contains("init_target", "init_target must be set", raise_exception=True)
 def autodetect_init_mount(self) -> None:
     """Checks the parent directories of init_target, if the path is a mountpoint, add it to late_mounts."""
     init_mount = _find_mountpoint(self, self["init_target"])

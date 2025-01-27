@@ -8,8 +8,9 @@ from ugrd import AutodetectError, ValidationError
 from zenlib.util import colorize, contains, unset
 
 
-@contains("hostonly")
-def _validate_init_target(self) -> None:
+@contains("validate")
+@contains("hostonly", "Skipping init validation, as hostonly is not set", log_level=30)
+def check_init_target(self) -> None:
     if not self["init_target"].exists():
         raise ValidationError("init_target not found at: %s" % self["init_target"])
 
@@ -22,7 +23,6 @@ def _process_init_target(self, target: Path) -> None:
         self["modules"] = "ugrd.fs.fakeudev"
     self.data["init_target"] = target
     self["exports"]["init"] = self["init_target"]
-    _validate_init_target(self)
 
 
 def _process_loglevel(self, loglevel: int) -> None:
@@ -39,6 +39,7 @@ def _get_shell_path(self, shell_name) -> Path:
         raise AutodetectError(f"Shell '{shell_name}' not found.")
 
 
+@contains("hostonly", "Skipping init_target autodetection, hostonly is not set.", log_level=30)
 @contains("autodetect_init", log_level=30)
 @unset("init_target", "init_target is already set, skipping autodetection.", log_level=30)
 def autodetect_init(self) -> None:
