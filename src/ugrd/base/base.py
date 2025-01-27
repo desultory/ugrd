@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "6.6.1"
+__version__ = "6.6.2"
 
 from pathlib import Path
 from shutil import which
@@ -94,6 +94,13 @@ def _find_init(self) -> str:
 def set_loglevel(self) -> str:
     """Returns shell lines to set the log level."""
     return "readvar loglevel > /proc/sys/kernel/printk"
+
+
+@contains("validate", "Skipping switch_root validation, as validation is disabled.", log_level=30)
+def check_switch_root_last(self) -> None:
+    """Validates that do_switch_root is the last function in init_final"""
+    if not self["imports"]["init_final"][-1].__name__ == "do_switch_root":
+        raise ValidationError("do_switch_root must be the last function in init_final.")
 
 
 def do_switch_root(self) -> str:
