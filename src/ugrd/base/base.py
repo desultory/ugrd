@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "6.5.0"
+__version__ = "6.6.0"
 
 from pathlib import Path
 from shutil import which
@@ -12,13 +12,14 @@ from zenlib.util import colorize, contains, unset
 def _validate_init_target(self) -> None:
     if not self["init_target"].exists():
         raise ValidationError("init_target not found at: %s" % self["init_target"])
-    if "systemd" in str(self["init_target"]) and "ugrd.fs.fakeudev" not in self["modules"]:
-        self.logger.warning("'ugrd.fs.fakeudev' may be required if systemd mounts stall on boot.")
 
 
 def _process_init_target(self, target: Path) -> None:
     if not isinstance(target, Path):
         target = Path(target).resolve()
+    if "systemd" in str(target) and "ugrd.fs.fakeudev" not in self["modules"]:
+        self.logger.warning("[systemd] Auto-enabling 'ugrd.fs.fakeudev'. This module is experimental.")
+        self["modules"] = "ugrd.fs.fakeudev"
     self.data["init_target"] = target
     self["exports"]["init"] = self["init_target"]
     _validate_init_target(self)
