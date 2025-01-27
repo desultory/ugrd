@@ -20,3 +20,6 @@ sc_public_key = "Path"  # The path to the public key to import
 
 [import_order.after]
 import_keys = "start_agent"
+
+[import_order.before]
+import_keys = "crypt_init"
