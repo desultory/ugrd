@@ -1,3 +1,4 @@
+from importlib.metadata import version
 from tomllib import TOMLDecodeError, load
 
 from zenlib.logging import loggify
@@ -20,23 +21,19 @@ class InitramfsGenerator(GeneratorHelpers):
         self.build_tasks = ["build_enum", "build_pre", "build_tasks", "build_late", "build_deploy", "build_final"]
 
         # init_pre and init_final are run as part of generate_initramfs_main
-        self.init_types = [
-            "init_debug",
-            "init_main",
-            "init_mount",
-        ]
+        self.init_types = ["init_debug", "init_main", "init_mount"]
 
         # Passed kwargs must be imported early, so they will be processed against the base configuration
         self.config_dict.import_args(kwargs)
-        try:
+        try:  # Attempt to load the config file, if it exists
             self.load_config(config)  # The user config is loaded over the base config, clobbering kwargs
             self.config_dict.import_args(
                 kwargs, quiet=True
             )  # Re-import kwargs (cmdline params) to apply them over the config
         except FileNotFoundError:
-            if config:
-                self.logger.warning("[%s] Config file not found, using the base config." % config)
-            else:
+            if config:  # If a config file was specified, log an error that it's missing
+                self.logger.critical("[%s] Config file not found, using the base config." % config)
+            else:  # Otherwise, log info that the base config is being used
                 self.logger.info("No config file specified, using the base config.")
         except TOMLDecodeError as e:
             raise ValueError("[%s] Error decoding config file: %s" % (config, e))
@@ -64,6 +61,7 @@ class InitramfsGenerator(GeneratorHelpers):
 
         self.logger.debug("Loaded config:\n%s" % self.config_dict)
 
+    #  If the initramfs generator is used as a dictionary, it will use the config_dict.
     def __setitem__(self, key, value):
         self.config_dict[key] = value
 
@@ -84,8 +82,6 @@ class InitramfsGenerator(GeneratorHelpers):
 
     def build(self) -> None:
         """Builds the initramfs image."""
-        from importlib.metadata import version
-
         self._log_run(f"Running ugrd v{version('ugrd')}")
         self.run_build()
         self.config_dict.validate()  # Validate the config after the build tasks have been run
@@ -180,7 +176,7 @@ class InitramfsGenerator(GeneratorHelpers):
                     assert other_index >= 0, "Function not found in import list: %s" % other_func
 
                     def reorder_func(direction):
-                        """ Reorders the function based on the direction. """
+                        """Reorders the function based on the direction."""
                         self.logger.debug("Moving %s %s %s" % (func_name, direction, other_func))
                         if direction == "before":  # Move the function before the other function
                             self.logger.debug("[%s] Moving function before: %s" % (func_name, other_func))
@@ -215,7 +211,9 @@ class InitramfsGenerator(GeneratorHelpers):
         while iterations:
             iterations -= 1
             if not any([iter_order(before, "before"), iter_order(after, "after")]):
-                self.logger.debug("[%s] Import order converged after %s iterations" % (hook, max_iterations - iterations))
+                self.logger.debug(
+                    "[%s] Import order converged after %s iterations" % (hook, max_iterations - iterations)
+                )
                 break  # Keep going until no changes are made
         else:
             self.logger.error("Import list: %s" % func_names)
