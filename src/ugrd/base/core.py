@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "4.1.3"
+__version__ = "4.2.0"
 
 from os import environ, makedev, mknod
 from pathlib import Path
@@ -106,6 +106,23 @@ def calculate_dependencies(self, binary: str) -> list[Path]:
         dependency_paths.append(Path(dependency))
     self.logger.debug("[%s] Calculated dependencies: %s" % (binary, dependency_paths))
     return dependency_paths
+
+
+def find_library(self, library: str) -> None:
+    """Given a library file name, searches for it in the library paths, adds it to the dependencies list."""
+    search_paths = set(self["library_paths"]) | {"/lib", "/lib64", "/usr/lib", "/usr/lib64"}
+
+    for path in search_paths:
+        lib_path = Path(path).joinpath(library)
+        if lib_path.exists():
+            self.logger.info("[%s] Found library file: %s" % (library, colorize(lib_path, "cyan")))
+            return lib_path
+        # Attempt to find the library with a .so extension
+        lib_path = lib_path.with_suffix(".so")
+        if lib_path.exists():
+            self.logger.info("[%s] Found library file: %s" % (library, colorize(lib_path, "cyan")))
+            return lib_path
+    raise AutodetectError("Library not found: %s" % library)
 
 
 @contains("merge_usr", "Skipping /usr merge", log_level=30)
@@ -291,6 +308,18 @@ def _process_paths_multi(self, path: Union[Path, str]) -> None:
 
     self.logger.debug("Adding path: %s" % path)
     self["paths"].append(path)
+
+
+def _process_libraries_multi(self, library: Union[str]) -> None:
+    """Prociesses libraries into the libraries list, adding the parent directory to the library paths."""
+    if library in self["libraries"]:
+        return self.logger.debug("Library already in libraries list, skipping: %s" % library)
+
+    self.logger.debug("Processing library: %s" % library)
+    library_path = find_library(self, library)
+    self["libraries"].append(library)
+    self["dependencies"] = library_path
+    self["library_paths"] = str(library_path.parent)
 
 
 def _process_binaries_multi(self, binary: str) -> None:
