@@ -19,6 +19,12 @@ start_shell = true
 [imports.init_debug]
 "ugrd.base.debug" = [ "start_shell" ]
 
+[import_order.after]
+"enable_debug" = "parse_cmdline"
+
+[import_order.before]
+"enable_debug" = "set_loglevel"
+
 [custom_parameters]
 start_shell = "bool"  # Start a shell after init_early, before init_pre. Can be enabled by the debug cmdline option.
 editor = "str"  # override editor variable
