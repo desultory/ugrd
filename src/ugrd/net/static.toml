@@ -1,0 +1,21 @@
+modules = [ "ugrd.net.net" ]
+
+autodetect_ip = true
+autodetect_gateway = true
+
+[imports.build_pre]
+"ugrd.net.static" = [ "autodetect_gateway", "autodetect_ip" ]
+
+[imports.init_pre]
+"ugrd.net.static" = [ "init_net" ]
+
+[import_order.after]
+"autodetect_gateway" = "autodetect_net_device"
+"autodetect_ip" = "autodetect_gateway"
+"init_net" = [ "load_modules", "init_dhcpcd" ]
+
+[custom_parameters]
+autodetect_ip = "bool"  # Autodetect IP address from the default gateway
+autodetect_gateway = "bool"  # Autodetect default gateway from the IP address
+ip_address = "str"  # IP address to use for the static configuration, with cidr
+ip_gateway = "str"  # Default gateway to set

@@ -1,0 +1,19 @@
+binaries = [ "ip" ]
+
+kmod_ignore_network = false
+
+[imports.config_processing]
+"ugrd.net.net" = [ "_process_net_device" ] 
+
+[imports.functions]
+"ugrd.net.net" = [ "resolve_mac" ]
+
+[imports.build_enum]
+"ugrd.net.net" = [ "autodetect_net_device" ]
+
+[imports.build_pre]
+"ugrd.net.net" = [ "autodetect_net_device_kmods" ]
+
+[custom_parameters]
+net_device = "str"  # The primary network device to use for network operations
+net_device_mac = "str"  # The MAC address of the primary network device
