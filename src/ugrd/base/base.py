@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "6.6.2"
+__version__ = "6.6.3"
 
 from pathlib import Path
 from shutil import which
@@ -320,29 +320,29 @@ def klog(self) -> str:
 def edebug(self) -> str:
     """Returns a shell function like edebug."""
     return r"""
+    output="$(printf "%s" "${*}")"
     if check_var quiet; then
         return
     fi
     if [ "$(readvar debug)" != "1" ]; then
         return
     fi
-    printf "\033[1;34m *\033[0m %s\n" "${*}"
+    printf "\033[1;34m *\033[0m %s\n" "${output}"
     """
 
 
 def einfo(self) -> list[str]:
     """Returns a shell function like einfo."""
+    output = ['output="$(printf "%s" "${*}")"']
     if "ugrd.base.plymouth" in self["modules"]:
-        output = [
+        output += [
             "if plymouth --ping; then",
-            '    plymouth display-message --text="${*}"',
+            '    plymouth display-message --text="${output}"',
             "    return",
             "fi",
         ]
-    else:
-        output = []
 
-    output += ["if check_var quiet; then", "    return", "fi", r'printf "\033[1;32m *\033[0m %s\n" "${*}"']
+    output += ["if check_var quiet; then", "    return", "fi", r'printf "\033[1;32m *\033[0m %s\n" "${output}"']
     return output
 
 
@@ -350,34 +350,34 @@ def ewarn(self) -> list[str]:
     """Returns a shell function like ewarn.
     If plymouth is running, it displays a message instead of echoing.
     """
+    output = ['output="$(printf "%s" "${*}")"']
     if "ugrd.base.plymouth" in self["modules"]:
-        output = [
+        output += [
             "if plymouth --ping; then",  # Always show the message if plymouth is running
-            '    plymouth display-message --text="Warning: ${*}"',
+            '    plymouth display-message --text="Warning: ${output}"',
             "    return",  # Return early so echo doesn't leak
             "fi",
         ]
-    else:
-        output = []
 
     output += [
         "if check_var quiet; then",
         "    return",
         "fi",
-        r'printf "\033[1;33m *\033[0m %s\n" "${*}"',
+        r'printf "\033[1;33m *\033[0m %s\n" "${output}"',
     ]
     return output
 
 
-def eerror(self) -> str:
+def eerror(self) -> list[str]:
     """Returns a shell function like eerror."""
+    output = ['output="$(printf "%s" "${*}")"']
     if "ugrd.base.plymouth" in self["modules"]:
-        return r"""
-        if plymouth --ping; then
-            plymouth display-message --text="Error: ${*}"
-            return
-        fi
-        printf "\033[1;31m *\033[0m %s\n" "${*}"
-        """
+        output += [
+            "if plymouth --ping; then",
+            '    plymouth display-message --text="Error: ${output}"',
+            "    return",
+            "fi",
+        ]
     else:
-        return r'printf "\033[1;31m *\033[0m %s\n" "${*}"'
+        output += [r'printf "\033[1;31m *\033[0m %s\n" "${output}"']
+    return output
