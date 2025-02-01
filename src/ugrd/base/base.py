@@ -211,7 +211,7 @@ def readvar(self) -> str:
     The second arg can be a default value.
     If no default is supplied, and the variable is not found, it returns an empty string.
     """
-    return 'cat "/run/vars/${1}" 2>/dev/null || echo "${2}"'
+    return 'cat "/run/vars/${1}" 2>/dev/null || printf "%s" "${2}"'
 
 
 def check_var(self) -> str:
