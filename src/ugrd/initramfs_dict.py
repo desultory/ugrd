@@ -271,7 +271,21 @@ class InitramfsConfigDict(UserDict):
                 self.logger.log(5, "Creating import type: %s" % import_type)
                 self["imports"][import_type] = NoDupFlatList(_log_bump=10, logger=self.logger)
 
+            if import_masks := self.get("masks", {}).get(import_type, {}).get(module_name):
+                import_masks = [import_masks] if isinstance(import_masks, str) else import_masks
+                for mask in import_masks:
+                    if mask in function_names:
+                        self.logger.warning("[%s] Skipping import of masked function: %s" % (module_name, mask))
+                        function_names.remove(mask)
+                        if import_type == "custom_init":
+                            self.logger.warning("Skipping custom init function: %s" % mask)
+                            continue
+
             function_list = self._process_import_functions(module, function_names)
+            if not function_list:
+                self.logger.warning("[%s] No functions found for import: %s" % (module_name, import_type))
+                continue
+
             if import_type == "custom_init":  # Only get the first function for custom init (should be 1)
                 if isinstance(function_list, list):
                     custom_init = function_list[0]
