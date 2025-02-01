@@ -291,7 +291,7 @@ class InitramfsGenerator(GeneratorHelpers):
         init.extend(self.run_init_hook("init_pre"))  # Always run init_pre first
 
         # If custom_init is used, create the init using that
-        if self["imports"].get("custom_init") and self.get("_custom_init_file"):
+        if self["imports"].get("custom_init"):
             init += ["\n# !!custom_init"]
             init_line, custom_init = self["imports"]["custom_init"](self)
             if isinstance(init_line, str):
@@ -299,6 +299,7 @@ class InitramfsGenerator(GeneratorHelpers):
             else:
                 init.extend(init_line)
         else:  # Otherwise, use the standard init generator
+            custom_init = None
             init.extend(self.generate_init_main())
 
         init.extend(self.run_init_hook("init_final"))  # Always run init_final last
@@ -308,7 +309,8 @@ class InitramfsGenerator(GeneratorHelpers):
             self._write("/etc/profile", self.generate_profile(), 0o755)
             self.logger.info("Included functions: %s" % ", ".join(list(self.included_functions.keys())))
 
-        if self.get("_custom_init_file"):  # Write the custom init file if it exists
+        # Write the custom init file if it exists
+        if custom_init:
             self._write(self["_custom_init_file"], custom_init, 0o755)
 
         self._write("init", init, 0o755)

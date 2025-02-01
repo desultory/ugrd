@@ -1,6 +1,7 @@
 tmpdir = "/tmp"
 build_dir = "initramfs_build"
 _build_log_level = 10
+_custom_init_file = "init_main.sh"
 out_dir = "initramfs_out"
 clean = true
 find_libgcc = true

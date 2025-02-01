@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "2.3.2"
+__version__ = "2.3.3"
 
 from collections import UserDict
 from importlib import import_module
@@ -194,7 +194,6 @@ class InitramfsConfigDict(UserDict):
                 self.logger.debug("[%s] Processing queued value: %s" % (parameter_name, value))
             self[parameter_name] = value
 
-
     def _process_import_order(self, import_order: dict) -> None:
         """Processes the import order, setting the order requirements for import functions.
         Ensures the order type is valid (before, after),
@@ -212,7 +211,7 @@ class InitramfsConfigDict(UserDict):
                     targets = [targets]
                 if function in targets:
                     raise ValueError("Function cannot be ordered after itself: %s" % function)
-                for other_target in[self["import_order"].get(ot, {}) for ot in order_types if ot != order_type]:
+                for other_target in [self["import_order"].get(ot, {}) for ot in order_types if ot != order_type]:
                     if function in other_target and any(target in other_target[function] for target in targets):
                         raise ValueError("Function cannot be ordered in multiple types: %s" % function)
                 order_dict[function] = targets
@@ -274,12 +273,17 @@ class InitramfsConfigDict(UserDict):
 
             function_list = self._process_import_functions(module, function_names)
             if import_type == "custom_init":  # Only get the first function for custom init (should be 1)
-                if self["imports"]["custom_init"]:
-                    raise ValueError("Custom init function already defined: %s" % self["imports"]["custom_init"])
+                if isinstance(function_list, list):
+                    custom_init = function_list[0]
                 else:
-                    self["imports"]["custom_init"] = function_list[0]
+                    custom_init = function_list
+
+                if self["imports"]["custom_init"]:
+                    self.logger.warning("Custom init function already defined: %s" % self["imports"]["custom_init"])
+                else:
+                    self["imports"]["custom_init"] = custom_init
                     self.logger.info(
-                        "Registered custom init function: %s" % colorize(function_list[0].__name__, "blue", bold=True)
+                        "Registered custom init function: %s" % colorize(custom_init.__name__, "blue", bold=True)
                     )
                     continue
 
@@ -298,7 +302,9 @@ class InitramfsConfigDict(UserDict):
                 for function in function_list:
                     self["custom_processing"][function.__name__] = function
                     self.logger.debug("Registered config processing function: %s" % function.__name__)
-                    self._process_unprocessed(function.__name__.removeprefix("_process_"))  # Re-process any queued values
+                    self._process_unprocessed(
+                        function.__name__.removeprefix("_process_")
+                    )  # Re-process any queued values
 
     @handle_plural
     def _process_modules(self, module: str) -> None:
