@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "6.6.5"
+__version__ = "6.6.6"
 
 from pathlib import Path
 from shutil import which
@@ -119,29 +119,27 @@ def do_switch_root(self) -> str:
         eerror "Cannot switch_root from PID: $$, exiting."
         exit 1
     fi
-    if ! grep -q " $(readvar SWITCH_ROOT_TARGET) " /proc/mounts ; then
-        rd_fail "Root not found at: $(readvar SWITCH_ROOT_TARGET)"
+    switch_root_target=$(readvar SWITCH_ROOT_TARGET)
+    if ! grep -q " ${switch_root_target} " /proc/mounts ; then
+        rd_fail "Root not found at: $switch_root_target"
     fi
     if [ -z "$(readvar init)" ]; then
         einfo "Init is no set, running autodetection."
         _find_init || rd_fail "Unable to find init."
     fi
     init_target=$(readvar init)
-    einfo "Checking root mount: $(readvar SWITCH_ROOT_TARGET)"
-    if [ ! -e "$(readvar SWITCH_ROOT_TARGET)${init_target}" ] ; then
-        ewarn "$init_target not found at: $(readvar SWITCH_ROOT_TARGET)"
-        einfo "Target root contents:\n$(ls -l "$(readvar SWITCH_ROOT_TARGET)")"
-        if _find_init ; then  # This redefines the var, so readvar is used instead of $init_target
-            einfo "Switching root to: $(readvar SWITCH_ROOT_TARGET) $(readvar init)"
-            klog "[UGRD $(readvar VERSION)] Running init: $(readvar init)"
-            exec switch_root "$(readvar SWITCH_ROOT_TARGET)" "$(readvar init)"
-        fi
-        rd_fail "Unable to find init."
-    else
-        einfo "Switching root to: $(readvar SWITCH_ROOT_TARGET) $init_target"
-        klog "[UGRD $(readvar VERSION)] Running init: $init_target"
-        exec switch_root "$(readvar SWITCH_ROOT_TARGET)" "$init_target"
+    einfo "Checking root mount: $switch_root_target"
+    if [ ! -e "${switch_root_target}${init_target}" ] ; then
+        ewarn "$init_target not found at: $switch_root_target"
+        einfo "Target root contents:\n$(ls -l "$switch_root_target")"
+        _find_init || rd_fail "Unable to find init."  # Redefines init on success
+        init_target=$(readvar init)
     fi
+    einfo "Switching root to: $switch_root_Target $init_target"
+    klog "[UGRD $(readvar VERSION)] Running init: $init_target"
+    einfo "Cleaning up /run/ugrd"
+    edebug "$(rm -rfv /run/ugrd)"
+    exec switch_root "$switch_root_target" "$init_target"
     """
 
 
