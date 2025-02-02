@@ -1,11 +1,11 @@
-__version__ = "2.0.0"
+__version__ = "2.0.1"
 __author__ = "desultory"
 
 from pathlib import Path
 
 from ugrd import ValidationError
 from ugrd.fs.mounts import _resolve_overlay_lower_dir
-from zenlib.util import contains, unset, colorize
+from zenlib.util import colorize, contains, unset
 
 
 class SubvolNotFound(Exception):
@@ -103,26 +103,26 @@ def select_subvol(self) -> str:
     # TODO: Figure out a way to make the case prompt more standard
     return f"""
     mount -t btrfs -o subvolid=5,ro $(readvar MOUNTS_ROOT_SOURCE) {self["_base_mount_path"]}
-    if [ -z "$(btrfs subvolume list -o {self['_base_mount_path']})" ]; then
-        ewarn "Failed to list btrfs subvolumes for root volume: {self['_base_mount_path']}"
+    if [ -z "$(btrfs subvolume list -o {self["_base_mount_path"]})" ]; then
+        ewarn "Failed to list btrfs subvolumes for root volume: {self["_base_mount_path"]}"
     else
         echo 'Select a subvolume to use as root'
         PS3='Subvolume: '
-        select subvol in $(btrfs subvolume list -o {self['_base_mount_path']} " + "| awk '{{print $9}}'); do
+        select subvol in $(btrfs subvolume list -o {self["_base_mount_path"]} " + "| awk '{{print $9}}'); do
         case $subvol in
             *)
                 if [[ -z $subvol ]]; then
                     ewarn 'Invalid selection'
                 else
                     einfo "Selected subvolume: $subvol"
-                    printf "%s" ",subvol=$subvol" >> /run/vars/MOUNTS_ROOT_OPTIONS
+                    printf "%s" ",subvol=$subvol" >> /run/ugrd/MOUNTS_ROOT_OPTIONS  # append, don't overwrite
                     break
                 fi
                 ;;
             esac
         done
     fi
-    umount -l {self['_base_mount_path']}
+    umount -l {self["_base_mount_path"]}
     """
 
 
@@ -130,4 +130,4 @@ def select_subvol(self) -> str:
 def set_root_subvol(self) -> str:
     """Adds the root_subvol to the root_mount options."""
     _validate_root_subvol(self)
-    return f"""printf ",subvol={self['root_subvol']}" >> /run/vars/MOUNTS_ROOT_OPTIONS"""
+    return f"""printf ",subvol={self["root_subvol"]}" >> /run/ugrd/MOUNTS_ROOT_OPTIONS"""

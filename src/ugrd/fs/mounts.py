@@ -683,7 +683,7 @@ def autodetect_mounts(self) -> None:
 
 def mount_base(self) -> list[str]:
     """Generates mount commands for the base mounts.
-    Must be run before variables are used, as it creates the /run/vars directory.
+    Must be run before variables are used, as it creates the /run/ugrd directory.
     """
     out = []
     for mount_name, mount_info in self["mounts"].items():

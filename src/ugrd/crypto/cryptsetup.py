@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "4.0.3"
+__version__ = "4.0.4"
 
 from pathlib import Path
 
@@ -465,9 +465,9 @@ def open_crypt_dev(self) -> str:
         einfo "[$1] Opening cryptsetup device with detached header: $header"
         cryptsetup_args="$cryptsetup_args --header $header"
     fi
-    if [ -e /run/vars/key_data ]; then
-        einfo "[$1] Unlocking with key data from: /run/vars/key_data"
-        cryptsetup_args="$cryptsetup_args --key-file /run/vars/key_data"
+    if [ -e /run/ugrd/key_data ]; then
+        einfo "[$1] Unlocking with key data from: /run/ugrd/key_data"
+        cryptsetup_args="$cryptsetup_args --key-file /run/ugrd/key_data"
     elif [ -n "$2" ]; then
         einfo "[$1] Unlocking with key file: $2"
         cryptsetup_args="$cryptsetup_args --key-file $2"
@@ -502,7 +502,7 @@ def _open_crypt_dev(self, name: str, parameters: dict) -> list[str]:
     plymouth_key_command = parameters.get("plymouth_key_command") if "ugrd.base.plymouth" in self["modules"] else None
 
     _key_command_lines = f"""    einfo "($i/$retries)[{name}] Running key command: {key_command}"
-    if ! {key_command} > /run/vars/key_data; then
+    if ! {key_command} > /run/ugrd/key_data; then
         ewarn 'Failed to run key command: {key_command}'
         {reset_command}
         continue
@@ -510,12 +510,12 @@ def _open_crypt_dev(self, name: str, parameters: dict) -> list[str]:
 
     if key_command:
         self.logger.debug("[%s] Using key command: %s" % (name, key_command))
-        out += ["    rm -f /run/vars/key_data"]  # Remove the key data file if it exists
+        out += ["    rm -f /run/ugrd/key_data"]  # Remove the key data file if it exists
         if plymouth_key_command:
             self.logger.debug("[%s] Using plymouth key command: %s" % (name, plymouth_key_command))
             out += [
                 "    if plymouth --ping; then",
-                f'        if ! plymouth ask-for-password --prompt "[${{i}} / ${{retries}}] Enter passphrase to unlock key for: {name}" --command "{parameters["plymouth_key_command"]}" --number-of-tries 1 > /run/vars/key_data; then',
+                f'        if ! plymouth ask-for-password --prompt "[${{i}} / ${{retries}}] Enter passphrase to unlock key for: {name}" --command "{parameters["plymouth_key_command"]}" --number-of-tries 1 > /run/ugrd/key_data; then',
                 *[f"            {line}" for line in reset_lines],
                 "        fi",
                 "    else",
@@ -527,7 +527,7 @@ def _open_crypt_dev(self, name: str, parameters: dict) -> list[str]:
         out += [  # open_crypt_dev will use the key data file if it exists
             f'    einfo "($i/$retries)[{name}] Unlocked key to var: key_data"',
             f"    if open_crypt_dev {name}; then",
-            "        rm -f /run/vars/key_data",  # Remove the key data file after opening the device
+            "        rm -f /run/ugrd/key_data",  # Remove the key data file after opening the device
         ]
     elif key_file:  # For plain key files, just use it as arg 2 for open_crypt_dev
         out += [
@@ -538,7 +538,7 @@ def _open_crypt_dev(self, name: str, parameters: dict) -> list[str]:
         if "ugrd.base.plymouth" in self["modules"]:
             out += [  # When plymouth is used, write the entered key to the key data file, where it will be used by open_crypt_dev
                 "    if plymouth --ping; then",
-                f'        plymouth ask-for-password --prompt "[${{i}} / ${{retries}}] Enter passphrase to unlock: {name}" > /run/vars/key_data',
+                f'        plymouth ask-for-password --prompt "[${{i}} / ${{retries}}] Enter passphrase to unlock: {name}" > /run/ugrd/key_data',
                 "    fi",
                 f'    einfo "($i/$retries) Unlocking device: {name}"',
                 f"    if open_crypt_dev {name}; then",
@@ -554,9 +554,9 @@ def _open_crypt_dev(self, name: str, parameters: dict) -> list[str]:
 
     out += [
         "done",
-        "if [ -e /run/vars/key_data ]; then",
+        "if [ -e /run/ugrd/key_data ]; then",
         "    eerror 'Removing leftover key data file'",
-        "    rm -f /run/vars/key_data",
+        "    rm -f /run/ugrd/key_data",
         "fi",
     ]
 

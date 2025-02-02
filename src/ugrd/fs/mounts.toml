@@ -10,7 +10,7 @@ binaries = [
 cmdline_strings =  ["root", "roottype", "rootflags", "rootdelay" ]
 cmdline_bools = ["no_fsck"]
 
-run_dirs = [ "vars" ]
+run_dirs = [ "ugrd" ]
 
 mount_timeout = 1
 autodetect_root = true

@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "6.6.3"
+__version__ = "6.6.4"
 
 from pathlib import Path
 from shutil import which
@@ -197,21 +197,21 @@ def rd_fail(self) -> list[str]:
 
 
 def setvar(self) -> str:
-    """Returns a shell function that sets a variable in /run/vars/{name}."""
+    """Returns a shell function that sets a variable in /run/ugrd/{name}."""
     return """
     if check_var debug; then
         edebug "Setting $1 to $2"
     fi
-    printf "%s" "$2" > "/run/vars/${1}"
+    printf "%s" "$2" > "/run/ugrd/${1}"
     """
 
 
 def readvar(self) -> str:
-    """Returns a shell function that reads a variable from /run/vars/{name}.
+    """Returns a shell function that reads a variable from /run/ugrd/{name}.
     The second arg can be a default value.
     If no default is supplied, and the variable is not found, it returns an empty string.
     """
-    return 'cat "/run/vars/${1}" 2>/dev/null || printf "%s" "${2}"'
+    return 'cat "/run/ugrd/${1}" 2>/dev/null || printf "%s" "${2}"'
 
 
 def check_var(self) -> str:
