@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "6.6.4"
+__version__ = "6.6.5"
 
 from pathlib import Path
 from shutil import which
@@ -114,9 +114,7 @@ def do_switch_root(self) -> str:
 
     If not, it restarts UGRD.
     """
-    from importlib.metadata import version
-
-    return fr"""
+    return r"""
     if [ $$ -ne 1 ] ; then
         eerror "Cannot switch_root from PID: $$, exiting."
         exit 1
@@ -130,18 +128,18 @@ def do_switch_root(self) -> str:
     fi
     init_target=$(readvar init)
     einfo "Checking root mount: $(readvar SWITCH_ROOT_TARGET)"
-    if [ ! -e "$(readvar SWITCH_ROOT_TARGET)${{init_target}}" ] ; then
+    if [ ! -e "$(readvar SWITCH_ROOT_TARGET)${init_target}" ] ; then
         ewarn "$init_target not found at: $(readvar SWITCH_ROOT_TARGET)"
         einfo "Target root contents:\n$(ls -l "$(readvar SWITCH_ROOT_TARGET)")"
         if _find_init ; then  # This redefines the var, so readvar is used instead of $init_target
             einfo "Switching root to: $(readvar SWITCH_ROOT_TARGET) $(readvar init)"
-            klog "[UGRD {version("ugrd")}] Running init: $(readvar init)"
+            klog "[UGRD $(readvar VERSION)] Running init: $(readvar init)"
             exec switch_root "$(readvar SWITCH_ROOT_TARGET)" "$(readvar init)"
         fi
         rd_fail "Unable to find init."
     else
         einfo "Switching root to: $(readvar SWITCH_ROOT_TARGET) $init_target"
-        klog "[UGRD {version("ugrd")}] Running init: $init_target"
+        klog "[UGRD $(readvar VERSION)] Running init: $init_target"
         exec switch_root "$(readvar SWITCH_ROOT_TARGET)" "$init_target"
     fi
     """
