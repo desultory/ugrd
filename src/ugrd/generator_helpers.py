@@ -1,10 +1,11 @@
 from pathlib import Path
+from shutil import copy2
 from subprocess import CompletedProcess, TimeoutExpired, run
 from typing import Union
 
-from zenlib.util import pretty_print, colorize
+from zenlib.util import colorize, pretty_print
 
-__version__ = "1.5.5"
+__version__ = "1.6.0"
 __author__ = "desultory"
 
 
@@ -65,29 +66,34 @@ class GeneratorHelpers:
         else:
             self.logger.debug("Directory already exists: %s" % path_dir)
 
-    def _write(self, file_name: Union[Path, str], contents: list[str], chmod_mask=0o644) -> None:
+    def _write(self, file_name: Union[Path, str], contents: list[str], chmod_mask=0o644, append=False) -> None:
         """
         Writes a file within the build directory.
         Sets the passed chmod_mask.
         If the first line is a shebang, sh -n is run on the file.
         """
-        from os import chmod
-
         file_path = self._get_build_path(file_name)
 
         if not file_path.parent.is_dir():
             self.logger.debug("Parent directory for '%s' does not exist: %s" % (file_path.name, file_path))
             self._mkdir(file_path.parent, resolve_build=False)
 
+        if isinstance(contents, list):
+            contents = "\n".join(contents)
+
         if file_path.is_file():
             self.logger.warning("File already exists: %s" % colorize(file_path, "yellow"))
-            if self.clean:
+            if contents in file_path.read_text():
+                self.logger.debug("Contents:\n%s" % contents)
+                return self.logger.warning("Contents are already present, skipping write: %s" % file_path)
+
+            if self.clean and not append:
                 self.logger.warning("Deleting file: %s" % colorize(file_path, "red", bright=True, bold=True))
                 file_path.unlink()
 
         self.logger.debug("[%s] Writing contents:\n%s" % (file_path, contents))
-        with open(file_path, "w") as file:
-            file.writelines("\n".join(contents))
+        with open(file_path, "a") as file:
+            file.write(contents)
 
         if contents[0].startswith(self["shebang"].split(" ")[0]):
             self.logger.debug("Running sh -n on file: %s" % file_name)
@@ -99,7 +105,7 @@ class GeneratorHelpers:
             self.logger.warning("[%s] Skipping sh -n on file with unrecognized shebang: %s" % (file_name, contents[0]))
 
         self.logger.info("Wrote file: %s" % colorize(file_path, "green", bright=True))
-        chmod(file_path, chmod_mask)
+        file_path.chmod(chmod_mask)
         self.logger.debug("[%s] Set file permissions: %s" % (file_path, chmod_mask))
 
     def _copy(self, source: Union[Path, str], dest=None) -> None:
@@ -111,8 +117,6 @@ class GeneratorHelpers:
 
         Raises a RuntimeError if the destination path is not within the build directory.
         """
-        from shutil import copy2
-
         if not isinstance(source, Path):
             source = Path(source)
 
