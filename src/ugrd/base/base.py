@@ -96,24 +96,34 @@ def set_loglevel(self) -> str:
     return "readvar loglevel > /proc/sys/kernel/printk"
 
 
-@contains("init_target", "init_target must be set.", raise_exception=True)
 def do_switch_root(self) -> str:
     """Should be the final statement, switches root.
+    Ensures it is PID 1, and that the init_target exists.
+
     Checks if the switch_root target is mounted, and that it contains an init.
+
+    If an init is not set, it will try to autodetect it.
+    If it fails to find an init, rd_fail is called.
+
     If not, it restarts UGRD.
     """
     from importlib.metadata import version
 
-    return f"""
+    return fr"""
     if [ $$ -ne 1 ] ; then
         eerror "Cannot switch_root from PID: $$, exiting."
         exit 1
     fi
-    init_target=$(readvar init) || rd_fail "init_target not set."  # should be set, if unset, checks fail
-    einfo "Checking root mount: $(readvar SWITCH_ROOT_TARGET)"
     if ! grep -q " $(readvar SWITCH_ROOT_TARGET) " /proc/mounts ; then
         rd_fail "Root not found at: $(readvar SWITCH_ROOT_TARGET)"
-    elif [ ! -e "$(readvar SWITCH_ROOT_TARGET)${{init_target}}" ] ; then
+    fi
+    if [ -z "$(readvar init)" ]; then
+        einfo "Init is no set, running autodetection."
+        _find_init || rd_fail "Unable to find init."
+    fi
+    init_target=$(readvar init)
+    einfo "Checking root mount: $(readvar SWITCH_ROOT_TARGET)"
+    if [ ! -e "$(readvar SWITCH_ROOT_TARGET)${{init_target}}" ] ; then
         ewarn "$init_target not found at: $(readvar SWITCH_ROOT_TARGET)"
         einfo "Target root contents:\n$(ls -l "$(readvar SWITCH_ROOT_TARGET)")"
         if _find_init ; then  # This redefines the var, so readvar is used instead of $init_target
