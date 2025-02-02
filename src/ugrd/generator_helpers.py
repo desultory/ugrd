@@ -5,7 +5,7 @@ from typing import Union
 
 from zenlib.util import colorize, pretty_print
 
-__version__ = "1.6.0"
+__version__ = "1.6.1"
 __author__ = "desultory"
 
 
@@ -202,6 +202,8 @@ class GeneratorHelpers:
         try:
             cmd = run(cmd_args, capture_output=True, timeout=timeout)
         except TimeoutExpired as e:
+            self.logger.error("Command output:\n%s" % e.stdout.decode())
+            self.logger.error("Command error:\n%s" % e.stderr.decode())
             raise RuntimeError("[%ds] Command timed out: %s" % (timeout, [str(arg) for arg in cmd_args])) from e
 
         if cmd.returncode != 0:
