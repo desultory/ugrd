@@ -205,6 +205,7 @@ def deploy_symlinks(self) -> None:
         self._symlink(symlink_parameters["source"], symlink_parameters["target"])
 
 
+@contains("nodes", "Skipping device node creation, no nodes are defined.")
 @contains("make_nodes", "Skipping real device node creation with mknod, as make_nodes is not specified.", log_level=20)
 def deploy_nodes(self) -> None:
     """Generates specified device nodes."""
