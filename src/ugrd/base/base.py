@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "6.6.0"
+__version__ = "6.6.1"
 
 from pathlib import Path
 from shutil import which
@@ -31,11 +31,6 @@ def _process_loglevel(self, loglevel: int) -> None:
     self["exports"]["loglevel"] = loglevel
 
 
-@unset("init_target", "init_target is already set, skipping autodetection.", log_level=30)
-def _process_autodetect_init(self, state) -> None:
-    self.data["autodetect_init"] = state
-
-
 def _get_shell_path(self, shell_name) -> Path:
     """Gets the real path to the shell binary."""
     if shell := which(shell_name):
@@ -45,6 +40,7 @@ def _get_shell_path(self, shell_name) -> Path:
 
 
 @contains("autodetect_init", log_level=30)
+@unset("init_target", "init_target is already set, skipping autodetection.", log_level=30)
 def autodetect_init(self) -> None:
     """Autodetects the init_target."""
     if init := which("init"):
