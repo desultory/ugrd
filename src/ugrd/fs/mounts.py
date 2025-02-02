@@ -224,9 +224,12 @@ def _get_mount_str(self, mount: dict, pad=False, pad_size=44) -> str:
     return out_str
 
 
-def _to_mount_cmd(self, mount: dict) -> str:
+def _to_mount_cmd(self, mount: dict, mkdir=False) -> str:
     """Prints the object as a mount command."""
     out = [f"if ! grep -qs {mount['destination']} /proc/mounts; then"]
+
+    if mkdir:
+        out += [f"    mkdir -p {mount['destination']} || rd_fail 'Failed to create mountpoint: {mount['destination']}'"]
 
     mount_command = f"mount {_get_mount_str(self, mount)} {mount['destination']}"
     if options := mount.get("options"):
@@ -683,9 +686,14 @@ def mount_base(self) -> list[str]:
     Must be run before variables are used, as it creates the /run/vars directory.
     """
     out = []
-    for mount in self["mounts"].values():
-        if mount.get("base_mount"):
-            out += _to_mount_cmd(self, mount)
+    for mount_name, mount_info in self["mounts"].items():
+        if not mount_info.get("base_mount") or mount_name == "devpts":
+            continue  # devpts must be mounted last, if needed
+        out.extend(_to_mount_cmd(self, mount_info))
+
+    if self["mount_devpts"]:
+        out.extend(_to_mount_cmd(self, self["mounts"]["devpts"], mkdir=True))
+
     out += [f'einfo "Mounted base mounts, version: {__version__}"']
     return out
 

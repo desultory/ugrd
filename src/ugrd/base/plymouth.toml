@@ -5,16 +5,10 @@ dependencies = ['/usr/share/plymouth/plymouthd.defaults',
                 '/usr/share/plymouth/themes/details/details.plymouth']
 
 run_dirs = ["plymouth"]
+mount_devpts = true
 
 [imports.config_processing]
 "ugrd.base.plymouth" = [ "_process_plymouth_themes_multi" ]
-
-[mounts.devpts]
-type = "devpts"
-destination = "/dev/pts"
-options = ['noauto', 'nosuid', 'noexec', 'rw', 'mode=620', 'gid=5']
-no_validate = true
-path = "devpts"
 
 [imports.build_enum]
 "ugrd.base.plymouth" = [ "find_plymouth_config" ]
@@ -23,14 +17,12 @@ path = "devpts"
 "ugrd.base.plymouth" = [ "pull_plymouth" ]
 
 [imports.init_pre]
-"ugrd.base.plymouth" = [ "make_devpts", "start_plymouth" ]
+"ugrd.base.plymouth" = [ "start_plymouth" ]
 
 [import_order.before]
-make_devpts = "start_plymouth"
 start_plymouth = "print_banner"
 
 [import_order.after]
-make_devpts = "mount_base"
 start_plymouth = ["parse_cmdline", "make_run_dirs", "load_modules"]
 
 [custom_parameters]
