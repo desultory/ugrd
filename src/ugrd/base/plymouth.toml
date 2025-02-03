@@ -22,8 +22,16 @@ path = "devpts"
 [imports.build_tasks]
 "ugrd.base.plymouth" = [ "pull_plymouth" ]
 
-[imports.init_early]
+[imports.init_pre]
 "ugrd.base.plymouth" = [ "make_devpts", "start_plymouth" ]
+
+[import_order.before]
+make_devpts = "start_plymouth"
+start_plymouth = "print_banner"
+
+[import_order.after]
+make_devpts = "mount_base"
+start_plymouth = ["parse_cmdline", "make_run_dirs", "load_modules"]
 
 [custom_parameters]
 plymouth_config = "Path"  # Path to the plymouth configuration file

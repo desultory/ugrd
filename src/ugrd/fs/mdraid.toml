@@ -1,5 +1,8 @@
 binaries = ['mdadm']
 dependencies = ['/etc/mdadm.conf']
 
-[imports.init_early]
+[imports.init_main]
 "ugrd.fs.mdraid" = [ "md_init" ]
+
+[import_order.before]
+md_init = "mount_fstab"

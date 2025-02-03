@@ -15,6 +15,8 @@ sc_public_key = "Path"  # The path to the public key to import
 [imports.config_processing]
 "ugrd.crypto.smartcard" = [ "_process_sc_public_key" ]
 
-[imports.init_early]
+[imports.init_main]
 "ugrd.crypto.smartcard" = [ "import_keys" ]
 
+[import_order.after]
+import_keys = "start_agent"

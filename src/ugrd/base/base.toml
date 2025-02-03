@@ -23,7 +23,7 @@ autodetect_init = true
 [imports.build_tasks]
 "ugrd.base.base" = [ "set_shebang", "export_switch_root_target" ]
 
-[imports.init_early]
+[imports.init_pre]
 "ugrd.base.base" = [ "set_loglevel" ]
 
 [imports.init_final]
@@ -33,6 +33,9 @@ autodetect_init = true
 "ugrd.base.base" = [ "check_var", "setvar", "readvar", "wait_enter", "prompt_user", "retry",
                      "klog", "edebug", "einfo", "ewarn", "eerror",
 		     "rd_fail", "rd_restart", "_find_init" ]
+
+[import_order.after]
+set_loglevel = "parse_cmdline"
 
 [custom_parameters]
 switch_root_target = "Path"  # Specifies the location of the new root filesystem

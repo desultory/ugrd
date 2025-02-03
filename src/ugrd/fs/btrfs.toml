@@ -11,8 +11,17 @@ autodetect_root_subvol = true
 [imports.build_pre]
 "ugrd.fs.btrfs" = [ "autodetect_root_subvol" ]
 
-[imports.init_premount]
+[imports.init_mount]
 "ugrd.fs.btrfs" = [ "btrfs_scan", "set_root_subvol", "select_subvol" ]
+
+[import_order.before]
+btrfs_scan = ["set_root_subvol", "mount_cmdline_root", "mount_root"]
+set_root_subvol = ["select_subvol", "mount_cmdline_root", "mount_root"]
+select_subvol = ["mount_cmdline_root", "mount_root"]
+
+[import_order.after]
+mount_cmdline_root = ["btrfs_scan"]
+mount_root = ["btrfs_scan"]
 
 # Custom parameters
 [custom_parameters]

@@ -22,12 +22,9 @@ class InitramfsGenerator(GeneratorHelpers):
         # init_pre and init_final are run as part of generate_initramfs_main
         self.init_types = [
             "init_debug",
-            "init_early",
             "init_main",
             "init_late",
-            "init_premount",
             "init_mount",
-            "init_mount_late",
             "init_cleanup",
         ]
 

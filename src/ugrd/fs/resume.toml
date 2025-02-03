@@ -1,4 +1,7 @@
 cmdline_strings = [ "resume" ]
 
-[imports.init_early] 
+[imports.init_main] 
 "ugrd.fs.resume" = [ "handle_resume" ]
+
+[import_order.before]
+handle_resume = "mount_fstab"

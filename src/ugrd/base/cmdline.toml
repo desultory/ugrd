@@ -11,6 +11,10 @@ cmdline_strings = ['init', 'loglevel']
 [imports.functions]
 "ugrd.base.cmdline" = [ "parse_cmdline_bool", "parse_cmdline_str" ]
 
+[import_order.after]
+export_exports = "make_run_dirs"
+parse_cmdline = "export_exports"
+
 [custom_parameters]
 exports = "dict"  # Add the exports property, used to specify the exports for the init script
 cmdline_bools = "NoDupFlatList" # set the booleans to be procesed from /proc/cmdline
