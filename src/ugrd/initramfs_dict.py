@@ -31,6 +31,7 @@ class InitramfsConfigDict(UserDict):
 
     builtin_parameters = {
         "modules": NoDupFlatList,  # A list of the names of modules which have been loaded, mostly used for dependency checking
+        "provided": NoDupFlatList,  # A list of tags provided by modules
         "imports": dict,  # A dict of functions to be imported into the initramfs, under their respective hooks
         "import_order": dict,  # A dict containing order requirements for imports
         "validated": bool,  # A flag to indicate if the config has been validated, mostly used for log levels
@@ -348,13 +349,24 @@ class InitramfsConfigDict(UserDict):
             self.logger.debug("[%s] Processing imports: %s" % (module, imports))
             self["imports"] = imports
 
+        if needs := module_config.get("needs"):
+            if isinstance(needs, str):
+                if needs not in self["provided"]:
+                    raise ValueError("[%s] Required tag not provided: %s" % (module, needs))
+            elif isinstance(needs, list):
+                for need in needs:
+                    if need not in self["provided"]:
+                        raise ValueError("[%s] Required tag not provided: %s" % (module, need))
+            else:
+                raise ValueError("[%s] Invalid needs value: %s" % (module, needs))
+
         custom_parameters = module_config.get("custom_parameters", {})
         if custom_parameters:
             self.logger.debug("[%s] Processing custom parameters: %s" % (module, custom_parameters))
             self["custom_parameters"] = custom_parameters
 
         for name, value in module_config.items():  # Process config values, in order they are defined
-            if name in ["imports", "custom_parameters"]:
+            if name in ["imports", "custom_parameters", "provides", "needs"]:
                 self.logger.log(5, "[%s] Skipping '%s'" % (module, name))
                 continue
             self.logger.debug("[%s] (%s) Setting value: %s" % (module, name, value))
@@ -366,6 +378,10 @@ class InitramfsConfigDict(UserDict):
 
         # Append the module to the list of loaded modules, avoid recursion
         self["modules"].append(module)
+
+        if provides := module_config.get("provides"):  # Handle provided tags last
+            self.logger.debug("[%s] Provided: %s" % (module, provides))
+            self["provided"] = provides
 
     def validate(self) -> None:
         """Validate config, checks that all values are processed, sets validated flag."""

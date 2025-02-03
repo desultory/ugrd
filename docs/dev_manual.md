@@ -204,3 +204,12 @@ This module is loaded in the imports section of the `base.yaml` file:
 "ugrd.fs.mounts" = [ "_process_mounts_multi" ]
 ```
 
+## Provides/needs
+
+Modules can provide/need a certain "tag" to be set by other modules.
+
+If a module has a `provides` string or list of strings, those will be added to config["provided"].
+When a module has a `needs` string or list of strings, those will be checked against config["provided"].
+
+Needed tags are checked after module imports and before any module config. Provided tags are set upon successful module import.
+

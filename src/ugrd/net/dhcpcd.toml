@@ -1,4 +1,6 @@
 modules = [ "ugrd.net.net" ]
+provides = "net"
+
 binaries = [ "dhcpcd" ]
 
 [imports.init_pre]
