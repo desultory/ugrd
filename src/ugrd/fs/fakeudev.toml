@@ -1,4 +1,7 @@
 run_dirs = ['udev/data']
 
-[imports.init_mount_late]
+[imports.init_mount]
 'ugrd.fs.fakeudev' = ['fake_dm_udev']
+
+[import_order.after]
+fake_dm_udev = ["mount_late", "mount_root"]

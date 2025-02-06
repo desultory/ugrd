@@ -18,6 +18,16 @@ UGRD allows python functions to be imported from modules using the `imports` dic
 
 `imports` entries have a key which is the name of the hook to import into, and a value which is a dict of module names and lists of functions to import.
 
+## Import order
+
+Imports can be ordered using the `import_order` dict.
+
+The key name defined in `before` will be run before values in the `after` list (value) by name.
+
+Likewise, keys in the `after` list will be run after the key in the `before` value.
+
+> `after` targets are moved before the key when creating the hook order, not literally after.
+
 ### Import types
 
 There are two primary categories for imports, `build` and `init`. Build imports are used to mutate the config and build the base structure of the initramfs, while init imports are used to generate the init scripts.
@@ -74,13 +84,8 @@ Build imports are used to mutate config and build the base structure of the init
 By default, the following init hooks are available:
 * `init_pre` - Where the base initramfs environment is set up; basic mounts are initialized and the kernel cmdline is read.
 * `init_debug` - Where a shell is started if `start_shell` is enabled in the debug module.
-* `init_early` - Where early actions such as checking for device paths, mounting the fstab take place.
 * `init_main` - Most important initramfs activities should take place here.
-* `init_late` - Space for late initramfs actions, such as activating LVM volumes.
-* `init_premount` - Where filesystem related commands such as `btrfs device scan` can run.
 * `init_mount` - Where the root filesystem mount takes place
-* `init_mount_late` - Where late mount actions such as mounting paths under the root filesystem can take place.
-* `init_cleanup` - Currently unused, where cleanup before `switch_root` should take place.
 * `init_final` - Where `switch_root` is executed.
 
 > These hooks are defined under the `init_types` list in the `InitramfsGenerator` object.
@@ -198,4 +203,13 @@ This module is loaded in the imports section of the `base.yaml` file:
 [imports.config_processing]
 "ugrd.fs.mounts" = [ "_process_mounts_multi" ]
 ```
+
+## Provides/needs
+
+Modules can provide/need a certain "tag" to be set by other modules.
+
+If a module has a `provides` string or list of strings, those will be added to config["provided"].
+When a module has a `needs` string or list of strings, those will be checked against config["provided"].
+
+Needed tags are checked after module imports and before any module config. Provided tags are set upon successful module import.
 

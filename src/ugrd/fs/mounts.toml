@@ -7,10 +7,12 @@ binaries = [
   "mkdir",
 ]
 
+provides = "mounts" 
+
 cmdline_strings =  ["root", "roottype", "rootflags", "rootdelay" ]
 cmdline_bools = ["no_fsck"]
 
-run_dirs = [ "vars" ]
+run_dirs = [ "ugrd" ]
 
 mount_timeout = 1
 autodetect_root = true
@@ -34,7 +36,10 @@ late_fstab = "/etc/fstab.late"
 "ugrd.fs.mounts" = [ "export_mount_info" ]
 
 [imports.build_final]
-"ugrd.fs.mounts" = [ "check_mounts", "generate_fstab" ]
+"ugrd.fs.mounts" = [ "generate_fstab" ]
+
+[imports.checks]
+"ugrd.fs.mounts" = [ "check_mounts" ]
 
 [imports.init_pre]
 "ugrd.fs.mounts" = [ "mount_base", "make_run_dirs" ]
@@ -42,17 +47,22 @@ late_fstab = "/etc/fstab.late"
 [imports.init_main]
 "ugrd.fs.mounts" = [ "mount_fstab" ]
 
-[imports.functions]
+[imports.init_mount]
 "ugrd.fs.mounts" = [ "mount_root" ]
 
-[imports.init_mount_late]
-"ugrd.fs.mounts" = [ "mount_late" ]
+[imports.functions]
+"ugrd.fs.mounts" = [ "mount_default_root" ]
 
-[imports.init_cleanup]
+[imports.init_final]
 "ugrd.fs.mounts" = [ "umount_fstab" ]
+
+[import_order.after]
+mount_late = "mount_root"
+make_run_dirs = "mount_base"
 
 [custom_parameters]
 mounts = "dict"  # Add the mounts property, used to define the mounts to be made in the fstab
+mount_devpts = "bool"  # Whether or not to mount devpts
 run_dirs = "NoDupFlatList"  # A list of directories to be created under /run
 late_mounts = "dict"  # Like mounts, but run after the root is mounted
 late_fstab = "str"  # The path to the late_fstab file
@@ -96,6 +106,13 @@ base_mount = true
 type = "devtmpfs"
 path = "devtmpfs"
 options = ['nosuid', 'mode=0755']
+base_mount = true
+
+[mounts.devpts]
+type = "devpts"
+path = "devpts"
+destination = "/dev/pts"
+options = ['noauto', 'nosuid', 'noexec', 'rw', 'mode=620', 'gid=5']
 base_mount = true
 
 [mounts.run]

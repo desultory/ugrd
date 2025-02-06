@@ -1,4 +1,4 @@
-binaries = ['cp', 'mv', 'rm', 'find', 'grep', 'dmesg', 'chmod', 'touch']
+binaries = ['cp', 'ln', 'mv', 'rm', 'find', 'grep', 'dmesg', 'chmod', 'touch']
 dependencies = [ "/usr/share/terminfo/l/linux" ] # required by most editors
 # EDITOR is determined at build time using (in order):
 # 1. editor config parameter
@@ -7,14 +7,23 @@ dependencies = [ "/usr/share/terminfo/l/linux" ] # required by most editors
 
 start_shell = true
 
+[imports.config_processing]
+"ugrd.base.debug" = [ "_process_editor" ]
+
 [imports.build_enum]
-"ugrd.base.debug" = [ "detect_editor" ]
+"ugrd.base.debug" = [ "autodetect_editor" ]
 
 [imports.init_pre]
 "ugrd.base.debug" = [ "enable_debug" ]
 
 [imports.init_debug]
 "ugrd.base.debug" = [ "start_shell" ]
+
+[import_order.after]
+"enable_debug" = "parse_cmdline"
+
+[import_order.before]
+"enable_debug" = "set_loglevel"
 
 [custom_parameters]
 start_shell = "bool"  # Start a shell after init_early, before init_pre. Can be enabled by the debug cmdline option.

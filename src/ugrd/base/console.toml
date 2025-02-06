@@ -1,5 +1,4 @@
 binaries = [ "agetty" ]
-_custom_init_file = "init_main.sh"
 
 # Define the primary console
 primary_console = "tty0"

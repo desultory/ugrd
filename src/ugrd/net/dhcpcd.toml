@@ -1,0 +1,10 @@
+modules = [ "ugrd.net.net" ]
+provides = "net"
+
+binaries = [ "dhcpcd" ]
+
+[imports.init_pre]
+"ugrd.net.dhcpcd" = [ "init_dhcpcd" ]
+
+[import_order.after]
+"init_dhcpcd" = "load_modules"

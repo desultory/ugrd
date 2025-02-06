@@ -47,6 +47,7 @@ Modules write to a shared config dict that is accessible by other modules.
 * `clean` (true) forces the build dir to be cleaned on each run.
 * `old_count` (1) Sets the number of old file to keep when running the `_rotate_old` function.
 * `binaries` - A list used to define programs to be pulled into the initrams. `which` is used to find the path of added entries, and `lddtree` is used to resolve dependendies.
+* `libraries` - A list of libaries searched for and added to the initramfs, by name.
 * `paths` - A list of directores to create in the `build_dir`. They do not need a leading `/`.
 * `shell` (/bin/sh) Sets the shell to be used in the init script.
 

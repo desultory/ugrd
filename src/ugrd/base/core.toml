@@ -1,6 +1,7 @@
 tmpdir = "/tmp"
 build_dir = "initramfs_build"
 _build_log_level = 10
+_custom_init_file = "init_main.sh"
 out_dir = "initramfs_out"
 clean = true
 find_libgcc = true
@@ -11,15 +12,11 @@ library_paths = [ "/lib64" ]
 old_count = 1
 timeout = 15
 
-[nodes.console]
-mode = 0o644
-major = 5
-minor = 1
-
 [imports.config_processing]
 "ugrd.base.core" = [ "_process_build_logging",
 		     "_process_out_file",
 		     "_process_binaries_multi",
+		     "_process_libraries_multi",
 		     "_process_dependencies_multi",
 		     "_process_opt_dependencies_multi",
 		     "_process_xz_dependencies_multi",
@@ -34,7 +31,7 @@ minor = 1
 		   ]
 
 [imports.build_enum]
-"ugrd.base.core" = [ "detect_tmpdir", "find_libgcc", "get_shell" ]
+"ugrd.base.core" = [ "get_tmpdir", "autodetect_libgcc", "get_shell" ]
 
 [imports.build_pre]
 "ugrd.base.core" = [ "clean_build_dir" ]
@@ -42,7 +39,7 @@ minor = 1
 [imports.build_deploy]
 "ugrd.base.core" = [ "generate_structure",
 		     "handle_usr_symlinks",  # These should be set first
-		     "add_conditional_dependencies",
+		     "get_conditional_dependencies",
 		     "deploy_dependencies",
 		     "deploy_xz_dependencies",
 		     "deploy_gz_dependencies",
@@ -68,6 +65,7 @@ xz_dependencies = "NoDupFlatList"  # XZipped dependencies property, used to defi
 gz_dependencies = "NoDupFlatList"  # GZipped dependencies property, used to define the gzipped dependencies (will be extracted)
 library_paths = "NoDupFlatList"  # library_paths property, used to define the library paths to add to LD_LIBRARY_PATH
 find_libgcc = "bool"  # If true, the initramfs will search for libgcc_s.so.1 and add it to the initramfs
+libraries = "NoDupFlatList"  # Additional libraries, by name, added to the initramfs
 binaries = "NoDupFlatList"  # Binaries which should be included in the intiramfs, dependencies resolved with lddtree
 copies = "dict"  # Copies dict, defines the files to be copied to the initramfs
 nodes = "dict"  # Nodes dict, defines the device nodes to be created

@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "6.5.0"
+__version__ = "6.6.1"
 
 from pathlib import Path
 from typing import Union
@@ -42,7 +42,8 @@ def _resolve_dev(self, device_path) -> str:
     device_path = _resolve_overlay_lower_device(self, mountpoint)
     mountpoint = _resolve_device_mountpoint(self, device_path)  # May have changed if it was an overlayfs
 
-    major, minor = _get_device_id(self["_mounts"][mountpoint]["device"])
+    mount_dev = self["_mounts"][mountpoint]["device"]
+    major, minor = _get_device_id(mount_dev.split(":")[0] if ":" in mount_dev else mount_dev)
     for device in self["_blkid_info"]:
         check_major, check_minor = _get_device_id(device)
         if (major, minor) == (check_major, check_minor):
@@ -71,7 +72,8 @@ def _resolve_device_mountpoint(self, device) -> str:
     for mountpoint, mount_info in self["_mounts"].items():
         if str(device) == mount_info["device"]:
             return mountpoint
-    raise AutodetectError("Device mountpoint not found: %s" % device)
+    self.logger.error("Mount info:\n%s" % pretty_print(self["_mounts"]))
+    raise AutodetectError("Device mountpoint not found: %s" % repr(device))
 
 
 def _resolve_overlay_lower_dir(self, mountpoint) -> str:
@@ -107,7 +109,7 @@ def _merge_mounts(self, mount_name: str, mount_config, mount_class) -> None:
         self.logger.debug("[%s] Skipping mount merge, mount not found: %s" % (mount_class, mount_name))
         return mount_config
 
-    self.logger.info("[%s] Updating mount: %s" % (mount_class, mount_name))
+    self.logger.info("[%s] Updating mount: %s" % (mount_class, colorize(mount_name, "blue")))
     self.logger.debug("[%s] Updating mount with: %s" % (mount_name, mount_config))
     if "options" in self[mount_class][mount_name] and "options" in mount_config:
         self.logger.debug("Merging options: %s" % mount_config["options"])
@@ -222,9 +224,12 @@ def _get_mount_str(self, mount: dict, pad=False, pad_size=44) -> str:
     return out_str
 
 
-def _to_mount_cmd(self, mount: dict) -> str:
+def _to_mount_cmd(self, mount: dict, mkdir=False) -> str:
     """Prints the object as a mount command."""
     out = [f"if ! grep -qs {mount['destination']} /proc/mounts; then"]
+
+    if mkdir:
+        out += [f"    mkdir -p {mount['destination']} || rd_fail 'Failed to create mountpoint: {mount['destination']}'"]
 
     mount_command = f"mount {_get_mount_str(self, mount)} {mount['destination']}"
     if options := mount.get("options"):
@@ -340,9 +345,9 @@ def get_blkid_info(self, device=None) -> dict:
     return self["_blkid_info"][device] if device else self["_blkid_info"]
 
 
-@contains("init_target", "init_target must be set", raise_exception=True)
-@contains("autodetect_init_mount", "Init mount autodetection disabled, skipping.", log_level=30)
 @contains("hostonly", "Skipping init mount autodetection, hostonly mode is disabled.", log_level=30)
+@contains("autodetect_init_mount", "Init mount autodetection disabled, skipping.", log_level=30)
+@contains("init_target", "init_target must be set", raise_exception=True)
 def autodetect_init_mount(self) -> None:
     """Checks the parent directories of init_target, if the path is a mountpoint, add it to late_mounts."""
     init_mount = _find_mountpoint(self, self["init_target"])
@@ -515,7 +520,7 @@ def _autodetect_dm(self, mountpoint, device=None) -> None:
 
 @contains("autodetect_root_raid", "Skipping RAID autodetection, autodetect_root_raid is disabled.", log_level=30)
 @contains("hostonly", "Skipping RAID autodetection, hostonly mode is disabled.", log_level=30)
-def autodetect_raid(self, mount_loc, dm_name, blkid_info) -> None:
+def autodetect_raid(self, source_dev, dm_name, blkid_info) -> None:
     """Autodetects MD RAID mounts and sets the raid config.
     Adds kmods for the raid level to the autodetect list.
     """
@@ -524,7 +529,7 @@ def autodetect_raid(self, mount_loc, dm_name, blkid_info) -> None:
         self["modules"] = "ugrd.fs.mdraid"
 
     if level := self["_vblk_info"][dm_name].get("level"):
-        self.logger.info("[%s] MDRAID level: %s" % (mount_loc.name, colorize(level, "cyan")))
+        self.logger.info("[%s] MDRAID level: %s" % (source_dev.name, colorize(level, "cyan")))
         self["_kmod_auto"] = level
     else:
         raise AutodetectError("[%s] Failed to autodetect MDRAID level: %s" % (dm_name, blkid_info))
@@ -532,26 +537,32 @@ def autodetect_raid(self, mount_loc, dm_name, blkid_info) -> None:
 
 @contains("autodetect_root_lvm", "Skipping LVM autodetection, autodetect_root_lvm is disabled.", log_level=20)
 @contains("hostonly", "Skipping LVM autodetection, hostonly mode is disabled.", log_level=30)
-def autodetect_lvm(self, mount_loc, dm_num, blkid_info) -> None:
+def autodetect_lvm(self, source_dev, dm_num, blkid_info) -> None:
     """Autodetects LVM mounts and sets the lvm config."""
     if "ugrd.fs.lvm" not in self["modules"]:
         self.logger.info("Autodetected LVM mount, enabling the %s module." % colorize("lvm", "cyan"))
         self["modules"] = "ugrd.fs.lvm"
 
+    lvm_config = {}
     if uuid := blkid_info.get("uuid"):
-        self.logger.info("[%s] LVM volume contianer uuid: %s" % (mount_loc.name, colorize(uuid, "cyan")))
-        self["lvm"] = {self["_vblk_info"][dm_num]["name"]: {"uuid": uuid}}
+        self.logger.info("[%s] LVM volume contianer uuid: %s" % (source_dev.name, colorize(uuid, "cyan")))
+        lvm_config["uuid"] = uuid
     else:
-        raise AutodetectError("Failed to autodetect LVM volume uuid: %s" % mount_loc.name)
+        raise AutodetectError("Failed to autodetect LVM volume uuid for device: %s" % colorize(source_dev.name, "red"))
+
+    if holders := self["_vblk_info"][dm_num]["holders"]:
+        lvm_config["holders"] = holders
+
+    self["lvm"] = {source_dev.name: lvm_config}
 
 
 @contains("autodetect_root_luks", "Skipping LUKS autodetection, autodetect_root_luks is disabled.", log_level=30)
 @contains("hostonly", "Skipping LUKS autodetection, hostonly mode is disabled.", log_level=30)
-def autodetect_luks(self, mount_loc, dm_num, blkid_info) -> None:
+def autodetect_luks(self, source_dev, dm_num, blkid_info) -> None:
     """Autodetects LUKS mounts and sets the cryptsetup config."""
     if "ugrd.crypto.cryptsetup" not in self["modules"]:
         self.logger.info(
-            "Autodetected LUKS mount, enabling the cryptsetup module: %s" % colorize(mount_loc.name, "cyan")
+            "Autodetected LUKS mount, enabling the cryptsetup module: %s" % colorize(source_dev.name, "cyan")
         )
         self["modules"] = "ugrd.crypto.cryptsetup"
 
@@ -566,13 +577,13 @@ def autodetect_luks(self, mount_loc, dm_num, blkid_info) -> None:
 
     if len(self["_vblk_info"][dm_num]["slaves"]) > 1:
         self.logger.error("Device mapper slaves: %s" % colorize(self["_vblk_info"][dm_num]["slaves"], "red", bold=True))
-        raise AutodetectError("Multiple slaves found for device mapper device, unknown type: %s" % mount_loc.name)
+        raise AutodetectError("Multiple slaves found for device mapper device, unknown type: %s" % source_dev.name)
 
     dm_type = blkid_info.get("type")
     if dm_type != "crypto_LUKS":
         if not blkid_info.get("uuid"):  # No uuid will be defined if there are detached headers
-            if not self["cryptsetup"][mount_loc.name].get("header_file"):
-                raise AutodetectError("[%s] Unknown LUKS mount type: %s" % (mount_loc.name, dm_type))
+            if not self["cryptsetup"][source_dev.name].get("header_file"):
+                raise AutodetectError("[%s] Unknown LUKS mount type: %s" % (source_dev.name, dm_type))
         else:  # If there is some uuid and it's not LUKS, that's a problem
             raise AutodetectError(
                 "[%s] Unknown device mapper slave type: %s" % (self["_vblk_info"][dm_num]["slaves"][0], dm_type)
@@ -580,15 +591,20 @@ def autodetect_luks(self, mount_loc, dm_num, blkid_info) -> None:
 
     # Configure cryptsetup based on the LUKS mount
     if uuid := blkid_info.get("uuid"):
-        self.logger.info("[%s] LUKS volume uuid: %s" % (mount_loc.name, colorize(uuid, "cyan")))
+        self.logger.info("[%s] LUKS volume uuid: %s" % (source_dev.name, colorize(uuid, "cyan")))
         self["cryptsetup"] = {self["_vblk_info"][dm_num]["name"]: {"uuid": uuid}}
     elif partuuid := blkid_info.get("partuuid"):
-        self.logger.info("[%s] LUKS volume partuuid: %s" % (mount_loc.name, colorize(partuuid, "cyan")))
+        self.logger.info("[%s] LUKS volume partuuid: %s" % (source_dev.name, colorize(partuuid, "cyan")))
         self["cryptsetup"] = {self["_vblk_info"][dm_num]["name"]: {"partuuid": partuuid}}
 
     self.logger.info(
         "[%s] Configuring cryptsetup for LUKS mount (%s) on: %s\n%s"
-        % (mount_loc.name, self["_vblk_info"][dm_num]["name"], dm_num, pretty_print(self["cryptsetup"]))
+        % (
+            source_dev.name,
+            colorize(self["_vblk_info"][dm_num]["name"], "cyan"),
+            colorize(dm_num, "blue"),
+            pretty_print(self["cryptsetup"]),
+        )
     )
 
 
@@ -597,43 +613,39 @@ def autodetect_luks(self, mount_loc, dm_num, blkid_info) -> None:
 def autodetect_root(self) -> None:
     """Sets self['mounts']['root']'s source based on the host mount."""
     if "/" not in self["_mounts"]:
-        self.logger.error("Host mounts: %s" % pretty_print(self["_mounts"]))
+        self.logger.error("Host mounts:\n%s" % pretty_print(self["_mounts"]))
         raise AutodetectError(
             "Root mount not found in host mounts.\nCurrent mounts: %s" % pretty_print(self["_mounts"])
         )
-    # Sometimes the root device listed in '/proc/mounts' differs from the blkid info
-    root_dev = _resolve_dev(self, self["_mounts"]["/"]["device"])
-    if ":" in root_dev:  # only use the first device
-        root_dev = root_dev.split(":")[0]
-        for alt_devices in root_dev.split(":")[1:]:  # But ensure kmods are loaded for all devices
-            autodetect_mount_kmods(self, alt_devices)
-    _autodetect_mount(self, "/")
+    root_dev = _autodetect_mount(self, "/")
     if self["autodetect_root_dm"]:
         if self["mounts"]["root"]["type"] == "btrfs":
             from ugrd.fs.btrfs import _get_btrfs_mount_devices
-
+            # Btrfs volumes may be backed by multiple dm devices
             for device in _get_btrfs_mount_devices(self, "/", root_dev):
                 _autodetect_dm(self, "/", device)
         else:
             _autodetect_dm(self, "/")
 
 
-def _autodetect_mount(self, mountpoint) -> None:
-    """Sets mount config for the specified mountpoint."""
+def _autodetect_mount(self, mountpoint) -> str:
+    """Sets mount config for the specified mountpoint.
+    Returns the "real" device path for the mountpoint.
+    """
     if mountpoint not in self["_mounts"]:
-        self.logger.error("Host mounts: %s" % pretty_print(self["_mounts"]))
+        self.logger.error("Host mounts:\n%s" % pretty_print(self["_mounts"]))
         raise AutodetectError("auto_mount mountpoint not found in host mounts: %s" % mountpoint)
 
-    mount_device = _resolve_overlay_lower_device(self, mountpoint)  # Just resolve the overlayfs device
+    mount_device = _resolve_dev(self, self["_mounts"][mountpoint]["device"])
+    mount_info = self["_blkid_info"][mount_device]
 
     if ":" in mount_device:  # Handle bcachefs
+        for alt_devices in mount_device.split(":"):
+            autodetect_mount_kmods(self, alt_devices)
         mount_device = mount_device.split(":")[0]
+    else:
+        autodetect_mount_kmods(self, mount_device)
 
-    if mount_device not in self["_blkid_info"]:  # Try to get the blkid info
-        get_blkid_info(self, mount_device)  # Raises an exception if it fails
-
-    mount_info = self["_blkid_info"][mount_device]
-    autodetect_mount_kmods(self, mount_device)
     mount_name = "root" if mountpoint == "/" else mountpoint.removeprefix("/")
     if mount_name in self["mounts"] and any(s_type in self["mounts"][mount_name] for s_type in SOURCE_TYPES):
         return self.logger.warning(
@@ -658,6 +670,7 @@ def _autodetect_mount(self, mountpoint) -> None:
         raise AutodetectError("[%s] Failed to autodetect mount source." % mountpoint)
 
     self["mounts"] = mount_config
+    return mount_device
 
 
 @contains("auto_mounts", "Skipping auto mounts, auto_mounts is empty.", log_level=10)
@@ -670,12 +683,17 @@ def autodetect_mounts(self) -> None:
 
 def mount_base(self) -> list[str]:
     """Generates mount commands for the base mounts.
-    Must be run before variables are used, as it creates the /run/vars directory.
+    Must be run before variables are used, as it creates the /run/ugrd directory.
     """
     out = []
-    for mount in self["mounts"].values():
-        if mount.get("base_mount"):
-            out += _to_mount_cmd(self, mount)
+    for mount_name, mount_info in self["mounts"].items():
+        if not mount_info.get("base_mount") or mount_name == "devpts":
+            continue  # devpts must be mounted last, if needed
+        out.extend(_to_mount_cmd(self, mount_info))
+
+    if self["mount_devpts"]:
+        out.extend(_to_mount_cmd(self, self["mounts"]["devpts"], mkdir=True))
+
     out += [f'einfo "Mounted base mounts, version: {__version__}"']
     return out
 
@@ -793,15 +811,45 @@ def check_mounts(self) -> None:
         _validate_host_mount(self, mount, "/" if mount_name == "root" else None)
 
 
-def mount_root(self) -> str:
+def mount_default_root(self) -> str:
     """Mounts the root partition to $MOUNTS_ROOT_TARGET."""
     return f"""
-    if grep -qs "$(readvar MOUNTS_ROOT_TARGET)" /proc/mounts; then
-        ewarn "Root mount already exists, unmounting: $(readvar MOUNTS_ROOT_TARGET)"
-        umount "$(readvar MOUNTS_ROOT_TARGET)"
+    mount_source=$(readvar MOUNTS_ROOT_SOURCE)
+    mount_type=$(readvar MOUNTS_ROOT_TYPE auto)
+    mount_options=$(readvar MOUNTS_ROOT_OPTIONS 'defaults,ro')
+    mount_target=$(readvar MOUNTS_ROOT_TARGET)
+    if grep -qs "$mount_target" /proc/mounts; then
+        ewarn "Root mount already exists, adding 'remount' option: $mount_options"
+        mount_options="remount,$mount_options"
     fi
-    einfo "Mounting '$(readvar MOUNTS_ROOT_SOURCE)' ($(readvar MOUNTS_ROOT_TYPE)) to '$(readvar MOUNTS_ROOT_TARGET)' with options: $(readvar MOUNTS_ROOT_OPTIONS)"
-    retry {self["mount_retries"] or -1} {self["mount_timeout"]} mount "$(readvar MOUNTS_ROOT_SOURCE)" -t "$(readvar MOUNTS_ROOT_TYPE)" "$(readvar MOUNTS_ROOT_TARGET)" -o "$(readvar MOUNTS_ROOT_OPTIONS)"
+    einfo "[/] Mounting '$mount_source' ($mount_type) to '$mount_target' with options: $mount_options"
+    while ! mount "$mount_source" -t "$mount_type" -o "$mount_options" "$mount_target"; do
+        eerror "Failed to mount root partition."
+        if prompt_user "Press enter to break, waiting: {self["mount_timeout"]}s" {self["mount_timeout"]}; then
+            rd_fail "Failed to mount root partition."
+        fi
+    done
+    """
+
+
+def mount_root(self) -> str:
+    """Returns a shell script to mount the root partition.
+    Uses root options defined in the cmdline if set, otherwise uses mount_default_root.
+    """
+    return """
+    root=$(readvar root)
+    if [ -z "$root" ]; then
+        edebug "No root partition specified in /proc/cmdline, falling back to mount_root"
+        mount_default_root
+        return
+    fi
+    roottype="$(readvar roottype auto)"
+    rootflags="$(readvar rootflags 'defaults,ro')"
+    einfo "Mounting root partition based on /proc/cmdline: $root -t $roottype -o $rootflags"
+    if ! mount "$root" "$(readvar MOUNTS_ROOT_TARGET)" -t "$roottype" -o "$rootflags"; then
+        eerror "Failed to mount the root partition using /proc/cmdline: $root -t $roottype -o $rootflags"
+        mount_default_root
+    fi
     """
 
 

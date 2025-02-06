@@ -1,7 +1,6 @@
 modules = [ "ugrd.base.console", "ugrd.crypto.cryptsetup" ]
 
-binaries = [ "/usr/bin/gpg", "/usr/bin/gpg-agent", "/usr/bin/gpgconf", "/usr/bin/gpg-connect-agent", "/usr/bin/pinentry-tty",
-             "rm" ]  # rm needed to remove the decrypted key file
+binaries = [ "/usr/bin/gpg", "/usr/bin/gpg-agent", "/usr/bin/gpgconf", "/usr/bin/gpg-connect-agent", "/usr/bin/pinentry-tty" ]
 opt_dependencies = [ '/usr/libexec/keyboxd' ]  # Pull keyboxd in as an optional dependency
 
 
@@ -13,8 +12,14 @@ plymouth_key_command = "gpg --batch --pinentry-mode loopback --passphrase-fd 0 -
 source = "/usr/bin/pinentry-tty"
 target = "/usr/bin/pinentry"
 
-[imports.init_early]
+[imports.init_main]
 "ugrd.crypto.gpg" = [ "start_agent" ]
+
+[import_order.before]
+start_agent = "crypt_init"
+
+[import_order.after]
+start_agent = "mount_fstab"
 
 [custom_parameters]
 gpg_agent_args = "NoDupFlatList"  # Arguments to be passed to the gpg-agent

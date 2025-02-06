@@ -1,26 +1,28 @@
 __author__ = "desultory"
-__version__ = "6.4.0"
+__version__ = "6.6.6"
 
 from pathlib import Path
+from shutil import which
 
 from ugrd import AutodetectError, ValidationError
 from zenlib.util import colorize, contains, unset
 
 
-@contains("hostonly")
-def _validate_init_target(self) -> None:
+@contains("validate")
+@contains("hostonly", "Skipping init validation, as hostonly is not set", log_level=30)
+def check_init_target(self) -> None:
     if not self["init_target"].exists():
         raise ValidationError("init_target not found at: %s" % self["init_target"])
-    if "systemd" in str(self["init_target"]) and "ugrd.fs.fakeudev" not in self["modules"]:
-        self.logger.warning("'ugrd.fs.fakeudev' may be required if systemd mounts stall on boot.")
 
 
 def _process_init_target(self, target: Path) -> None:
     if not isinstance(target, Path):
         target = Path(target).resolve()
+    if "systemd" in str(target) and "ugrd.fs.fakeudev" not in self["modules"]:
+        self.logger.warning("[systemd] Auto-enabling 'ugrd.fs.fakeudev'. This module is experimental.")
+        self["modules"] = "ugrd.fs.fakeudev"
     self.data["init_target"] = target
     self["exports"]["init"] = self["init_target"]
-    _validate_init_target(self)
 
 
 def _process_loglevel(self, loglevel: int) -> None:
@@ -29,26 +31,19 @@ def _process_loglevel(self, loglevel: int) -> None:
     self["exports"]["loglevel"] = loglevel
 
 
-@unset("init_target", "init_target is already set, skipping autodetection.", log_level=30)
-def _process_autodetect_init(self, state) -> None:
-    self.data["autodetect_init"] = state
-
-
 def _get_shell_path(self, shell_name) -> Path:
     """Gets the real path to the shell binary."""
-    from shutil import which
-
     if shell := which(shell_name):
         return Path(shell).resolve()
     else:
         raise AutodetectError(f"Shell '{shell_name}' not found.")
 
 
+@contains("hostonly", "Skipping init_target autodetection, hostonly is not set.", log_level=30)
 @contains("autodetect_init", log_level=30)
+@unset("init_target", "init_target is already set, skipping autodetection.", log_level=30)
 def autodetect_init(self) -> None:
     """Autodetects the init_target."""
-    from shutil import which
-
     if init := which("init"):
         self.logger.info("Detected init at: %s", colorize(init, "cyan", bright=True))
         self["init_target"] = init
@@ -63,6 +58,13 @@ def set_shebang(self) -> None:
     """
     self["shebang"] = f"#!/bin/sh {self['shebang_args']}"
     self.logger.info("Setting shebang to: %s", colorize(self["shebang"], "cyan", bright=True))
+
+
+def set_init_final_order(self) -> None:
+    """Adds a "before" do_switch_root order to everything in the init_final hook, excep do_switch_root."""
+    for hook in self["imports"]["init_final"]:
+        if hook.__name__ != "do_switch_root":
+            self["import_order"] = {"before": {hook.__name__: "do_switch_root"}}
 
 
 def export_switch_root_target(self) -> None:
@@ -94,37 +96,50 @@ def set_loglevel(self) -> str:
     return "readvar loglevel > /proc/sys/kernel/printk"
 
 
-@contains("init_target", "init_target must be set.", raise_exception=True)
+@contains("validate", "Skipping switch_root validation, as validation is disabled.", log_level=30)
+def check_switch_root_last(self) -> None:
+    """Validates that do_switch_root is the last function in init_final"""
+    if not self["imports"]["init_final"][-1].__name__ == "do_switch_root":
+        raise ValidationError("do_switch_root must be the last function in init_final.")
+
+
 def do_switch_root(self) -> str:
     """Should be the final statement, switches root.
+    Ensures it is PID 1, and that the init_target exists.
+
     Checks if the switch_root target is mounted, and that it contains an init.
+
+    If an init is not set, it will try to autodetect it.
+    If it fails to find an init, rd_fail is called.
+
     If not, it restarts UGRD.
     """
-    from importlib.metadata import version
-
-    return f"""
+    return r"""
     if [ $$ -ne 1 ] ; then
         eerror "Cannot switch_root from PID: $$, exiting."
         exit 1
     fi
-    init_target=$(readvar init) || rd_fail "init_target not set."  # should be set, if unset, checks fail
-    einfo "Checking root mount: $(readvar SWITCH_ROOT_TARGET)"
-    if ! grep -q " $(readvar SWITCH_ROOT_TARGET) " /proc/mounts ; then
-        rd_fail "Root not found at: $(readvar SWITCH_ROOT_TARGET)"
-    elif [ ! -e "$(readvar SWITCH_ROOT_TARGET)${{init_target}}" ] ; then
-        ewarn "$init_target not found at: $(readvar SWITCH_ROOT_TARGET)"
-        einfo "Target root contents:\n$(ls -l "$(readvar SWITCH_ROOT_TARGET)")"
-        if _find_init ; then  # This redefines the var, so readvar is used instead of $init_target
-            einfo "Switching root to: $(readvar SWITCH_ROOT_TARGET) $(readvar init)"
-            klog "[UGRD {version("ugrd")}] Running init: $(readvar init)"
-            exec switch_root "$(readvar SWITCH_ROOT_TARGET)" "$(readvar init)"
-        fi
-        rd_fail "Unable to find init."
-    else
-        einfo "Switching root to: $(readvar SWITCH_ROOT_TARGET) $init_target"
-        klog "[UGRD {version("ugrd")}] Running init: $init_target"
-        exec switch_root "$(readvar SWITCH_ROOT_TARGET)" "$init_target"
+    switch_root_target=$(readvar SWITCH_ROOT_TARGET)
+    if ! grep -q " ${switch_root_target} " /proc/mounts ; then
+        rd_fail "Root not found at: $switch_root_target"
     fi
+    if [ -z "$(readvar init)" ]; then
+        einfo "Init is no set, running autodetection."
+        _find_init || rd_fail "Unable to find init."
+    fi
+    init_target=$(readvar init)
+    einfo "Checking root mount: $switch_root_target"
+    if [ ! -e "${switch_root_target}${init_target}" ] ; then
+        ewarn "$init_target not found at: $switch_root_target"
+        einfo "Target root contents:\n$(ls -l "$switch_root_target")"
+        _find_init || rd_fail "Unable to find init."  # Redefines init on success
+        init_target=$(readvar init)
+    fi
+    einfo "Switching root to: $switch_root_Target $init_target"
+    klog "[UGRD $(readvar VERSION)] Running init: $init_target"
+    einfo "Cleaning up /run/ugrd"
+    edebug "$(rm -rfv /run/ugrd)"
+    exec switch_root "$switch_root_target" "$init_target"
     """
 
 
@@ -178,21 +193,21 @@ def rd_fail(self) -> list[str]:
 
 
 def setvar(self) -> str:
-    """Returns a shell function that sets a variable in /run/vars/{name}."""
+    """Returns a shell function that sets a variable in /run/ugrd/{name}."""
     return """
     if check_var debug; then
         edebug "Setting $1 to $2"
     fi
-    printf "%s" "$2" > "/run/vars/${1}"
+    printf "%s" "$2" > "/run/ugrd/${1}"
     """
 
 
 def readvar(self) -> str:
-    """Returns a shell function that reads a variable from /run/vars/{name}.
+    """Returns a shell function that reads a variable from /run/ugrd/{name}.
     The second arg can be a default value.
     If no default is supplied, and the variable is not found, it returns an empty string.
     """
-    return 'cat "/run/vars/${1}" 2>/dev/null || echo "${2}"'
+    return 'cat "/run/ugrd/${1}" 2>/dev/null || printf "%s" "${2}"'
 
 
 def check_var(self) -> str:
@@ -301,29 +316,29 @@ def klog(self) -> str:
 def edebug(self) -> str:
     """Returns a shell function like edebug."""
     return r"""
+    output="$(printf "%s" "${*}")"
     if check_var quiet; then
         return
     fi
     if [ "$(readvar debug)" != "1" ]; then
         return
     fi
-    printf "\033[1;34m *\033[0m %s\n" "${*}"
+    printf "\033[1;34m *\033[0m %s\n" "${output}"
     """
 
 
 def einfo(self) -> list[str]:
     """Returns a shell function like einfo."""
+    output = ['output="$(printf "%s" "${*}")"']
     if "ugrd.base.plymouth" in self["modules"]:
-        output = [
+        output += [
             "if plymouth --ping; then",
-            '    plymouth display-message --text="${*}"',
+            '    plymouth display-message --text="${output}"',
             "    return",
             "fi",
         ]
-    else:
-        output = []
 
-    output += ["if check_var quiet; then", "    return", "fi", r'printf "\033[1;32m *\033[0m %s\n" "${*}"']
+    output += ["if check_var quiet; then", "    return", "fi", r'printf "\033[1;32m *\033[0m %s\n" "${output}"']
     return output
 
 
@@ -331,34 +346,34 @@ def ewarn(self) -> list[str]:
     """Returns a shell function like ewarn.
     If plymouth is running, it displays a message instead of echoing.
     """
+    output = ['output="$(printf "%s" "${*}")"']
     if "ugrd.base.plymouth" in self["modules"]:
-        output = [
+        output += [
             "if plymouth --ping; then",  # Always show the message if plymouth is running
-            '    plymouth display-message --text="Warning: ${*}"',
+            '    plymouth display-message --text="Warning: ${output}"',
             "    return",  # Return early so echo doesn't leak
             "fi",
         ]
-    else:
-        output = []
 
     output += [
         "if check_var quiet; then",
         "    return",
         "fi",
-        r'printf "\033[1;33m *\033[0m %s\n" "${*}"',
+        r'printf "\033[1;33m *\033[0m %s\n" "${output}"',
     ]
     return output
 
 
-def eerror(self) -> str:
+def eerror(self) -> list[str]:
     """Returns a shell function like eerror."""
+    output = ['output="$(printf "%s" "${*}")"']
     if "ugrd.base.plymouth" in self["modules"]:
-        return r"""
-        if plymouth --ping; then
-            plymouth display-message --text="Error: ${*}"
-            return
-        fi
-        printf "\033[1;31m *\033[0m %s\n" "${*}"
-        """
+        output += [
+            "if plymouth --ping; then",
+            '    plymouth display-message --text="Error: ${output}"',
+            "    return",
+            "fi",
+        ]
     else:
-        return r'printf "\033[1;31m *\033[0m %s\n" "${*}"'
+        output += [r'printf "\033[1;31m *\033[0m %s\n" "${output}"']
+    return output
