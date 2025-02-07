@@ -103,6 +103,7 @@ The following root filesystems have been tested:
 The following filesystems have limited support:
 
 * BCACHEFS
+* ZFS
 
 Additionally, the following filesystems have been tested for non-root mounts:
 

@@ -194,6 +194,7 @@ These bools simply import `ugrd.kmod.no<category>` modules during `build_pre`.
 
 Additional modules include:
 
+* `ugrd.fs.bcachefs` - Adds the bcachefs module and binary for mounting.
 * `ugrd.fs.btrfs` - Helps with multi-device BTRFS mounts, subvolume selection.
 * `ugrd.fs.fakeudev` - Makes 'fake' udev entries for DM devices.
 * `ugrd.fs.cpio` - Packs the build dir into a CPIO archive with PyCPIO.
@@ -202,6 +203,7 @@ Additional modules include:
 * `ugrd.fs.mdraid` - For MDRAID mounts.
 * `ugrd.fs.resume` - Handles resume from hibernation.
 * `ugrd.fs.test_image` - Creates a test rootfs for automated testing.
+* `ugrd.fs.zfs` - Adds basic ZFS support.
 
 #### ugrd.fs.mounts
 
