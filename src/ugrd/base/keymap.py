@@ -1,5 +1,7 @@
 __author__ = "desultory"
-__version__ = "1.0.0"
+__version__ = "1.0.1"
+
+from pathlib import Path
 
 from zenlib.util import contains
 
@@ -12,7 +14,6 @@ def _find_keymap_include(self, base_path, included_file, no_recurse=False) -> st
     Stopping at the 'keymaps' directory, if not found, recursively searches the parent directory.
     Keeps recursively searching if the included file does not end with '.inc'.
     """
-    from pathlib import Path
 
     if not isinstance(base_path, Path):
         base_path = Path(base_path)

@@ -1,7 +1,8 @@
 __author__ = "desultory"
-__version__ = "6.6.1"
+__version__ = "6.6.2"
 
 from pathlib import Path
+from re import search
 from typing import Union
 
 from ugrd import AutodetectError, ValidationError
@@ -315,7 +316,6 @@ def get_blkid_info(self, device=None) -> dict:
     """Gets the blkid info for all devices if no device is passed.
     Gets the blkid info for the passed device if a device is passed.
     The info is stored in self['_blkid_info']."""
-    from re import search
 
     try:
         if device:

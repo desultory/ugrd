@@ -1,4 +1,5 @@
 from importlib.metadata import version
+from textwrap import dedent
 from tomllib import TOMLDecodeError, load
 
 from zenlib.logging import loggify
@@ -114,8 +115,6 @@ class InitramfsGenerator(GeneratorHelpers):
                 return function_output
 
             if isinstance(function_output, str) and "\n" in function_output:
-                from textwrap import dedent
-
                 function_output = dedent(function_output)
                 function_output = [  # If the output string has a newline, split and get rid of empty lines
                     line for line in function_output.split("\n") if line and line != "\n" and not line.isspace()
@@ -241,8 +240,6 @@ class InitramfsGenerator(GeneratorHelpers):
 
     def generate_profile(self) -> list[str]:
         """Generates the shell profile file based on self.included_functions."""
-        from importlib.metadata import version
-
         ver = version(__package__) or 9999  # Version won't be found unless the package is installed
         out = [
             self["shebang"].split(" ")[0],  # Don't add arguments to the shebang (for the profile)

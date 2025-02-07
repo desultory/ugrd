@@ -1,5 +1,7 @@
 __author__ = "desultory"
-__version__ = "3.1.0"
+__version__ = "3.1.1"
+
+from importlib.metadata import PackageNotFoundError, version
 
 
 def parse_cmdline_bool(self) -> str:
@@ -46,8 +48,6 @@ def export_exports(self) -> list[str]:
     Sets 'exported' to 1 once done.
     If 'exported' is set, returns early.
     """
-    from importlib.metadata import PackageNotFoundError, version
-
     try:
         self["exports"]["VERSION"] = version(__package__.split(".")[0])
     except PackageNotFoundError:

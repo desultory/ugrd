@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "2.3.3"
+__version__ = "2.3.4"
 
 from collections import UserDict
 from importlib import import_module
@@ -9,6 +9,7 @@ from queue import Queue
 from tomllib import TOMLDecodeError, load
 from typing import Callable
 
+from pycpio import PyCPIO
 from zenlib.logging import loggify
 from zenlib.types import NoDupFlatList
 from zenlib.util import colorize, handle_plural, pretty_print
@@ -151,8 +152,6 @@ class InitramfsConfigDict(UserDict):
         Updates the custom_parameters attribute.
         Sets the initial value of the parameter based on the type.
         """
-        from pycpio import PyCPIO
-
         if isinstance(parameter_type, str):
             parameter_type = eval(parameter_type)
 
