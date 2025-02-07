@@ -1,7 +1,10 @@
 __author__ = "desultory"
 __version__ = "4.0.4"
 
+from json import loads
 from pathlib import Path
+from re import search
+from textwrap import dedent
 
 from ugrd import AutodetectError, ValidationError
 from zenlib.util import colorize, contains, unset
@@ -161,8 +164,6 @@ def _get_dm_slave_info(self, device_info: dict) -> (str, dict):
 
 def _read_cryptsetup_header(self, mapped_name: str, slave_device: str = None) -> dict:
     """Reads LUKS header information from a device or header file into a dict"""
-    from json import loads
-
     header_file = self["cryptsetup"][mapped_name].get("header_file")
     if not header_file:
         if slave_device:
@@ -292,8 +293,6 @@ def _validate_cryptsetup_device(self, mapped_name) -> None:
 @unset("_cryptsetup_backend")
 def detect_cryptsetup_backend(self) -> None:
     """Determines the cryptsetup backend by running 'cryptsetup --debug luksDump' on this file"""
-    from re import search
-
     try:
         raw_luks_info = (
             self._run(["cryptsetup", "--debug", "luksDump", __file__], fail_silent=True, fail_hard=False)
@@ -487,8 +486,6 @@ def open_crypt_dev(self) -> str:
 
 def _open_crypt_dev(self, name: str, parameters: dict) -> list[str]:
     """Generates a loop to open a cryptsetup device with the given parameters."""
-    from textwrap import dedent
-
     retries = parameters.get("retries", self["cryptsetup_retries"])
     out = [
         f"einfo 'Opening cryptsetup device: {name}'",

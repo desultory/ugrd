@@ -1,4 +1,6 @@
-__version__ = "1.2.1"
+__version__ = "1.2.2"
+
+from tempfile import TemporaryDirectory
 
 from zenlib.util import colorize, contains
 
@@ -103,8 +105,6 @@ def make_test_image(self):
     elif rootfs_type == "xfs":
         self._run(["mkfs", "-t", rootfs_type, "-m", "uuid=%s" % rootfs_uuid, image_path])
         try:  # XFS doesn't support importing a directory as a filesystem, it must be mounted
-            from tempfile import TemporaryDirectory
-
             with TemporaryDirectory() as tmp_dir:
                 self._run(["mount", image_path, tmp_dir])
                 self._run(["cp", "-a", f"{build_dir}/.", tmp_dir])
@@ -113,7 +113,7 @@ def make_test_image(self):
             raise RuntimeError("Could not mount the XFS test image: %s", e)
     elif rootfs_type == "squashfs":
         # First, make the inner squashfs image
-        squashfs_image = self._get_out_path(f'squash/{self["squashfs_image"]}')
+        squashfs_image = self._get_out_path(f"squash/{self['squashfs_image']}")
         if squashfs_image.exists():
             if self.clean:
                 self.logger.warning("Removing existing squashfs image file: %s" % colorize(squashfs_image, "red"))

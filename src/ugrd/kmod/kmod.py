@@ -1,7 +1,9 @@
 __author__ = "desultory"
-__version__ = "3.2.2"
+__version__ = "3.2.3"
 
 from pathlib import Path
+from platform import uname
+from struct import unpack
 from subprocess import run
 
 from ugrd.kmod import BuiltinModuleError, DependencyResolutionError, IgnoredModuleError, _normalize_kmod_name
@@ -115,8 +117,6 @@ def _autodetect_modules_lspci(self) -> None:
 @contains("kmod_autodetect_lsmod", "kmod_autodetect_lsmod is not enabled, skipping.")
 def _autodetect_modules_lsmod(self) -> None:
     """Gets the name of all currently used kernel modules."""
-    from platform import uname
-
     if self.get("kernel_version") and self["kernel_version"] != uname().release:
         self.logger.warning(
             "Kernel version is set to %s, but the current kernel version is %s"
@@ -181,8 +181,6 @@ def _get_kver_from_header(self) -> str:
     The version string can be up to 127 bytes long and is null-terminated.
     https://www.kernel.org/doc/html/v6.7/arch/x86/boot.html#the-real-mode-kernel-header
     """
-    from struct import unpack
-
     kernel_path = _find_kernel_image(self)
     kver_offset = unpack("<h", kernel_path.read_bytes()[0x020E:0x0210])[0] + 512
     header = kernel_path.read_bytes()[kver_offset : kver_offset + 127]
