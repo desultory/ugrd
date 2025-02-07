@@ -353,6 +353,12 @@ def process_ignored_module(self, module: str) -> None:
             if key == "kmod_init":
                 if module in self["_kmod_modinfo"] and self["_kmod_modinfo"][module]["filename"] == "(builtin)":
                     self.logger.debug("Removing built-in module from kmod_init: %s" % module)
+                elif module == "zfs":
+                    self.logger.critical("ZFS module is required but missing.")
+                    self.logger.critical("Please build/install the required kmods before running this script.")
+                    self.logger.critical("Detected kernel version: %s" % self["kernel_version"])
+                    # https://github.com/projg2/installkernel-gentoo/commit/1c70dda8cd2700e5306d2ed74886b66ad7ccfb42
+                    exit(77)
                 else:
                     raise ValueError("Required module cannot be imported and is not builtin: %s" % module)
             else:
