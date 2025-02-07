@@ -26,17 +26,23 @@ The original goal of this project was to create an initramfs suitable for decryp
 ### Auto-detection
 
 * Root mount, using `/proc/mounts`. `root=` and `rootflags=` can be used but are not required
-* LUKS auto-configuration and validation for the root mount
-* Rootfs LVM, including under LUKS, is auto-mounted
 * MDRAID auto-configuration for the root mount
-* BTRFS root subvolumes are automatically detected, but can be overridden or `subvol_selector` can be used to select a subvolume at boot time
+* LUKS auto-configuration and validation for the root mount
+  - LUKS under LVM support
+  - LUKS under MDRAID support
+* LVM based root volumes are auto-mounted
+* BTRFS root subvolumes are automatically detected to `root_subvol`
+    - `subvol_selector` can be used to select a subvolume at boot time
 * `/usr` auto-mounting if the init system requires it
 * Auto-detection of kernel modules required by the storage device used by the root filesystem
+* Init system/target auto-detection
 
 ### Validation
 
 * Configuration validation against the host config in `validate` mode
-* Static output image checks
+* LUKS header and crypto backend validation
+* Imported binary and shell function collision detection
+* Static output image checks, ensuring necessary files are packed
 * QEMU based test framework with `--test` or using the `ugrd.base.test` module
 
 ### Example config and features
@@ -55,6 +61,7 @@ The original goal of this project was to create an initramfs suitable for decryp
   - Device nodes are created within the CPIO only, so true root privileges are not required
   - Hardlinks are automatically created for files with matching SHA256 hashes
   - Automatic xz compression
+* "merged usr" symlinks are creatd by default and can be disabled by setting `merge_usr = false`
 * ZSH and BASH autocompletion for the `ugrd` command
 * Basic hibernation/resume support with `ugrd.fs.resume`
 * Similar usage/arguments as Dracut
@@ -93,6 +100,10 @@ The following root filesystems have been tested:
 
 > The root mount can automatically be mounted under an overlay filesystem by using the `ugrd.fs.overlayfs` module.
 
+The following filesystems have limited support:
+
+* BCACHEFS
+
 Additionally, the following filesystems have been tested for non-root mounts:
 
 * FAT32
@@ -108,4 +119,3 @@ If the required kernel module is not built into the kernel, and the filesystem i
 ## Docs
 
 Additional documentation can be found in the [docs](docs) directory.
-
