@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "6.6.2"
+__version__ = "6.6.3"
 
 from pathlib import Path
 from re import search
@@ -734,6 +734,9 @@ def mount_fstab(self) -> list[str]:
     Keeps re-attempting with mount_timeout or rootdelay until successful.
     mount_retries sets the number of times to retry the mount, infinite otherwise.
     """
+    if not self._get_build_path("/etc/fstab").exists():
+        return self.logger.warning("No initramfs fstab found, skipping mount_fstab.")
+
     out = [
         'einfo "Attempting to mount all filesystems."',
         f"timeout=$(readvar rootdelay {self.get('mount_timeout', 1)})",
