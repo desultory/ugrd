@@ -195,23 +195,36 @@ class GeneratorHelpers:
         target.symlink_to(source)
 
     def _run(self, args: list[str], timeout=None, fail_silent=False, fail_hard=True) -> CompletedProcess:
-        """Runs a command, returns the CompletedProcess object"""
+        """Runs a command, returns the CompletedProcess object on success.
+        If a timeout is set, the command will fail hard if it times out.
+        If fail_silent is set, non-zero return codes will not log stderr/stdout.
+        If fail_hard is set, non-zero return codes will raise a RuntimeError.
+        """
+
+        def print_err(ret) -> None:
+            if args := ret.args:
+                if isinstance(args, tuple):
+                    args = args[0]  # When there's a timeout, args is a (args, timeout) tuple
+                self.logger.error("Failed command: %s" % colorize(" ".join(args), "red", bright=True))
+            if stdout := ret.stdout:
+                self.logger.error("Command output:\n%s" % stdout.decode())
+            if stderr := ret.stderr:
+                self.logger.error("Command error:\n%s" % stderr.decode())
+
         timeout = timeout or self.timeout
         cmd_args = [str(arg) for arg in args]
         self.logger.debug("Running command: %s" % " ".join(cmd_args))
         try:
             cmd = run(cmd_args, capture_output=True, timeout=timeout)
         except TimeoutExpired as e:
-            self.logger.error("Command output:\n%s" % e.stdout.decode())
-            self.logger.error("Command error:\n%s" % e.stderr.decode())
+            # Always fail hard for timeouts
+            print_err(e)
             raise RuntimeError("[%ds] Command timed out: %s" % (timeout, [str(arg) for arg in cmd_args])) from e
 
         if cmd.returncode != 0:
             if not fail_silent:
-                self.logger.error("Failed to run command: %s" % colorize(" ".join(cmd.args), "red", bright=True))
-                self.logger.error("Command output:\n%s" % cmd.stdout.decode())
-                self.logger.error("Command error:\n%s" % cmd.stderr.decode())
-            if fail_hard:
+                print_err(cmd)  # Print the full error output if not failing silently
+            if fail_hard:  # Fail hard means raise an exception
                 raise RuntimeError("Failed to run command: %s" % " ".join(cmd.args))
 
         return cmd
