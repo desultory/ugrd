@@ -3,12 +3,39 @@ __version__ = "1.2.2"
 from tempfile import TemporaryDirectory
 
 from zenlib.util import colorize, contains
-
+from time import sleep
 
 @contains("test_flag", "A test flag must be set to create a test image", raise_exception=True)
 def init_banner(self):
     """Initialize the test image banner, set a random flag if not set."""
     self["banner"] = f"echo {self['test_flag']}"
+
+@contains("test_resume")
+def resume_tests(self):
+    return [
+        'if [ "$(</sys/power/resume)" != "0:0" ] ; then',
+        '   [ -e "/resumed" ] && (rm /resumed ; echo c > /proc/sysrq-trigger)',
+        # Set correct resume parameters
+        '   echo reboot > /sys/power/disk',
+
+        # trigger resume
+        '   echo disk > /sys/power/state',
+        '   [ -e "/resume" ] || echo c > /proc/sysrq-trigger',
+
+        # if we reach this point, resume was successful
+        # reset environment in case resume needs to be rerun
+        '   rm /resumed',
+        '   echo "Resume completed without error.',
+        'else',
+        '   echo "No resume device found! Resume test not possible!',
+        'fi',
+    ]
+
+def complete_tests(self):
+    return [
+        'echo s > /proc/sysrq-trigger',
+        'echo o > /proc/sysrq-trigger',
+    ]
 
 
 def _allocate_image(self, image_path, padding=0):
@@ -98,6 +125,33 @@ def make_test_image(self):
     else:
         _allocate_image(self, image_path)
 
+    loopback = None
+    if self.get("test_resume"):
+        try:
+            self._run(["sgdisk", "-og", image_path])
+            self._run(["sgdisk", "-n", "1:0:+256", image_path])
+            self._run(["sgdisk", "-n", "2:0", image_path])
+        except RuntimeError as e:
+            raise RuntimeError("Failed to partition test disk: %s", e)
+
+        try:
+            out = self._run(["losetup", "--show", "-fP", image_path])
+            loopback = out.stdout.decode('utf-8').strip()
+
+            image_path = f"{loopback}p2"
+        except RuntimeError as e:
+            raise RuntimeError("Failed to allocate loopback device for disk creation: %s", e)
+        
+        # sleep for 100ms, to give the loopback device time to scan for partitions
+        # usually fast, but losetup doesn't wait for this to complete before returning.
+        # TODO: replace with an proper check/wait loop
+        sleep(0.100)
+
+        try:
+            self._run(["mkswap", "-U", self["test_swap_uuid"], f"{loopback}p1"])
+        except RuntimeError as e:
+            raise RuntimeError("Failed to create swap partition on test disk: %s", e)
+
     if rootfs_type == "ext4":
         self._run(["mkfs", "-t", rootfs_type, "-d", build_dir, "-U", rootfs_uuid, "-F", image_path])
     elif rootfs_type == "btrfs":
@@ -127,7 +181,13 @@ def make_test_image(self):
         self._run(["mkfs.ext4", "-d", squashfs_image.parent, "-L", self["livecd_label"], image_path])
     else:
         raise NotImplementedError("Unsupported test rootfs type: %s" % rootfs_type)
+    
+    # Clean up loopback device used to access test image partitions
+    if loopback:
+        self.logger.info("Closing test image loopback device: %s", colorize(loopback, "magenta"))
+        self._run(["losetup", "-d", loopback])
 
     if self.get("cryptsetup"):  # Leave it open in the event of failure, close it before executing tests
         self.logger.info("Closing LUKS image: %s" % colorize(image_path, "magenta"))
         self._run(["cryptsetup", "luksClose", "test_image"])
+
