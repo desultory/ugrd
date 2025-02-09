@@ -9,6 +9,8 @@ modules = [
 out_dir = "initramfs_test"
 test_memory = '2G'
 
+random_build_dir = true
+
 #kernel_version = "6.6.35-gentoo-dist"
 #test_kernel = "/boot/vmlinuz-6.6.35-gentoo-dist"
 cpio_compression = false
