@@ -62,3 +62,13 @@ def handle_early_resume(self) -> None:
 def handle_late_resume(self) -> None:
     self.logger.warning("[late_resume] enabled, this can result in data loss if filesystems are modified before resuming. Read the docs for more info.")
     return handle_early_resume(self)  # At the moment it's the same code but delayed, will change when more features are added
+
+@contains("test_resume")
+def test_init_swap_uuid(self):
+    if "test_cpu" in self:
+        from uuid import uuid4
+        self["test_swap_uuid"] = swap_uuid = uuid4()
+        
+        # append to test kernel cmdline and adjust planned image size to allow enough space
+        self["test_cmdline"] = f'{self.get("test_cmdline")} resume=UUID={swap_uuid}'
+        self["test_image_size"] = 256 + self.get("test_image_size")
