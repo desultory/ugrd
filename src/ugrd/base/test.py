@@ -163,7 +163,10 @@ def test_image(self):
             if self["test_flag"] in line:
                 self.logger.info("Test flag found in output: %s", c_(line, "green"))
                 break
-            elif line.endswith("exitcode=0x00000000"):
+            elif (
+                line.endswith("exitcode=0x00000000")
+                or "---[ end Kernel panic - not syncing: sysrq triggered crash ]---" in line
+            ):
                 failed = True
                 break
             elif "press space" in line.lower():
