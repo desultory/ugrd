@@ -3,13 +3,15 @@ test_rootfs_build_dir = 'initramfs_test_rootfs'
 test_image_size = 16
 
 test_copy_config = ["_mounts", "mounts", "out_dir", "tmpdir", "clean", "test_image_size", "test_no_rootfs", "test_flag", "cryptsetup"]
+kmod_init = ["ata_piix", "sd_mod"]
 
 test_memory = '256M'
 test_cpu = 'host'
 test_arch = 'x86_64'
 test_timeout = 15
 test_cmdline = 'console=ttyS0,115200 panic=1'
-qemu_bool_args = ['nographic', 'no-reboot', 'enable-kvm']
+#qemu_bool_args = ['nographic', 'no-reboot', 'enable-kvm']
+qemu_bool_args = ['nographic', 'enable-kvm' ]
 
 [imports.build_pre]
 "ugrd.base.test" = [ "init_test_vars" ]
