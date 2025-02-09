@@ -2,11 +2,15 @@ from pathlib import Path
 from shutil import copy2
 from subprocess import CompletedProcess, TimeoutExpired, run
 from typing import Union
+from uuid import uuid4
 
 from zenlib.util import colorize, pretty_print
 
-__version__ = "1.6.1"
+__version__ = "1.6.2"
 __author__ = "desultory"
+
+
+_RANDOM_BUILD_ID = str(uuid4())
 
 
 def get_subpath(path: Path, subpath: Union[Path, str]) -> Path:
@@ -33,8 +37,13 @@ class GeneratorHelpers:
         return get_subpath(get_subpath(self.tmpdir, self.out_dir), path)
 
     def _get_build_path(self, path: Union[Path, str]) -> Path:
-        """Returns the path relative to the build directory, under the tmpdir."""
-        return get_subpath(get_subpath(self.tmpdir, self.build_dir), path)
+        """Returns the path relative to the build directory, under the tmpdir.
+        if random_build_dir is true, appends a uuid4() to the build directory."""
+        if self.random_build_dir:
+            build_dir = self.build_dir.with_name(self.build_dir.name + "-" + _RANDOM_BUILD_ID)
+        else:
+            build_dir = self.build_dir
+        return get_subpath(get_subpath(self.tmpdir, build_dir), path)
 
     def _mkdir(self, path: Path, resolve_build=True) -> None:
         """

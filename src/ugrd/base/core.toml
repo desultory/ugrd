@@ -54,6 +54,7 @@ timeout = "int"  # The timeout for _run commands, defaults to 15 seconds
 _custom_init_file = "str"  # Add the _custom_init_file propety, used to set where the custom init file is located
 tmpdir = "Path"  # The base directory for builds
 build_dir = "Path"  # The directory where the initramfs is built
+random_build_dir = "bool"  # If true, a random build directory will be used
 build_logging = "bool" # If true, additional build information will be logged to the console
 _build_log_level = "int"  # The level of logging to use for the build log, set to 10 by default and incremeted by if build_log is true (min 20)
 symlinks = "dict"  # Symlinks dict, defines the symlinks to be made in the initramfs
