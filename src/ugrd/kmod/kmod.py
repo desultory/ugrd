@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "3.2.3"
+__version__ = "3.3.0"
 
 from pathlib import Path
 from platform import uname
@@ -93,23 +93,19 @@ def _get_kmod_info(self, module: str):
 
 @contains("kmod_autodetect_lspci", "kmod_autodetect_lspci is not enabled, skipping.")
 def _autodetect_modules_lspci(self) -> None:
-    """Gets the name of all kernel modules being used by hardware visible in lspci -k."""
-    try:
-        cmd = self._run(["lspci", "-k"])
-    except RuntimeError as e:
-        raise DependencyResolutionError("Failed to get list of kernel modules") from e
+    """Uses /sys/bus/pci/drivers to get a list of all kernel modules.
+    Similar to lspci -k."""
     lspci_kmods = set()
-    # Iterate over all output lines
-    for line in cmd.stdout.decode("utf-8").split("\n"):
-        # If the line contains the string 'Kernel modules:' or 'Kernel driver in use:', it contains the name of a kernel module
-        if "Kernel modules:" in line or "Kernel driver in use:" in line:
-            module = line.split(":")[1]
-            if "," in module:
-                # If there are multiple modules, split them and add them to the module set
-                for module in module.split(","):
-                    lspci_kmods.add(module.strip())
-            else:
-                lspci_kmods.add(module.strip())
+    for driver in Path('/sys/bus/pci/drivers').iterdir():
+        if not driver.is_dir():
+            self.logger.debug("Skipping non-directory: %s" % driver)
+            continue
+        module = driver / "module"
+        if not module.exists():
+            self.logger.debug("Skipping driver without module: %s" % driver)
+            continue
+        lspci_kmods.add(module.resolve().name)
+        self.logger.debug("[%s] Autodetected kernel module: %s" % (driver, module.resolve().name))
 
     self["_kmod_auto"] = list(lspci_kmods)
 
