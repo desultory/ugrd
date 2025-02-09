@@ -98,7 +98,9 @@ class InitramfsGenerator(GeneratorHelpers):
         If force_include is set, forces the function to be included in the shell profile.
         if force_exclude is set, does not include the output of the function in the shell profile.
         """
-        self.logger.log(self["_build_log_level"], "Running function: %s" % function.__name__)
+        self.logger.log(
+            self["_build_log_level"], "Running function: %s" % colorize(function.__name__, "blue", bold=True)
+        )
 
         if function_output := function(self):
             if isinstance(function_output, list) and len(function_output) == 1:
