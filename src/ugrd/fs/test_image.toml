@@ -9,6 +9,12 @@ _cryptsetup_root = "root"
 [imports.build_pre]
 "ugrd.fs.test_image" = ["init_banner"]
 
+[imports.init_main]
+"ugrd.fs.test_image" = ["resume_tests"]
+
+[imports.init_final]
+"ugrd.fs.test_image" = ["complete_tests"]
+
 [imports.pack]
 "ugrd.fs.test_image" = ["make_test_image"]
 
@@ -21,3 +27,4 @@ _cryptsetup_root = "str"  # Define the root device for cryptsetup
 test_image_size = "int"  # Define the size of the test image in MiB
 test_flag = "str"  # Define the success flag used to determine if the test was successful
 check_included_or_mounted = "NoDupFlatList"  # Only defined to suppress errors about unknown config
+test_resume = "bool" # Enable code to test the suspend/resume pathways
