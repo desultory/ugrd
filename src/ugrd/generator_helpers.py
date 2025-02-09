@@ -6,7 +6,7 @@ from uuid import uuid4
 
 from zenlib.util import colorize, pretty_print
 
-__version__ = "1.6.2"
+__version__ = "1.6.3"
 __author__ = "desultory"
 
 
@@ -71,7 +71,7 @@ class GeneratorHelpers:
 
         if not path_dir.is_dir():
             path_dir.mkdir()
-            self.logger.log(self["_build_log_level"], "Created directory: %s" % path)
+            self.logger.log(self["_build_log_level"], "Created directory: %s" % colorize(path, "green"))
         else:
             self.logger.debug("Directory already exists: %s" % path_dir)
 
@@ -156,7 +156,9 @@ class GeneratorHelpers:
         except ValueError as e:
             raise RuntimeError("Destination path is not within the build directory: %s" % dest_path) from e
 
-        self.logger.log(self["_build_log_level"], "Copying '%s' to '%s'" % (source, dest_path))
+        self.logger.log(
+            self["_build_log_level"], "Copying '%s' to '%s'" % (colorize(source, "blue"), colorize(dest_path, "green"))
+        )
         copy2(source, dest_path)
 
     def _symlink(self, source: Union[Path, str], target: Union[Path, str]) -> None:
@@ -200,7 +202,9 @@ class GeneratorHelpers:
         if target.relative_to(self._get_build_path("/")) == source:
             return self.logger.debug("Cannot symlink to self: %s -> %s" % (target, source))
 
-        self.logger.debug("Creating symlink: %s -> %s" % (target, source))
+        self.logger.log(
+            self["_build_log_level"], "Creating symlink: %s -> %s" % (colorize(target, "green"), colorize(source, "blue"))
+        )
         target.symlink_to(source)
 
     def _run(self, args: list[str], timeout=None, fail_silent=False, fail_hard=True) -> CompletedProcess:

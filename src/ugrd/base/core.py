@@ -427,12 +427,15 @@ def _process_gz_dependencies_multi(self, dependency: Union[Path, str]) -> None:
 def _process_build_logging(self, log_build: bool) -> None:
     """Sets the build log flag."""
     build_log_level = self.get("_build_log_level", 10)
+    if log_build == self["build_logging"]:
+        # Don't re-run the setup procedure as it will bump the log level again when args are re-processed
+        return self.logger.debug("Build logging is already set to: %s" % log_build)
     if log_build:
         self["_build_log_level"] = max(build_log_level + 10, 20)
     else:
         if self["_build_log_level"] > 10:
             self.logger.warning("Resetting _build_log_level to 10, as build logging is disabled.")
-        self["_build_log_level"] = 10
+            self["_build_log_level"] = 10
     self.data["build_logging"] = log_build
 
 
