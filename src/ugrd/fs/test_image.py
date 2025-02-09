@@ -9,37 +9,43 @@ from time import sleep
 
 MIN_FS_SIZES = {"btrfs": 110, "f2fs": 50}
 
-@contains("test_flag", "A test flag must be set to create a test image", raise_exception=True)
+
 def init_banner(self):
     """Initialize the test image banner, set a random flag if not set."""
-    self["banner"] = f"echo {self['test_flag']}"
+    self["banner"] = "echo ugRD Test Image"
 
 
 @contains("test_resume")
 def resume_tests(self):
-    return [
-        'if [ "$(</sys/power/resume)" != "0:0" ] ; then',
-        '   [ -e "/resumed" ] && (rm /resumed ; echo c > /proc/sysrq-trigger)',
-        # Set correct resume parameters
-        "   echo reboot > /sys/power/disk",
-        # trigger resume
-        "   echo disk > /sys/power/state",
-        '   [ -e "/resume" ] || echo c > /proc/sysrq-trigger',
-        # if we reach this point, resume was successful
-        # reset environment in case resume needs to be rerun
-        "   rm /resumed",
-        '   echo "Resume completed without error.',
-        "else",
-        '   echo "No resume device found! Resume test not possible!',
-        "fi",
-    ]
+    return """
+        echo "Begin resume testing."
+        if [ "$(</sys/power/resume)" != "0:0" ] ; then
+            echo reboot > /sys/power/disk
+            echo 1 > /sys/power/pm_debug_messages
+
+            local SWAPDEV=/dev/$(source "/sys/dev/block/$(</sys/power/resume)/uevent" && echo $DEVNAME)
+            echo "Activating swap device ${SWAPDEV}..."
+            swapon ${SWAPDEV}
+
+            echo "Triggering test hibernation..."
+            echo disk > /sys/power/state || (echo "Suspend to disk failed!" ; echo c > /proc/sysrq-trigger)
+
+            # Assume at this point system has hibernated then resumed again
+            echo "Resume test completed without error."
+        else
+            echo "No resume device found! Resume test not possible!"
+            echo c > /proc/sysrq-trigger
+        fi
+    """
 
 
+@contains("test_flag", "A test flag must be set to create a test image", raise_exception=True)
 def complete_tests(self):
-    return [
-        "echo s > /proc/sysrq-trigger",
-        "echo o > /proc/sysrq-trigger",
-    ]
+    return f"""
+        echo {self["test_flag"]}
+        echo s > /proc/sysrq-trigger
+        echo o > /proc/sysrq-trigger
+    """
 
 
 def _allocate_image(self, image_path, padding=0):
@@ -61,12 +67,13 @@ def _allocate_image(self, image_path, padding=0):
 
     with open(image_path, "wb") as f:
         total_size = (self.test_image_size + padding) * (2**20)  # Convert MB to bytes
-        self.logger.info(f"Allocating {self.test_image_size + padding}MB test image file: { c_(f.name, 'green')}")
-        self.logger.debug(f"[{f.name}] Total bytes: { c_(total_size, 'green')}")
+        self.logger.info(f"Allocating {self.test_image_size + padding}MB test image file: {c_(f.name, 'green')}")
+        self.logger.debug(f"[{f.name}] Total bytes: {c_(total_size, 'green')}")
         f.write(b"\0" * total_size)
 
+
 def _copy_fs_contents(self, image_path, build_dir):
-    """ Mount and copy the filesystem contents into the image,
+    """Mount and copy the filesystem contents into the image,
     for filesystems which cannot be created directly from a directory"""
     try:
         with TemporaryDirectory() as tmp_dir:
@@ -151,9 +158,7 @@ def make_test_image(self):
     loopback = None
     if self.get("test_resume"):
         try:
-            self._run(["sgdisk", "-og", image_path])
-            self._run(["sgdisk", "-n", "1:0:+256", image_path])
-            self._run(["sgdisk", "-n", "2:0", image_path])
+            self._run(["sgdisk", "-og", "-n", "1:0:+128M", "-n", "2:0:0", image_path])
         except RuntimeError as e:
             raise RuntimeError("Failed to partition test disk: %s", e)
 
