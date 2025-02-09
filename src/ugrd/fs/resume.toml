@@ -22,8 +22,8 @@ handle_late_resume = ["crypt_init", "init_lvm"]
 
 [custom_parameters]
 late_resume = "bool"
-test_resume = "bool"
-test_swap_uuid = "str"
+test_resume = "bool" # Test hibernation/resume pathways when test is enabled
+test_swap_uuid = "str" # Define the uuid of the swap partition on the test image
 
 [import_order.before]
 handle_resume = "mount_fstab"
