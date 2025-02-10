@@ -5,10 +5,12 @@ from tempfile import TemporaryDirectory
 from zenlib.util import colorize, contains
 from time import sleep
 
+
 @contains("test_flag", "A test flag must be set to create a test image", raise_exception=True)
 def init_banner(self):
     """Initialize the test image banner, set a random flag if not set."""
     self["banner"] = f"echo {self['test_flag']}"
+
 
 @contains("test_resume")
 def resume_tests(self):
@@ -16,25 +18,24 @@ def resume_tests(self):
         'if [ "$(</sys/power/resume)" != "0:0" ] ; then',
         '   [ -e "/resumed" ] && (rm /resumed ; echo c > /proc/sysrq-trigger)',
         # Set correct resume parameters
-        '   echo reboot > /sys/power/disk',
-
+        "   echo reboot > /sys/power/disk",
         # trigger resume
-        '   echo disk > /sys/power/state',
+        "   echo disk > /sys/power/state",
         '   [ -e "/resume" ] || echo c > /proc/sysrq-trigger',
-
         # if we reach this point, resume was successful
         # reset environment in case resume needs to be rerun
-        '   rm /resumed',
+        "   rm /resumed",
         '   echo "Resume completed without error.',
-        'else',
+        "else",
         '   echo "No resume device found! Resume test not possible!',
-        'fi',
+        "fi",
     ]
+
 
 def complete_tests(self):
     return [
-        'echo s > /proc/sysrq-trigger',
-        'echo o > /proc/sysrq-trigger',
+        "echo s > /proc/sysrq-trigger",
+        "echo o > /proc/sysrq-trigger",
     ]
 
 
@@ -136,12 +137,12 @@ def make_test_image(self):
 
         try:
             out = self._run(["losetup", "--show", "-fP", image_path])
-            loopback = out.stdout.decode('utf-8').strip()
+            loopback = out.stdout.decode("utf-8").strip()
 
             image_path = f"{loopback}p2"
         except RuntimeError as e:
             raise RuntimeError("Failed to allocate loopback device for disk creation: %s", e)
-        
+
         # sleep for 100ms, to give the loopback device time to scan for partitions
         # usually fast, but losetup doesn't wait for this to complete before returning.
         # TODO: replace with an proper check/wait loop
@@ -181,7 +182,7 @@ def make_test_image(self):
         self._run(["mkfs.ext4", "-d", squashfs_image.parent, "-L", self["livecd_label"], image_path])
     else:
         raise NotImplementedError("Unsupported test rootfs type: %s" % rootfs_type)
-    
+
     # Clean up loopback device used to access test image partitions
     if loopback:
         self.logger.info("Closing test image loopback device: %s", colorize(loopback, "magenta"))
@@ -190,4 +191,3 @@ def make_test_image(self):
     if self.get("cryptsetup"):  # Leave it open in the event of failure, close it before executing tests
         self.logger.info("Closing LUKS image: %s" % colorize(image_path, "magenta"))
         self._run(["cryptsetup", "luksClose", "test_image"])
-
