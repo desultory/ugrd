@@ -5,7 +5,7 @@ test_copy_config = [ "test_resume", "test_swap_uuid" ]
 [imports.build_pre]
 "ugrd.fs.resume" = [ "test_init_swap_uuid" ]
 
-[imports.init_main] 
+[imports.init_main]
 "ugrd.fs.resume" = [ "handle_early_resume" ]
 
 [imports.init_premount]
