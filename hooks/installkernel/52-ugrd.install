@@ -32,7 +32,12 @@ main() {
 
 	[[ ${EUID} -eq 0 ]] || die "Please run this script as root"
 
-	ugrd --no-rotate --kver "${ver}" "${initrd}" || die "Failed to generate initramfs"
+	ugrd --no-rotate --kver "${ver}" "${initrd}"
+	case $? in
+		0) einfo "Generated initramfs for kernel: ${ver}";;
+		77) ewarn "Missing ZFS kernel module for kernel: ${ver}" && exit 77;;
+		*) die "Failed to generate initramfs for kernel ${ver}";;
+	esac
 }
 
 main
