@@ -253,6 +253,11 @@ class InitramfsGenerator(GeneratorHelpers):
         self.logger.debug("Library paths: %s" % library_paths)
         out.append(f"export LD_LIBRARY_PATH={library_paths}")
 
+        # Add search paths
+        search_paths = ":".join(self["binary_search_paths"])
+        self.logger.debug("Search paths: %s" % search_paths)
+        out.append(f"export PATH={search_paths}")
+
         for func_name, func_content in self.included_functions.items():
             out.append("\n\n" + func_name + "() {")
             if isinstance(func_content, str):
