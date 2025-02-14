@@ -31,14 +31,6 @@ def _process_loglevel(self, loglevel: int) -> None:
     self["exports"]["loglevel"] = loglevel
 
 
-def _get_shell_path(self, shell_name) -> Path:
-    """Gets the real path to the shell binary."""
-    if shell := which(shell_name):
-        return Path(shell).resolve()
-    else:
-        raise AutodetectError(f"Shell '{shell_name}' not found.")
-
-
 @contains("hostonly", "Skipping init_target autodetection, hostonly is not set.", log_level=30)
 @contains("autodetect_init", log_level=30)
 @unset("init_target", "init_target is already set, skipping autodetection.", log_level=30)
