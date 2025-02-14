@@ -8,7 +8,8 @@ find_libgcc = true
 merge_usr = true
 hostonly = true
 validate = true
-library_paths = [ "/lib64" ]
+library_paths = [ "/lib", "/lib64" ]
+binary_search_paths = [ "/bin", "/sbin", "/usr/bin", "/usr/sbin" ]
 old_count = 1
 timeout = 15
 
@@ -68,6 +69,7 @@ library_paths = "NoDupFlatList"  # library_paths property, used to define the li
 find_libgcc = "bool"  # If true, the initramfs will search for libgcc_s.so.1 and add it to the initramfs
 libraries = "NoDupFlatList"  # Additional libraries, by name, added to the initramfs
 binaries = "NoDupFlatList"  # Binaries which should be included in the intiramfs, dependencies resolved with lddtree
+binary_search_paths = "NoDupFlatList"  # Binary paths, used to define the paths to search for binaries
 copies = "dict"  # Copies dict, defines the files to be copied to the initramfs
 nodes = "dict"  # Nodes dict, defines the device nodes to be created
 paths = "NoDupFlatList"  # Paths to be created in the initramfs

@@ -143,8 +143,9 @@ def handle_usr_symlinks(self) -> None:
     for target, source in symlinks:
         host_path = Path("/").joinpath(target)
         if host_path.is_dir() and not host_path.is_symlink():
-            self.logger.warning("Host path is a directory: %s" % host_path)
+            self.logger.warning("Host path is a directory, skipping symlink creation: %s" % host_path)
             self.logger.warning("Set `merge_usr = false` to disable /usr merge.")
+            continue
         self._symlink(source, target)
 
 
@@ -349,7 +350,7 @@ def _process_binaries_multi(self, binary: str) -> None:
 
     self.logger.debug("Adding binary: %s" % binary)
     self["binaries"].append(binary)
-
+    self["binary_search_paths"] = str(dependencies[0].parent)  # Add the binary path to the search paths
 
 def _validate_dependency(self, dependency: Union[Path, str]) -> None:
     """Performas basic validation and normalization for dependencies."""
