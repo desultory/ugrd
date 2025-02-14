@@ -143,8 +143,9 @@ def handle_usr_symlinks(self) -> None:
     for target, source in symlinks:
         host_path = Path("/").joinpath(target)
         if host_path.is_dir() and not host_path.is_symlink():
-            self.logger.warning("Host path is a directory: %s" % host_path)
+            self.logger.warning("Host path is a directory, skipping symlink creation: %s" % host_path)
             self.logger.warning("Set `merge_usr = false` to disable /usr merge.")
+            continue
         self._symlink(source, target)
 
 
