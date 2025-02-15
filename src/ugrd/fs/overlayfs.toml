@@ -6,3 +6,6 @@ run_dirs = ["upperdir", "workdir", "lowerdir"]
 
 [imports.init_mount]
 "ugrd.fs.overlayfs" = ["mount_overlayfs"]
+
+[import_order.after]
+"mount_overlayfs" = ["mount_root"]

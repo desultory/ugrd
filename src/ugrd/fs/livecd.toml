@@ -1,5 +1,7 @@
 modules = ["ugrd.fs.overlayfs"]
 
+cmdline_strings = [ "livecd_label", "squashfs_image" ]
+
 squashfs_image = 'image.squashfs'
 hostonly = false
 
@@ -9,7 +11,15 @@ run_dirs = ['livecd']
 test_copy_config = ["squashfs_image", "livecd_label"]
 
 [imports.build_pre]
-"ugrd.fs.livecd" = ["generate_livecd_mount", "set_squashfs_mount"]
+"ugrd.fs.livecd" = [ "set_livecd_mount" ]
+
+[imports.init_mount]
+"ugrd.fs.livecd" = [ "mount_livecd", "set_squashfs_root_source" ]
+
+[import_order.before]
+"set_squashfs_root_source" = "mount_root"  # The squashfs must be mounted before the root (overlay)
+"mount_livecd" = "set_squashfs_root_source"  # The root source should be checked before mounting
+
 
 [custom_parameters]
 squashfs_image = "Path"  # the path to the squashfs image (at runtime)
