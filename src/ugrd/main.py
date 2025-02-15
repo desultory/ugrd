@@ -133,6 +133,7 @@ def main():
             "help": "Tests the image with qemu using a specific kernel file.",
         },
         {"flags": ["--livecd-label"], "action": "store", "help": "Sets the label for the livecd"},
+        {"flags": ["--squashfs-image"], "action": "store", "help": "Sets the filename for the livede squashfs image"},
         {
             "flags": ["--force-out"],
             "action": "store_true",
