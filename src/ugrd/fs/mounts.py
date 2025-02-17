@@ -410,37 +410,6 @@ def get_zpool_info(self, poolname=None) -> Union[dict, None]:
         return self["_zpool_info"][poolname]
 
 
-@contains("hostonly", "Skipping init mount autodetection, hostonly mode is disabled.", log_level=30)
-@contains("autodetect_init_mount", "Init mount autodetection disabled, skipping.", log_level=30)
-@contains("init_target", "init_target must be set", raise_exception=True)
-def autodetect_init_mount(self) -> None:
-    """Checks the parent directories of init_target, if the path is a mountpoint, add it to late_mounts."""
-    init_mount = _find_mountpoint(self, self["init_target"])
-    if init_mount == "/":
-        return
-
-    if init_mount in self["late_mounts"]:
-        return self.logger.debug("Init mount already detected: %s" % init_mount)
-
-    if init_mount not in self["_mounts"]:
-        raise AutodetectError("Init mount not found in host mounts: %s" % init_mount)
-
-    self.logger.info("Detected init mount: %s" % colorize(init_mount, "cyan"))
-    mount_name = init_mount.removeprefix("/")
-    mount_dest = init_mount
-    mount_device = self["_mounts"][init_mount]["device"]
-    mount_type = self["_mounts"][init_mount]["fstype"]
-    mount_options = self["_mounts"][init_mount]["options"]
-    blkid_info = self["_blkid_info"][mount_device]
-    mount_source_type, mount_source = _get_mount_source_type(self, blkid_info, with_val=True)
-    self["late_mounts"][mount_name] = {
-        "destination": mount_dest,
-        mount_source_type: mount_source,
-        "type": mount_type,
-        "options": mount_options,
-    }
-
-
 @contains("hostonly", "Skipping virtual block device enumeration, hostonly mode is disabled.", log_level=30)
 def get_virtual_block_info(self) -> dict:
     """Populates the virtual block device info. (previously device mapper only)
@@ -673,6 +642,25 @@ def autodetect_luks(self, source_dev, dm_num, blkid_info) -> None:
     )
 
 
+@contains("hostonly", "Skipping init mount autodetection, hostonly mode is disabled.", log_level=30)
+@contains("autodetect_init_mount", "Init mount autodetection disabled, skipping.", log_level=30)
+@contains("init_target", "init_target must be set", raise_exception=True)
+def autodetect_init_mount(self) -> None:
+    """Checks the parent directories of init_target, if the path is a mountpoint, add it to late_mounts."""
+    init_mount = _find_mountpoint(self, self["init_target"])
+    if init_mount == "/":
+        return
+
+    if init_mount in self["late_mounts"]:
+        return self.logger.debug("Init mount already detected: %s" % init_mount)
+
+    if init_mount not in self["_mounts"]:
+        raise AutodetectError("Init mount not found in host mounts: %s" % init_mount)
+
+    self.logger.info("Detected init mount: %s" % colorize(init_mount, "cyan"))
+    _autodetect_mount(self, init_mount, "late_mounts")
+
+
 @contains("autodetect_root", "Skipping root autodetection, autodetect_root is disabled.", log_level=30)
 @contains("hostonly", "Skipping root autodetection, hostonly mode is disabled.", log_level=30)
 def autodetect_root(self) -> None:
@@ -739,7 +727,7 @@ def _autodetect_mount(self, mountpoint, mount_class="mounts") -> str:
     if mount_class == "mounts":
         mount_config = {mount_name: {"options": ["ro"]}}
     else:  # For other mounts, use the existing mount config
-        mount_config = {mount_name: {"options": mount_info.get("options", ["default"])}}
+        mount_config = {mount_name: {"options": self["_mounts"][mountpoint].get("options", ["default"])}}
 
     fs_type = mount_info.get("type", fs_type) or "auto"
     if fs_type == "auto":
