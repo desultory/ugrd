@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "0.6.0"
+__version__ = "0.7.0"
 
 from zenlib.util import contains
 
@@ -13,13 +13,18 @@ def mount_livecd(self) -> str:
     Because this mount is made manulally, no mount entry/validation/unmounting is done
     All mount handling happens strictly at runtime
     """
-    return """
+    return f"""
     livecd_label="$(readvar livecd_label)"
     if [ -z "$livecd_label" ]; then
         rd_fail "livecd_label must be set to the label of the livecd storage root."
     fi
     einfo "Mounting livecd with label: $livecd_label"
-    mount LABEL="$livecd_label" /run/livecd || rd_fail "Failed to mount livecd with label: $livecd_label"
+    while ! mount LABEL="$livecd_label" /run/livecd 2>/dev/null; do
+        eerror "Failed to mount livecd with label: $livecd_label"
+        if prompt_user "Press enter to break, waiting: {self["mount_timeout"]}s" {self["mount_timeout"]}; then
+            rd_fail "Failed to mount livecd with label: $livecd_label"
+        fi
+    done
     """
 
 
