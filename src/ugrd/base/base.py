@@ -127,7 +127,7 @@ def do_switch_root(self) -> str:
         _find_init || rd_fail "Unable to find init."  # Redefines init on success
         init_target=$(readvar init)
     fi
-    einfo "Switching root to: $switch_root_Target $init_target"
+    einfo "Switching root to: $switch_root_target $init_target"
     klog "[UGRD $(readvar VERSION)] Running init: $init_target"
     einfo "Cleaning up /run/ugrd"
     edebug "$(rm -rfv /run/ugrd)"
