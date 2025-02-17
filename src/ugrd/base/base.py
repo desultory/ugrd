@@ -308,20 +308,20 @@ def klog(self) -> str:
 def edebug(self) -> str:
     """Returns a shell function like edebug."""
     return r"""
-    output="$(printf "%s" "${*}")"
+    output="$(printf "%b" "${*}")"
     if check_var quiet; then
         return
     fi
     if [ "$(readvar debug)" != "1" ]; then
         return
     fi
-    printf "\033[1;34m *\033[0m %s\n" "${output}"
+    printf "\033[1;34m *\033[0m %b\n" "${output}"
     """
 
 
 def einfo(self) -> list[str]:
     """Returns a shell function like einfo."""
-    output = ['output="$(printf "%s" "${*}")"']
+    output = ['output="$(printf "%b" "${*}")"']
     if "ugrd.base.plymouth" in self["modules"]:
         output += [
             "if plymouth --ping; then",
@@ -330,7 +330,7 @@ def einfo(self) -> list[str]:
             "fi",
         ]
 
-    output += ["if check_var quiet; then", "    return", "fi", r'printf "\033[1;32m *\033[0m %s\n" "${output}"']
+    output += ["if check_var quiet; then", "    return", "fi", r'printf "\033[1;32m *\033[0m %b\n" "${output}"']
     return output
 
 
@@ -338,7 +338,7 @@ def ewarn(self) -> list[str]:
     """Returns a shell function like ewarn.
     If plymouth is running, it displays a message instead of echoing.
     """
-    output = ['output="$(printf "%s" "${*}")"']
+    output = ['output="$(printf "%b" "${*}")"']
     if "ugrd.base.plymouth" in self["modules"]:
         output += [
             "if plymouth --ping; then",  # Always show the message if plymouth is running
@@ -351,14 +351,14 @@ def ewarn(self) -> list[str]:
         "if check_var quiet; then",
         "    return",
         "fi",
-        r'printf "\033[1;33m *\033[0m %s\n" "${output}"',
+        r'printf "\033[1;33m *\033[0m %b\n" "${output}"',
     ]
     return output
 
 
 def eerror(self) -> list[str]:
     """Returns a shell function like eerror."""
-    output = ['output="$(printf "%s" "${*}")"']
+    output = ['output="$(printf "%b" "${*}")"']
     if "ugrd.base.plymouth" in self["modules"]:
         output += [
             "if plymouth --ping; then",
@@ -367,5 +367,5 @@ def eerror(self) -> list[str]:
             "fi",
         ]
     else:
-        output += [r'printf "\033[1;31m *\033[0m %s\n" "${output}"']
+        output += [r'printf "\033[1;31m *\033[0m %b\n" "${output}"']
     return output
