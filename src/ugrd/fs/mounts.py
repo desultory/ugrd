@@ -647,6 +647,9 @@ def autodetect_luks(self, source_dev, dm_num, blkid_info) -> None:
 @contains("init_target", "init_target must be set", raise_exception=True)
 def autodetect_init_mount(self) -> None:
     """Checks the parent directories of init_target, if the path is a mountpoint, add it to late_mounts."""
+    for mountpoint in ["/usr", "/var", "/etc"]:
+        _autodetect_mount(self, mountpoint, "late_mounts", missing_ok=True)
+
     init_mount = _find_mountpoint(self, self["init_target"])
     if init_mount == "/":
         return
@@ -685,12 +688,14 @@ def autodetect_root(self) -> None:
             _autodetect_dm(self, "/")
 
 
-def _autodetect_mount(self, mountpoint, mount_class="mounts") -> str:
+def _autodetect_mount(self, mountpoint, mount_class="mounts", missing_ok=False) -> str:
     """Sets mount config for the specified mountpoint, in the specified mount class.
 
     Returns the "real" device path for the mountpoint.
     """
     if mountpoint not in self["_mounts"]:
+        if missing_ok:
+            return self.logger.debug("Mountpoint not found in host mounts: %s" % mountpoint)
         self.logger.error("Host mounts:\n%s" % pretty_print(self["_mounts"]))
         raise AutodetectError("auto_mount mountpoint not found in host mounts: %s" % mountpoint)
 
