@@ -21,7 +21,6 @@ autodetect_root_luks = true
 autodetect_root_lvm = true
 autodetect_root_raid = true
 autodetect_init_mount = true
-late_fstab = "/etc/fstab.late"
 
 [imports.config_processing]
 "ugrd.fs.mounts" = [ "_process_run_dirs_multi",
@@ -48,7 +47,7 @@ late_fstab = "/etc/fstab.late"
 "ugrd.fs.mounts" = [ "mount_fstab" ]
 
 [imports.init_mount]
-"ugrd.fs.mounts" = [ "mount_root" ]
+"ugrd.fs.mounts" = [ "mount_root", "mount_late" ]
 
 [imports.functions]
 "ugrd.fs.mounts" = [ "mount_default_root" ]
@@ -65,7 +64,6 @@ mounts = "dict"  # Add the mounts property, used to define the mounts to be made
 mount_devpts = "bool"  # Whether or not to mount devpts
 run_dirs = "NoDupFlatList"  # A list of directories to be created under /run
 late_mounts = "dict"  # Like mounts, but run after the root is mounted
-late_fstab = "str"  # The path to the late_fstab file
 auto_mounts = "NoDupFlatList"  # A list of mounts to be automatically added to the mounts list
 mount_timeout = "float"  # The time to wait between mount attempts
 mount_retries = "int"  # The number of times to re-attempt mounting the fstab, infinite if not set
