@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "6.6.3"
+__version__ = "6.6.4"
 
 from pathlib import Path
 from re import search
@@ -327,13 +327,15 @@ def umount_fstab(self) -> list[str]:
     return out
 
 
-@contains("hostonly", "Skipping mount autodetection, hostonly mode is disabled.", log_level=30)
 def get_mounts_info(self) -> None:
     """Gets the mount info for all devices."""
-    with open("/proc/mounts", "r") as mounts:
-        for line in mounts:
-            device, mountpoint, fstype, options, _, _ = line.split()
-            self["_mounts"][mountpoint] = {"device": device, "fstype": fstype, "options": options.split(",")}
+    try:
+        with open("/proc/mounts", "r") as mounts:
+            for line in mounts:
+                device, mountpoint, fstype, options, _, _ = line.split()
+                self["_mounts"][mountpoint] = {"device": device, "fstype": fstype, "options": options.split(",")}
+    except FileNotFoundError:
+        self.logger.critical("Failed to get mount info, detection and validation may fail!!!")
 
     self.logger.debug("Mount info: %s" % pretty_print(self["_mounts"]))
 

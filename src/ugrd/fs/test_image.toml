@@ -14,6 +14,7 @@ _cryptsetup_root = "root"
 
 [custom_parameters]
 shebang = "str"  # Add the shebang property, because the test mode disables the base module
+_mounts = "dict"  # For build dir check
 mounts = "dict"  # We only need the mounts dict, not the whole module
 cryptsetup = "dict"  # Same as above
 _cryptsetup_root = "str"  # Define the root device for cryptsetup
