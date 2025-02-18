@@ -42,8 +42,15 @@ def get_shell(self) -> None:
 
 @contains("clean", "Skipping cleaning build directory", log_level=30)
 def clean_build_dir(self) -> None:
-    """Cleans the build directory."""
+    """Cleans the build directory.
+    Ensures there are no active mounts in the build directory.
+    """
     build_dir = self._get_build_path("/")
+
+    if any(mount.startswith(str(build_dir)) for mount in self["_mounts"]):
+        self.logger.critical("Mount detected in build directory, stopping: %s" % build_dir)
+        self.logger.critical("Active mounts: %s" % self["_mounts"])
+        exit(1)
 
     if build_dir.is_dir():
         self.logger.warning("Cleaning build directory: %s" % colorize(build_dir, "yellow"))
