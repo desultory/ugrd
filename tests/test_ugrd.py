@@ -14,6 +14,10 @@ class TestUGRD(TestCase):
         generator = InitramfsGenerator(logger=self.logger, config="tests/fullauto.toml", cpio_compression="xz")
         generator.build()
 
+    def test_zstd(self):
+        generator = InitramfsGenerator(logger=self.logger, config="tests/fullauto.toml", cpio_compression="zstd")
+        generator.build()
+
     @expectedFailure
     def test_bad_config(self):
         generator = InitramfsGenerator(logger=self.logger, config="tests/bad_config.toml")
