@@ -274,7 +274,7 @@ This module can be enabled by adding `ugrd.fs.fakeudev` to the `modules` list.
 This module handles CPIO creation.
 
 * `mknod_cpio` (true) Only create device nodes within the CPIO.
-* `cpio_compression` (xz) Sets the compression method for the CPIO file.
+* `cpio_compression` (xz) Sets the compression method for the CPIO file, passed to PyCPIO.
 * `cpio_rotate` (true) Rotates old CPIO files, keeping `old_count` number of old files.
 
 ##### General mount options

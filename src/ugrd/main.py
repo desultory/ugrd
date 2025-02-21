@@ -4,6 +4,7 @@ from zenlib.util import get_args_n_logger, get_kwargs_from_args
 
 from ugrd.initramfs_generator import InitramfsGenerator
 
+from pycpio.errors import UnavailableCompression
 from . import AutodetectError, ValidationError
 
 
@@ -23,7 +24,6 @@ def main():
         {"flags": ["--no-clean"], "action": "store_false", "help": "disable build directory cleaning", "dest": "clean"},
         {
             "flags": ["--compress"],
-            "action": "store_true",
             "help": "compress the final image",
             "dest": "cpio_compression",
         },
@@ -176,6 +176,9 @@ def main():
     except AutodetectError as e:
         logger.error("Autodetect error occurred")
         logger.error(e, exc_info=True)
+        exit(1)
+    except UnavailableCompression as e:
+        logger.critical(e)
         exit(1)
     except Exception as e:
         logger.info("Dumping config dict:\n")
