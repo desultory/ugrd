@@ -23,7 +23,6 @@ def main():
         {"flags": ["--no-clean"], "action": "store_false", "help": "disable build directory cleaning", "dest": "clean"},
         {
             "flags": ["--compress"],
-            "action": "store_true",
             "help": "compress the final image",
             "dest": "cpio_compression",
         },
