@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "6.6.4"
+__version__ = "6.6.5"
 
 from pathlib import Path
 from re import search
@@ -413,43 +413,67 @@ def get_zpool_info(self, poolname=None) -> Union[dict, None]:
 
 
 @contains("hostonly", "Skipping virtual block device enumeration, hostonly mode is disabled.", log_level=30)
-def get_virtual_block_info(self) -> dict:
+def get_virtual_block_info(self):
     """Populates the virtual block device info. (previously device mapper only)
     Disables device mapper autodetection if no virtual block devices are found.
     """
-    if self.get("_vblk_info"):
-        self.logger.debug("Virtual device info already set.")
-        return
 
-    if not Path("/sys/devices/virtual/block").exists():
+    sys_block = Path("/sys/devices/virtual/block")
+
+    if not sys_block.exists():
         self["autodetect_root_dm"] = False
-        self.logger.warning("No virtual block devices found, disabling device mapper autodetection.")
-        return
+        return self.logger.warning("Virtual block devices unavailable, disabling device mapper autodetection.")
 
+    devices = []
     for virt_device in Path("/sys/devices/virtual/block").iterdir():
-        if virt_device.name.startswith("dm-") or virt_device.name.startswith("md"):
-            maj, minor = (virt_device / "dev").read_text().strip().split(":")
-            self["_vblk_info"][virt_device.name] = {
-                "major": maj,
-                "minor": minor,
-                "holders": [holder.name for holder in (virt_device / "holders").iterdir()],
-                "slaves": [slave.name for slave in (virt_device / "slaves").iterdir()],
-            }
-            if (virt_device / "dm").exists():
-                self["_vblk_info"][virt_device.name]["uuid"] = (virt_device / "dm/uuid").read_text().strip()
-            elif (virt_device / "md").exists():
-                self["_vblk_info"][virt_device.name]["uuid"] = (virt_device / "md/uuid").read_text().strip()
-                self["_vblk_info"][virt_device.name]["level"] = (virt_device / "md/level").read_text().strip()
+        if virt_device.name.startswith("dm-"):
+            devices.append(virt_device)
+        elif virt_device.name.startswith("md"):
+            devices.append(virt_device)
+            # Check for partitions under virt_device/md*p*
+            for part in virt_device.glob(f"{virt_device.name}p*"):
+                devices.append(part)
+
+    if not devices:
+        self["autodetect_root_dm"] = False
+        return self.logger.warning("No virtual block devices found, disabling device mapper autodetection.")
+
+
+    for virt_dev in devices:
+        maj, minor = (virt_dev / "dev").read_text().strip().split(":")
+        self["_vblk_info"][virt_dev.name] = {"major": maj, "minor": minor}
+
+        for attr in ["holders", "slaves"]:
+            # For mdraid partitions, get values from the parent md device
+            if virt_dev.name.startswith("md") and "p" in virt_dev.name:
+                target = virt_dev.parent / attr
             else:
-                raise AutodetectError("Failed to get virtual device name: %s" % virt_device.name)
+                target = virt_dev / attr
 
             try:
-                self["_vblk_info"][virt_device.name]["name"] = (virt_device / "dm/name").read_text().strip()
+                self["_vblk_info"][virt_dev.name][attr] = [val.name for val in target.iterdir()]
             except FileNotFoundError:
-                self.logger.warning(
-                    "No device mapper name found for: %s" % colorize(virt_device.name, "red", bold=True)
-                )
-                self["_vblk_info"][virt_device.name]["name"] = virt_device.name  # we can pretend
+                self.logger.warning(f"[{virt_dev.name}] Failed to get attribute: {attr}")
+
+        if (virt_dev / "dm").exists():
+            self["_vblk_info"][virt_dev.name]["uuid"] = (virt_dev / "dm/uuid").read_text().strip()
+        elif (virt_dev / "md").exists():
+            self["_vblk_info"][virt_dev.name]["uuid"] = (virt_dev / "md/uuid").read_text().strip()
+            self["_vblk_info"][virt_dev.name]["level"] = (virt_dev / "md/level").read_text().strip()
+        elif virt_dev.name.startswith("md") and "p" in virt_dev.name:
+            # Get the parent md device info
+            self["_vblk_info"][virt_dev.name]["uuid"] = (virt_dev.parent / "md/uuid").read_text().strip()
+            self["_vblk_info"][virt_dev.name]["level"] = (virt_dev.parent / "md/level").read_text().strip()
+        else:
+            raise AutodetectError("No info found for: %s" % virt_dev.name)
+
+        try:
+            self["_vblk_info"][virt_dev.name]["name"] = (virt_dev / "dm/name").read_text().strip()
+        except FileNotFoundError:
+            self.logger.warning(
+                "No device mapper name found for: %s" % colorize(virt_dev.name, "red", bold=True)
+            )
+            self["_vblk_info"][virt_dev.name]["name"] = virt_dev.name  # we can pretend
 
     if self["_vblk_info"]:
         self.logger.info("Found virtual block devices: %s" % colorize(", ".join(self["_vblk_info"].keys()), "cyan"))
