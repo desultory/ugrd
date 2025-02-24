@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "3.3.0"
+__version__ = "3.3.1"
 
 from pathlib import Path
 from platform import uname
@@ -289,8 +289,19 @@ def _add_firmware_dep(self, kmod: str, firmware: str) -> None:
     self["dependencies"] = firmware_path
 
 
-def _process_kmod_dependencies(self, kmod: str) -> None:
-    """Processes a kernel module's dependencies."""
+def _process_kmod_dependencies(self, kmod: str, mod_tree=None) -> None:
+    """Processes a kernel module's dependencies.
+
+    If the kernel module is built in, only add firmware, don't resolve dependencies.
+
+    Only add softdeps if kmod_ignore_softdeps is not set.
+
+    Iterate over dependencies, adding them to kernel_mdules if they (or sub-dependencies) are not in the ignore list.
+    If the dependency is already in the module tree, skip it to prevent infinite recursion.
+
+    Decompress modules if they are compressed with a supported compression type
+    """
+    mod_tree = mod_tree or set()
     kmod = _normalize_kmod_name(kmod)
     _get_kmod_info(self, kmod)
 
@@ -310,6 +321,9 @@ def _process_kmod_dependencies(self, kmod: str) -> None:
             dependencies += sofdeps
 
     for dependency in dependencies:
+        if dependency in mod_tree:
+            self.logger.debug("[%s] Dependency is already in mod_tree: %s" % (kmod, dependency))
+            continue
         if dependency in self["kmod_ignore"]:  # Don't add modules with ignored dependencies
             _get_kmod_info(self, dependency)  # Make sure modinfo is queried in case it's built-in
             if modinfo := self["_kmod_modinfo"].get(dependency):
@@ -323,7 +337,8 @@ def _process_kmod_dependencies(self, kmod: str) -> None:
             continue
         try:
             self.logger.debug("[%s] Processing dependency: %s" % (kmod, dependency))
-            _process_kmod_dependencies(self, dependency)
+            _process_kmod_dependencies(self, dependency, mod_tree)
+            mod_tree.add(dependency)
         except BuiltinModuleError as e:
             self.logger.debug(e)
             continue
