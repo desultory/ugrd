@@ -38,7 +38,7 @@ jobs:
         python -m venv venv
         venv/bin/pip install --upgrade pip
         venv/bin/pip install ./zenlib
-        venv/bin/pip install zstd
+        venv/bin/pip install zstandard
         venv/bin/pip install ./pycpio
         venv/bin/pip install .
     - name: Test fullauto.toml
@@ -71,7 +71,7 @@ jobs:
         python -m venv venv
         venv/bin/pip install --upgrade pip
         venv/bin/pip install ./zenlib
-        venv/bin/pip install zstd
+        venv/bin/pip install zstandard
         venv/bin/pip install ./pycpio
         venv/bin/pip install .
     - name: Set dash as default shell
@@ -108,7 +108,7 @@ jobs:
         python -m venv venv
         venv/bin/pip install --upgrade pip
         venv/bin/pip install ./zenlib
-        venv/bin/pip install zstd
+        venv/bin/pip install zstandard
         venv/bin/pip install ./pycpio
         venv/bin/pip install .
     - name: Set ksh as default shell
