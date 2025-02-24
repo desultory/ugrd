@@ -438,7 +438,6 @@ def get_virtual_block_info(self):
         self["autodetect_root_dm"] = False
         return self.logger.warning("No virtual block devices found, disabling device mapper autodetection.")
 
-
     for virt_dev in devices:
         maj, minor = (virt_dev / "dev").read_text().strip().split(":")
         self["_vblk_info"][virt_dev.name] = {"major": maj, "minor": minor}
@@ -470,9 +469,7 @@ def get_virtual_block_info(self):
         try:
             self["_vblk_info"][virt_dev.name]["name"] = (virt_dev / "dm/name").read_text().strip()
         except FileNotFoundError:
-            self.logger.warning(
-                "No device mapper name found for: %s" % colorize(virt_dev.name, "red", bold=True)
-            )
+            self.logger.warning("No device mapper name found for: %s" % colorize(virt_dev.name, "red", bold=True))
             self["_vblk_info"][virt_dev.name]["name"] = virt_dev.name  # we can pretend
 
     if self["_vblk_info"]:
@@ -535,6 +532,7 @@ def _autodetect_dm(self, mountpoint, device=None) -> None:
     if len(self["_vblk_info"][dev_name]["slaves"]) == 0:
         raise AutodetectError("No slaves found for device mapper device, unknown type: %s" % source_device.name)
     slave_source = self["_vblk_info"][dev_name]["slaves"][0]
+    autodetect_mount_kmods(self, slave_source)
 
     try:
         blkid_info = self["_blkid_info"][f"/dev/{slave_source}"]
@@ -542,7 +540,9 @@ def _autodetect_dm(self, mountpoint, device=None) -> None:
         if slave_source in self["_vblk_info"]:
             blkid_info = self["_blkid_info"][f"/dev/mapper/{self['_vblk_info'][slave_source]['name']}"]
         else:
-            raise AutodetectError("Unable to find blkid info for device mapper slave: %s" % slave_source)
+            return self.logger.warning(
+                f"No blkid info found for device mapper slave: {colorize(slave_source, 'yellow')}"
+            )
     if source_device.name != self["_vblk_info"][dev_name]["name"] and source_device.name != dev_name:
         raise ValidationError(
             "Device mapper device name mismatch: %s != %s" % (source_device.name, self["_vblk_info"][dev_name]["name"])
@@ -565,8 +565,6 @@ def _autodetect_dm(self, mountpoint, device=None) -> None:
             )
             raise AutodetectError("[%s] No type found for device mapper device: %s" % (dev_name, source_device))
         raise ValidationError("Unknown device mapper device type: %s" % blkid_info.get("type"))
-
-    autodetect_mount_kmods(self, slave_source)
 
     for slave in self["_vblk_info"][dev_name]["slaves"]:
         try:
