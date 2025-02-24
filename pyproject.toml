@@ -19,11 +19,11 @@ classifiers = [
 
 dependencies = [
     "zenlib >= 3.0.2",
-    "pycpio >= 1.5.1"
+    "pycpio >= 1.5.2"
 ]
 
 [project.optional-dependencies]
-zstd = ["zstd >= 1.5.6.1"]
+zstd = ["zstandard"]
 
 [options]
 include_package_data = true
