@@ -4,9 +4,10 @@ from subprocess import CompletedProcess, TimeoutExpired, run
 from typing import Union
 from uuid import uuid4
 
-from zenlib.util import colorize, pretty_print
+from zenlib.util import pretty_print
+from zenlib.util import colorize as c_
 
-__version__ = "1.6.3"
+__version__ = "1.6.4"
 __author__ = "desultory"
 
 
@@ -71,7 +72,7 @@ class GeneratorHelpers:
 
         if not path_dir.is_dir():
             path_dir.mkdir()
-            self.logger.log(self["_build_log_level"], "Created directory: %s" % colorize(path, "green"))
+            self.logger.log(self["_build_log_level"], "Created directory: %s" % c_(path, "green"))
         else:
             self.logger.debug("Directory already exists: %s" % path_dir)
 
@@ -91,13 +92,13 @@ class GeneratorHelpers:
             contents = "\n".join(contents)
 
         if file_path.is_file():
-            self.logger.warning("File already exists: %s" % colorize(file_path, "yellow"))
+            self.logger.warning("File already exists: %s" % c_(file_path, "yellow"))
             if contents in file_path.read_text():
                 self.logger.debug("Contents:\n%s" % contents)
                 return self.logger.warning("Contents are already present, skipping write: %s" % file_path)
 
             if self.clean and not append:
-                self.logger.warning("Deleting file: %s" % colorize(file_path, "red", bright=True, bold=True))
+                self.logger.warning("Deleting file: %s" % c_(file_path, "red", bright=True, bold=True))
                 file_path.unlink()
 
         self.logger.debug("[%s] Writing contents:\n%s" % (file_path, contents))
@@ -113,7 +114,7 @@ class GeneratorHelpers:
         elif contents[0].startswith("#!"):
             self.logger.warning("[%s] Skipping sh -n on file with unrecognized shebang: %s" % (file_name, contents[0]))
 
-        self.logger.info("Wrote file: %s" % colorize(file_path, "green", bright=True))
+        self.logger.info("Wrote file: %s" % c_(file_path, "green", bright=True))
         file_path.chmod(chmod_mask)
         self.logger.debug("[%s] Set file permissions: %s" % (file_path, chmod_mask))
 
@@ -146,7 +147,7 @@ class GeneratorHelpers:
             self._mkdir(dest_path.parent, resolve_build=False)
 
         if dest_path.is_file():
-            self.logger.warning("File already exists, overwriting: %s" % colorize(dest_path, "yellow", bright=True))
+            self.logger.warning("File already exists, overwriting: %s" % c_(dest_path, "yellow", bright=True))
         elif dest_path.is_dir():
             self.logger.debug("Destination is a directory, adding source filename: %s" % source.name)
             dest_path = dest_path / source.name
@@ -156,9 +157,7 @@ class GeneratorHelpers:
         except ValueError as e:
             raise RuntimeError("Destination path is not within the build directory: %s" % dest_path) from e
 
-        self.logger.log(
-            self["_build_log_level"], "Copying '%s' to '%s'" % (colorize(source, "blue"), colorize(dest_path, "green"))
-        )
+        self.logger.log(self["_build_log_level"], "Copying '%s' to '%s'" % (c_(source, "blue"), c_(dest_path, "green")))
         copy2(source, dest_path)
 
     def _symlink(self, source: Union[Path, str], target: Union[Path, str]) -> None:
@@ -194,7 +193,7 @@ class GeneratorHelpers:
             if target.resolve() == source:
                 return self.logger.debug("Symlink already exists: %s -> %s" % (target, source))
             elif self.clean:
-                self.logger.warning("Deleting symlink: %s" % colorize(target, "red", bright=True))
+                self.logger.warning("Deleting symlink: %s" % c_(target, "red", bright=True))
                 target.unlink()
             else:
                 raise RuntimeError("Symlink already exists: %s -> %s" % (target, target.resolve()))
@@ -203,7 +202,7 @@ class GeneratorHelpers:
             return self.logger.debug("Cannot symlink to self: %s -> %s" % (target, source))
 
         self.logger.log(
-            self["_build_log_level"], "Creating symlink: %s -> %s" % (colorize(target, "green"), colorize(source, "blue"))
+            self["_build_log_level"], "Creating symlink: %s -> %s" % (c_(target, "green"), c_(source, "blue"))
         )
         target.symlink_to(source)
 
@@ -218,7 +217,7 @@ class GeneratorHelpers:
             if args := ret.args:
                 if isinstance(args, tuple):
                     args = args[0]  # When there's a timeout, args is a (args, timeout) tuple
-                self.logger.error("Failed command: %s" % colorize(" ".join(args), "red", bright=True))
+                self.logger.error("Failed command: %s" % c_(" ".join(args), "red", bright=True))
             if stdout := ret.stdout:
                 self.logger.error("Command output:\n%s" % stdout.decode())
             if stderr := ret.stderr:
@@ -252,7 +251,7 @@ class GeneratorHelpers:
         # If the cycle count is not set, attempt to clean
         if not self.old_count:
             if self.clean:
-                self.logger.warning("Deleting file: %s" % colorize(file_name, "red", bold=True, bright=True))
+                self.logger.warning("Deleting file: %s" % c_(file_name, "red", bold=True, bright=True))
                 file_name.unlink()
                 return
             else:
@@ -274,7 +273,7 @@ class GeneratorHelpers:
             if sequence >= self.old_count:
                 # Clean the last file in the sequence if clean is enabled
                 if self.clean:
-                    self.logger.warning("Deleting old file: %s" % colorize(target_file, "red", bold=True, bright=True))
+                    self.logger.warning("Deleting old file: %s" % c_(target_file, "red", bold=True, bright=True))
                     target_file.unlink()
                 else:
                     self.logger.debug("Cycle limit reached")

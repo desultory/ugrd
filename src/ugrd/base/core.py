@@ -10,13 +10,14 @@ from typing import Union
 
 from ugrd import AutodetectError, ValidationError
 from zenlib.types import NoDupFlatList
-from zenlib.util import colorize, contains, unset
+from zenlib.util import contains, unset
+from zenlib.util import colorize as c_
 
 
 def get_tmpdir(self) -> None:
     """Reads TMPDIR from the environment, sets it as the temporary directory."""
     if tmpdir := environ.get("TMPDIR"):
-        self.logger.info("Detected TMPDIR: %s" % (colorize(tmpdir, "cyan")))
+        self.logger.info("Detected TMPDIR: %s" % (c_(tmpdir, "cyan")))
         self["tmpdir"] = Path(tmpdir)
 
 
@@ -31,12 +32,12 @@ def _get_shell_path(self, shell_name) -> Path:
 def get_shell(self) -> None:
     """Gets the shell, uses /bin/sh if a shell is not set"""
     if shell := self["shell"]:
-        self.logger.info("Using shell: %s", colorize(shell, "blue", bright=True))
+        self.logger.info("Using shell: %s", c_(shell, "blue", bright=True))
         self["binaries"] = shell
         shell_path = _get_shell_path(self, shell)
         self["symlinks"]["shell"] = {"target": "/bin/sh", "source": shell_path}
     else:
-        self.logger.info("Using default shell: %s", colorize("/bin/sh", "cyan"))
+        self.logger.info("Using default shell: %s", c_("/bin/sh", "cyan"))
         self["binaries"] = "/bin/sh"  # This should pull /bin/sh and the target if it's a symlink
 
 
@@ -53,7 +54,7 @@ def clean_build_dir(self) -> None:
         exit(1)
 
     if build_dir.is_dir():
-        self.logger.warning("Cleaning build directory: %s" % colorize(build_dir, "yellow"))
+        self.logger.warning("Cleaning build directory: %s" % c_(build_dir, "yellow"))
         rmtree(build_dir)
     else:
         self.logger.info("Build directory does not exist, skipping cleaning: %s" % build_dir)
@@ -69,6 +70,7 @@ def get_conditional_dependencies(self) -> None:
     """Adds conditional dependencies to the dependencies list.
     Keys are the dependency, values are a tuple of the condition type and value.
     """
+
     def add_dep(dep: str) -> None:
         try:  # Try to add it as a binary, if it fails, add it as a dependency
             self["binaries"] = dep
@@ -99,9 +101,7 @@ def calculate_dependencies(self, binary: str) -> list[Path]:
     dependencies = run(["lddtree", "-l", str(binary_path)], capture_output=True)
 
     if dependencies.returncode != 0:
-        self.logger.warning(
-            "Unable to calculate dependencies for: %s" % colorize(binary, "red", bold=True, bright=True)
-        )
+        self.logger.warning("Unable to calculate dependencies for: %s" % c_(binary, "red", bold=True, bright=True))
         raise AutodetectError("Unable to resolve dependencies, error: %s" % dependencies.stderr.decode("utf-8"))
 
     dependency_paths = []
@@ -122,12 +122,12 @@ def find_library(self, library: str) -> None:
     for path in search_paths:
         lib_path = Path(path).joinpath(library)
         if lib_path.exists():
-            self.logger.info("[%s] Found library file: %s" % (library, colorize(lib_path, "cyan")))
+            self.logger.info("[%s] Found library file: %s" % (library, c_(lib_path, "cyan")))
             return lib_path
         # Attempt to find the library with a .so extension
         lib_path = lib_path.with_suffix(".so")
         if lib_path.exists():
-            self.logger.info("[%s] Found library file: %s" % (library, colorize(lib_path, "cyan")))
+            self.logger.info("[%s] Found library file: %s" % (library, c_(lib_path, "cyan")))
             return lib_path
     raise AutodetectError("Library not found: %s" % library)
 
@@ -275,7 +275,7 @@ def _process_out_file(self, out_file: str) -> None:
     out_file = str(out_file)
     if out_file == "./" or out_file == ".":
         current_dir = Path(".").resolve()
-        self.logger.info("Setting out_dir to current directory: %s" % colorize(current_dir, "cyan", bold=True))
+        self.logger.info("Setting out_dir to current directory: %s" % c_(current_dir, "cyan", bold=True))
         self["out_dir"] = current_dir
         return
 
@@ -295,7 +295,7 @@ def _process_out_file(self, out_file: str) -> None:
 
     if str(out_file.parent) != ".":  # If the parent isn't the curent dir, set the out_dir to the parent
         self["out_dir"] = out_file.parent
-        self.logger.info("Resolved out_dir to: %s" % colorize(self["out_dir"], "green"))
+        self.logger.info("Resolved out_dir to: %s" % c_(self["out_dir"], "green"))
         out_file = out_file.name
 
     self.data["out_file"] = out_file
@@ -358,6 +358,7 @@ def _process_binaries_multi(self, binary: str) -> None:
     self.logger.debug("Adding binary: %s" % binary)
     self["binaries"].append(binary)
     self["binary_search_paths"] = str(dependencies[0].parent)  # Add the binary path to the search paths
+
 
 def _validate_dependency(self, dependency: Union[Path, str]) -> None:
     """Performas basic validation and normalization for dependencies."""
@@ -495,7 +496,7 @@ def _process_masks_multi(self, runlevel: str, function: str) -> None:
     if runlevel not in self["masks"]:
         self.logger.debug("Creating new mask: %s" % runlevel)
         self["masks"][runlevel] = NoDupFlatList(logger=self.logger)
-    self.logger.info("[%s] Adding mask: %s" % (runlevel, colorize(function, "red")))
+    self.logger.info("[%s] Adding mask: %s" % (runlevel, c_(function, "red")))
     self["masks"][runlevel] = function
 
 

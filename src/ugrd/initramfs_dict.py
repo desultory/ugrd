@@ -12,7 +12,8 @@ from typing import Callable
 from pycpio import PyCPIO
 from zenlib.logging import loggify
 from zenlib.types import NoDupFlatList
-from zenlib.util import colorize, handle_plural, pretty_print
+from zenlib.util import colorize as c_
+from zenlib.util import handle_plural, pretty_print
 
 
 @loggify
@@ -59,7 +60,7 @@ class InitramfsConfigDict(UserDict):
         """Imports data from an argument dict."""
         log_level = 10 if quiet else 20
         for arg, value in args.items():
-            self.logger.log(log_level, f"[{colorize(arg, 'blue')}] Setting from arguments: {colorize(value, 'green')}")
+            self.logger.log(log_level, f"[{c_(arg, 'blue')}] Setting from arguments: {c_(value, 'green')}")
 
             if arg == "modules":  # allow loading modules by name from the command line
                 for module in value.split(","):
@@ -71,9 +72,7 @@ class InitramfsConfigDict(UserDict):
 
     def __setitem__(self, key: str, value) -> None:
         if self["validated"]:
-            return self.logger.error(
-                "[%s] Config is validated, refusing to set value: %s" % (key, colorize(value, "red"))
-            )
+            return self.logger.error("[%s] Config is validated, refusing to set value: %s" % (key, c_(value, "red")))
         # If the type is registered, use the appropriate update function
         if any(key in d for d in (self.builtin_parameters, self["custom_parameters"])):
             return self.handle_parameter(key, value)
@@ -297,7 +296,7 @@ class InitramfsConfigDict(UserDict):
                 else:
                     self["imports"]["custom_init"] = custom_init
                     self.logger.info(
-                        "Registered custom init function: %s" % colorize(custom_init.__name__, "blue", bold=True)
+                        "Registered custom init function: %s" % c_(custom_init.__name__, "blue", bold=True)
                     )
                     continue
 
@@ -327,7 +326,7 @@ class InitramfsConfigDict(UserDict):
             self.logger.debug("Module '%s' already loaded" % module)
             return
 
-        self.logger.info("Processing module: %s" % colorize(module, bold=True))
+        self.logger.info("Processing module: %s" % c_(module, bold=True))
 
         module_subpath = module.replace(".", "/") + ".toml"
 
@@ -386,8 +385,7 @@ class InitramfsConfigDict(UserDict):
         """Validate config, checks that all values are processed, sets validated flag."""
         if self["_processing"]:
             self.logger.critical(
-                "Unprocessed config values: %s"
-                % colorize(", ".join(list(self["_processing"].keys())), "red", bold=True)
+                "Unprocessed config values: %s" % c_(", ".join(list(self["_processing"].keys())), "red", bold=True)
             )
         self["validated"] = True
 

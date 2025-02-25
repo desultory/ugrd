@@ -8,7 +8,8 @@ from subprocess import run
 
 from ugrd import ValidationError
 from ugrd.kmod import BuiltinModuleError, DependencyResolutionError, IgnoredModuleError, _normalize_kmod_name
-from zenlib.util import colorize, contains, unset
+from zenlib.util import colorize as c_
+from zenlib.util import contains, unset
 
 MODULE_METADATA_FILES = ["modules.order", "modules.builtin", "modules.builtin.modinfo"]
 
@@ -135,7 +136,7 @@ def autodetect_modules(self) -> None:
     _autodetect_modules_lsmod(self)
     _autodetect_modules_lspci(self)
     if self["_kmod_auto"]:
-        self.logger.info("Autodetected kernel modules: %s" % colorize(", ".join(self["_kmod_auto"]), "cyan"))
+        self.logger.info("Autodetected kernel modules: %s" % c_(", ".join(self["_kmod_auto"]), "cyan"))
     else:
         self.logger.warning("No kernel modules were autodetected.")
 
@@ -166,7 +167,7 @@ def _find_kernel_image(self) -> Path:
 
     for prefix in ["vmlinuz", "linux", "bzImage"]:
         if kernel_path := search_prefix(prefix):
-            self.logger.info("Detected kernel image: %s" % (colorize(kernel_path, "cyan")))
+            self.logger.info("Detected kernel image: %s" % (c_(kernel_path, "cyan")))
             return kernel_path
     raise DependencyResolutionError("Failed to find kernel image")
 
@@ -209,7 +210,7 @@ def _handle_arch_kernel(self) -> None:
         cmd = self._run(["pacman", "-Qqo", kernel_path])
         if not self["out_file"]:
             self["out_file"] = f"/boot/initramfs-{cmd.stdout.decode().strip()}.img"
-            self.logger.info("Setting out_file to: %s" % colorize(self["out_file"], "green", bold=True))
+            self.logger.info("Setting out_file to: %s" % c_(self["out_file"], "green", bold=True))
     except RuntimeError as e:
         raise DependencyResolutionError("Failed to check ownership of kernel module directory") from e
 
@@ -234,7 +235,7 @@ def get_kernel_version(self) -> None:
             self["kernel_version"] = cmd.stdout.decode("utf-8").strip()
         except DependencyResolutionError:
             self["kernel_version"] = _get_kver_from_header(self)
-    self.logger.info("Detected kernel version: %s" % colorize(self["kernel_version"], "magenta", bold=True))
+    self.logger.info("Detected kernel version: %s" % c_(self["kernel_version"], "magenta", bold=True))
 
 
 @contains("kmod_init", "kmod_init is empty, skipping.")
@@ -444,12 +445,12 @@ def process_modules(self) -> None:
 def load_modules(self) -> str:
     """Creates a shell function which loads all kernel modules in kmod_init."""
     self.logger.info(
-        "Init kernel modules: %s" % colorize(", ".join(self["kmod_init"]), "magenta", bright=True, bold=True)
+        "Init kernel modules: %s" % c_(", ".join(self["kmod_init"]), "magenta", bright=True, bold=True)
     )
     if included_kmods := list(set(self["kernel_modules"]) ^ set(self["kmod_init"])):
-        self.logger.info("Included kernel modules: %s" % colorize(", ".join(included_kmods), "magenta"))
+        self.logger.info("Included kernel modules: %s" % c_(", ".join(included_kmods), "magenta"))
     if removed_kmods := self.get("_kmod_removed"):
-        self.logger.warning("Ignored kernel modules: %s" % colorize(", ".join(removed_kmods), "red", bold=True))
+        self.logger.warning("Ignored kernel modules: %s" % c_(", ".join(removed_kmods), "red", bold=True))
 
     module_list = " ".join(self["kmod_init"])
     return f"""
