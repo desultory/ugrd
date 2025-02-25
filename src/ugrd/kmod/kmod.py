@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "3.3.1"
+__version__ = "3.3.3"
 
 from pathlib import Path
 from platform import uname
@@ -298,18 +298,12 @@ def _process_kmod_dependencies(self, kmod: str, mod_tree=None) -> None:
 
     Iterate over dependencies, adding them to kernel_mdules if they (or sub-dependencies) are not in the ignore list.
     If the dependency is already in the module tree, skip it to prevent infinite recursion.
-
-    Decompress modules if they are compressed with a supported compression type
     """
     mod_tree = mod_tree or set()
     kmod = _normalize_kmod_name(kmod)
     _get_kmod_info(self, kmod)
 
-    if self["_kmod_modinfo"][kmod]["filename"] == "(builtin)":  # for built-in modules, just add firmware and return
-        _add_kmod_firmware(self, kmod)
-        raise BuiltinModuleError("Not adding built-in module to dependencies: %s" % kmod)
-
-    # Add dependencies of the module
+    # Get kernel module dependencies, softedeps if not ignored
     dependencies = []
     if harddeps := self["_kmod_modinfo"][kmod].get("depends"):
         dependencies += harddeps
@@ -320,6 +314,8 @@ def _process_kmod_dependencies(self, kmod: str, mod_tree=None) -> None:
         else:
             dependencies += sofdeps
 
+    # Iterate over module dependencies, skipping them if they are already in the mod_tree (to prevent infinite recursion)
+    # If the module isn't builtin or ignored, add it to the kernel_modules list and process its dependencies
     for dependency in dependencies:
         if dependency in mod_tree:
             self.logger.debug("[%s] Dependency is already in mod_tree: %s" % (kmod, dependency))
@@ -335,29 +331,40 @@ def _process_kmod_dependencies(self, kmod: str, mod_tree=None) -> None:
         if dependency in self["kernel_modules"]:
             self.logger.debug("[%s] Dependency is already in kernel_modules: %s" % (kmod, dependency))
             continue
+        mod_tree.add(dependency)
         try:
             self.logger.debug("[%s] Processing dependency: %s" % (kmod, dependency))
-            mod_tree.add(dependency)
             _process_kmod_dependencies(self, dependency, mod_tree)
         except BuiltinModuleError as e:
             self.logger.debug(e)
             continue
         self["kernel_modules"] = dependency
 
-    # Process firmware now that dependencies are resolved
-    _add_kmod_firmware(self, kmod)
+    if self["_kmod_modinfo"][kmod]["filename"] == "(builtin)":  # for built-in modules, just add firmware and return
+        _add_kmod_firmware(self, kmod)
+        raise BuiltinModuleError("Not adding built-in module to dependencies: %s" % kmod)
 
-    # Add the kmod file to the initramfs dependenceis
-    filename = self["_kmod_modinfo"][kmod]["filename"]
-    if filename.endswith(".ko"):
-        self["dependencies"] = filename
-    elif filename.endswith(".ko.xz"):
-        self["xz_dependencies"] = filename
-    elif filename.endswith(".ko.gz"):
-        self["gz_dependencies"] = filename
-    else:
-        self.logger.warning("[%s] Unknown kmod extension: %s" % (kmod, filename))
-        self["dependencies"] = filename
+
+
+def add_kmod_deps(self):
+    """ Adds all kernel modules to the initramfs dependencies.
+
+    If they are compressed with a supported extension, they are decompressed before being added.
+    """
+    for kmod in self["kernel_modules"]:
+        _add_kmod_firmware(self, kmod)
+
+        # Add the kmod file to the initramfs dependenceis
+        filename = self["_kmod_modinfo"][kmod]["filename"]
+        if filename.endswith(".ko"):
+            self["dependencies"] = filename
+        elif filename.endswith(".ko.xz"):
+            self["xz_dependencies"] = filename
+        elif filename.endswith(".ko.gz"):
+            self["gz_dependencies"] = filename
+        else:
+            self.logger.warning("[%s] Unknown kmod extension: %s" % (kmod, filename))
+            self["dependencies"] = filename
 
 
 def process_ignored_module(self, module: str) -> None:
@@ -408,7 +415,7 @@ def process_modules(self) -> None:
             self.logger.info(e)
         except DependencyResolutionError as e:
             if kmod in self["kmod_init"]:
-                self.logger.warning("[%s] Failed to get modinfo for init kernel module: %s" % (kmod, e))
+                self.logger.error("[%s] Failed to get modinfo for init kernel module: %s" % (kmod, e))
             self.logger.debug("[%s] Failed to get modinfo for kernel module: %s" % (kmod, e))
         self["kmod_ignore"] = kmod
 
