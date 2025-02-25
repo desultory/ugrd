@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "6.6.5"
+__version__ = "6.6.6"
 
 from pathlib import Path
 from re import search
@@ -55,7 +55,7 @@ def _resolve_dev(self, device_path) -> str:
     for device in self["_blkid_info"]:
         check_major, check_minor = _get_device_id(device)
         if (major, minor) == (check_major, check_minor):
-            self.logger.info("Resolved device: %s -> %s" % (device_path, colorize(device, "cyan")))
+            self.logger.info("Resolved device: %s -> %s" % (colorize(device_path, "blue"), colorize(device, "cyan")))
             return device
     self.logger.critical("Failed to resolve device: %s" % colorize(device_path, "red", bold=True))
     self.logger.error("Blkid info: %s" % pretty_print(self["_blkid_info"]))
@@ -142,7 +142,7 @@ def _merge_mounts(self, mount_name: str, mount_config, mount_class) -> None:
         self.logger.debug("[%s] Skipping mount merge, mount not found: %s" % (mount_class, mount_name))
         return mount_config
 
-    self.logger.info("[%s] Updating mount: %s" % (mount_class, colorize(mount_name, "blue")))
+    self.logger.info("[%s] Updating mount: %s" % (colorize(mount_class, bold=True), colorize(mount_name, "blue")))
     self.logger.debug("[%s] Updating mount with: %s" % (mount_name, mount_config))
     if "options" in self[mount_class][mount_name] and "options" in mount_config:
         self.logger.debug("Merging options: %s" % mount_config["options"])
@@ -515,7 +515,9 @@ def _autodetect_dm(self, mountpoint, device=None) -> None:
         else:
             raise AutodetectError("[%s] No blkid info for virtual device: %s" % (mountpoint, source_device))
 
-    self.logger.info("[%s] Detected virtual block device: %s" % (mountpoint, colorize(source_device, "cyan")))
+    self.logger.info(
+        "[%s] Detected virtual block device: %s" % (colorize(mountpoint, "blue"), colorize(source_device, "cyan"))
+    )
     source_device = Path(source_device)
     major, minor = _get_device_id(source_device)
     self.logger.debug("[%s] Major: %s, Minor: %s" % (source_device, major, minor))
@@ -570,7 +572,8 @@ def _autodetect_dm(self, mountpoint, device=None) -> None:
         try:
             _autodetect_dm(self, mountpoint, slave)  # Just pass the slave device name, as it will be re-detected
             self.logger.info(
-                "[%s] Autodetected device mapper container: %s" % (source_device.name, colorize(slave, "cyan"))
+                "[%s] Autodetected device mapper container: %s"
+                % (colorize(source_device.name, "blue", bright=True), colorize(slave, "cyan"))
             )
         except KeyError:
             self.logger.debug("Slave does not appear to be a DM device: %s" % slave)
@@ -603,7 +606,9 @@ def autodetect_lvm(self, source_dev, dm_num, blkid_info) -> None:
 
     lvm_config = {}
     if uuid := blkid_info.get("uuid"):
-        self.logger.info("[%s] LVM volume contianer uuid: %s" % (source_dev.name, colorize(uuid, "cyan")))
+        self.logger.info(
+            "[%s] LVM volume contianer uuid: %s" % (colorize(source_dev.name, "blue", bright=True), colorize(uuid, "cyan"))
+        )
         lvm_config["uuid"] = uuid
     else:
         raise AutodetectError("Failed to autodetect LVM volume uuid for device: %s" % colorize(source_dev.name, "red"))
@@ -649,16 +654,18 @@ def autodetect_luks(self, source_dev, dm_num, blkid_info) -> None:
 
     # Configure cryptsetup based on the LUKS mount
     if uuid := blkid_info.get("uuid"):
-        self.logger.info("[%s] LUKS volume uuid: %s" % (source_dev.name, colorize(uuid, "cyan")))
+        self.logger.info("[%s] LUKS volume uuid: %s" % (colorize(source_dev.name, "blue", bright=True), colorize(uuid, "cyan")))
         self["cryptsetup"] = {self["_vblk_info"][dm_num]["name"]: {"uuid": uuid}}
     elif partuuid := blkid_info.get("partuuid"):
-        self.logger.info("[%s] LUKS volume partuuid: %s" % (source_dev.name, colorize(partuuid, "cyan")))
+        self.logger.info(
+            "[%s] LUKS volume partuuid: %s" % (colorize(source_dev.name, "blue", bright=True), colorize(partuuid, "cyan"))
+        )
         self["cryptsetup"] = {self["_vblk_info"][dm_num]["name"]: {"partuuid": partuuid}}
 
     self.logger.info(
         "[%s] Configuring cryptsetup for LUKS mount (%s) on: %s\n%s"
         % (
-            source_dev.name,
+            colorize(source_dev.name, "blue", bright=True),
             colorize(self["_vblk_info"][dm_num]["name"], "cyan"),
             colorize(dm_num, "blue"),
             pretty_print(self["cryptsetup"]),
@@ -762,14 +769,16 @@ def _autodetect_mount(self, mountpoint, mount_class="mounts", missing_ok=False) 
     if fs_type == "auto":
         self.logger.warning("Failed to autodetect mount type for mountpoint:" % (colorize(mountpoint, "yellow")))
     else:
-        self.logger.info("[%s] Autodetected mount type from device: %s" % (mount_device, colorize(fs_type, "cyan")))
+        self.logger.info(
+            "[%s] Autodetected mount type from device: %s" % (colorize(mount_device, "blue"), colorize(fs_type, "cyan"))
+        )
     mount_config[mount_name]["type"] = fs_type.lower()
 
     for source_type in SOURCE_TYPES:
         if source := mount_info.get(source_type):
             self.logger.info(
                 "[%s] Autodetected mount source: %s=%s"
-                % (mount_name, colorize(source_type, "blue"), colorize(source, "cyan"))
+                % (colorize(mount_name, "blue", bright=True), colorize(source_type, "blue"), colorize(source, "cyan"))
             )
             mount_config[mount_name][source_type] = source
             break
@@ -987,7 +996,7 @@ def autodetect_zfs_device_kmods(self, poolname) -> list[str]:
             self.logger.info(
                 "[%s:%s] Auto-enabling kernel modules for ZFS device: %s"
                 % (
-                    colorize(poolname, "blue"),
+                    colorize(poolname, "blue", bright=True),
                     colorize(device, "blue", bold=True),
                     colorize(", ".join(device_kmods), "cyan"),
                 )

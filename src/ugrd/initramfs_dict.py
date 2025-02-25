@@ -59,7 +59,7 @@ class InitramfsConfigDict(UserDict):
         """Imports data from an argument dict."""
         log_level = 10 if quiet else 20
         for arg, value in args.items():
-            self.logger.log(log_level, "Importing argument '%s' with value: %s" % (arg, value))
+            self.logger.log(log_level, f"[{colorize(arg, 'blue')}] Setting from arguments: {colorize(value, 'green')}")
 
             if arg == "modules":  # allow loading modules by name from the command line
                 for module in value.split(","):
