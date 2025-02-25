@@ -20,6 +20,8 @@ Variables should generally be colored using the following scheme:
 * `yellow` when cleaning files/build directories
 * `red` for overrides or warnings
 
+> colorize may be imported as c_
+
 ### Variable names
 
 bools to disable validation should be named in the format: `no_validate_<attr>`.

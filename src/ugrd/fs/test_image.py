@@ -2,7 +2,8 @@ __version__ = "1.2.2"
 
 from tempfile import TemporaryDirectory
 
-from zenlib.util import colorize, contains
+from zenlib.util import colorize as c_
+from zenlib.util import contains
 
 
 @contains("test_flag", "A test flag must be set to create a test image", raise_exception=True)
@@ -16,13 +17,13 @@ def _allocate_image(self, image_path, padding=0):
     self._mkdir(image_path.parent, resolve_build=False)  # Make sure the parent directory exists
     if image_path.exists():
         if self.clean:
-            self.logger.warning("Removing existing filesystem image file: %s" % colorize(image_path, "red"))
+            self.logger.warning("Removing existing filesystem image file: %s" % c_(image_path, "red"))
             image_path.unlink()
         else:
-            raise Exception("File already exists and 'clean' is off: %s" % colorize(image_path, "red", bold=True))
+            raise Exception("File already exists and 'clean' is off: %s" % c_(image_path, "red", bold=True))
 
     with open(image_path, "wb") as f:
-        self.logger.info("Allocating test image file: %s" % colorize(f.name, "green"))
+        self.logger.info("Allocating test image file: %s" % c_(f.name, "green"))
         f.write(b"\0" * (self.test_image_size + padding) * 2**20)
 
 
@@ -60,8 +61,8 @@ def make_test_luks_image(self, image_path):
         pass
     _allocate_image(self, image_path, padding=32)  # First allocate the image file, adding padding for the LUKS header
     keyfile_path = _get_luks_keyfile(self)
-    self.logger.info("Using LUKS keyfile: %s" % colorize(keyfile_path, "green"))
-    self.logger.info("Creating LUKS image: %s" % colorize(image_path, "green"))
+    self.logger.info("Using LUKS keyfile: %s" % c_(keyfile_path, "green"))
+    self.logger.info("Creating LUKS image: %s" % c_(image_path, "green"))
     self._run(
         [
             "cryptsetup",
@@ -74,14 +75,14 @@ def make_test_luks_image(self, image_path):
             keyfile_path,
         ]
     )
-    self.logger.info("Opening LUKS image: %s" % colorize(image_path, "magenta"))
+    self.logger.info("Opening LUKS image: %s" % c_(image_path, "magenta"))
     self._run(["cryptsetup", "luksOpen", image_path, "test_image", "--key-file", keyfile_path])
 
 
 def make_test_image(self):
     """Creates a test image from the build dir"""
     build_dir = self._get_build_path("/").resolve()
-    self.logger.info("Creating test image from: %s" % colorize(build_dir, "blue", bold=True))
+    self.logger.info("Creating test image from: %s" % c_(build_dir, "blue", bold=True))
 
     rootfs_type = self["mounts"]["root"]["type"]
     try:
@@ -116,7 +117,7 @@ def make_test_image(self):
         squashfs_image = self._get_out_path(f"squash/{self['squashfs_image']}")
         if squashfs_image.exists():
             if self.clean:
-                self.logger.warning("Removing existing squashfs image file: %s" % colorize(squashfs_image, "red"))
+                self.logger.warning("Removing existing squashfs image file: %s" % c_(squashfs_image, "red"))
                 squashfs_image.unlink()
             else:
                 raise Exception("File already exists and 'clean' is off: %s" % squashfs_image)
@@ -129,5 +130,5 @@ def make_test_image(self):
         raise NotImplementedError("Unsupported test rootfs type: %s" % rootfs_type)
 
     if self.get("cryptsetup"):  # Leave it open in the event of failure, close it before executing tests
-        self.logger.info("Closing LUKS image: %s" % colorize(image_path, "magenta"))
+        self.logger.info("Closing LUKS image: %s" % c_(image_path, "magenta"))
         self._run(["cryptsetup", "luksClose", "test_image"])

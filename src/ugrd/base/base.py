@@ -5,7 +5,8 @@ from pathlib import Path
 from shutil import which
 
 from ugrd import AutodetectError, ValidationError
-from zenlib.util import colorize, contains, unset
+from zenlib.util import colorize as c_
+from zenlib.util import contains, unset
 
 
 @contains("validate")
@@ -37,7 +38,7 @@ def _process_loglevel(self, loglevel: int) -> None:
 def autodetect_init(self) -> None:
     """Autodetects the init_target."""
     if init := which("init"):
-        self.logger.info("Detected init at: %s", colorize(init, "cyan", bright=True))
+        self.logger.info("Detected init at: %s", c_(init, "cyan", bright=True))
         self["init_target"] = init
     else:
         raise AutodetectError("init_target is not specified and could not be detected.")
@@ -49,7 +50,7 @@ def set_shebang(self) -> None:
     #!/bin/sh {self["shebang_args"]}
     """
     self["shebang"] = f"#!/bin/sh {self['shebang_args']}"
-    self.logger.info("Setting shebang to: %s", colorize(self["shebang"], "cyan", bright=True))
+    self.logger.info("Setting shebang to: %s", c_(self["shebang"], "cyan", bright=True))
 
 
 def set_init_final_order(self) -> None:

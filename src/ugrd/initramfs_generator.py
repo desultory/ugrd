@@ -3,7 +3,8 @@ from textwrap import dedent
 from tomllib import TOMLDecodeError, load
 
 from zenlib.logging import loggify
-from zenlib.util import colorize, pretty_print
+from zenlib.util import colorize as c_
+from zenlib.util import pretty_print
 
 from ugrd.initramfs_dict import InitramfsConfigDict
 
@@ -49,7 +50,7 @@ class InitramfsGenerator(GeneratorHelpers):
             raise FileNotFoundError("Config file not specified.")
 
         with open(config_filename, "rb") as config_file:
-            self.logger.info("Loading config file: %s" % colorize(config_file.name, "blue", bold=True, bright=True))
+            self.logger.info("Loading config file: %s" % c_(config_file.name, "blue", bold=True, bright=True))
             raw_config = load(config_file)
 
         # Process into the config dict, it should handle parsing
@@ -98,9 +99,7 @@ class InitramfsGenerator(GeneratorHelpers):
         If force_include is set, forces the function to be included in the shell profile.
         if force_exclude is set, does not include the output of the function in the shell profile.
         """
-        self.logger.log(
-            self["_build_log_level"], "Running function: %s" % colorize(function.__name__, "blue", bold=True)
-        )
+        self.logger.log(self["_build_log_level"], "Running function: %s" % c_(function.__name__, "blue", bold=True))
 
         if function_output := function(self):
             if isinstance(function_output, list) and len(function_output) == 1:
@@ -232,7 +231,7 @@ class InitramfsGenerator(GeneratorHelpers):
         for function in self["imports"].get(hook, []):
             if function.__name__ in self["masks"].get(hook, []):
                 self.logger.warning(
-                    "[%s] Skipping masked function: %s" % (hook, colorize(function.__name__, "yellow", bold=True))
+                    "[%s] Skipping masked function: %s" % (hook, c_(function.__name__, "yellow", bold=True))
                 )
                 continue
 
@@ -335,7 +334,7 @@ class InitramfsGenerator(GeneratorHelpers):
         else:
             self.logger.warning(
                 "No pack functions specified, the final build is present in: %s"
-                % colorize(self.build_dir, "green", bold=True, bright=True)
+                % c_(self.build_dir, "green", bold=True, bright=True)
             )
 
     def run_init_hook(self, level: str) -> list[str]:
@@ -371,7 +370,7 @@ class InitramfsGenerator(GeneratorHelpers):
             self.logger.debug("No tests executed.")
 
     def _log_run(self, logline) -> None:
-        self.logger.info(f"-- | {colorize(logline, 'blue', bold=True)}")
+        self.logger.info(f"-- | {c_(logline, 'blue', bold=True)}")
 
     def __str__(self) -> str:
         return str(self.config_dict)

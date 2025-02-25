@@ -2,13 +2,14 @@ __version__ = "1.2.0"
 
 from pathlib import Path
 from uuid import uuid4
-from zenlib.util import colorize, unset
+from zenlib.util import colorize as c_
+from zenlib.util import unset
 
 
 @unset("test_kernel")
 def find_kernel_path(self):
     """Finds the kernel path for the current system"""
-    self.logger.info("Trying to find the kernel path for: %s", colorize(self["kernel_version"], "blue"))
+    self.logger.info("Trying to find the kernel path for: %s", c_(self["kernel_version"], "blue"))
     kernel_path = Path(self["_kmod_dir"]) / "vmlinuz"  # try this first
     if not (self["_kmod_dir"] / "vmlinuz").exists():
         for search_dir in ["/boot", "/efi"]:
@@ -21,7 +22,7 @@ def find_kernel_path(self):
         else:
             raise FileNotFoundError("Kernel not found: %s" % self["kernel_version"])
 
-    self.logger.info("Found kernel at: %s", colorize(kernel_path, "cyan"))
+    self.logger.info("Found kernel at: %s", c_(kernel_path, "cyan"))
     self["test_kernel"] = kernel_path
 
 
@@ -35,16 +36,16 @@ def init_test_vars(self):
 def _get_qemu_cmd_args(self, test_image):
     """Returns arguements to run QEMU for the current test configuration."""
     test_initrd = self._get_out_path(self["out_file"])
-    self.logger.info("Testing initramfs image: %s", colorize(test_initrd, "yellow", bold=True))
+    self.logger.info("Testing initramfs image: %s", c_(test_initrd, "yellow", bold=True))
     test_rootfs = test_image._get_out_path(test_image["out_file"])
     self.logger.info(
         "Test rootfs image: %s",
-        colorize(
+        c_(
             test_rootfs,
             "yellow",
         ),
     )
-    self.logger.info("Test kernel: %s", colorize(self["test_kernel"], "yellow"))
+    self.logger.info("Test kernel: %s", c_(self["test_kernel"], "yellow"))
     qemu_args = {
         "-m": self["test_memory"],
         "-cpu": self["test_cpu"],
@@ -102,8 +103,8 @@ def test_image(self):
     qemu_cmd = _get_qemu_cmd_args(self, image)
 
     self.logger.debug("Test config:\n%s", image)
-    self.logger.info("Test flag: %s", colorize(self["test_flag"], "magenta"))
-    self.logger.info("QEMU command: %s", colorize(" ".join([str(arg) for arg in qemu_cmd]), bold=True))
+    self.logger.info("Test flag: %s", c_(self["test_flag"], "magenta"))
+    self.logger.info("QEMU command: %s", c_(" ".join([str(arg) for arg in qemu_cmd]), bold=True))
 
     try:
         results = self._run(qemu_cmd, timeout=self["test_timeout"])
@@ -117,7 +118,7 @@ def test_image(self):
     for line in stdout:
         if line.endswith("exitcode=0x00000000"):
             panic_time = line.split("]")[0][1:].strip()
-            self.logger.info("Test took: %s", colorize(panic_time, "yellow", bold=True, bright=True))
+            self.logger.info("Test took: %s", c_(panic_time, "yellow", bold=True, bright=True))
             break
     else:
         self.logger.warning("Unable to determine test duration from panic message.")
