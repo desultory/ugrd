@@ -164,26 +164,28 @@ def main():
         kwargs["modules"] = kwargs["modules"] + ",ugrd.base.test" if kwargs.get("modules") else "ugrd.base.test"
 
     logger.debug(f"Using the following kwargs: {kwargs}")
-    generator = InitramfsGenerator(**kwargs)
+    try:
+        generator = InitramfsGenerator(**kwargs)
+    except ValidationError as e:
+        logger.critical(e)
+        exit(1)
 
     try:
         generator.build()
     except ValidationError as e:
-        logger.error("Validation error occurred")
         print(generator.config_dict)
-        logger.error(e, exc_info=True)
+        logger.critical(e, exc_info=True)
         exit(1)
     except AutodetectError as e:
-        logger.error("Autodetect error occurred")
-        logger.error(e, exc_info=True)
+        logger.critical(e, exc_info=True)
         exit(1)
     except UnavailableCompression as e:
         logger.critical(e)
         exit(1)
     except Exception as e:
-        logger.info("Dumping config dict:\n")
+        logger.criical("An unhandled exception occurred while building:")
         print(generator.config_dict)
-        logger.error(e, exc_info=True)
+        logger.critical(e, exc_info=True)
         exit(1)
 
     if "print_config" in args and args.print_config:

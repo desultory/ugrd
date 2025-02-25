@@ -6,6 +6,7 @@ from platform import uname
 from struct import unpack
 from subprocess import run
 
+from ugrd import ValidationError
 from ugrd.kmod import BuiltinModuleError, DependencyResolutionError, IgnoredModuleError, _normalize_kmod_name
 from zenlib.util import colorize, contains, unset
 
@@ -193,7 +194,9 @@ def _process_kernel_version(self, kver: str) -> None:
     if not kmod_dir.exists():
         if self["no_kmod"]:
             return self.logger.warning("[%s] Kernel module directory does not exist, but no_kmod is set." % kver)
-        raise DependencyResolutionError(f"Kernel module directory does not exist for kernel: {kver}")
+        self.logger.error(f"Available kernel versions: {', '.join([d.name for d in Path('/lib/modules').iterdir()])}")
+        raise ValidationError(f"Kernel module directory does not exist for kernel: {kver}")
+
 
     self.data["kernel_version"] = kver
     self.data["_kmod_dir"] = kmod_dir
