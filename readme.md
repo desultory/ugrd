@@ -75,6 +75,7 @@ The original goal of this project was to create an initramfs suitable for decryp
 µgRD was designed to work with Gentoo, but has been tested on:
 
 * Garuda linux
+* CachyOS
 * Debian 12
 * Ubuntu 22.04
 
