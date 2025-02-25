@@ -1,5 +1,5 @@
 kmod_ignore = [
-'video', 'videodev', 'ttm', 'gpu_sched',   # generic modules
+'video', 'videodev', 'ttm', 'gpu_sched', 'wmi',   # generic modules
 'uvcvideo', 'uvc',  # USB video
 'drm_kms_helper', 'drm_display_helper',  'drm_buddy', 'drm_ttm_helper',  # DRM
 'amdgpu', 'radeon', 'amdxcp',  # AMD GPU
