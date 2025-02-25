@@ -337,8 +337,8 @@ def _process_kmod_dependencies(self, kmod: str, mod_tree=None) -> None:
             continue
         try:
             self.logger.debug("[%s] Processing dependency: %s" % (kmod, dependency))
-            _process_kmod_dependencies(self, dependency, mod_tree)
             mod_tree.add(dependency)
+            _process_kmod_dependencies(self, dependency, mod_tree)
         except BuiltinModuleError as e:
             self.logger.debug(e)
             continue
