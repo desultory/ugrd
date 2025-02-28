@@ -32,7 +32,7 @@ main() {
 
 	[[ ${EUID} -eq 0 ]] || die "Please run this script as root"
 
-	ugrd --no-rotate --kver "${ver}" "${initrd}"
+	ugrd "$([ "${INSTALLKERNEL_VERBOSE}" = 1 ] && echo --log-level=10 || echo --log-level=20)" --no-rotate --kver "${ver}" "${initrd}"
 	case $? in
 		0) einfo "Generated initramfs for kernel: ${ver}";;
 		77) ewarn "Missing ZFS kernel module for kernel: ${ver}" && exit 77;;
