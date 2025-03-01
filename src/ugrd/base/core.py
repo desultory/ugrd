@@ -250,10 +250,10 @@ def autodetect_libgcc(self) -> None:
 
     if musl_warning:
         self.logger.warning("This check can be disabled by setting `find_libgcc = false` in the configuration.")
-        return self.logger.warning("Unable to run ldconfig -p, if GCC is being used, this is fatal!")
+        return self.logger.warning("Unable to run ldconfig -p, if glibc is being used, this is fatal!")
 
     if cmd.returncode != 0:
-        return self.logger.critical("Unable to run ldconfig -p, if GCC is being used, this is fatal!")
+        return self.logger.critical("Unable to run ldconfig -p, if glibc is being used, this is fatal!")
 
     ldconfig = cmd.stdout.decode("utf-8").splitlines()
 
