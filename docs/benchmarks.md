@@ -1,8 +1,8 @@
-## How does UGRD compare to other generators?
+## How does µgRD compare to other generators?
 
 ### Run time
 
-People say python is slow, but UGRD is very fast, even on slow hardware.
+People say python is slow, but µgRD is very fast, even on slow hardware.
 
 #### Raspberry pi 3
 
@@ -26,7 +26,7 @@ sys     0m2.147s
 
 ##### Compression
 
-ugrd compression is limited by single thread python performance, but still builds faster than dracut which calls zstd:
+µgRD compression is limited by single thread python performance, but still builds faster than dracut which calls zstd:
 
 ```
 time dracut --force
@@ -86,7 +86,7 @@ sys     0m0.643s
 
 ### Image size
 
-ugrd makes very small images, even with no compression, it creates smaller images than dracut with zstd compression!
+µgRD makes very small images, even with no compression, it creates smaller images than dracut with zstd compression!
 
 #### Raspberry pi 3
 
@@ -115,7 +115,7 @@ ugrd makes very small images, even with no compression, it creates smaller image
 
 ### Boot time
 
-ugrd boots faster than dracut, even without udev:
+µgRD boots faster than dracut, even without udev:
 
 Dracut boot:
 ```
@@ -154,7 +154,7 @@ Dracut boot:
 [    5.900654] dracut: Switching root
 ```
 
-ugrd boot:
+µgRD boot:
 ```
 [    3.106379] Freeing unused kernel memory: 4864K
 [    3.108254] Run /init as init process
@@ -190,4 +190,4 @@ ugrd boot:
 ```
 
 > Multiple tests were performed, boot timed did not deviate by more than half a second
-> Tests where undervoltages were reported were ignored, but none were detected in ugrd runs
+> Tests where undervoltages were reported were ignored, but none were detected in µgRD runs

@@ -14,7 +14,7 @@ Within modules, all config values are imported, then processed according to the 
 
 ## Imports
 
-UGRD allows python functions to be imported from modules using the `imports` dict.
+µgRD allows python functions to be imported from modules using the `imports` dict.
 
 `imports` entries have a key which is the name of the hook to import into, and a value which is a dict of module names and lists of functions to import.
 

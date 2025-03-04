@@ -1,6 +1,6 @@
 # Configuration
 
-At runtime, ugrd will try to read `/etc/ugrd/config.toml` for configuration options unless another file is specified.
+At runtime, µgRD will try to read `/etc/ugrd/config.toml` for configuration options unless another file is specified.
 
 There is very little to configure in the base image, unless you are just interested in specifying a few required kmods/files to be pulled into the initramfs.
 
