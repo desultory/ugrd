@@ -8,7 +8,7 @@ If the kernel is built with the `CONFIG_EFI_STUB` option, the path of the initra
 
 This can be set with:
 
-`efibootmgr -c -d /dev/sda -L "Gentoo UGRD" -l 'vmlinuz-gentoo.efi' -u 'initrd=ugrd.cpio'`
+`efibootmgr -c -d /dev/sda -L "Gentoo ugRD" -l 'vmlinuz-gentoo.efi' -u 'initrd=ugrd.cpio'`
 
 > This example assumes that the ESP is the first partition on `/dev/sda`, the kernel is named `vmlinuz-gentoo.efi` under the root of the ESP, and `ugrd.cpio` is also on the ESP root.
 
