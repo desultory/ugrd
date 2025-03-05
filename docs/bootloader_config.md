@@ -32,7 +32,7 @@ CONFIG_INITRAMFS_SOURCE="/usr/src/initramfs/ugrd.cpio"
 
 > The CPIO must be decompressed before being embedded.
 
-## Making the kernel automatically search for the initamfs image
+## Making the kernel automatically search for the initramfs image
 
 To make the kernel try to load a specific initrd file at boot, without embedding it:
 
