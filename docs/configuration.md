@@ -39,7 +39,7 @@ Modules write to a shared config dict that is accessible by other modules.
 * `validate` (true) adds additional checks to verify the initramfs will work on the build host.
 * `tmpdir` (/tmp) Sets the temporary directory as the base for the build and out dir.
 * `build_dir` (initramfs_build) If relative, it will be placed under `tmpdir`, defines the build directory.
-* `random_build_dir` (false) Adds a uuid to the end of the build fir name when true.
+* `random_build_dir` (false) Adds a uuid to the end of the build dir name when true.
 * `build_logging` (false) Enables additional logging during the build process.
 * `make_nodes` (false) Create real device nodes in the build dir. 
 * `find_libgcc` (true) Automatically locates libgcc using ldconfig -p and adds it to the initramfs.
