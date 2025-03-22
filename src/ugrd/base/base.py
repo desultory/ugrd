@@ -162,6 +162,7 @@ def rd_fail(self) -> list[str]:
         '    eerror "UGRD failed."',
         "fi",
         'prompt_user "Press enter to display debug info."',
+        r'eerror "Kernel version: $(cat /proc/version)"',
         r'eerror "Loaded modules:\n$(cat /proc/modules)"',
         r'eerror "Block devices:\n$(blkid)"',
         r'eerror "Mounts:\n$(mount)"',
