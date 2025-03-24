@@ -8,6 +8,7 @@ modules = [
   "ugrd.crypto.smartcard",
 ]
 
+# This public key can be anywhere ugrd can read at build time, made with gpg --export
 sc_public_key = "/etc/ugrd/pubkey.gpg"
 
 # This is necessary if the keyfile is on another device.
@@ -18,4 +19,4 @@ auto_mounts = ['/boot']  # Automatically create mount config for /boot on the ho
 [cryptsetup.root]
 key_type = "gpg"
 key_file = "/boot/rootfs.luks.gpg"
-try_nokey = true
+try_nokey = true  # Attempt to unlock with passphrase entry if unable to use the keyfile
