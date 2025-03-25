@@ -6,3 +6,4 @@ dependencies = ['/etc/mdadm.conf']
 
 [import_order.before]
 md_init = "mount_fstab"
+md_init = "handle_resume"
