@@ -4,7 +4,8 @@ __version__ = "0.4.2"
 def handle_resume(self) -> None:
     """Returns a shell script handling resume from hibernation.
     Checks that /sys/power/resume is writable, resume= is set, and noresume is not set, if so,
-    checks if PARTUUID= is in the resume var, and tries to use blkid to find the resume device.
+    checks if UUID= or PARTUUID= or LABEL= is in the resume var,
+    and tries to use blkid to find the resume device.
     If the specified device exists, writes resume device to /sys/power/resume.
     In the event of failure, it prints an error message, a list of block devuices, then runs rd_fail.
 
@@ -17,7 +18,9 @@ def handle_resume(self) -> None:
     return [
         "resumeval=$(readvar resume)",  # read the cmdline resume var
         'if ! check_var noresume && [ -n "$resumeval" ] && [ -w /sys/power/resume ]; then',
-        '    if echo "$resumeval" | grep -q "PARTUUID="; then',  # resolve partuuid to device
+        '    if echo "$resumeval" | grep -q "UUID="     ||',      #    resolve uuid to device
+        '       echo "$resumeval" | grep -q "PARTUUID=" ||',      # or resolve partuuid to device
+        '       echo "$resumeval" | grep -q "LABEL="    ; then',  # or resolve label to device
         '        resume=$(blkid -t "$resumeval" -o device)',
         "    else",
         "        resume=$resumeval",
