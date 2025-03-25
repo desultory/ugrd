@@ -5,5 +5,4 @@ dependencies = ['/etc/mdadm.conf']
 "ugrd.fs.mdraid" = [ "md_init" ]
 
 [import_order.before]
-md_init = "mount_fstab"
-md_init = "handle_resume"
+md_init = ["mount_fstab", "handle_resume"]
