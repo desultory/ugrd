@@ -177,7 +177,6 @@ class InitramfsGenerator(GeneratorHelpers):
 
                     def reorder_func(direction):
                         """Reorders the function based on the direction."""
-                        self.logger.debug("Moving %s %s %s" % (func_name, direction, other_func))
                         if direction == "before":  # Move the function before the other function
                             self.logger.debug("[%s] Moving function before: %s" % (func_name, other_func))
                             func_names.insert(other_index, func_names.pop(func_index))
@@ -204,6 +203,7 @@ class InitramfsGenerator(GeneratorHelpers):
                             self.logger.log(5, "Function %s already after: %s" % (func_name, other_func))
                     else:
                         raise ValueError("Invalid direction: %s" % direction)
+                    func_index = func_names.index(func_name)  # Update the index after moving
             return changed
 
         max_iterations = len(func_names) * (len(before) + 1) * (len(after) + 1)  # Prevent infinite loops
