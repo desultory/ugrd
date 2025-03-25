@@ -177,7 +177,7 @@ def main():
         logger.critical(e, exc_info=True)
         exit(1)
     except AutodetectError as e:
-        logger.critical(e, exc_info=True)
+        logger.critical(e)
         exit(1)
     except UnavailableCompression as e:
         logger.critical(e)
