@@ -107,7 +107,7 @@ def _resolve_overlay_lower_device(self, mountpoint) -> dict:
         lowerdir = _resolve_overlay_lower_dir(self, mountpoint)
         mountpoint = _find_mountpoint(self, lowerdir)
         if mountpoint == "/":  # The lowerdir mount should never be the root mount
-            raise AutodetectError("Lowerdir mount not found: %s" % lowerdir)
+            raise AutodetectError(f"[{mountpoint}] Lowerdir mount cannot be '/': {lowerdir}")
 
     return self["_mounts"][mountpoint]["device"]
 
@@ -465,7 +465,7 @@ def get_virtual_block_info(self):
             self["_vblk_info"][virt_dev.name]["uuid"] = (virt_dev.parent / "md/uuid").read_text().strip()
             self["_vblk_info"][virt_dev.name]["level"] = (virt_dev.parent / "md/level").read_text().strip()
         else:
-            raise AutodetectError("No info found for: %s" % virt_dev.name)
+            raise AutodetectError("Unable to find device information for: %s" % virt_dev.name)
 
         try:
             self["_vblk_info"][virt_dev.name]["name"] = (virt_dev / "dm/name").read_text().strip()
