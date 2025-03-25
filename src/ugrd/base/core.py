@@ -26,7 +26,7 @@ def _get_shell_path(self, shell_name) -> Path:
     if shell := which(shell_name):
         return Path(shell).resolve()
     else:
-        raise AutodetectError(f"Shell '{shell_name}' not found.")
+        raise AutodetectError(f"Shell not found: {shell_name}")
 
 
 def get_shell(self) -> None:
@@ -88,12 +88,11 @@ def get_conditional_dependencies(self) -> None:
 
 def calculate_dependencies(self, binary: str) -> list[Path]:
     """Calculates the dependencies of a binary using lddtree
-    :param binary: The binary to calculate dependencies for
-    :return: A list of dependency paths
+    Returns a list of Path objects for each dependency.
     """
     binary_path = which(binary)
     if not binary_path:
-        raise AutodetectError("'%s' not found in PATH" % binary)
+        raise AutodetectError(f"Binary not found not found in PATH: {binary}")
 
     binary_path = Path(binary_path)
 
