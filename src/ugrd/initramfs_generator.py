@@ -159,14 +159,14 @@ class InitramfsGenerator(GeneratorHelpers):
             return self.logger.debug("No import order specified for hook: %s" % hook)
 
         def iter_order(order, direction):
-            # Iterate over all before/after functions
-            # If the function is not in the correct position, move it
-            # Use the index of the function to determine the position
-            # Move the function in the imports list as well
+            """ Iterate over all functions in an import order list,
+            using this information to move the order of function names in the import list.
+
+            Returns True if any changes were made, False otherwise."""
             changed = False
 
             for func_name, other_funcs in order.items():
-                func_index = func_names.index(func_name)
+                func_index = func_names.index(func_name)  # Get the index based on the current position
                 assert func_index >= 0, "Function not found in import list: %s" % func_name
                 for other_func in other_funcs:
                     try:
@@ -177,7 +177,6 @@ class InitramfsGenerator(GeneratorHelpers):
 
                     def reorder_func(direction):
                         """Reorders the function based on the direction."""
-                        self.logger.debug("Moving %s %s %s" % (func_name, direction, other_func))
                         if direction == "before":  # Move the function before the other function
                             self.logger.debug("[%s] Moving function before: %s" % (func_name, other_func))
                             func_names.insert(other_index, func_names.pop(func_index))
@@ -204,18 +203,20 @@ class InitramfsGenerator(GeneratorHelpers):
                             self.logger.log(5, "Function %s already after: %s" % (func_name, other_func))
                     else:
                         raise ValueError("Invalid direction: %s" % direction)
+                    func_index = func_names.index(func_name)  # Update the index after moving
             return changed
 
         max_iterations = len(func_names) * (len(before) + 1) * (len(after) + 1)  # Prevent infinite loops
         iterations = max_iterations
         while iterations:
             iterations -= 1
+            # Update the order based on the before and after lists
             if not any([iter_order(before, "before"), iter_order(after, "after")]):
                 self.logger.debug(
                     "[%s] Import order converged after %s iterations" % (hook, max_iterations - iterations)
                 )
                 break  # Keep going until no changes are made
-        else:
+        else:  # If the loop completes without breaking, raise an error
             self.logger.error("Import list: %s" % func_names)
             self.logger.error("Before: %s" % before)
             self.logger.error("After: %s" % after)

@@ -183,7 +183,7 @@ def main():
         logger.critical(e)
         exit(1)
     except Exception as e:
-        logger.criical("An unhandled exception occurred while building:")
+        logger.critical("An unhandled exception occurred while building:")
         print(generator.config_dict)
         logger.critical(e, exc_info=True)
         exit(1)
