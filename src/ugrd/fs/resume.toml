@@ -1,7 +1,23 @@
 cmdline_strings = [ "resume" ]
+binaries = [ 'lsblk' ]
+test_copy_config = [ "test_resume", "test_swap_uuid" ]
 
-[imports.init_main] 
-"ugrd.fs.resume" = [ "handle_resume" ]
+[imports.build_pre]
+"ugrd.fs.resume" = [ "test_init_swap_uuid" ]
+
+[imports.init_main]
+"ugrd.fs.resume" = [ "handle_early_resume" ]
+
+[imports.init_premount]
+"ugrd.fs.resume" = [ "handle_late_resume"]
+
+[imports.functions]
+"ugrd.fs.resume" = ["resume"]
+
+[custom_parameters]
+late_resume = "bool"
+test_resume = "bool"
+test_swap_uuid = "str"
 
 [import_order.before]
 handle_resume = "mount_fstab"
