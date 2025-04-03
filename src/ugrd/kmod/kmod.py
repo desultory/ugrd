@@ -260,16 +260,25 @@ def regen_kmod_metadata(self) -> None:
     self._run(["depmod", "--basedir", build_dir, self["kernel_version"]])
 
 
+@unset("kernel_version", "kernel_version is not set, skipping firmware detection.", log_level=30)
 def _add_kmod_firmware(self, kmod: str) -> None:
-    """Adds firmware files for the specified kernel module to the initramfs."""
+    """Adds firmware files for the specified kernel module to the initramfs.
+
+    Attempts to run even if no_kmod is set; this will not work if there are no kmods/no kernel version set
+    """
     kmod = _normalize_kmod_name(kmod)
+
     if kmod not in self["_kmod_modinfo"]:
+        if self["no_kmod"]:
+            return self.logger.warning("[%s] Kernel module info for firmware detection does not exist, but no_kmod is set." % kmod)
         raise DependencyResolutionError("Kernel module info does not exist: %s" % kmod)
 
     if self["_kmod_modinfo"][kmod].get("firmware") and not self["kmod_pull_firmware"]:
+        # Log a warning if the kernel module has firmware files, but kmod_pull_firmware is not set
         self.logger.warning("[%s] Kernel module has firmware files, but kmod_pull_firmware is not set." % kmod)
 
     if not self["_kmod_modinfo"][kmod].get("firmware") or not self.get("kmod_pull_firmware"):
+        # No firmware files to add, or kmod_pull_firmware is not set
         return
 
     for firmware in self["_kmod_modinfo"][kmod]["firmware"]:
@@ -352,11 +361,14 @@ def _process_kmod_dependencies(self, kmod: str, mod_tree=None) -> None:
 
 def add_kmod_deps(self):
     """ Adds all kernel modules to the initramfs dependencies.
-
+    Always attempt to add firmware, continuing if no_kmod is set.
     If they are compressed with a supported extension, they are decompressed before being added.
     """
     for kmod in self["kernel_modules"]:
         _add_kmod_firmware(self, kmod)
+        # if no_kmod is set, continue and check for the firmware of the next module
+        if self["no_kmod"]:
+            continue
 
         # Add the kmod file to the initramfs dependenceis
         filename = self["_kmod_modinfo"][kmod]["filename"]
@@ -442,6 +454,7 @@ def process_modules(self) -> None:
 
 
 @contains("kmod_init", "No kernel modules to load.", log_level=30)
+@unset("no_kmod", "no_kmod is enabled, skipping.", log_level=30)
 def load_modules(self) -> str:
     """Creates a shell function which loads all kernel modules in kmod_init."""
     self.logger.info(
