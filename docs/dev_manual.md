@@ -213,3 +213,27 @@ When a module has a `needs` string or list of strings, those will be checked aga
 
 Needed tags are checked after module imports and before any module config. Provided tags are set upon successful module import.
 
+
+## Example module
+
+The following is an example module which prints "hello world" during the init process:
+```
+# /var/lib/ugrd/hello_world.py
+
+def hello_world(self) -> str:
+    """
+    Print hello world to the console
+    """
+    return "echo 'Hello world!'"
+
+```
+
+```
+# /var/lib/ugrd/hello_world.toml
+
+[imports.init_main]
+"hello_world" = [ "hello_world" ]
+
+```
+
+This module can be used with `ugrd -m hello_world`
