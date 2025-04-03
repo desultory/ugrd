@@ -260,7 +260,7 @@ def regen_kmod_metadata(self) -> None:
     self._run(["depmod", "--basedir", build_dir, self["kernel_version"]])
 
 
-@unset("kernel_version", "kernel_version is not set, skipping firmware detection.", log_level=30)
+@contains("kernel_version", "kernel_version is not set, skipping firmware detection.", log_level=30)
 def _add_kmod_firmware(self, kmod: str) -> None:
     """Adds firmware files for the specified kernel module to the initramfs.
 
