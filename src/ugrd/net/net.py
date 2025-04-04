@@ -1,4 +1,4 @@
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 from json import loads
 from pathlib import Path
@@ -18,7 +18,10 @@ def _process_net_device(self, net_device: str):
 def _validate_net_device(self, net_device: str):
     """Validates the given net_device."""
     if not net_device:  # Ensure the net_device is not empty
+        if self["net_device_mac"]:
+            return self.logger.warning("net_device is empty, using net_device_mac without validation: %s" % self["net_device_mac"])
         raise ValueError("net_device must not be empty")
+
     dev_path = Path("/sys/class/net") / net_device
     if not dev_path.exists():  # Ensure the net_device exists on the system
         self.logger.error("Network devices: %s", ", ".join([dev.name for dev in Path("/sys/class/net").iterdir()]))
