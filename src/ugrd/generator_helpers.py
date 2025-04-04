@@ -4,10 +4,10 @@ from subprocess import CompletedProcess, TimeoutExpired, run
 from typing import Union
 from uuid import uuid4
 
-from zenlib.util import pretty_print
 from zenlib.util import colorize as c_
+from zenlib.util import pretty_print
 
-__version__ = "1.6.4"
+__version__ = "1.6.5"
 __author__ = "desultory"
 
 
@@ -105,13 +105,15 @@ class GeneratorHelpers:
         with open(file_path, "a") as file:
             file.write(contents)
 
-        if contents[0].startswith(self["shebang"].split(" ")[0]):
+        if contents.startswith(self["shebang"].split(" ")[0]):
             self.logger.debug("Running sh -n on file: %s" % file_name)
             try:
                 self._run(["sh", "-n", str(file_path)])
             except RuntimeError as e:
-                raise RuntimeError("Failed to validate shell script: %s" % pretty_print(contents)) from e
-        elif contents[0].startswith("#!"):
+                from . import ValidationError
+                self.logger.error(f"Invalid shell script:\n{pretty_print(contents)}")
+                raise ValidationError(f"Failed to validate shell script: {file_name}") from e
+        elif contents.startswith("#!"):
             self.logger.warning("[%s] Skipping sh -n on file with unrecognized shebang: %s" % (file_name, contents[0]))
 
         self.logger.info("Wrote file: %s" % c_(file_path, "green", bright=True))
