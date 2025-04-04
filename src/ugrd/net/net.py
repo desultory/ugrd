@@ -1,11 +1,11 @@
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 
 from json import loads
 from pathlib import Path
 
 from zenlib.util import colorize, contains, unset
 
-from ugrd import AutodetectError
+from ugrd import AutodetectError, ValidationError
 
 
 def _process_net_device(self, net_device: str):
@@ -20,7 +20,7 @@ def _validate_net_device(self, net_device: str):
     if not net_device:  # Ensure the net_device is not empty
         if self["net_device_mac"]:
             return self.logger.warning("net_device is empty, using net_device_mac without validation: %s" % self["net_device_mac"])
-        raise ValueError("net_device must not be empty")
+        raise ValidationError("net_device must not be empty, or net_device_mac must be set.")
 
     dev_path = Path("/sys/class/net") / net_device
     if not dev_path.exists():  # Ensure the net_device exists on the system
