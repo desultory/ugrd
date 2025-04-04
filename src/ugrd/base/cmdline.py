@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "4.0.0"
+__version__ = "4.0.1"
 
 from importlib.metadata import PackageNotFoundError, version
 
@@ -23,15 +23,24 @@ def parse_cmdline_str(self) -> str:
     The only argument is the name of the variable to be read/set
 
     Checks if that variable is set in the environment, and if so, sets it to the value.
+
+    If the variable is not set in the environment, checks /proc/cmdline for the variable.
+    This may be the case if not PID 1.
     """
     return r"""
     edebug "Parsing cmdline string: $1"
 
     val=$(eval printf '%s' "\$$1")  # Get the value of the variable
-
     if [ -n "$val" ]; then
-        edebug "[$1] Got cmdline string: ${val}"
+        edebug "[$1] Got cmdline string from environment: ${val}"
         setvar "$1" "$val"
+    else
+        # If the variable is not set in the environment, check /proc/cmdline
+        val=$(grep -oP "(?<=^|\s)$1=\K[^ ]+" /proc/cmdline)
+        if [ -n "$val" ]; then
+            edebug "[$1] Got cmdline string: ${val}"
+            setvar "$1" "$val"
+        fi
     fi
     """
 
