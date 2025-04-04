@@ -37,9 +37,11 @@ def resume(self) -> None:
 
 def handle_early_resume(self) -> None:
     return [
-        "resumeval=$(readvar resume)",
-        'if ! check_var noresume && [ -n "$resumeval" ] ; then',
-        '    if echo "$resumeval" | grep -qE "^PARTUUID=|^UUID="; then',
+        "resumeval=$(readvar resume)",  # read the cmdline resume var
+        'if ! check_var noresume && [ -n "$resumeval" ] && [ -w /sys/power/resume ]; then',
+        '    if echo "$resumeval" | grep -q "UUID="     ||',      #    resolve uuid to device
+        '       echo "$resumeval" | grep -q "PARTUUID=" ||',      # or resolve partuuid to device
+        '       echo "$resumeval" | grep -q "LABEL="    ; then',  # or resolve label to device
         '        resume=$(blkid -t "$resumeval" -o device)',
         "    else",
         '        resume="$resumeval"',
