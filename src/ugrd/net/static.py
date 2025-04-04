@@ -1,4 +1,4 @@
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 
 from json import loads
 
@@ -45,7 +45,7 @@ def autodetect_ip(self):
 
 @contains("ip_address", "ip_address must be set", raise_exception=True)
 @contains("ip_gateway", "ip_gateway must be set", raise_exception=True)
-@contains("net_device", "net_device must be set", raise_exception=True)
+@contains("net_device_mac", "net_device or net_device_mac must be set", raise_exception=True)
 def init_net(self) -> str:
     """Returns shell lines to initialize the network device.
     Skips the initialization if the device is already up, and there is a gateway on the device.
