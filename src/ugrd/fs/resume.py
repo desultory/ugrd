@@ -6,7 +6,8 @@ from zenlib.util import contains
 def resume(self) -> None:
     """Returns a bash script handling resume from hibernation.
     Checks that /sys/power/resume is writable, resume= is set, and noresume is not set, if so,
-    checks if PARTUUID= is in the resume var, and tries to use blkid to find the resume device.
+    checks if UUID= or PARTUUID= or LABEL= is in the resume var,
+    and tries to use blkid to find the resume device.
     If the specified device exists, writes resume device to /sys/power/resume.
     In the event of failure, it prints an error message, a list of block devuices, then runs rd_fail.
 
@@ -36,9 +37,11 @@ def resume(self) -> None:
 
 def handle_early_resume(self) -> None:
     return [
-        "resumeval=$(readvar resume)",
-        'if ! check_var noresume && [ -n "$resumeval" ] ; then',
-        '    if echo "$resumeval" | grep -qE "^PARTUUID=|^UUID="; then',
+        "resumeval=$(readvar resume)",  # read the cmdline resume var
+        'if ! check_var noresume && [ -n "$resumeval" ] && [ -w /sys/power/resume ]; then',
+        '    if echo "$resumeval" | grep -q "UUID="     ||',      #    resolve uuid to device
+        '       echo "$resumeval" | grep -q "PARTUUID=" ||',      # or resolve partuuid to device
+        '       echo "$resumeval" | grep -q "LABEL="    ; then',  # or resolve label to device
         '        resume=$(blkid -t "$resumeval" -o device)',
         "    else",
         '        resume="$resumeval"',
