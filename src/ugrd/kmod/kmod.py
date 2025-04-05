@@ -201,6 +201,7 @@ def _process_kernel_version(self, kver: str) -> None:
         if self["no_kmod"]:
             return self.logger.warning("[%s] Kernel module directory does not exist, but no_kmod is set." % kver)
         self.logger.error(f"Available kernel versions: {', '.join([d.name for d in Path('/lib/modules').iterdir()])}")
+        self.logger.info("If kernel modules are not installed, and not required, set `no_kmod = true` to skip this check.")
         raise ValidationError(f"Kernel module directory does not exist for kernel: {kver}")
 
     self.data["kernel_version"] = kver
