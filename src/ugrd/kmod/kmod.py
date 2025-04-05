@@ -1,12 +1,13 @@
 __author__ = "desultory"
-__version__ = "3.3.3"
+__version__ = "3.3.4"
 
 from pathlib import Path
 from platform import uname
+from struct import error as StructError
 from struct import unpack
 from subprocess import run
 
-from ugrd import ValidationError
+from ugrd import AutodetectError, ValidationError
 from ugrd.kmod import BuiltinModuleError, DependencyResolutionError, IgnoredModuleError, _normalize_kmod_name
 from zenlib.util import colorize as c_
 from zenlib.util import contains, unset
@@ -98,7 +99,7 @@ def _autodetect_modules_lspci(self) -> None:
     """Uses /sys/bus/pci/drivers to get a list of all kernel modules.
     Similar to lspci -k."""
     lspci_kmods = set()
-    for driver in Path('/sys/bus/pci/drivers').iterdir():
+    for driver in Path("/sys/bus/pci/drivers").iterdir():
         if not driver.is_dir():
             self.logger.debug("Skipping non-directory: %s" % driver)
             continue
@@ -169,7 +170,7 @@ def _find_kernel_image(self) -> Path:
         if kernel_path := search_prefix(prefix):
             self.logger.info("Detected kernel image: %s" % (c_(kernel_path, "cyan")))
             return kernel_path
-    raise DependencyResolutionError("Failed to find kernel image")
+    raise AutodetectError("Failed to find kernel image")
 
 
 def _get_kver_from_header(self) -> str:
@@ -180,7 +181,11 @@ def _get_kver_from_header(self) -> str:
     https://www.kernel.org/doc/html/v6.7/arch/x86/boot.html#the-real-mode-kernel-header
     """
     kernel_path = _find_kernel_image(self)
-    kver_offset = unpack("<h", kernel_path.read_bytes()[0x020E:0x0210])[0] + 512
+    try:
+        kver_offset = unpack("<h", kernel_path.read_bytes()[0x020E:0x0210])[0] + 512
+    except StructError as e:
+        raise AutodetectError(f"Failed to read kernel version offset from: {kernel_path}") from e
+
     header = kernel_path.read_bytes()[kver_offset : kver_offset + 127]
     # Cut at the first null byte, decode to utf-8, and split at the first space
     kver = header[: header.index(0)].decode("utf-8").split()[0]
@@ -196,8 +201,8 @@ def _process_kernel_version(self, kver: str) -> None:
         if self["no_kmod"]:
             return self.logger.warning("[%s] Kernel module directory does not exist, but no_kmod is set." % kver)
         self.logger.error(f"Available kernel versions: {', '.join([d.name for d in Path('/lib/modules').iterdir()])}")
+        self.logger.info("If kernel modules are not installed, and not required, set `no_kmod = true` to skip this check.")
         raise ValidationError(f"Kernel module directory does not exist for kernel: {kver}")
-
 
     self.data["kernel_version"] = kver
     self.data["_kmod_dir"] = kmod_dir
@@ -270,7 +275,9 @@ def _add_kmod_firmware(self, kmod: str) -> None:
 
     if kmod not in self["_kmod_modinfo"]:
         if self["no_kmod"]:
-            return self.logger.warning("[%s] Kernel module info for firmware detection does not exist, but no_kmod is set." % kmod)
+            return self.logger.warning(
+                "[%s] Kernel module info for firmware detection does not exist, but no_kmod is set." % kmod
+            )
         raise DependencyResolutionError("Kernel module info does not exist: %s" % kmod)
 
     if self["_kmod_modinfo"][kmod].get("firmware") and not self["kmod_pull_firmware"]:
@@ -358,9 +365,8 @@ def _process_kmod_dependencies(self, kmod: str, mod_tree=None) -> None:
         raise BuiltinModuleError("Not adding built-in module to dependencies: %s" % kmod)
 
 
-
 def add_kmod_deps(self):
-    """ Adds all kernel modules to the initramfs dependencies.
+    """Adds all kernel modules to the initramfs dependencies.
     Always attempt to add firmware, continuing if no_kmod is set.
     If they are compressed with a supported extension, they are decompressed before being added.
     """
@@ -457,9 +463,7 @@ def process_modules(self) -> None:
 @unset("no_kmod", "no_kmod is enabled, skipping.", log_level=30)
 def load_modules(self) -> str:
     """Creates a shell function which loads all kernel modules in kmod_init."""
-    self.logger.info(
-        "Init kernel modules: %s" % c_(", ".join(self["kmod_init"]), "magenta", bright=True, bold=True)
-    )
+    self.logger.info("Init kernel modules: %s" % c_(", ".join(self["kmod_init"]), "magenta", bright=True, bold=True))
     if included_kmods := list(set(self["kernel_modules"]) ^ set(self["kmod_init"])):
         self.logger.info("Included kernel modules: %s" % c_(", ".join(included_kmods), "magenta"))
     if removed_kmods := self.get("_kmod_removed"):
