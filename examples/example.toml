@@ -1,4 +1,5 @@
 # This config will decrypt the LUKS volume with uuid "fdf442da-0574-4531-98c7-55227a041f1d", mapping it to "/dev/mapper/root"
+# Note: In most cases, the uuid of the LUKS volume will be detected from the root mount. It's set as an example here.
 # It will attempt to mount the btrfs volume with label "rootfs" to /target_rootfs
 # It will pull all current kernel modules from lspci -k results
 # It will try to process the cmdline and mount the rootfs based on the root= parameter
@@ -10,15 +11,19 @@ modules = [
 ]
 
 # Mask the parse_cmdline function to prevent it from running
+# Can be applied to any function
 #mask.init_pre = 'parse_cmdline'
 
 # By default, all kmod categories are ignored. This can be disabled by category
+# Modules can define these options if needed, and users should not need to set them
+# In most cases, kmods in these categories are not needed to boot the system
 #kmod_ignore_video = false
 #kmod_ignore_sound = false
 #kmod_ignore_network = false
 
 # The initramfs will be built in /tmp/initramfs if "build_dir" is not specified not specified
 #out_dir = "/usr/src/initramfs"
+#out_dir = "/boot"
 
 # Optionally supply a kernel version, uses the current kernel version if not specified
 #kernel_version = "6.1.53-gentoo-dist"
@@ -26,6 +31,8 @@ modules = [
 kmod_autodetect_lspci = true
 # lsmod detection can be helpful, but can bring in unnecessary modules
 #kmod_autodetect_lsmod = true
+# If no kernel modules are needed, or installed, no_kmod should be set
+#no_kmod = true
 
 # By default, ugrd will keep retrying to mount base mounts and the rootfs, unless enter is pressed
 # The default timeout between attempts is 1s, and the default number of retries is infinite
@@ -37,7 +44,8 @@ kmod_autodetect_lspci = true
 
 #auto_mounts = ['/boot']  # Automatically create mount config for /boot on the host
 
-# Optionally specify the root mountpoint information manually
+# Optionally specify the root mountpoint information manually, it should be detected automatically
+# Whatever options are set manually will be validated against the current root mount
 #[mounts.root]
 # The label of the root filesystem, a uuid or partuuid could be used instead
 #label = "rootfs"
@@ -48,12 +56,28 @@ kmod_autodetect_lspci = true
 #type = "vfat"
 #uuid = "4886-A631"
 
-
 # If the root is a LUKS volume, specify the LUKS volume information
+# The name of the LUKS volume should match the name of the device in /dev/mapper
 #[cryptsetup.root]
-# The UUID of the encrypted volume, mounted at /dev/mapper/root
+# The UUID of the encrypted volume, mounted at /dev/mapper/root, should be detected automatically
 #uuid = "fdf442da-0574-4531-98c7-55227a041f1d"
+
 # If a GPG encrypted key file is used, the key_type must be set to gpg.
+# If using a plain keyfile, this can be left unset.
 #key_type = "gpg"
 # The key file must either be included as a dependency, or it must be under an external mountpoint.
+# Key file under /boot, which is configured as an auto_mount
 #key_file = "/boot/rootfs.luks.gpg"
+# Key file included as a dependency
+#key_file = "/etc/ugrd/rootfs.luks.gpg"
+#include_key = true
+# If the key file is on storage not accessible to the build system, validation can be disabled:
+#validate_key = false
+
+# If using detached headers, the header file can be treated similarly to the key file
+#header_file = "/boot/rootfs.luks.header"
+#header_file = "/etc/ugrd/rootfs.luks.header"
+#include_header = true
+#validate_header = false
+
+
