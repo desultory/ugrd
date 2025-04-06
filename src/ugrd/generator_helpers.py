@@ -7,6 +7,8 @@ from uuid import uuid4
 from zenlib.util import colorize as c_
 from zenlib.util import pretty_print
 
+from .exceptions import ValidationError
+
 __version__ = "1.6.5"
 __author__ = "desultory"
 
@@ -110,7 +112,6 @@ class GeneratorHelpers:
             try:
                 self._run(["sh", "-n", str(file_path)])
             except RuntimeError as e:
-                from . import ValidationError
                 self.logger.error(f"Invalid shell script:\n{pretty_print(contents)}")
                 raise ValidationError(f"Failed to validate shell script: {file_name}") from e
         elif contents.startswith("#!"):

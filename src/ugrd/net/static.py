@@ -4,7 +4,7 @@ from json import loads
 
 from zenlib.util import colorize, contains, unset
 
-from .. import AutodetectError
+from ugrd.exceptions import AutodetectError
 
 
 @unset("ip_gateway")

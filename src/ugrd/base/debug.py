@@ -4,7 +4,7 @@ __version__ = "1.4.0"
 from os import environ
 from pathlib import Path
 
-from ugrd import AutodetectError, ValidationError
+from ugrd.exceptions import AutodetectError, ValidationError
 from zenlib.util import colorize, contains, unset
 
 EXPECTED_EDITORS = {"nano", "vim", "vi"}

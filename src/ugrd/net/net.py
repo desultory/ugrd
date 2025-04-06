@@ -5,7 +5,7 @@ from pathlib import Path
 
 from zenlib.util import colorize, contains, unset
 
-from ugrd import AutodetectError, ValidationError
+from ugrd.exceptions import AutodetectError, ValidationError
 
 
 def _process_net_device(self, net_device: str):

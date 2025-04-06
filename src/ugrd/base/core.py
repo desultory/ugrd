@@ -8,7 +8,7 @@ from stat import S_IFCHR
 from subprocess import run
 from typing import Union
 
-from ugrd import AutodetectError, ValidationError
+from ugrd.exceptions import AutodetectError, ValidationError
 from zenlib.types import NoDupFlatList
 from zenlib.util import contains, unset
 from zenlib.util import colorize as c_

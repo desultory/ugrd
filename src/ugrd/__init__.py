@@ -1,9 +1,4 @@
+from .exceptions import AutodetectError, ValidationError
 from .initramfs_generator import InitramfsGenerator
 
-class ValidationError(Exception):
-    pass
-
-class AutodetectError(Exception):
-    pass
-
-__all__ = ["InitramfsGenerator"]
+__all__ = ["InitramfsGenerator", "AutodetectError", "ValidationError"]

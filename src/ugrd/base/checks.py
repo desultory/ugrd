@@ -2,7 +2,7 @@ __version__ = "0.4.1"
 
 from pathlib import Path
 
-from ugrd import ValidationError
+from ugrd.exceptions import ValidationError
 from zenlib.util import contains
 
 

@@ -3,7 +3,7 @@ __author__ = "desultory"
 
 from pathlib import Path
 
-from ugrd import ValidationError
+from ugrd.exceptions import ValidationError
 from ugrd.fs.mounts import _resolve_overlay_lower_dir
 from zenlib.util import colorize, contains, unset
 
