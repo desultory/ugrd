@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "4.0.1"
+__version__ = "4.1.0"
 
 from importlib.metadata import PackageNotFoundError, version
 
@@ -9,10 +9,25 @@ def parse_cmdline_bool(self) -> str:
     The only argument is the name of the variable to be read/set
 
     If the boolean is present in /proc/cmdline, the variable is set to 1.
+
+    Otherwise, if it's set in the environment,
+    set the variable to 1 if it's anything other than 0, and 0 if it is 0.
     """
     return r"""
     edebug "Parsing cmdline bool: $1"
-    setvar "$1" "$(grep -qE "(^|\s)$1(\s|$)" /proc/cmdline && echo 1 || echo 0)"
+    if grep -qE "(^|\s)$1(\s|$)" /proc/cmdline; then
+        setvar "$1" 1
+        edebug "[$1] Got cmdline bool: 1"
+    else
+        env_val=$(eval printf '%s' "\$$1")
+        if [ -n "$env_val" ] && [ "$env_val" != "0" ]; then
+            edebug "[$1] Enabling cmdline bool from environment with value: ${env_val}"
+            setvar "$1" 1
+        else
+            edebug "[$1] Disabling cmdline bool with value: ${env_val}"
+            setvar "$1" 0
+        fi
+    fi
     """
 
 

@@ -1,0 +1,20 @@
+cmdline_bools = ["bell"]
+
+bell = true
+
+kmod_init = ["pcspkr"]
+
+[imports.build_tasks]
+"ugrd.base.bell" = [ "export_bell" ]
+
+[imports.init_pre]
+"ugrd.base.bell" = [ "startup_bell" ]
+
+[imports.init_final]
+"ugrd.base.bell" = [ "end_bell" ]
+
+[import_order.before]
+"end_bell" = "swtich_root"
+
+[custom_parameters]
+bell = "bool"  # Whether to not to activate the bell
