@@ -6,7 +6,7 @@ from pathlib import Path
 from re import search
 from textwrap import dedent
 
-from ugrd import AutodetectError, ValidationError
+from ugrd.exceptions import AutodetectError, ValidationError
 from zenlib.util import contains, unset
 from zenlib.util import colorize as c_
 

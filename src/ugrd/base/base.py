@@ -4,7 +4,7 @@ __version__ = "6.6.6"
 from pathlib import Path
 from shutil import which
 
-from ugrd import AutodetectError, ValidationError
+from ugrd.exceptions import AutodetectError, ValidationError
 from zenlib.util import colorize as c_
 from zenlib.util import contains, unset
 

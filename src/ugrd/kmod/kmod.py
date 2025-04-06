@@ -7,7 +7,7 @@ from struct import error as StructError
 from struct import unpack
 from subprocess import run
 
-from ugrd import AutodetectError, ValidationError
+from ugrd.exceptions import AutodetectError, ValidationError
 from ugrd.kmod import BuiltinModuleError, DependencyResolutionError, IgnoredModuleError, _normalize_kmod_name
 from zenlib.util import colorize as c_
 from zenlib.util import contains, unset

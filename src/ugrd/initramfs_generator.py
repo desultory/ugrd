@@ -8,6 +8,7 @@ from zenlib.util import pretty_print
 
 from ugrd.initramfs_dict import InitramfsConfigDict
 
+from .exceptions import ValidationError
 from .generator_helpers import GeneratorHelpers
 
 
@@ -358,8 +359,6 @@ class InitramfsGenerator(GeneratorHelpers):
             else:
                 self.logger.warning("No checks executed.")
         except (FileNotFoundError, ValueError) as e:
-            from . import ValidationError
-
             raise ValidationError(f"Error running checks: {e}") from e
 
     def run_tests(self) -> None:

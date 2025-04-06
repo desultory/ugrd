@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 
+from pycpio.errors import UnavailableCompression
 from zenlib.util import get_args_n_logger, get_kwargs_from_args
 
+from ugrd.exceptions import AutodetectError, ValidationError
 from ugrd.initramfs_generator import InitramfsGenerator
-
-from pycpio.errors import UnavailableCompression
-from . import AutodetectError, ValidationError
 
 
 def main():
