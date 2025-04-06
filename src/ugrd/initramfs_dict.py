@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "2.3.4"
+__version__ = "2.3.5"
 
 from collections import UserDict
 from importlib import import_module
@@ -384,7 +384,7 @@ class InitramfsConfigDict(UserDict):
     def validate(self) -> None:
         """Validate config, checks that all values are processed, sets validated flag."""
         if self["_processing"]:
-            self.logger.critical(
+            return self.logger.critical(
                 "Unprocessed config values: %s" % c_(", ".join(list(self["_processing"].keys())), "red", bold=True)
             )
         self["validated"] = True

@@ -89,6 +89,9 @@ class InitramfsGenerator(GeneratorHelpers):
         self.run_build()
         self.config_dict.validate()  # Validate the config after the build tasks have been run
 
+        if self.validate and not self.validated:
+            raise ValidationError(f"Failed to validate config. Unprocessed values: {', '.join(list(self['_processing'].keys()))}")
+
         self.generate_init()
         self.pack_build()
         self.run_checks()
