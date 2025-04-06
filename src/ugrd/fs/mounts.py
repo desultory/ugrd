@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "6.6.6"
+__version__ = "7.0.0"
 
 from pathlib import Path
 from re import search
@@ -22,6 +22,9 @@ MOUNT_PARAMETERS = [
     "base_mount",
     *SOURCE_TYPES,
 ]
+
+# Filesysms types where options should be inherited from active mounts, other than 'rw'
+MOUNT_INHERIT_OPTIONS = ["f2fs"]
 
 
 def _get_device_id(device: str) -> str:
@@ -175,11 +178,11 @@ def _validate_mount_config(self, mount_name: str, mount_config) -> None:
             for option in value:
                 if "subvol=" in option:
                     if mount_name == "root":
-                        raise ValueError(
-                            "Please use the root_subvol parameter instead of setting the option manually in the root mount."
+                        raise ValidationError(
+                            "Please use the root_subvol parameter instead of setting the subvol option manually in the root mount."
                         )
                     elif mount_config["type"] not in ["btrfs", "bcachefs"]:
-                        raise ValueError("subvol option can only be used with btrfs or bcachefs mounts.")
+                        raise ValidationError("subvol option can only be used with btrfs or bcachefs mounts.")
         elif parameter not in MOUNT_PARAMETERS:
             raise ValueError("Invalid parameter in mount: %s" % parameter)
 
@@ -206,6 +209,10 @@ def _process_mount(self, mount_name: str, mount_config, mount_class="mounts") ->
             if "ugrd.fs.ext4" not in self["modules"]:
                 self.logger.info("Auto-enabling module: %s", c_("ext4", "cyan"))
                 self["modules"] = "ugrd.fs.ext4"
+        elif mount_type == "f2fs":
+            if "ugrd.fs.f2fs" not in self["modules"]:
+                self.logger.info("Auto-enabling module: %s", c_("f2fs", "cyan"))
+                self["modules"] = "ugrd.fs.f2fs"
         elif mount_type == "btrfs":
             if "ugrd.fs.btrfs" not in self["modules"]:
                 self.logger.info("Auto-enabling module: %s", c_("btrfs", "cyan"))
@@ -754,12 +761,7 @@ def _autodetect_mount(self, mountpoint, mount_class="mounts", missing_ok=False) 
             % (c_(mountpoint, "yellow"), pretty_print(self[mount_class][mount_name]))
         )
 
-    # For standard mounts, default to auto and ro
-    if mount_class == "mounts":
-        mount_config = {mount_name: {"options": ["ro"]}}
-    else:  # For other mounts, use the existing mount config
-        mount_config = {mount_name: {"options": self["_mounts"][mountpoint].get("options", ["default"])}}
-
+    # Attempt to get the fs type, use auto if not found
     fs_type = mount_info.get("type", fs_type) or "auto"
     if fs_type == "auto":
         self.logger.warning("Failed to autodetect mount type for mountpoint:" % (c_(mountpoint, "yellow")))
@@ -767,7 +769,19 @@ def _autodetect_mount(self, mountpoint, mount_class="mounts", missing_ok=False) 
         self.logger.info(
             "[%s] Autodetected mount type from device: %s" % (c_(mount_device, "blue"), c_(fs_type, "cyan"))
         )
-    mount_config[mount_name]["type"] = fs_type.lower()
+    # Get mount options based on the mount tyoe
+    if mount_class == "mounts":
+        # Inherit mount options from the host mount for certain mount types
+        if fs_type in MOUNT_INHERIT_OPTIONS:
+            mount_options = self["_mounts"][mountpoint].get("options", ["ro"])
+            if 'rw' in mount_options:
+                mount_options.pop(mount_options.index("rw"))  # Remove rw option if it exists
+        else:  # For standard mounts, default ro
+            mount_options = ["ro"]
+    else:  # For other mounts, use the existing mount config
+        mount_options = self["_mounts"][mountpoint].get("options", ["default"])
+
+    mount_config = {mount_name: {"options": mount_options, "type": fs_type.lower()}}
 
     for source_type in SOURCE_TYPES:
         if source := mount_info.get(source_type):
