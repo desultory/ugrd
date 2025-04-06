@@ -1,5 +1,5 @@
 kmod_ignore = [
-'snd', 'soundcore', 'pcspkr', 'snd_hda_core', 'snd_hda_codec', 'snd_hda_ext_core', 'snd_hwdep',  # base
+'snd', 'soundcore', 'snd_hda_core', 'snd_hda_codec', 'snd_hda_ext_core', 'snd_hwdep',  # base
 'snd_timer', 'snd_hrtimer',  # alsa
 'snd_pcm', 'snd_rawmidi', 'snd_seq_device', 'snd_seq', 'snd_seq_dummy', 'snd_ump', # subtypes
 'snd_usb_audio', 'snd_usbmidi_lib',  # usb
