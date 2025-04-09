@@ -358,17 +358,19 @@ class InitramfsConfigDict(UserDict):
             else:
                 raise ValueError("[%s] Invalid needs value: %s" % (module, needs))
 
-        custom_parameters = module_config.get("custom_parameters", {})
-        if custom_parameters:
-            self.logger.debug("[%s] Processing custom parameters: %s" % (module, custom_parameters))
-            self["custom_parameters"] = custom_parameters
-
-        for name, value in module_config.items():  # Process config values, in order they are defined
+        # Process other config such as import orders, defined values
+        for name, value in module_config.items():
             if name in ["imports", "custom_parameters", "provides", "needs"]:
                 self.logger.log(5, "[%s] Skipping '%s'" % (module, name))
                 continue
             self.logger.debug("[%s] (%s) Setting value: %s" % (module, name, value))
             self[name] = value
+
+        # Add custom parameters after values are added, so they are processed in the correct order
+        custom_parameters = module_config.get("custom_parameters", {})
+        if custom_parameters:
+            self.logger.debug("[%s] Processing custom parameters: %s" % (module, custom_parameters))
+            self["custom_parameters"] = custom_parameters
 
         # If custom paramters were added, process unprocessed values
         for custom_parameter in custom_parameters:
