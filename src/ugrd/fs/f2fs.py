@@ -1,4 +1,4 @@
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 from zenlib.util import unset
 
@@ -8,8 +8,8 @@ def f2fs_fsck(self) -> str:
     """Returns a shell function to run fsck on the root filesystem
     The root device is determined by checking the source of SWITCH_ROOT_TARGET"""
     return """
-    if check_var no_fsck; then
-        ewarn 'no_fsck is set, skipping fsck'
+    if check_var ugrd_no_fsck; then
+        ewarn 'ugrd_no_fsck is set, skipping fsck'
         return
     fi
     ROOT_DEV=$(awk -v target="$(readvar SWITCH_ROOT_TARGET)" '$2 == target {{print $1}}' /proc/mounts)

@@ -1,7 +1,62 @@
 __author__ = "desultory"
-__version__ = "4.1.0"
+__version__ = "4.2.0"
 
 from importlib.metadata import PackageNotFoundError, version
+
+from ugrd.exceptions import ValidationError
+from zenlib.util import colorize as c_
+
+# Some arguments absolutely must be namespaced and should only be used by the kernel
+FORCE_NAMESPACE = ["debug"]
+
+def _check_namespaced_arg(self, arg: str) -> bool:
+    """Checks if the argument is namespaced or not.
+    Unless explicitly allowed, all arguments should be namespaced.
+
+    Most arguments should follow the format ugrd_<argname>, but alternate namespaces can be used.
+    "." should not be used as a separator as it makes the shell variable name invalid.
+    """
+    if arg in self["_non_namespaced_cmdline_args"]:
+        self.logger.debug(f"Allowed non-namespaced cmdline arg: {arg}")
+        return True
+    elif arg.startswith("ugrd_"):
+        return True
+    elif "_" in arg[1:-1]:  # Check for other namespaces
+        self.logger.debug(f"Allowed namespaced cmdline arg: {c_(arg, 'green')}")
+        return True
+    else:
+        return False
+
+def _process__non_namespaced_cmdline_args(self, arg: str) -> None:
+    """ Ensures the non-namespaced arg name is valid."""
+    if arg in FORCE_NAMESPACE:
+        raise ValueError(f"Invalid non-namespaced cmdline arg: {arg}")
+    self.data["_non_namespaced_cmdline_args"].append(arg)
+
+def _process_cmdline_bools_multi(self, cmdline_bool: str) -> None:
+    """Processes a cmdline bool.
+    If validation is enabled, and the arg is not properly namespaced, raise an exception.
+    """
+    if not _check_namespaced_arg(self, cmdline_bool):
+        if self["validate"]:
+            raise ValidationError(f"Invalid cmdline bool, missing namespace: {cmdline_bool}")
+        self.logger.warning(f"Invalid cmdline bool, missing namespace: {cmdline_bool}")
+
+    self.logger.debug(f"Registered cmdline bool: {c_(cmdline_bool, 'green')}")
+    self.data["cmdline_bools"].append(cmdline_bool)
+
+
+def _process_cmdline_strings_multi(self, cmdline_string: str) -> None:
+    """Processes a cmdline string.
+    If validation is enabled, and the arg is not properly namespaced, raise an exception.
+    """
+    if not _check_namespaced_arg(self, cmdline_string):
+        if self["validate"]:
+            raise ValidationError(f"Invalid cmdline string, missing namespace: {cmdline_string}")
+        self.logger.warning(f"Invalid cmdline string, missing namespace: {cmdline_string}")
+
+    self.logger.debug(f"Registered cmdline string: {c_(cmdline_string, color='green')}")
+    self.data["cmdline_strings"].append(cmdline_string)
 
 
 def parse_cmdline_bool(self) -> str:

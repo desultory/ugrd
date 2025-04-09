@@ -1,6 +1,11 @@
-cmdline_bools = ['quiet', 'debug', 'recovery']
+cmdline_bools = ['quiet', 'ugrd_debug', 'ugrd_recovery']
 cmdline_strings = ['init', 'loglevel']
 
+# Ensure all cmdline arguments but ones the kernel expects the initramfs to handle are namespaced
+_non_namespaced_cmdline_args = ["init", "resume", "root", "rootdelay", "rootflags", "roottype", "quiet", "loglevel"]
+
+[imports.config_processing]
+"ugrd.base.cmdline" = ["_process__non_namespaced_cmdline_args", "_process_cmdline_bools_multi", "_process_cmdline_strings_multi"]
 
 [imports.init_pre]
 "ugrd.base.cmdline" = [ "export_exports", "parse_cmdline" ]
@@ -13,7 +18,7 @@ export_exports = "make_run_dirs"
 parse_cmdline = "export_exports"
 
 [custom_parameters]
+_non_namespaced_cmdline_args = "NoDupFlatList" # set the non-namespaced cmdline args to be procesed from /proc/cmdline
 exports = "dict"  # Add the exports property, used to specify the exports for the init script
 cmdline_bools = "NoDupFlatList" # set the booleans to be procesed from /proc/cmdline
 cmdline_strings = "NoDupFlatList" # set the strings to be procesed from /proc/cmdline
-_init_mount = "NoDupFlatList" # List contaning functions which were removed from imports.int_mount by refactor_mounts
