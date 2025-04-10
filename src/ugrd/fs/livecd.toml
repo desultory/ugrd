@@ -1,6 +1,6 @@
 modules = ["ugrd.fs.overlayfs"]
 
-cmdline_strings = [ "livecd_label", "squashfs_image" ]
+cmdline_strings = [ "ugrd_livecd_label", "ugrd_squashfs_image" ]
 
 squashfs_image = 'image.squashfs'
 hostonly = false

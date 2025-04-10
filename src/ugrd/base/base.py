@@ -166,7 +166,7 @@ def rd_fail(self) -> list[str]:
         r'eerror "Loaded modules:\n$(cat /proc/modules)"',
         r'eerror "Block devices:\n$(blkid)"',
         r'eerror "Mounts:\n$(mount)"',
-        'if [ "$(readvar recovery)" = "1" ]; then',
+        'if [ "$(readvar ugrd_recovery)" = "1" ]; then',
         '    einfo "Entering recovery shell"',
     ]
     if "ugrd.base.plymouth" in self["modules"]:
@@ -189,7 +189,7 @@ def rd_fail(self) -> list[str]:
 def setvar(self) -> str:
     """Returns a shell function that sets a variable in /run/ugrd/{name}."""
     return """
-    if check_var debug; then
+    if check_var ugrd_debug; then
         edebug "Setting $1 to $2"
     fi
     printf "%s" "$2" > "/run/ugrd/${1}"
@@ -314,7 +314,7 @@ def edebug(self) -> str:
     if check_var quiet; then
         return
     fi
-    if [ "$(readvar debug)" != "1" ]; then
+    if [ "$(readvar ugrd_debug)" != "1" ]; then
         return
     fi
     printf "\033[1;34m *\033[0m %b\n" "${output}"

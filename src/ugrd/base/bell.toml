@@ -1,4 +1,4 @@
-cmdline_bools = ["bell"]
+cmdline_bools = ["ugrd_bell"]
 
 bell = true
 

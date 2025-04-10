@@ -14,9 +14,9 @@ def mount_livecd(self) -> str:
     All mount handling happens strictly at runtime
     """
     return f"""
-    livecd_label="$(readvar livecd_label)"
+    livecd_label="$(readvar ugrd_livecd_label)"
     if [ -z "$livecd_label" ]; then
-        rd_fail "livecd_label must be set to the label of the livecd storage root."
+        rd_fail "ugrd_livecd_label must be set to the label of the livecd storage root."
     fi
     einfo "Mounting livecd with label: $livecd_label"
     while ! mount LABEL="$livecd_label" /run/livecd 2>/dev/null; do
@@ -44,7 +44,7 @@ def set_livecd_mount(self):
             "no_validate": True,
         }
     }
-    self["exports"]["livecd_label"] = self.livecd_label
+    self["exports"]["ugrd_livecd_label"] = self.livecd_label
 
 
 def set_squashfs_root_source(self) -> str:

@@ -10,7 +10,7 @@ binaries = [
 provides = "mounts" 
 
 cmdline_strings =  ["root", "roottype", "rootflags", "rootdelay" ]
-cmdline_bools = ["no_fsck"]
+cmdline_bools = ["ugrd_no_fsck"]
 
 run_dirs = [ "ugrd" ]
 

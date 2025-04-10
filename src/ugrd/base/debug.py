@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "1.4.0"
+__version__ = "1.4.1"
 
 from os import environ
 from pathlib import Path
@@ -42,8 +42,8 @@ def _validate_editor(self, editor: str):
 def start_shell(self) -> str:
     """Start a shell at the start of the initramfs."""
     return """
-    if ! check_var debug; then
-        ewarn "The debug module is enabled, but debug is not set enabled"
+    if ! check_var ugrd_debug; then
+        ewarn "The ugrd.base.debug module is enabled, but ugrd_debug is not enabled!"
         return
     fi
     einfo "Starting debug shell"
@@ -54,4 +54,4 @@ def start_shell(self) -> str:
 @contains("start_shell", "Not enabling the debug shell, as the start_shell option is not set.", log_level=30)
 def enable_debug(self) -> str:
     """Enable debug mode."""
-    return "setvar debug 1"
+    return "setvar ugrd_debug 1"
