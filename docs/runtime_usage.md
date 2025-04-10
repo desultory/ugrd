@@ -10,4 +10,6 @@
 
 In the event of a failure, modules will either fail through, or re-exec the init script.
 
-The `recovery` cmdline arg will allow a shell to be spawned in the event of a failure. This is useful for debugging.
+The `ugrd_recovery` cmdline arg will allow a shell to be spawned in the event of a failure. This is useful for debugging.
+
+> This can be set by simply adding `ugrd_recovery` to the kernel command line, or `ugrd_recovery=1`
