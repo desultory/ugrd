@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "4.2.0"
+__version__ = "4.3.0"
 
 from os import environ, makedev, mknod
 from pathlib import Path
@@ -86,8 +86,27 @@ def get_conditional_dependencies(self) -> None:
                 unset(condition_value)(add_dep(dependency))
 
 
+def _determine_interpreter(self, binary: Path) -> str:
+    """ Checks the shebang of a file, returning the interpreter if it exists."""
+    with binary.open("rb") as f:
+        try:
+            first_line = f.readline().decode("utf-8").strip()
+        except UnicodeDecodeError:
+            return self.logger.debug(f"Binary is not a text file, skipping shebang check: {c_(binary, 'yellow')}")
+
+        if first_line.startswith("#!"):
+            interpreter = first_line[2:].split()[0]
+            self.logger.debug(f"[{binary}] Interpreter found: {c_(interpreter, 'green')}")
+            return interpreter
+        else:
+            self.logger.log(5, "No shebang found in: %s" % binary)
+
+
 def calculate_dependencies(self, binary: str) -> list[Path]:
-    """Calculates the dependencies of a binary using lddtree
+    """Calculates the dependencies of a binary using lddtree.
+
+    Additionally, pulls the interpreter if defined in the binary's shebang.
+
     Returns a list of Path objects for each dependency.
     """
     binary_path = which(binary)
@@ -95,6 +114,12 @@ def calculate_dependencies(self, binary: str) -> list[Path]:
         raise AutodetectError(f"Binary not found not found in PATH: {binary}")
 
     binary_path = Path(binary_path)
+    if interpreter := _determine_interpreter(self, binary_path):
+        if interpreter not in self["binaries"]:
+            self.logger.info(f"[{c_(binary, 'blue')}] Adding interpreter to binaries: {c_(interpreter, 'cyan')}")
+            self["binaries"] = interpreter
+        else:
+            self.logger.debug(f"Interpreter already in binaries list, skipping: {c_(interpreter, 'yellow')}")
 
     self.logger.debug("Calculating dependencies for: %s" % binary_path)
     dependencies = run(["lddtree", "-l", str(binary_path)], capture_output=True)
