@@ -19,8 +19,8 @@ def resume(self) -> str:
     """
     return r"""
         # Check resume support
-        [ -n "$1" ] || (ewarn "No device?" ; return 1)
-        [ -w /sys/power/resume ] || (ewarn "Kernel does not support resume!" ; return 1)
+        [ -n "$1" ] || (ewarn "A resume device must be specified." ; return 1)
+        [ -w /sys/power/resume ] || (eerror "Kernel does not support resume!" ; return 1)
         # TODO: Make POSIX compliant
         [[ ! "$(cat /sys/power/resume)" == "0:0" ]] || ewarn "/sys/power/resume not empty, resume has already been attempted!"
         # Safety checks
@@ -30,6 +30,7 @@ def resume(self) -> str:
         fi
         [ -b "$1" ] || (ewarn "\'$1\' is not a valid block device!" ; return 1)
         einfo "Attempting resume from: $1"
+        # TODO: This could maybe be printf?
         echo -n "$1" > /sys/power/resume
         einfo "No image on: $resume"
         return 0
@@ -42,20 +43,20 @@ def handle_early_resume(self) -> str:
         if ! check_var noresume && [ -n "$resumeval" ] && [ -w /sys/power/resume ]; then
             # Resolve the UUID, PARTUUID, or LABEL to a device
             if echo "$resumeval" | grep -q "UUID="     ||
-                echo "$resumeval" | grep -q "PARTUUID=" ||
-                echo "$resumeval" | grep -q "LABEL="    ; then
+               echo "$resumeval" | grep -q "PARTUUID=" ||
+               echo "$resumeval" | grep -q "LABEL="    ; then
                 resume=$(blkid -t "$resumeval" -o device)
             else
                 resume="$resumeval"
             fi
-            if ! [ -z $resume ] ; then
+            if ! [ -z $resume ] ; then  # Check that the resolved device is not empty, the resume func checks it's a device
                 if ! resume "$resume" ; then
                     eerror "If you wish to continue booting, remove the resume= kernel parameter."
-                     eerror " or run 'setvar noresume 1' from the recovery shell to skip resuming."
-                    rd_fail "Failed to resume from $(readvar resume)."
+                    eerror " or run 'setvar noresume 1' from the recovery shell to skip resuming."
+                    rd_fail "Failed to resume from $(readvar resume) ($resumeval)"
                 fi
             else
-                einfo \"Resume device '$resumeval' not found\"
+                eerror "Resume device not found: $resumeval"
             fi
         fi
     """
