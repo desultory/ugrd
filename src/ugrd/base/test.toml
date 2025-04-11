@@ -25,7 +25,6 @@ test_arch = "str"  # Define the qemu arch (added to the qemu-system- command)
 test_cmdline = "str"  # Define the kernel command line for the test image
 test_timeout = "int"  # Define the timeout for the test
 test_image_size = "int"  # Define the size of the test image, in MB
-test_copy_config = "NoDupFlatList"  # Config parameters to copy into the image builder
 test_flag = "str"  # Define the success flag for the test
 test_rootfs_name = "str"  # Define the name of the rootfs image
 test_rootfs_build_dir = "Path"  # Define the build directory for the rootfs image

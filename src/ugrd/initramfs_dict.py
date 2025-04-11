@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "2.3.5"
+__version__ = "2.4.0"
 
 from collections import UserDict
 from importlib import import_module
@@ -39,8 +39,9 @@ class InitramfsConfigDict(UserDict):
         "validated": bool,  # A flag to indicate if the config has been validated, mostly used for log levels
         "custom_parameters": dict,  # Custom parameters loaded from imports
         "custom_processing": dict,  # Custom processing functions which will be run to validate and process parameters
-        "_processing": dict,
-    }  # A dict of queues containing parameters which have been set before the type was known
+        "_processing": dict, # A dict of queues containing parameters which have been set before the type was known
+        "test_copy_config": NoDupFlatList,  # A list of config values which are copied into test images, from the parent
+    }
 
     def __init__(self, NO_BASE=False, *args, **kwargs):
         super().__init__(*args, **kwargs)
