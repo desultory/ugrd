@@ -1,9 +1,9 @@
-__version__ = "0.4.2"
+__version__ = "0.4.3"
 
 from zenlib.util import contains
 
 
-def resume(self) -> None:
+def resume(self) -> str:
     """Returns a shell script handling resume from hibernation.
     Checks that /sys/power/resume is writable, resume= is set, and noresume is not set, if so,
     checks if UUID= or PARTUUID= or LABEL= is in the resume var,
@@ -17,46 +17,48 @@ def resume(self) -> None:
     If the system is freshly booted, it will not be able to resume, as there is no hibernation image.
     Distinguising between a fresh boot and missing/borked hibernation image is not possible at run time.
     """
-    return [
+    return r"""
         # Check resume support
-        '[ -n "$1" ] || (ewarn "No device?" ; return 1)',
-        '[ -w /sys/power/resume ] || (ewarn "Kernel does not support resume!" ; return 1)',
-        '[[ ! "$(cat /sys/power/resume)" == "0:0" ]] || ewarn "/sys/power/resume not empty, resume has already been attempted!"',
+        [ -n "$1" ] || (ewarn "No device?" ; return 1)
+        [ -w /sys/power/resume ] || (ewarn "Kernel does not support resume!" ; return 1)
+        # TODO: Make POSIX compliant
+        [[ ! "$(cat /sys/power/resume)" == "0:0" ]] || ewarn "/sys/power/resume not empty, resume has already been attempted!"
         # Safety checks
-        "if ! [ -z $(lsblk -Q MOUNTPOINT)] ; then",
-        r'    eerror "Cannot safely resume with mounted block devices:\n$(lsblk -Q MOUNTPOINT -no PATH)"',
-        "    return 1",
-        "fi",
-        '[ -b "$1" ] || (ewarn "\'$1\' is not a valid block device!" ; return 1)',
-        'einfo "Attempting resume from: $1"',
-        'echo -n "$1" > /sys/power/resume',
-        'einfo "No image on $resume"',
-        "return 0",
-    ]
+        if ! [ -z $(lsblk -Q MOUNTPOINT)] ; then
+            eerror "Cannot safely resume with mounted block devices:\n$(lsblk -Q MOUNTPOINT -no PATH)"
+            return 1
+        fi
+        [ -b "$1" ] || (ewarn "\'$1\' is not a valid block device!" ; return 1)
+        einfo "Attempting resume from: $1"
+        echo -n "$1" > /sys/power/resume
+        einfo "No image on: $resume"
+        return 0
+    """
 
 
-def handle_early_resume(self) -> None:
-    return [
-        "resumeval=$(readvar resume)",  # read the cmdline resume var
-        'if ! check_var noresume && [ -n "$resumeval" ] && [ -w /sys/power/resume ]; then',
-        '    if echo "$resumeval" | grep -q "UUID="     ||',      #    resolve uuid to device
-        '       echo "$resumeval" | grep -q "PARTUUID=" ||',      # or resolve partuuid to device
-        '       echo "$resumeval" | grep -q "LABEL="    ; then',  # or resolve label to device
-        '        resume=$(blkid -t "$resumeval" -o device)',
-        "    else",
-        '        resume="$resumeval"',
-        "    fi",
-        "    if ! [ -z $resume ] ; then",
-        '        if ! resume "$resume" ; then',
-        '            eerror "If you wish to continue booting, remove the resume= kernel parameter."',
-        '''             eerror " or run 'setvar noresume 1' from the recovery shell to skip resuming."''',
-        '            rd_fail "Failed to resume from $(readvar resume)."',
-        "        fi",
-        "    else",
-        "        einfo \"Resume device '$resumeval' not found\"",
-        "    fi",
-        "fi",
-    ]
+def handle_early_resume(self) -> str:
+    return """
+        resumeval="$(readvar resume)"  # read the cmdline resume var
+        if ! check_var noresume && [ -n "$resumeval" ] && [ -w /sys/power/resume ]; then
+            # Resolve the UUID, PARTUUID, or LABEL to a device
+            if echo "$resumeval" | grep -q "UUID="     ||
+                echo "$resumeval" | grep -q "PARTUUID=" ||
+                echo "$resumeval" | grep -q "LABEL="    ; then
+                resume=$(blkid -t "$resumeval" -o device)
+            else
+                resume="$resumeval"
+            fi
+            if ! [ -z $resume ] ; then
+                if ! resume "$resume" ; then
+                    eerror "If you wish to continue booting, remove the resume= kernel parameter."
+                     eerror " or run 'setvar noresume 1' from the recovery shell to skip resuming."
+                    rd_fail "Failed to resume from $(readvar resume)."
+                fi
+            else
+                einfo \"Resume device '$resumeval' not found\"
+            fi
+        fi
+    """
 
 
 @contains("late_resume")
