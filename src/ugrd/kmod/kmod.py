@@ -8,7 +8,7 @@ from struct import unpack
 from subprocess import run
 
 from ugrd.exceptions import AutodetectError, ValidationError
-from ugrd.kmod import BuiltinModuleError, DependencyResolutionError, IgnoredModuleError, _normalize_kmod_name
+from ugrd.kmod import BuiltinModuleError, MissingModuleError, DependencyResolutionError, IgnoredModuleError, _normalize_kmod_name
 from zenlib.util import colorize as c_
 from zenlib.util import contains, unset
 
@@ -404,7 +404,7 @@ def process_ignored_module(self, module: str) -> None:
                     # https://github.com/projg2/installkernel-gentoo/commit/1c70dda8cd2700e5306d2ed74886b66ad7ccfb42
                     exit(77)
                 else:
-                    raise ValueError("Required module cannot be imported and is not builtin: %s" % module)
+                    raise MissingModuleError("Required module cannot be imported and is not builtin: %s" % module)
             else:
                 self.logger.debug("Removing ignored kernel module from %s: %s" % (key, module))
             self[key].remove(module)
