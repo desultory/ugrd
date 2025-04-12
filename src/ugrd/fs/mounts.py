@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "7.0.0"
+__version__ = "7.0.1"
 
 from pathlib import Path
 from re import search
@@ -367,7 +367,7 @@ def get_blkid_info(self, device=None) -> dict:
         raise AutodetectError("Unable to get blkid info.")
 
     for device_info in blkid_output.split("\n"):
-        dev, info = device_info.split(": ")
+        dev, info = device_info.split(": ", 1)
         info = " " + info  # Add space to make regex consistent
         self["_blkid_info"][dev] = {}
         self.logger.debug("[%s] Processing blkid line: %s" % (dev, info))
