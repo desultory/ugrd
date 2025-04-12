@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "4.0.4"
+__version__ = "4.1.0"
 
 from json import loads
 from pathlib import Path
@@ -7,8 +7,8 @@ from re import search
 from textwrap import dedent
 
 from ugrd.exceptions import AutodetectError, ValidationError
-from zenlib.util import contains, unset
 from zenlib.util import colorize as c_
+from zenlib.util import contains, unset
 
 _module_name = "ugrd.crypto.cryptsetup"
 
@@ -186,10 +186,9 @@ def _read_cryptsetup_header(self, mapped_name: str, slave_device: str = None) ->
         return luks_info
     except RuntimeError as e:
         if not self["cryptsetup"][mapped_name].get("header_file"):
-            self.logger.error("Unable to read LUKS header: %s" % c_(e, "red", bold=True, bright=True))
+            raise AutodetectError(f"Unable to read LUKS header for: {mapped_name}") from e
         else:
-            self.logger.warning("Cannot read detached LUKS header for validation: %s" % c_(e, "yellow"))
-    return {}
+            raise ValidationError(f"[{mapped_name}] Unable to read detached LUKS header: {header_file}") from e
 
 
 def _detect_luks_aes_module(self, luks_cipher_name: str) -> None:
@@ -237,9 +236,18 @@ def _validate_cryptsetup_header(self, mapped_name: str) -> None:
     if cryptsetup_info.get("validate_header") is False:
         return self.logger.warning("Skipping cryptsetup header validation for: %s" % c_(mapped_name, "yellow"))
 
-    luks_info = _read_cryptsetup_header(self, mapped_name)
-    if not luks_info:
-        raise ValidationError("[%s] Unable to read LUKS header." % mapped_name)
+    try:
+        luks_info = _read_cryptsetup_header(self, mapped_name)
+    except (AutodetectError, ValidationError) as e:
+        self.logger.warning(f"Unable to validate LUKS header for: {c_(mapped_name, 'red', bold=True)}\n")
+        if "header_file" not in cryptsetup_info:
+            self.logger.warning("If the header is detached, please set `header_file` in the configuration.")
+        self.logger.warning("If the header is detached not accessible at build time, please set `validate_header = false`.")
+        self.logger.critical("When header validation is disabled, it's up to the user to ensure valid headers are accessible at boot time, and that cryptsetup is built with the correct dependencies!")
+        self.logger.warning("Validation is not supported for LUKS1. If LUKS1 is being used, please consider using LUKS2 if possible.\n")
+        self.logger.info(f"Header validation can be disabled for this LUKS volume by setting the following configuration:\n\n[cryptsetup.{mapped_name}]\nvalidate_header = false\n\nor by setting `cryptsetup_header_validation = false` globally.\n")
+
+        raise e
 
     if uuid := cryptsetup_info.get("uuid"):
         if luks_info.get("uuid") != uuid:
