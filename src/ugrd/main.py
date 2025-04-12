@@ -4,6 +4,7 @@ from pycpio.errors import UnavailableCompression
 from zenlib.util import get_args_n_logger, get_kwargs_from_args
 
 from ugrd.exceptions import AutodetectError, ValidationError
+from ugrd.kmod import MissingModuleError
 from ugrd.initramfs_generator import InitramfsGenerator
 
 
@@ -179,6 +180,9 @@ def main():
         logger.critical(e)
         exit(1)
     except UnavailableCompression as e:
+        logger.critical(e)
+        exit(1)
+    except MissingModuleError as e:
         logger.critical(e)
         exit(1)
     except Exception as e:

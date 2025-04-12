@@ -1,4 +1,4 @@
-__version__ = "1.2.2"
+__version__ = "1.3.0"
 
 from tempfile import TemporaryDirectory
 
@@ -25,6 +25,17 @@ def _allocate_image(self, image_path, padding=0):
     with open(image_path, "wb") as f:
         self.logger.info("Allocating test image file: %s" % c_(f.name, "green"))
         f.write(b"\0" * (self.test_image_size + padding) * 2**20)
+
+def _copy_fs_contents(self, image_path, build_dir):
+    """ Mount and copy the filesystem contents into the image,
+    for filesystems which cannot be created directly from a directory"""
+    try:
+        with TemporaryDirectory() as tmp_dir:
+            self._run(["mount", image_path, tmp_dir])
+            self._run(["cp", "-a", f"{build_dir}/.", tmp_dir])
+            self._run(["umount", tmp_dir])
+    except RuntimeError as e:
+        raise RuntimeError("Could not mount the test image: %s", e)
 
 
 def _get_luks_config(self):
@@ -105,13 +116,10 @@ def make_test_image(self):
         self._run(["mkfs", "-t", rootfs_type, "-f", "--rootdir", build_dir, "-U", rootfs_uuid, image_path])
     elif rootfs_type == "xfs":
         self._run(["mkfs", "-t", rootfs_type, "-m", "uuid=%s" % rootfs_uuid, image_path])
-        try:  # XFS doesn't support importing a directory as a filesystem, it must be mounted
-            with TemporaryDirectory() as tmp_dir:
-                self._run(["mount", image_path, tmp_dir])
-                self._run(["cp", "-a", f"{build_dir}/.", tmp_dir])
-                self._run(["umount", tmp_dir])
-        except RuntimeError as e:
-            raise RuntimeError("Could not mount the XFS test image: %s", e)
+        _copy_fs_contents(self, image_path, build_dir)  # XFS doesn't support importing a directory as a filesystem
+    elif rootfs_type == "f2fs":
+        self._run(["mkfs", "-t", rootfs_type, "-f", "-U", rootfs_uuid, image_path])
+        _copy_fs_contents(self, image_path, build_dir)  # F2FS doesn't support importing a directory as a filesystem
     elif rootfs_type == "squashfs":
         # First, make the inner squashfs image
         squashfs_image = self._get_out_path(f"squash/{self['squashfs_image']}")
