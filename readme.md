@@ -97,6 +97,7 @@ The following root filesystems have been tested:
 * BTRFS
 * EXT4
 * XFS
+* F2FS
 * NILFS2
 
 > The root mount can automatically be mounted under an overlay filesystem by using the `ugrd.fs.overlayfs` module.
