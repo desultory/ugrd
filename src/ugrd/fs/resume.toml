@@ -6,10 +6,13 @@ test_copy_config = [ "test_resume", "test_swap_uuid" ]
 "ugrd.fs.resume" = [ "test_init_swap_uuid" ]
 
 [imports.init_main]
-"ugrd.fs.resume" = [ "handle_early_resume" ]
+"ugrd.fs.resume" = [ "handle_early_resume", "handle_late_resume"]
 
-[imports.init_premount]
-"ugrd.fs.resume" = [ "handle_late_resume"]
+[import_order.before]
+handle_early_resume = "mount_fstab"
+
+[import_order.after]
+handle_late_resume = ["crypt_init", "init_lvm"]
 
 [imports.functions]
 "ugrd.fs.resume" = ["resume"]
@@ -19,5 +22,3 @@ late_resume = "bool"
 test_resume = "bool"
 test_swap_uuid = "str"
 
-[import_order.before]
-handle_resume = "mount_fstab"
