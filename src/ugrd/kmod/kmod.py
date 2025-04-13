@@ -265,7 +265,6 @@ def regen_kmod_metadata(self) -> None:
     self._run(["depmod", "--basedir", build_dir, self["kernel_version"]])
 
 
-@contains("kernel_version", "kernel_version is not set, skipping firmware detection.", log_level=30)
 def _add_kmod_firmware(self, kmod: str) -> None:
     """Adds firmware files for the specified kernel module to the initramfs.
 
@@ -371,7 +370,10 @@ def add_kmod_deps(self):
     If they are compressed with a supported extension, they are decompressed before being added.
     """
     for kmod in self["kernel_modules"]:
-        _add_kmod_firmware(self, kmod)
+        if self.get("kernel_version"):
+            _add_kmod_firmware(self, kmod)
+        else:
+            self.logger.warning(f"Kernel version is not set, skipping firmware detection for kmod: {c_(kmod, 'yellow')}")
         # if no_kmod is set, continue and check for the firmware of the next module
         if self["no_kmod"]:
             continue
@@ -462,13 +464,23 @@ def process_modules(self) -> None:
 
 
 @contains("kmod_init", "No kernel modules to load.", log_level=30)
-@unset("no_kmod", "no_kmod is enabled, skipping.", log_level=30)
 def load_modules(self) -> str:
     """Creates a shell function which loads all kernel modules in kmod_init."""
-    self.logger.info("Init kernel modules: %s" % c_(", ".join(self["kmod_init"]), "magenta", bright=True, bold=True))
-    if included_kmods := list(set(self["kernel_modules"]) ^ set(self["kmod_init"])):
-        self.logger.info("Included kernel modules: %s" % c_(", ".join(included_kmods), "magenta"))
-    if removed_kmods := self.get("_kmod_removed"):
+    init_kmods = ", ".join(self["kmod_init"])
+    included_kmods = ", ".join(list(set(self["kernel_modules"]) ^ set(self["kmod_init"])))
+    removed_kmods = ", ".join(self["_kmod_removed"])
+    if self["no_kmod"]:
+        if included_kmods or init_kmods:
+            self.logger.warning("no_kmod is enabled, but kernel modules are set, ensure the following kernel modules are built into the kernel:")
+            self.logger.warning(f"Init kernel modules: {c_(init_kmods, 'red', bold=True)}")
+            self.logger.warning(f"Included kernel modules: {c_(included_kmods, 'red', bold=True)}")
+        return
+
+    self.logger.info(f"Init kernel modules: {c_(init_kmods, 'magenta', bright=True, bold=True)}")
+    if included_kmods:
+        self.logger.info(f"Included kernel modules: {c_(included_kmods, 'magenta')}")
+
+    if removed_kmods:
         self.logger.warning("Ignored kernel modules: %s" % c_(", ".join(removed_kmods), "red", bold=True))
 
     module_list = " ".join(self["kmod_init"])
