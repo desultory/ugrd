@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "3.7.2"
+__version__ = "3.7.3"
 
 from pathlib import Path
 
@@ -66,7 +66,7 @@ def _check_in_cpio(self, file, lines=[], quiet=False):
 @unset("out_file")
 def get_archive_name(self) -> str:
     """Determines the filename for the output CPIO archive based on the current configuration."""
-    if self.get("kmod_init"):
+    if self.get("kmod_init") and self.get("kernel_version"):
         out_file = f"ugrd-{self['kernel_version']}.cpio"
     else:
         out_file = "ugrd.cpio"
