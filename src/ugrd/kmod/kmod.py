@@ -382,6 +382,8 @@ def add_kmod_deps(self):
             self["dependencies"] = filename
         elif filename.endswith(".ko.xz"):
             self["xz_dependencies"] = filename
+        elif filename.endswith(".ko.zstd"):
+            self["zstd_dependencies"] = filename
         elif filename.endswith(".ko.gz"):
             self["gz_dependencies"] = filename
         else:
