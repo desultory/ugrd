@@ -25,6 +25,10 @@ modules = [
 #out_dir = "/usr/src/initramfs"
 #out_dir = "/boot"
 
+# By default, xz compression is used. This can be disabled or set to zstd if the zstandard python module is installed
+#cpio_compression = "zstd"  # Use zstd compression
+#cpio_compression = false  # No compression
+
 # Optionally supply a kernel version, uses the current kernel version if not specified
 #kernel_version = "6.1.53-gentoo-dist"
 # lspci based detection is usually helpful
