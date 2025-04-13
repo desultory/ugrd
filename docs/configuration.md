@@ -68,7 +68,9 @@ dependencies = [ "/etc/ugrd/testfile" ]
 
 ##### Compressed dependencies
 
-`xz_dependencies` and `gz_dependnencies` can be used to decompress dependencies before adding them to the initramfs.
+`xz_dependencies`, `zstd_dependencies`, and `gz_dependencies` can be used to decompress dependencies before adding them to the initramfs.
+
+> `zstd_dependencies` requires the optional `zstandard` python library.
 
 #### Copying files to a different destination
 

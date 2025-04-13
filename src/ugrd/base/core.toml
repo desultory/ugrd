@@ -21,6 +21,7 @@ timeout = 15
 		     "_process_dependencies_multi",
 		     "_process_opt_dependencies_multi",
 		     "_process_xz_dependencies_multi",
+		     "_process_zstd_dependencies_multi",
 		     "_process_gz_dependencies_multi",
 		     "_process_copies_multi",
 		     "_process_symlinks_multi",
@@ -43,6 +44,7 @@ timeout = 15
 		     "get_conditional_dependencies",
 		     "deploy_dependencies",
 		     "deploy_xz_dependencies",
+		     "deploy_zstd_dependencies",
 		     "deploy_gz_dependencies",
 		     "deploy_copies",
 		     "deploy_symlinks",
@@ -64,6 +66,7 @@ dependencies = "NoDupFlatList"  # Dependencies, used to define the dependencies 
 conditional_dependencies = "dict"  # Conditional dependencies, used to define dependencies that are only added if a certain condition is met
 opt_dependencies = "NoDupFlatList"  # Optional dependencies, which will be included if they are found
 xz_dependencies = "NoDupFlatList"  # XZipped dependencies property, used to define the xzipped dependencies (will be extracted)
+zstd_dependencies = "NoDupFlatList"  # ZStandard compressed dependencies property, used to define the zstandard dependencies (will be extracted)
 gz_dependencies = "NoDupFlatList"  # GZipped dependencies property, used to define the gzipped dependencies (will be extracted)
 library_paths = "NoDupFlatList"  # library_paths property, used to define the library paths to add to LD_LIBRARY_PATH
 find_libgcc = "bool"  # If true, the initramfs will search for libgcc_s.so.1 and add it to the initramfs
