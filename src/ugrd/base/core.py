@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "4.3.0"
+__version__ = "4.4.0"
 
 from os import environ, makedev, mknod
 from pathlib import Path
@@ -10,8 +10,21 @@ from typing import Union
 
 from ugrd.exceptions import AutodetectError, ValidationError
 from zenlib.types import NoDupFlatList
-from zenlib.util import contains, unset
 from zenlib.util import colorize as c_
+from zenlib.util import contains, unset
+
+
+def _has_zstd() -> bool:
+    from importlib.util import find_spec
+
+    if find_spec("zstandard"):
+        return True
+    return False
+
+
+class DecompressorError(Exception):
+    """Custom exception for decompressor errors."""
+    pass
 
 
 def get_tmpdir(self) -> None:
@@ -87,7 +100,7 @@ def get_conditional_dependencies(self) -> None:
 
 
 def _determine_interpreter(self, binary: Path) -> str:
-    """ Checks the shebang of a file, returning the interpreter if it exists."""
+    """Checks the shebang of a file, returning the interpreter if it exists."""
     with binary.open("rb") as f:
         try:
             first_line = f.readline().decode("utf-8").strip()
@@ -193,34 +206,62 @@ def deploy_dependencies(self) -> None:
         self._copy(dependency)
 
 
+def _deploy_compressed(self, compression_type: str, decompressor, compression_extension=None) -> None:
+    """Decompresses all dependencies of the specified compression type into the build directory."""
+    compression_extension = compression_extension or f".{compression_type}"
+
+    for dependency in self[f"{compression_type}_dependencies"]:
+        self.logger.debug(f"[{compression_type}] Decompressing: {dependency}")
+        out_path = self._get_build_path(str(dependency).replace(compression_extension, ""))
+        if not out_path.parent.is_dir():
+            self.logger.debug(f"Creating parent directory: {out_path.parent}")
+            self._mkdir(out_path.parent, resolve_build=False)
+
+        try:
+            data = decompressor(dependency.read_bytes())
+        except Exception as e:
+            raise DecompressorError(f"[{compression_type}] Unable to decompress ependency: {dependency} ({e})")
+
+        with out_path.open("wb") as out_file:
+            out_file.write(data)
+            self.logger.info(
+                f"[{c_(compression_type, 'green', bright=True)}] Decompressed {c_(dependency, 'blue')} -> {c_(out_path, 'green')}"
+            )
+
+
+@contains("xz_dependencies", "No xz dependencies defined, skipping.", log_level=10)
 def deploy_xz_dependencies(self) -> None:
     """Decompresses all xz dependencies into the build directory."""
     from lzma import decompress
 
-    for xz_dependency in self["xz_dependencies"]:
-        self.logger.debug("[xz] Decompressing: %s" % xz_dependency)
-        out_path = self._get_build_path(str(xz_dependency).replace(".xz", ""))
-        if not out_path.parent.is_dir():
-            self.logger.debug("Creating parent directory: %s" % out_path.parent)
-            self._mkdir(out_path.parent, resolve_build=False)
-        with out_path.open("wb") as out_file:
-            out_file.write(decompress(xz_dependency.read_bytes()))
-            self.logger.info("[xz] Decompressed '%s' to: %s" % (xz_dependency, out_path))
+    _deploy_compressed(self, "xz", decompress)
 
 
+@contains("zstd_dependencies", "No zstd dependencies defined, skipping.", log_level=10)
+def deploy_zstd_dependencies(self) -> None:
+    """Decompresses all zstd dependencies into the build directory.
+    Entries should only be added to zstd_dependencies if the zstandard library is available.
+    """
+    from zstandard import decompress
+    from zstandard.backend_cffi import ZstdError
+
+    try:
+        _deploy_compressed(self, "zstd", decompress, compression_extension=".zst")
+    except ZstdError as e:
+        self.logger.error("Unable to decompress zstd dependency: %s" % e)
+        raise e
+        self.logger.warning(
+            "Ensure the zstandard library is installed, or remove the zstd dependency from the configuration."
+        )
+        raise e
+
+
+@contains("gz_dependencies", "No gz dependencies defined, skipping.", log_level=10)
 def deploy_gz_dependencies(self) -> None:
     """Decompresses all gzip dependencies into the build directory."""
     from gzip import decompress
 
-    for gz_dependency in self["gz_dependencies"]:
-        self.logger.debug("[gz] Decompressing: %s" % gz_dependency)
-        out_path = self._get_build_path(str(gz_dependency).replace(".gz", ""))
-        if not out_path.parent.is_dir():
-            self.logger.debug("Creating parent directory: %s" % out_path.parent)
-            self._mkdir(out_path.parent, resolve_build=False)
-        with out_path.open("wb") as out_file:
-            out_file.write(decompress(gz_dependency.read_bytes()))
-            self.logger.info("[gz] Decompressed '%s' to: %s" % (gz_dependency, out_path))
+    _deploy_compressed(self, "gz", decompress)
 
 
 def deploy_copies(self) -> None:
@@ -384,8 +425,11 @@ def _process_binaries_multi(self, binary: str) -> None:
     self["binary_search_paths"] = str(dependencies[0].parent)  # Add the binary path to the search paths
 
 
-def _validate_dependency(self, dependency: Union[Path, str]) -> None:
-    """Performas basic validation and normalization for dependencies."""
+def _validate_dependency(self, dependency: Union[Path, str]) -> Path:
+    """Performas basic validation and normalization for dependencies.
+    Returns the dependency as a Path object.
+    Raises a ValidationError if the dependency path does not exist.
+    """
     if not isinstance(dependency, Path):
         dependency = Path(dependency)
 
@@ -455,6 +499,24 @@ def _process_gz_dependencies_multi(self, dependency: Union[Path, str]) -> None:
     if dependency.suffix != ".gz":
         self.logger.warning("GZIP dependency missing gz extension: %s" % dependency)
     self["gz_dependencies"].append(dependency)
+
+
+def _process_zstd_dependencies_multi(self, dependency: Union[Path, str]) -> None:
+    """Processes zstd dependencies.
+    Checks that the file is a zst file, and adds it to the zstd dependencies list.
+    Adds the dependency to 'dependencies' if the zstandard library is not found.
+    !! Resolves symlinks implicitly !!
+    """
+    if not _has_zstd():
+        self["dependencies"] = dependency
+        return self.logger.warning(
+            f"Python zstandard library not found, adding to dependencies: {c_(dependency, 'yellow', bold=True)}"
+        )
+
+    dependency = _validate_dependency(self, dependency)
+    if dependency.suffix != ".zst":
+        self.logger.warning("ZSTD dependency missing zst extension: %s" % dependency)
+    self["zstd_dependencies"].append(dependency)
 
 
 def _process_build_logging(self, log_build: bool) -> None:
