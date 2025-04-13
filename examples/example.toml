@@ -25,6 +25,10 @@ modules = [
 #out_dir = "/usr/src/initramfs"
 #out_dir = "/boot"
 
+# By default, xz compression is used. This can be disabled or set to zstd if the zstandard python module is installed
+#cpio_compression = "zstd"  # Use zstd compression
+#cpio_compression = false  # No compression
+
 # Optionally supply a kernel version, uses the current kernel version if not specified
 #kernel_version = "6.1.53-gentoo-dist"
 # lspci based detection is usually helpful
@@ -33,6 +37,12 @@ kmod_autodetect_lspci = true
 #kmod_autodetect_lsmod = true
 # If no kernel modules are needed, or installed, no_kmod should be set
 #no_kmod = true
+
+# ugrd is designed for merged-usr systems. If using a split-usr system, automatic symlink creation can be disabled:
+#merge_usr = false
+
+# on systems using glibc in the userspace, libgcc is often required. If it's not necessary, pulling it can be diabled with:
+#find_libgcc = false
 
 # By default, ugrd will keep retrying to mount base mounts and the rootfs, unless enter is pressed
 # The default timeout between attempts is 1s, and the default number of retries is infinite
