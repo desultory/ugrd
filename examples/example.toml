@@ -38,6 +38,12 @@ kmod_autodetect_lspci = true
 # If no kernel modules are needed, or installed, no_kmod should be set
 #no_kmod = true
 
+# ugrd is designed for merged-usr systems. If using a split-usr system, automatic symlink creation can be disabled:
+#merge_usr = false
+
+# on systems using glibc in the userspace, libgcc is often required. If it's not necessary, pulling it can be diabled with:
+#find_libgcc = false
+
 # By default, ugrd will keep retrying to mount base mounts and the rootfs, unless enter is pressed
 # The default timeout between attempts is 1s, and the default number of retries is infinite
 #mount_timeout = 0.25  # Wait 0.25 seconds between mount attempts, instead of 1s.
