@@ -1,4 +1,4 @@
-__version__ = "0.4.3"
+__version__ = "0.4.4"
 
 from zenlib.util import contains
 
@@ -21,8 +21,7 @@ def resume(self) -> str:
         # Check resume support
         [ -n "$1" ] || (ewarn "A resume device must be specified." ; return 1)
         [ -w /sys/power/resume ] || (eerror "Kernel does not support resume!" ; return 1)
-        # TODO: Make POSIX compliant
-        [[ ! "$(cat /sys/power/resume)" == "0:0" ]] || ewarn "/sys/power/resume not empty, resume has already been attempted!"
+        [ "$(cat /sys/power/resume)" != "0:0" ] || ewarn "/sys/power/resume not empty, resume has already been attempted!"
         # Safety checks
         if ! [ -z $(lsblk -Q MOUNTPOINT)] ; then
             eerror "Cannot safely resume with mounted block devices:\n$(lsblk -Q MOUNTPOINT -no PATH)"
