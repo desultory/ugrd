@@ -2,6 +2,7 @@
 
 from pycpio.errors import UnavailableCompression
 from zenlib.util import get_args_n_logger, get_kwargs_from_args
+from zenlib.util import colorize as c_
 
 from ugrd.exceptions import AutodetectError, ValidationError
 from ugrd.kmod import MissingModuleError
@@ -195,12 +196,18 @@ def main():
         print(generator.config_dict)
 
     if "print_init" in args and args.print_init:
+        generator.logger.setLevel(50)  # Suppress regular output
+        print("Printing init structure. Red indicates an empty runlevel. Yellow indicates a hook which was ignored:\n")
         for runlevel in ["init_pre", *generator.init_types, "init_final"]:
             if runlevel not in generator.imports:
+                print(c_(f"{runlevel}:", color="red"))
                 continue
-            print(runlevel + ":")
+            print(c_(f"{runlevel}:", bold=True))
             for func in generator.imports[runlevel]:
-                print(f"    {func.__name__}")
+                if func(generator):
+                    print(c_(f"    {func.__name__}", color="green"))
+                else:
+                    print(c_(f"    {func.__name__}", color="yellow"))
 
 
 if __name__ == "__main__":
