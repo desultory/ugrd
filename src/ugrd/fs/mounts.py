@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "7.0.1"
+__version__ = "7.0.2"
 
 from pathlib import Path
 from re import search
@@ -879,7 +879,7 @@ def mount_fstab(self) -> list[str]:
     else:
         out += [
             "while ! mount -a; do",  # Actually retry forever, retry with a short timeout may fail
-            '    if prompt_user "Press enter to break, waiting: ${timeout}s" "$timeout"; then',
+            '    if prompt_user "Press space to break, waiting: ${timeout}s" "$timeout"; then',
             '        rd_fail "Failed to mount all filesystems."',
             "    fi",
             '    eerror "Failed to mount all filesystems, retrying."',
@@ -962,7 +962,7 @@ def mount_default_root(self) -> str:
     einfo "[/] Mounting '$mount_source' ($mount_type) to '$mount_target' with options: $mount_options"
     while ! mount "$mount_source" -t "$mount_type" -o "$mount_options" "$mount_target"; do
         eerror "Failed to mount root partition."
-        if prompt_user "Press enter to break, waiting: {self["mount_timeout"]}s" {self["mount_timeout"]}; then
+        if prompt_user "Press space to break, waiting: {self["mount_timeout"]}s" {self["mount_timeout"]}; then
             rd_fail "Failed to mount root partition."
         fi
     done

@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "6.6.6"
+__version__ = "7.0.0"
 
 from pathlib import Path
 from shutil import which
@@ -161,7 +161,7 @@ def rd_fail(self) -> list[str]:
         "else",
         '    eerror "UGRD failed."',
         "fi",
-        'prompt_user "Press enter to display debug info."',
+        'prompt_user "Press space to display debug info."',
         r'eerror "Kernel version: $(cat /proc/version)"',
         r'eerror "Loaded modules:\n$(cat /proc/modules)"',
         r'eerror "Block devices:\n$(blkid)"',
@@ -182,7 +182,7 @@ def rd_fail(self) -> list[str]:
         ]
     else:
         output += ["    sh -l"]
-    output += ["fi", 'prompt_user "Press enter to restart init."', "rd_restart"]
+    output += ["fi", 'prompt_user "Press space to restart init."', "rd_restart"]
     return output
 
 
@@ -223,10 +223,10 @@ def check_var(self) -> str:
     """
 
 
-def wait_enter(self) -> str:
+def wait_for_space(self) -> str:
     """Returns a shell script that reads a single character from stdin.
     If an argument is passed, use that as a timeout in seconds.
-    If enter is pressed, return 0, otherwise return 1.
+    If space is pressed, return 0, otherwise return 1.
     """
     return r"""
     tty_env=$(stty -g)
@@ -241,20 +241,20 @@ def wait_enter(self) -> str:
     char="$(dd bs=1 count=1 2>/dev/null)"
     stty "$tty_env"
     case "$char" in
-        $(printf '\r')) return 0 ;;
+        " " ) return 0 ;;
         *) return 1 ;;
     esac
     """
 
 
 def prompt_user(self) -> list[str]:
-    """Returns a shell function that pauses until the user presses enter.
+    """Returns a shell function that pauses until the user presses space.
     The first argument is the prompt message.
     The second argument is the timeout in seconds.
 
     if plymouth is running, run 'plymouth display-message --text="$prompt" instead of echo.
     """
-    output = ['prompt=${1:-"Press enter to continue."}']
+    output = ['prompt=${1:-"Press space to continue."}']
     if "ugrd.base.plymouth" in self["modules"]:
         output += [
             "if plymouth --ping; then",
@@ -266,7 +266,7 @@ def prompt_user(self) -> list[str]:
     else:
         output += [r'printf "\033[1;35m *\033[0m %s\n" "$prompt"']
     output += [
-        'wait_enter "$2"',
+        'wait_for_space "$2"',
         'return "$?"',
     ]
     return output

@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "4.1.0"
+__version__ = "4.1.1"
 
 from json import loads
 from pathlib import Path
@@ -550,7 +550,7 @@ def _open_crypt_dev(self, name: str, parameters: dict) -> list[str]:
     # Break on success
     out += ["        break", "    fi", f'    ewarn "($i/$retries) Failed to open cryptsetup device: {name}"']
     if not self["cryptsetup_autoretry"]:
-        out += ["    prompt_user 'Press enter to retry'"]
+        out += ["    prompt_user 'Press space to retry'"]
     if reset_command:
         out += ['    einfo "Running key reset command"', f"    {reset_command}"]
 
