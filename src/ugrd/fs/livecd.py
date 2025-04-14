@@ -21,7 +21,7 @@ def mount_livecd(self) -> str:
     einfo "Mounting livecd with label: $livecd_label"
     while ! mount LABEL="$livecd_label" /run/livecd 2>/dev/null; do
         eerror "Failed to mount livecd with label: $livecd_label"
-        if prompt_user "Press enter to break, waiting: {self["mount_timeout"]}s" {self["mount_timeout"]}; then
+        if prompt_user "Press space to break, waiting: {self["mount_timeout"]}s" {self["mount_timeout"]}; then
             rd_fail "Failed to mount livecd with label: $livecd_label"
         fi
     done

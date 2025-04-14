@@ -370,7 +370,7 @@ Cryptsetup global config:
 
 * `cryptsetup_key_type` - Sets the default `key_type` for all cryptsetup entries. 
 * `cryptsetup_retries` (5) The default number of times to try to unlock a device.
-* `cryptsetup_prompt` (false) Whether or not to prompt the user to press enter before attempting to unlock a device.
+* `cryptsetup_prompt` (false) Whether or not to prompt the user to press space before attempting to unlock a device.
 * `cryptsetup_autoretry` (false) Whether or not to automatically retry mount attempts.
 * `cryptsetup_trim` (false) Whether or not to pass `--allow-discards` to cryptsetup (reduces security).
 * `cryptsetup_keyfile_validation` (true) Whether or not to validate that keyfiles should exist at runtime.
