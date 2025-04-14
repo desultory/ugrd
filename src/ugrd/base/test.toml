@@ -2,7 +2,7 @@ test_rootfs_name = 'ugrd-test-rootfs'
 test_rootfs_build_dir = 'initramfs_test_rootfs'
 test_image_size = 16
 
-test_copy_config = ["_mounts", "mounts", "out_dir", "tmpdir", "clean", "test_image_size", "test_flag", "cryptsetup"]
+test_copy_config = ["_mounts", "mounts", "out_dir", "tmpdir", "clean", "test_image_size", "test_no_rootfs", "test_flag", "cryptsetup"]
 
 test_memory = '256M'
 test_cpu = 'host'
@@ -26,6 +26,7 @@ test_cmdline = "str"  # Define the kernel command line for the test image
 test_timeout = "int"  # Define the timeout for the test
 test_image_size = "int"  # Define the size of the test image, in MB
 test_flag = "str"  # Define the success flag for the test
+test_no_rootfs = "bool"  # Toggle to run tests without mounting the root image
 test_rootfs_name = "str"  # Define the name of the rootfs image
 test_rootfs_build_dir = "Path"  # Define the build directory for the rootfs image
 qemu_bool_args = "NoDupFlatList"  # Define the qemu boolean arguments

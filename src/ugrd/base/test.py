@@ -2,6 +2,7 @@ __version__ = "1.2.0"
 
 from pathlib import Path
 from subprocess import PIPE, Popen
+from selectors import DefaultSelector, EVENT_READ
 from time import time
 from uuid import uuid4
 
@@ -54,10 +55,12 @@ def _get_qemu_cmd_args(self, test_image):
         "-cpu": self["test_cpu"],
         "-kernel": self["test_kernel"],
         "-initrd": test_initrd,
-        "-serial": "mon:stdio",
         "-append": self["test_cmdline"],
         "-drive": "file=%s,format=raw" % test_rootfs,
     }
+
+    if self["test_no_rootfs"]:
+        self.logger.warning(f"Removing QEMU drive option: {qemu_args.pop('-drive')}")
 
     qemu_bools = [f"-{item}" for item in self["qemu_bool_args"]]
 
@@ -111,37 +114,69 @@ def test_image(self):
 
     # Sentinel to check if the test has timed out
     start_time = time()
-    test_timeout = 15
+    test_timeout = self["test_timeout"]
+    event_timeout = 1
     failed = False
-    process = Popen(qemu_cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, text=True)
-    while not process.stdout.closed:
-        line = process.stdout.readline()
+    process = Popen(qemu_cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, text=True, close_fds=True)
+    selector = DefaultSelector()
+    selector.register(process.stdout, EVENT_READ)
+    selector.register(process.stderr, EVENT_READ)
 
-        if not line:
-            if time() - start_time > test_timeout:
-                self.logger.critical("Test timed out after %s seconds", test_timeout)
-                failed = True
-                break
+    run_log = []
+    error_log = []
 
+    while True:
+        events = selector.select(timeout=event_timeout)
+
+        if time() - start_time > test_timeout:
+            self.logger.critical("Test timed out after %s seconds", test_timeout)
+            failed = True
+            break
+
+        if not events:
+            self.logger.warning("Timed out waiting for QEMU output")
+            continue
+
+        for key, _ in events:
+            if key.fileobj == process.stderr:
+                line = process.stderr.readline()
+                if line:
+                    self.logger.error(line.strip())
+                    error_log.append(line)
+                else:
+                    self.logger.warning("QEMU stderr closed")
+                    break
+            elif key.fileobj == process.stdout:
+                line = process.stdout.readline()
+                if line:
+                    self.logger.info(line.strip())
+                else:
+                    self.logger.warning("QEMU stdout closed")
+                    break
+
+        run_log.append(line)
         if self["test_flag"] in line:
             self.logger.info("Test flag found in output: %s", c_(line, "green"))
             break
         elif line.endswith("exitcode=0x00000000"):
             failed = True
             break
-        elif "press enter" in line.lower():
-            process.stdin.write("\r\n")
+        elif "press space" in line.lower():
+            self.logger.warning("Press space to continue message detected")
+            process.stdin.write(" ")
+            process.stdin.flush()
 
-    if failed:
-        self.logger.error(f"Tests failed: {qemu_cmd}")
-        self.logger.error(f"QEMU stdout: {process.stdout.decode()}")
-        self.logger.error(f"QEMU stderr: {process.stderr.decode()}")
-
+    selector.unregister(process.stdout)
+    selector.unregister(process.stderr)
+    process.stdin.close()
     process.stdout.close()
     process.stderr.close()
-    process.stdin.close()
+
     process.kill()
     process.wait(timeout=1)
 
     if failed:
+        self.logger.error(f"Tests failed: {' '.join([str(arg) for arg in qemu_cmd])}")
+        self.logger.error(f"QEMU stdout: {''.join(run_log)}")
+        self.logger.error(f"QEMU stderr: {''.join(error_log)}")
         raise RuntimeError("Test failed: %s" % qemu_cmd)

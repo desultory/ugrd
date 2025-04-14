@@ -23,6 +23,10 @@ class TestUGRD(TestCase):
         generator = InitramfsGenerator(logger=self.logger, config="tests/bad_config.toml")
         generator.build()
 
+    def test_no_root(self):
+        generator = InitramfsGenerator(logger=self.logger, config="tests/fullauto.toml", test_no_rootfs=True, test_flag="Restarting init")
+        generator.build()
+
 
 if __name__ == "__main__":
     main()
