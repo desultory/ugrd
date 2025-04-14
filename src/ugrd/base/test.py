@@ -1,7 +1,10 @@
 __version__ = "1.2.0"
 
 from pathlib import Path
+from subprocess import PIPE, Popen
+from time import time
 from uuid import uuid4
+
 from zenlib.util import colorize as c_
 from zenlib.util import unset
 
@@ -14,7 +17,7 @@ def find_kernel_path(self):
     if not (self["_kmod_dir"] / "vmlinuz").exists():
         for search_dir in ["/boot", "/efi"]:
             for prefix in ["vmlinuz", "kernel", "linux", "bzImage"]:
-                kernel_path = Path(search_dir) / f'{prefix}-{self["kernel_version"]}'
+                kernel_path = Path(search_dir) / f"{prefix}-{self['kernel_version']}"
                 if kernel_path.exists():
                     break
             if kernel_path.exists():
@@ -106,26 +109,39 @@ def test_image(self):
     self.logger.info("Test flag: %s", c_(self["test_flag"], "magenta"))
     self.logger.info("QEMU command: %s", c_(" ".join([str(arg) for arg in qemu_cmd]), bold=True))
 
-    try:
-        results = self._run(qemu_cmd, timeout=self["test_timeout"])
-    except RuntimeError as e:
-        raise RuntimeError("QEMU test failed: %s" % e)
+    # Sentinel to check if the test has timed out
+    start_time = time()
+    test_timeout = 15
+    failed = False
+    process = Popen(qemu_cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, text=True)
+    while not process.stdout.closed:
+        line = process.stdout.readline()
 
-    stdout = results.stdout.decode("utf-8").split("\r\n")
-    self.logger.debug("QEMU output: %s", stdout)
+        if not line:
+            if time() - start_time > test_timeout:
+                self.logger.critical("Test timed out after %s seconds", test_timeout)
+                failed = True
+                break
 
-    # Get the time of the kernel panic
-    for line in stdout:
-        if line.endswith("exitcode=0x00000000"):
-            panic_time = line.split("]")[0][1:].strip()
-            self.logger.info("Test took: %s", c_(panic_time, "yellow", bold=True, bright=True))
+        if self["test_flag"] in line:
+            self.logger.info("Test flag found in output: %s", c_(line, "green"))
             break
-    else:
-        self.logger.warning("Unable to determine test duration from panic message.")
+        elif line.endswith("exitcode=0x00000000"):
+            failed = True
+            break
+        elif "press enter" in line.lower():
+            process.stdin.write(b"\r\n")
 
-    if self["test_flag"] in stdout:
-        self.logger.info("Test passed")
-    else:
-        self.logger.error("Test failed")
-        self.logger.error("QEMU stdout:\n%s", stdout)
-        raise RuntimeError("Test failed")
+    if failed:
+        self.logger.error(f"Tests failed: {qemu_cmd}")
+        self.logger.error(f"QEMU stdout: {process.stdout.decode()}")
+        self.logger.error(f"QEMU stderr: {process.stderr.decode()}")
+
+    process.stdout.close()
+    process.stderr.close()
+    process.stdin.close()
+    process.kill()
+    process.wait(timeout=1)
+
+    if failed:
+        raise RuntimeError("Test failed: %s" % qemu_cmd)
