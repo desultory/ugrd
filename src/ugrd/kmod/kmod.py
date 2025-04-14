@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "3.3.4"
+__version__ = "3.3.5"
 
 from pathlib import Path
 from platform import uname
@@ -214,7 +214,7 @@ def _handle_arch_kernel(self) -> None:
     try:
         cmd = self._run(["pacman", "-Qqo", kernel_path])
         if not self["out_file"]:
-            self["out_file"] = f"/boot/initramfs-{cmd.stdout.decode().strip()}.img"
+            self["out_file"] = f"{kernel_path.resolve().parent}/initramfs-{cmd.stdout.decode().strip()}.img"
             self.logger.info("Setting out_file to: %s" % c_(self["out_file"], "green", bold=True))
     except RuntimeError as e:
         raise DependencyResolutionError("Failed to check ownership of kernel module directory") from e
