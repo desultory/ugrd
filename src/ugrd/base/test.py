@@ -130,7 +130,7 @@ def test_image(self):
             failed = True
             break
         elif "press enter" in line.lower():
-            process.stdin.write(b"\r\n")
+            process.stdin.write("\r\n")
 
     if failed:
         self.logger.error(f"Tests failed: {qemu_cmd}")
