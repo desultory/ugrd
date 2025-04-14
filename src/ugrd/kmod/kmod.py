@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "3.3.5"
+__version__ = "3.3.6"
 
 from pathlib import Path
 from platform import uname
@@ -481,7 +481,7 @@ def load_modules(self) -> str:
         self.logger.info(f"Included kernel modules: {c_(included_kmods, 'magenta')}")
 
     if removed_kmods:
-        self.logger.warning("Ignored kernel modules: %s" % c_(", ".join(removed_kmods), "red", bold=True))
+        self.logger.warning("Ignored kernel modules: %s" % c_(removed_kmods, "red", bold=True))
 
     module_list = " ".join(self["kmod_init"])
     return f"""
