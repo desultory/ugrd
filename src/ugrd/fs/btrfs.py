@@ -99,28 +99,31 @@ def autodetect_root_subvol(self):
 @contains("subvol_selector", message="subvol_selector is not enabled, skipping.")
 @unset("root_subvol", message="root_subvol is set, skipping.")
 def select_subvol(self) -> str:
-    """Returns a shell script to list subvolumes on the root volume."""
-    # TODO: Figure out a way to make the case prompt more standard
+    """Returns a POSIX shell script to list subvolumes on the root volume."""
     return f"""
     mount -t btrfs -o subvolid=5,ro $(readvar MOUNTS_ROOT_SOURCE) {self["_base_mount_path"]}
-    if [ -z "$(btrfs subvolume list -o {self["_base_mount_path"]})" ]; then
+    subvols=$(btrfs subvolume list -o {self["_base_mount_path"]} | awk '{{print $9}}')
+    if [ -z "$subvols" ]; then
         ewarn "Failed to list btrfs subvolumes for root volume: {self["_base_mount_path"]}"
     else
         echo 'Select a subvolume to use as root'
-        PS3='Subvolume: '
-        select subvol in $(btrfs subvolume list -o {self["_base_mount_path"]} " + "| awk '{{print $9}}'); do
-        case $subvol in
-            *)
-                if [[ -z $subvol ]]; then
-                    ewarn 'Invalid selection'
-                else
-                    einfo "Selected subvolume: $subvol"
-                    setvar root_extra_options ",subvol=$subvol"
-                    break
-                fi
-                ;;
-            esac
+
+        i=1; for subvol in $subvols; do
+            echo "$i) $subvol"
+            i=$((i + 1))
         done
+
+        while true; do
+            read -p "Select a subvolume (1-$((i-1))): " selection
+            if [ "$selection" -ge 1 ] 2>/dev/null && [ "$selection" -lt "$i" ]; then
+                break
+            else
+                ewarn "Invalid selection"
+            fi
+        done
+        subvol=$(echo "$subvols" | awk "NR==$selection")
+        einfo "Selected subvolume: $subvol"
+        setvar root_extra_options ",subvol=$subvol"
     fi
     umount -l {self["_base_mount_path"]}
     """
