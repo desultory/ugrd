@@ -1,4 +1,4 @@
-from unittest import TestCase, expectedFailure, main
+from unittest import TestCase, main
 
 from ugrd.initramfs_generator import InitramfsGenerator
 from zenlib.logging import loggify
@@ -18,13 +18,14 @@ class TestUGRD(TestCase):
         generator = InitramfsGenerator(logger=self.logger, config="tests/fullauto.toml", cpio_compression="zstd")
         generator.build()
 
-    @expectedFailure
     def test_bad_config(self):
-        generator = InitramfsGenerator(logger=self.logger, config="tests/bad_config.toml")
-        generator.build()
+        with self.assertRaises(ValueError):
+            InitramfsGenerator(logger=self.logger, config="tests/bad_config.toml")
 
     def test_no_root(self):
-        generator = InitramfsGenerator(logger=self.logger, config="tests/fullauto.toml", test_no_rootfs=True, test_flag="Restarting init")
+        generator = InitramfsGenerator(
+            logger=self.logger, config="tests/fullauto.toml", test_no_rootfs=True, test_flag="Restarting init"
+        )
         generator.build()
 
 
