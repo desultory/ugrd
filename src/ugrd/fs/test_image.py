@@ -1,10 +1,12 @@
-__version__ = "1.3.0"
+__version__ = "2.0.0"
 
 from tempfile import TemporaryDirectory
 
 from zenlib.util import colorize as c_
 from zenlib.util import contains
 
+
+MIN_FS_SIZES = {"btrfs": 110, "f2fs": 50}
 
 @contains("test_flag", "A test flag must be set to create a test image", raise_exception=True)
 def init_banner(self):
@@ -22,9 +24,18 @@ def _allocate_image(self, image_path, padding=0):
         else:
             raise Exception("File already exists and 'clean' is off: %s" % c_(image_path, "red", bold=True))
 
+    if self["mounts"]["root"]["type"] in MIN_FS_SIZES:
+        min_fs_size = MIN_FS_SIZES[self["mounts"]["root"]["type"]]
+        if self.test_image_size < min_fs_size + padding:
+            needed_padding = min_fs_size - self.test_image_size
+            self.logger.warning(f"{self['mounts']['root']['type']} detected, increasing padding by: {needed_padding}MB")
+            padding += needed_padding
+
     with open(image_path, "wb") as f:
-        self.logger.info("Allocating test image file: %s" % c_(f.name, "green"))
-        f.write(b"\0" * (self.test_image_size + padding) * 2**20)
+        total_size = (self.test_image_size + padding) * (2**20)  # Convert MB to bytes
+        self.logger.info(f"Allocating {self.test_image_size + padding}MB test image file: { c_(f.name, 'green')}")
+        self.logger.debug(f"[{f.name}] Total bytes: { c_(total_size, 'green')}")
+        f.write(b"\0" * total_size)
 
 def _copy_fs_contents(self, image_path, build_dir):
     """ Mount and copy the filesystem contents into the image,
@@ -54,8 +65,7 @@ def _get_luks_uuid(self):
 
 
 def _get_luks_keyfile(self):
-    """Gets the luks keyfile the cryptsetup root config,
-    if not defined, generates a keyfile using the banner"""
+    """Gets the luks keyfile from the root cryptsetup devuce."""
     config = _get_luks_config(self)
     if keyfile := config.get("key_file"):
         return keyfile
