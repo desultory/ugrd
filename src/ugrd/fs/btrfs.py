@@ -1,4 +1,4 @@
-__version__ = "2.0.1"
+__version__ = "2.1.0"
 __author__ = "desultory"
 
 from pathlib import Path
@@ -115,7 +115,7 @@ def select_subvol(self) -> str:
                     ewarn 'Invalid selection'
                 else
                     einfo "Selected subvolume: $subvol"
-                    printf "%s" ",subvol=$subvol" >> /run/ugrd/MOUNTS_ROOT_OPTIONS  # append, don't overwrite
+                    setvar root_extra_options ",subvol=$subvol"
                     break
                 fi
                 ;;
@@ -130,4 +130,4 @@ def select_subvol(self) -> str:
 def set_root_subvol(self) -> str:
     """Adds the root_subvol to the root_mount options."""
     _validate_root_subvol(self)
-    return f"""printf ",subvol={self["root_subvol"]}" >> /run/ugrd/MOUNTS_ROOT_OPTIONS"""
+    return f"""setvar root_extra_options ',subvol={self["root_subvol"]}'"""
