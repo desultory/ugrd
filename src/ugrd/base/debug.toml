@@ -1,4 +1,4 @@
-binaries = ['cp', 'ln', 'mv', 'rm', 'find', 'grep', 'dmesg', 'chmod', 'touch']
+binaries = ['cp', 'ln', 'mv', 'rm', 'find', 'grep', 'dmesg', 'chmod', 'sleep', 'touch']
 dependencies = [ "/usr/share/terminfo/l/linux" ] # required by most editors
 # EDITOR is determined at build time using (in order):
 # 1. editor config parameter

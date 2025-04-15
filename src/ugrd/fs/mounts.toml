@@ -1,11 +1,4 @@
-binaries = [
-  "lsblk",
-  "blkid",
-  "mount",
-  "sleep",
-  "umount",
-  "mkdir",
-]
+binaries = [ "lsblk", "blkid", "mount", "umount", "mkdir" ]
 
 provides = "mounts" 
 
