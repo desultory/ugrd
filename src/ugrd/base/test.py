@@ -1,4 +1,4 @@
-__version__ = "1.2.0"
+__version__ = "2.0.0"
 
 from pathlib import Path
 from subprocess import PIPE, Popen
@@ -125,55 +125,63 @@ def test_image(self):
     run_log = []
     error_log = []
 
-    while True:
-        events = selector.select(timeout=event_timeout)
+    try:
+        while True:
+            events = selector.select(timeout=event_timeout)
 
-        if time() - start_time > test_timeout:
-            self.logger.critical("Test timed out after %s seconds", test_timeout)
-            failed = True
-            break
+            if time() - start_time > test_timeout:
+                self.logger.critical("Test timed out after %s seconds", test_timeout)
+                failed = True
+                break
 
-        if not events:
-            self.logger.warning("Timed out waiting for QEMU output")
-            continue
+            if not events:
+                self.logger.warning("Timed out waiting for QEMU output")
+                continue
 
-        for key, _ in events:
-            if key.fileobj == process.stderr:
-                line = process.stderr.readline()
-                if line:
-                    self.logger.error(line.strip())
-                    error_log.append(line)
-                else:
-                    self.logger.warning("QEMU stderr closed")
-                    break
-            elif key.fileobj == process.stdout:
-                line = process.stdout.readline()
-                if line:
-                    self.logger.info(line.strip())
-                else:
-                    self.logger.warning("QEMU stdout closed")
-                    break
+            for key, _ in events:
+                if key.fileobj == process.stderr:
+                    line = process.stderr.readline()
+                    if line:
+                        self.logger.error(line.strip())
+                        error_log.append(line)
+                    else:
+                        raise RuntimeError("QEMU stderr closed")
+                elif key.fileobj == process.stdout:
+                    # Read the line from stdout, remove the ANSI clear screen code
+                    line = process.stdout.readline().replace("\x1bc\x1b[?7l", "")
+                    if "\x1b" in line:
+                        self.logger.debug("ANSI code detected in QEMU output: %s", repr(line))
+                        line = line.replace("\x1b[2J", "")  # filter clear screen
+                        line = line.replace("\x1b[0m", "")  # filter reset
+                        self.logger.debug("Filtered ANSI code: %s", repr(line))
+                    if line:
+                        self.logger.info(line.strip())
+                    else:
+                        raise RuntimeError("QEMU stdout closed")
 
-        run_log.append(line)
-        if self["test_flag"] in line:
-            self.logger.info("Test flag found in output: %s", c_(line, "green"))
-            break
-        elif line.endswith("exitcode=0x00000000"):
-            failed = True
-            break
-        elif "press space" in line.lower():
-            self.logger.warning("Press space to continue message detected")
-            process.stdin.write(" ")
-            process.stdin.flush()
+            run_log.append(line)
+            if self["test_flag"] in line:
+                self.logger.info("Test flag found in output: %s", c_(line, "green"))
+                break
+            elif line.endswith("exitcode=0x00000000"):
+                failed = True
+                break
+            elif "press space" in line.lower():
+                self.logger.warning("Press space to continue message detected")
+                process.stdin.write(" ")
+                process.stdin.flush()
+    except RuntimeError as e:
+        self.logger.error("Error while reading QEMU output: %s", e)
+        failed = True
+    finally:
+        selector.unregister(process.stdout)
+        selector.unregister(process.stderr)
+        process.stdin.close()
+        process.stdout.close()
+        process.stderr.close()
 
-    selector.unregister(process.stdout)
-    selector.unregister(process.stderr)
-    process.stdin.close()
-    process.stdout.close()
-    process.stderr.close()
-
-    process.kill()
-    process.wait(timeout=1)
+        process.kill()
+        process.wait(timeout=1)
 
     if failed:
         self.logger.error(f"Tests failed: {' '.join([str(arg) for arg in qemu_cmd])}")
