@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "7.0.2"
+__version__ = "7.1.0"
 
 from pathlib import Path
 from re import search
@@ -953,7 +953,7 @@ def mount_default_root(self) -> str:
     return f"""
     mount_source=$(readvar MOUNTS_ROOT_SOURCE)
     mount_type=$(readvar MOUNTS_ROOT_TYPE auto)
-    mount_options=$(readvar MOUNTS_ROOT_OPTIONS 'defaults,ro')
+    mount_options="$(readvar MOUNTS_ROOT_OPTIONS 'defaults,ro')$(readvar root_extra_options)"
     mount_target=$(readvar MOUNTS_ROOT_TARGET)
     if grep -qs "$mount_target" /proc/mounts; then
         ewarn "Root mount already exists, adding 'remount' option: $mount_options"
