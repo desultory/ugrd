@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "4.4.0"
+__version__ = "4.4.1"
 
 from os import environ, makedev, mknod
 from pathlib import Path
@@ -206,13 +206,25 @@ def deploy_dependencies(self) -> None:
         self._copy(dependency)
 
 
-def _deploy_compressed(self, compression_type: str, decompressor, compression_extension=None) -> None:
-    """Decompresses all dependencies of the specified compression type into the build directory."""
-    compression_extension = compression_extension or f".{compression_type}"
+def _deploy_compressed(self, compression_type: str, decompressor, compression_extensions=None) -> None:
+    """Decompresses all dependencies of the specified compression type into the build directory.
+    Remove the compression extension if there is a match between compression_extensions and the file name.
+    """
+    compression_extensions = compression_extensions or [f".{compression_type}"]
 
     for dependency in self[f"{compression_type}_dependencies"]:
         self.logger.debug(f"[{compression_type}] Decompressing: {dependency}")
-        out_path = self._get_build_path(str(dependency).replace(compression_extension, ""))
+
+        for extension in compression_extensions:
+            if str(dependency).endswith(extension):
+                break
+        else:
+            self.logger.warning(f"[{compression_type}] Dependency missing extension: {dependency}")
+            extension = ""
+
+        self.logger.debug(f"[{compression_type}] Found compressed file: {dependency}")
+        # Replace the extension, do nothing if there is no match
+        out_path = self._get_build_path(str(dependency).replace(extension, ""))
         if not out_path.parent.is_dir():
             self.logger.debug(f"Creating parent directory: {out_path.parent}")
             self._mkdir(out_path.parent, resolve_build=False)
@@ -243,17 +255,8 @@ def deploy_zstd_dependencies(self) -> None:
     Entries should only be added to zstd_dependencies if the zstandard library is available.
     """
     from zstandard import decompress
-    from zstandard.backend_cffi import ZstdError
 
-    try:
-        _deploy_compressed(self, "zstd", decompress, compression_extension=".zst")
-    except ZstdError as e:
-        self.logger.error("Unable to decompress zstd dependency: %s" % e)
-        raise e
-        self.logger.warning(
-            "Ensure the zstandard library is installed, or remove the zstd dependency from the configuration."
-        )
-        raise e
+    _deploy_compressed(self, "zstd", decompress, compression_extensions=[".zst", ".zstd"])
 
 
 @contains("gz_dependencies", "No gz dependencies defined, skipping.", log_level=10)
