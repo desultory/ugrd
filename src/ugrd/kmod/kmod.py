@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "3.3.6"
+__version__ = "3.3.7"
 
 from pathlib import Path
 from platform import uname
@@ -384,7 +384,7 @@ def add_kmod_deps(self):
             self["dependencies"] = filename
         elif filename.endswith(".ko.xz"):
             self["xz_dependencies"] = filename
-        elif filename.endswith(".ko.zstd"):
+        elif filename.endswith(".ko.zstd") or filename.endswith(".ko.zst"):
             self["zstd_dependencies"] = filename
         elif filename.endswith(".ko.gz"):
             self["gz_dependencies"] = filename
