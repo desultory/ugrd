@@ -1,7 +1,7 @@
 __author__ = "desultory"
-__version__ = "4.4.1"
+__version__ = "4.5.0"
 
-from os import environ, makedev, mknod
+from os import environ, makedev, mknod, uname
 from pathlib import Path
 from shutil import rmtree, which
 from stat import S_IFCHR
@@ -24,6 +24,7 @@ def _has_zstd() -> bool:
 
 class DecompressorError(Exception):
     """Custom exception for decompressor errors."""
+
     pass
 
 
@@ -331,6 +332,17 @@ def autodetect_libgcc(self) -> None:
 
     self["dependencies"] = source_path
     self["library_paths"] = str(source_path.parent)
+
+
+def autodetect_musl(self) -> None:
+    """Looks for /etc/ld-musl-<arch>.path
+    If it exists, adds it to the dependencies list.
+    """
+    arch = uname().machine
+    musl_path = Path(f"/etc/ld-musl-{arch}.path")
+    if musl_path.exists():
+        self.logger.info("Detected musl searcg path: %s" % c_(musl_path, "cyan"))
+        self["dependencies"] = musl_path
 
 
 def _process_out_file(self, out_file: str) -> None:
