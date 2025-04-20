@@ -283,7 +283,7 @@ This module handles CPIO creation.
 
 These are set at the global level and are not associated with an individual mount:
 
-* `mount_timeout` (1.0) - Timeout in seconds for mount retries, can be set with `rootdelay` in the kernel command line.
+* `mount_timeout` (1.0) - Timeout in seconds for mount retries, can be set with in the kernel command line with `ugrd_mount_timeout`.
 * `mount_retries` - Number of times to retry running `mount -a`, no limit if unset.
 
 #### ugrd.fs.btrfs

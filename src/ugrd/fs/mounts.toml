@@ -2,7 +2,7 @@ binaries = [ "lsblk", "blkid", "mount", "umount", "mkdir" ]
 
 provides = "mounts" 
 
-cmdline_strings =  ["root", "roottype", "rootflags", "rootdelay" ]
+cmdline_strings =  ["root", "roottype", "rootflags", "ugrd_mount_timeout" ]
 cmdline_bools = ["ugrd_no_fsck"]
 
 run_dirs = [ "ugrd" ]
