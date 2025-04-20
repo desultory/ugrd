@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "7.1.0"
+__version__ = "7.1.1"
 
 from pathlib import Path
 from re import search
@@ -861,7 +861,7 @@ def mount_late(self) -> list[str]:
 
 def mount_fstab(self) -> list[str]:
     """Generates the init function for mounting the fstab.
-    Keeps re-attempting with mount_timeout or rootdelay until successful.
+    Keeps re-attempting with mount_timeout until successful.
     mount_retries sets the number of times to retry the mount, infinite otherwise.
     """
     if not self._get_build_path("/etc/fstab").exists():
@@ -869,18 +869,17 @@ def mount_fstab(self) -> list[str]:
 
     out = [
         'einfo "Attempting to mount all filesystems."',
-        f"timeout=$(readvar rootdelay {self.get('mount_timeout', 1)})",
     ]
 
     if retries := self.get("mount_retries"):
         out += [
-            f'retry {retries} "$timeout" mount -a || rd_fail "Failed to mount all filesystems."',
+            f'retry {retries} "$(readvar ugrd_mount_timeout)" mount -a || rd_fail "Failed to mount all filesystems."',
         ]
     else:
         out += [
-            "while ! mount -a; do",  # Actually retry forever, retry with a short timeout may fail
-            '    if prompt_user "Press space to break, waiting: ${timeout}s" "$timeout"; then',
-            '        rd_fail "Failed to mount all filesystems."',
+            "while ! mount -a; do",  # Retry forever, retry with a very short timeout may fail
+            '    if prompt_user "Press space to break, waiting: $(readvar ugrd_mount_timeout)s" "$(readvar ugrd_mount_timeout)"; then',
+            '        rd_fail "Failed to mount all filesystems. Process interrupted by user."',
             "    fi",
             '    eerror "Failed to mount all filesystems, retrying."',
             "done",
@@ -950,7 +949,7 @@ def check_mounts(self) -> None:
 
 def mount_default_root(self) -> str:
     """Mounts the root partition to $MOUNTS_ROOT_TARGET."""
-    return f"""
+    return """
     mount_source=$(readvar MOUNTS_ROOT_SOURCE)
     mount_type=$(readvar MOUNTS_ROOT_TYPE auto)
     mount_options="$(readvar MOUNTS_ROOT_OPTIONS 'defaults,ro')$(readvar root_extra_options)"
@@ -962,7 +961,7 @@ def mount_default_root(self) -> str:
     einfo "[/] Mounting '$mount_source' ($mount_type) to '$mount_target' with options: $mount_options"
     while ! mount "$mount_source" -t "$mount_type" -o "$mount_options" "$mount_target"; do
         eerror "Failed to mount root partition."
-        if prompt_user "Press space to break, waiting: {self["mount_timeout"]}s" {self["mount_timeout"]}; then
+        if prompt_user "Press space to break, waiting: $(readvar ugrd_mount_timeout)s" "$(readvar ugrd_mount_timeout)"; then
             rd_fail "Failed to mount root partition."
         fi
     done
@@ -996,6 +995,7 @@ def export_mount_info(self) -> None:
     self["exports"]["MOUNTS_ROOT_TYPE"] = self["mounts"]["root"].get("type", "auto")
     self["exports"]["MOUNTS_ROOT_OPTIONS"] = ",".join(self["mounts"]["root"]["options"])
     self["exports"]["MOUNTS_ROOT_TARGET"] = self["mounts"]["root"]["destination"]
+    self["exports"]["ugrd_mount_timeout"] = self.get("mount_timeout", 1)
 
 
 def autodetect_zfs_device_kmods(self, poolname) -> list[str]:
