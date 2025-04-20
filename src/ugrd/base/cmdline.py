@@ -2,12 +2,17 @@ __author__ = "desultory"
 __version__ = "4.2.0"
 
 from importlib.metadata import PackageNotFoundError, version
+from pathlib import Path
+from re import search
 
 from ugrd.exceptions import ValidationError
 from zenlib.util import colorize as c_
 
 # Some arguments absolutely must be namespaced and should only be used by the kernel
 FORCE_NAMESPACE = ["debug"]
+
+# Check for old args being used
+DEPRECATED_ARGS = ["debug", "recovery"]
 
 def _check_namespaced_arg(self, arg: str) -> bool:
     """Checks if the argument is namespaced or not.
@@ -152,3 +157,14 @@ def export_exports(self) -> list[str]:
     export_lines = [f'setvar "{key}" "{value}"' for key, value in self["exports"].items()]
 
     return check_lines + export_lines + ["setvar exported 1"]
+
+def check_proc_cmdline(self):
+    """ Checks for possible invalid cmdline args in /proc/cmdline. """
+    cmdline = Path("/proc/cmdline").read_text().strip()
+    self.logger.debug(f"Current cmdline: {c_(cmdline, 'green')}")
+
+    for arg in DEPRECATED_ARGS:
+        if search(rf"\b{arg}(\b|=)", cmdline):
+            self.logger.warning(f"Detected deprecated cmdline arg: {c_(arg, 'red')}")
+            self.logger.warning("Please check the documentation for the updated usage.")
+

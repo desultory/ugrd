@@ -10,6 +10,9 @@ _non_namespaced_cmdline_args = ["init", "resume", "root", "rootdelay", "rootflag
 [imports.init_pre]
 "ugrd.base.cmdline" = [ "export_exports", "parse_cmdline" ]
 
+[imports.checks]
+"ugrd.base.cmdline" = [ "check_proc_cmdline" ]
+
 [imports.functions]
 "ugrd.base.cmdline" = [ "parse_cmdline_bool", "parse_cmdline_str" ]
 
