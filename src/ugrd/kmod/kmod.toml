@@ -1,4 +1,4 @@
-modules = [ "ugrd.kmod.standard_mask" ]
+modules = [ "ugrd.kmod.standard_mask", "ugrd.kmod.input" ]
 
 binaries = [ "modprobe" ]
 
