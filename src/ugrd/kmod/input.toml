@@ -1,0 +1,12 @@
+kmod_autodetect_input = true
+_input_device_kmods = [ "hid_apple", "hid_generic", "usbhid" ]
+
+[imports.build_enum]
+"ugrd.kmod.input" = [ "autodetect_input" ]
+
+[import_order.after]
+"autodetect_input" = "get_kernel_version"
+
+[custom_parameters]
+kmod_autodetect_input = "bool"  # Whether or not to detect input devices
+_input_device_kmods = "NoDupFlatList"  # List of input device kernel modules
