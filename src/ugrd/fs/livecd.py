@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "0.7.0"
+__version__ = "0.7.1"
 
 from zenlib.util import contains
 
@@ -52,7 +52,7 @@ def set_squashfs_root_source(self) -> str:
     otherwise checks that the built-in squashfs source exists."""
     return """
     root_source="$(readvar MOUNTS_ROOT_SOURCE)"
-    squashfs_image_name="$(readvar squashfs_image)"
+    squashfs_image_name="$(readvar ugrd_squashfs_image)"
     squashfs_image="/run/livecd/$squashfs_image_name"
     if [ -n "$squashfs_image_name" ]; then
         if [ -e "$squashfs_image" ]; then
