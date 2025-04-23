@@ -1,5 +1,5 @@
 kmod_autodetect_input = true
-_input_device_kmods = [ "hid_apple", "hid_generic", "usbhid" ]
+keyboard_key_threshold = 25
 
 [imports.build_enum]
 "ugrd.kmod.input" = [ "autodetect_input" ]
@@ -9,4 +9,4 @@ _input_device_kmods = [ "hid_apple", "hid_generic", "usbhid" ]
 
 [custom_parameters]
 kmod_autodetect_input = "bool"  # Whether or not to detect input devices
-_input_device_kmods = "NoDupFlatList"  # List of input device kernel modules
+keyboard_key_threshold = "int"  # Number of keys on a keyboard device to be detected as a keyboard
