@@ -20,7 +20,6 @@ test_copy_config = ["squashfs_image", "livecd_label"]
 "set_squashfs_root_source" = "mount_root"  # The squashfs must be mounted before the root (overlay)
 "mount_livecd" = "set_squashfs_root_source"  # The root source should be checked before mounting
 
-
 [custom_parameters]
 squashfs_image = "Path"  # the path to the squashfs image (at runtime)
 livecd_label = "str"  # The label of the livecd
