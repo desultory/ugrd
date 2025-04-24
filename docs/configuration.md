@@ -170,12 +170,24 @@ The following parameters can be used to change the kernel module pulling and ini
 * `kernel_version` (uname -r) Used to specify the kernel version to pull modules for, should be a directory under `/lib/modules/<kernel_version>`.
 * `kmod_pull_firmware` (true) Adds kernel module firmware to dependencies
 * `kmod_init` - Kernel modules to `modprobe` at boot.
-* `kmod_autodetect_lspci` (false) Populates `kmod_init` with modules listed in `lspci -k`.
-* `kmod_autodetect_lsmod` (false) Populates `kmod_init` with modules listed in `lsmod`.
+* `kmod_autodetect_lspci` (false) Finds kernel modules for PCI devices using `/sys/bus/pci/drivers`, formely used `lspci -k`.
+* `kmod_autodetect_lsmod` (false) Pulls kernel modules using `/proc/modules`, formerly used `lsmod`.
 * `kernel_modules` - Kernel modules to pull into the initramfs. These modules will not be `modprobe`'d automatically.
 * `kmod_ignore` - Kernel modules to ignore. Modules which depend on ignored modules will also be ignored.
 * `kmod_ignore_softdeps` (false) Ignore softdeps when checking kernel module dependencies.
 * `no_kmod` (false) Disable kernel modules entirely.
+
+##### ugrd.kmod.input
+
+`ugrd.kmod.input` is automatically imported by `ugrd.kmod.kmod` and is used to detect kernel modules for keyboards, and keyboard like input devices.
+
+> Miscellaneous devices and buttons may present as "input devices providing keyboard events", but are not keyboards. The `keyboard_key_threshold` option can be used to filter these devices.
+
+* `kmod_autodetect_input` (true) Detects keyboard devices using `/sys/class/input/`, using `keyboard_key_threshold`.
+* `keyboard_key_threshold` (25) The number of keys provided by an input device before it should be considered a keyboard.
+
+> If necessary input devices are not detected, they may be detected using `kmod_autodetect_lspci` or `kmod_autodetect_lsmod`.
+> This is not recommended, as it may cause unnecessary modules to be loaded. Please open an issue if this module does not work for your keyboard.
 
 #### Kernel module helpers
 

@@ -35,6 +35,10 @@ modules = [
 kmod_autodetect_lspci = true
 # lsmod detection can be helpful, but can bring in unnecessary modules
 #kmod_autodetect_lsmod = true
+# keyboard/input device detection is enabled by default, but can be disabled or adjusted
+#kmod_autodetect_input = false
+# If input detection is finding non-keyboard devices, the key count threshold can be adjusted
+#keyboard_key_threshold = 50
 # If no kernel modules are needed, or installed, no_kmod should be set
 #no_kmod = true
 
