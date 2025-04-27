@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "4.6.0"
+__version__ = "4.7.0"
 
 from os import environ, makedev, mknod, uname
 from pathlib import Path
@@ -24,6 +24,12 @@ def _has_zstd() -> bool:
 
 class DecompressorError(Exception):
     """Custom exception for decompressor errors."""
+
+    pass
+
+
+class LDConfigError(Exception):
+    """Custom exception for ldconfig errors."""
 
     pass
 
@@ -303,35 +309,40 @@ def deploy_nodes(self) -> None:
             raise e
 
 
+def _get_ldconfig(self) -> list:
+    """Returns the ldconfig command if it exists, otherwise raise an LDConfigError."""
+    try:
+        cmd = self._run(["ldconfig", "-p"], fail_silent=True, fail_hard=False)
+    except FileNotFoundError:
+        self.logger.warning("If musl libc is being used, `musl_libc = true` should be set in the config.")
+        raise LDConfigError("ldconfig not found, unable to resolve libraries.")
+
+    if b"Unimplemented option: -p" in cmd.stderr:  # Probably musl libc
+        self.logger.warning("If musl libc is being used, `musl_libc = true` should be set in the config.")
+        raise LDConfigError("ldconfig -p not supported, musl libc is likely in use.")
+
+    if cmd.returncode != 0:
+        raise LDConfigError("ldconfig failed to run: %s" % cmd.stderr.decode("utf-8"))
+
+    return cmd.stdout.decode("utf-8").splitlines()
+
+
 @unset("musl_libc", "Skipping libgcc_s dependency resolution, musl_libc is enabled.", log_level=20)
 @contains("find_libgcc", "Skipping libgcc_s dependency resolution", log_level=20)
 def autodetect_libgcc(self) -> None:
     """Finds libgcc.so, adds a 'dependencies' item for it.
     Adds the parent directory to 'library_paths'
     """
-    musl_warning = False
     try:
-        cmd = self._run(["ldconfig", "-p"], fail_silent=True, fail_hard=False)
-    except FileNotFoundError:
-        musl_warning = True
-
-    if not musl_warning and b"Unimplemented option: -p" in cmd.stderr:  # Probably musl libc
-        musl_warning = True
-
-    if musl_warning:
-        self.logger.warning(
-            "This check can be disabled by setting `musl_libc = true` or `find_libgcc = false` in the configuration."
-        )
-        return self.logger.warning("Unable to run ldconfig -p, if glibc is being used, this is fatal!")
-
-    if cmd.returncode != 0:
-        return self.logger.critical("Unable to run ldconfig -p, if glibc is being used, this is fatal!")
-
-    ldconfig = cmd.stdout.decode("utf-8").splitlines()
+        ldconfig = _get_ldconfig(self)
+    except LDConfigError:
+        self.logger.warning("Unable to run ldconfig -p, if glibc is being used, this is fatal!")
+        self.logger.warning("If libgcc_s is not required, set `find_libgcc = false` in the configuration.")
+        return
 
     libgcc = [lib for lib in ldconfig if "libgcc_s" in lib and "(libc6," in lib][0]
     source_path = Path(libgcc.partition("=> ")[-1])
-    self.logger.info("Source path for libgcc_s: %s" % source_path)
+    self.logger.info(f"Source path for libgcc_s: {c_(source_path, 'green')}")
 
     self["dependencies"] = source_path
     self["library_paths"] = str(source_path.parent)
@@ -344,7 +355,7 @@ def autodetect_musl(self) -> None:
     arch = uname().machine
     musl_path = Path(f"/etc/ld-musl-{arch}.path")
     if musl_path.exists():
-        self.logger.info("Detected musl search path: %s" % c_(musl_path, "cyan"))
+        self.logger.info(f"Detected musl search path: {c_(musl_path, 'green')}")
         self["dependencies"] = musl_path
     elif self["musl_libc"]:
         raise AutodetectError("Musl libc is enabled, but the musl search path was not found: %s" % musl_path)
@@ -352,7 +363,18 @@ def autodetect_musl(self) -> None:
 
 @unset("musl_libc", "Skipping ld.so.cache regeneration, musl_libc is enabled.", log_level=30)
 def regen_ld_so_cache(self) -> None:
-    """Regenerates the ld.so.cache file in the build dir. Uses defined library paths to generate the config"""
+    """
+    Checks if a 'real' ldconfig is available, if so, regenerates the ld.so.cache file in the build dir.
+    Uses defined library paths to generate the config file.
+
+    If ldconfig is not available, _get_ldconfiig will warn about setting `musl_libc` to true.
+    Here, warn about this and that this is a fatal error if glibc is being used.
+    """
+    try:
+        _get_ldconfig(self)
+    except LDConfigError:
+        return self.logger.warning("Unable to run ldconfig -p, if glibc is being used, this is fatal!")
+
     self.logger.info("Regenerating ld.so.cache")
     self._write("etc/ld.so.conf", self["library_paths"])
     build_path = self._get_build_path("/")
