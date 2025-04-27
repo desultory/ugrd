@@ -50,6 +50,9 @@ timeout = 15
 		     "deploy_symlinks",
 		     "deploy_nodes"]
 
+[imports.build_final]
+"ugrd.base.core" = [ "regen_ld_so_cache" ]
+
 [custom_parameters]
 hostonly = "bool"  # If true, the initramfs will be built specifically for the host building it
 validate = "bool"  # If true, the configuration of the initramfs will be validated against the host
@@ -70,6 +73,7 @@ zstd_dependencies = "NoDupFlatList"  # ZStandard compressed dependencies propert
 gz_dependencies = "NoDupFlatList"  # GZipped dependencies property, used to define the gzipped dependencies (will be extracted)
 library_paths = "NoDupFlatList"  # library_paths property, used to define the library paths to add to LD_LIBRARY_PATH
 find_libgcc = "bool"  # If true, the initramfs will search for libgcc_s.so.1 and add it to the initramfs
+musl_libc = "bool"  # If true, disables find_libgcc and regen_ld_so_cache
 libraries = "NoDupFlatList"  # Additional libraries, by name, added to the initramfs
 binaries = "NoDupFlatList"  # Binaries which should be included in the intiramfs, dependencies resolved with lddtree
 binary_search_paths = "NoDupFlatList"  # Binary paths, used to define the paths to search for binaries

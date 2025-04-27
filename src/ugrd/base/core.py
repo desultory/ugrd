@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "4.5.1"
+__version__ = "4.6.0"
 
 from os import environ, makedev, mknod, uname
 from pathlib import Path
@@ -303,6 +303,7 @@ def deploy_nodes(self) -> None:
             raise e
 
 
+@unset("musl_libc", "Skipping libgcc_s dependency resolution, musl_libc is enabled.", log_level=20)
 @contains("find_libgcc", "Skipping libgcc_s dependency resolution", log_level=20)
 def autodetect_libgcc(self) -> None:
     """Finds libgcc.so, adds a 'dependencies' item for it.
@@ -318,7 +319,9 @@ def autodetect_libgcc(self) -> None:
         musl_warning = True
 
     if musl_warning:
-        self.logger.warning("This check can be disabled by setting `find_libgcc = false` in the configuration.")
+        self.logger.warning(
+            "This check can be disabled by setting `musl_libc = true` or `find_libgcc = false` in the configuration."
+        )
         return self.logger.warning("Unable to run ldconfig -p, if glibc is being used, this is fatal!")
 
     if cmd.returncode != 0:
@@ -343,6 +346,17 @@ def autodetect_musl(self) -> None:
     if musl_path.exists():
         self.logger.info("Detected musl search path: %s" % c_(musl_path, "cyan"))
         self["dependencies"] = musl_path
+    elif self["musl_libc"]:
+        raise AutodetectError("Musl libc is enabled, but the musl search path was not found: %s" % musl_path)
+
+
+@unset("musl_libc", "Skipping ld.so.cache regeneration, musl_libc is enabled.", log_level=30)
+def regen_ld_so_cache(self) -> None:
+    """Regenerates the ld.so.cache file in the build dir"""
+    self.logger.info("Regenerating ld.so.cache")
+    build_path = self._get_build_path("/")
+    self._run(["ldconfig", "-r", str(build_path)])
+    self["check_included_or_mounted"] = "etc/ld.so.cache"
 
 
 def _process_out_file(self, out_file: str) -> None:
