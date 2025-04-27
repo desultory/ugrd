@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "4.5.0"
+__version__ = "4.5.1"
 
 from os import environ, makedev, mknod, uname
 from pathlib import Path
@@ -341,7 +341,7 @@ def autodetect_musl(self) -> None:
     arch = uname().machine
     musl_path = Path(f"/etc/ld-musl-{arch}.path")
     if musl_path.exists():
-        self.logger.info("Detected musl searcg path: %s" % c_(musl_path, "cyan"))
+        self.logger.info("Detected musl search path: %s" % c_(musl_path, "cyan"))
         self["dependencies"] = musl_path
 
 
