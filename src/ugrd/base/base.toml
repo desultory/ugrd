@@ -8,7 +8,7 @@ modules = [ "ugrd.base.core",
 
 binaries = [ "awk", "bc", "dd", "grep", "ls", "cp", "cat", "stty", "switch_root", "rm" ]
 
-paths = [ "root", "tmp" ]
+paths = [ "etc", "root", "tmp" ]
 
 loglevel = 5
 shebang_args = "-l"
