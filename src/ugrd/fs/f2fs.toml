@@ -1,8 +1,11 @@
 modules = [ "ugrd.fs.mounts" ]
 kmod_init = [ "f2fs" ]
 
-[imports.init_final]
+[imports.init_mount]
 "ugrd.fs.f2fs" = [ "f2fs_fsck" ]
+
+[import_order.before]
+"e2fs_fsck" = "mount_late"
 
 [conditional_dependencies]
 "fsck.f2fs" = [ "unset", "no_fsck" ]
