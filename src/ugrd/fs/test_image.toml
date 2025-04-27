@@ -20,4 +20,4 @@ cryptsetup = "dict"  # Same as above
 _cryptsetup_root = "str"  # Define the root device for cryptsetup
 test_image_size = "int"  # Define the size of the test image in MiB
 test_flag = "str"  # Define the success flag used to determine if the test was successful
-
+check_included_or_mounted = "NoDupFlatList"  # Only defined to suppress errors about unknown config
