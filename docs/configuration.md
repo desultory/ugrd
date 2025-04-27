@@ -43,6 +43,7 @@ Modules write to a shared config dict that is accessible by other modules.
 * `build_logging` (false) Enables additional logging during the build process.
 * `make_nodes` (false) Create real device nodes in the build dir. 
 * `find_libgcc` (true) Automatically locates libgcc using ldconfig -p and adds it to the initramfs.
+* `musl_libc` (false) Disable ldconfig -p usage for libgcc detection, skip ld.so.cache regeneration.
 * `out_dir` (initramfs_out) If relative, it will be placed under `tmpdir`, defines the output directory.
 * `out_file` Sets the name of the output file, under `out_dir`.
 * `clean` (true) forces the build dir to be cleaned on each run.
