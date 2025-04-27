@@ -1,8 +1,11 @@
 modules = [ "ugrd.fs.mounts" ]
 kmod_init = [ "ext4" ]
 
-[imports.init_final]
+[imports.init_mount]
 "ugrd.fs.ext4" = [ "ext4_fsck" ]
+
+[import_order.before]
+"ext4_fsck" = "mount_late"
 
 [conditional_dependencies]
 "fsck.ext4" = [ "unset", "no_fsck" ]
