@@ -352,8 +352,9 @@ def autodetect_musl(self) -> None:
 
 @unset("musl_libc", "Skipping ld.so.cache regeneration, musl_libc is enabled.", log_level=30)
 def regen_ld_so_cache(self) -> None:
-    """Regenerates the ld.so.cache file in the build dir"""
+    """Regenerates the ld.so.cache file in the build dir. Uses defined library paths to generate the config"""
     self.logger.info("Regenerating ld.so.cache")
+    self._write("etc/ld.so.conf", self["library_paths"])
     build_path = self._get_build_path("/")
     self._run(["ldconfig", "-r", str(build_path)])
     self["check_included_or_mounted"] = "etc/ld.so.cache"
