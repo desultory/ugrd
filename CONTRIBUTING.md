@@ -38,3 +38,11 @@ bools to disable validation should be named in the format: `no_validate_<attr>`.
 * Check functions should be named in the format: `check_<attr>`.
 * Functions which move files into the build dir or image should be named `deploy_<thing>`.
 * Functions which update the exports should be named `export_<thing>`. such as `export_mount_info`.
+
+### Failure modes
+
+When the shell script fails, it should call `rd_fail` which then calls `rd_restart`.
+
+`rd_restart` cannot function properly in a subshell, so any functions which could possibly use it should not be called through `$()` or similar. This causes the script to fail, but continue execution after the failure.
+
+
