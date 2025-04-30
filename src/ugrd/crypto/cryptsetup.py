@@ -432,24 +432,37 @@ def get_crypt_dev(self) -> str:
     """Gets the device path for a particular cryptsetup device at runtime.
     First attempts to read CRYPTSETUP_SOURCE_{name} if it exists.
     If it doesn't exist, or the device is not found, it will attempt to resolve the device using the token.
-    If that doesn't exist, it will fail."""
+    Loops three times over three seconds to allow for slow disks or devices.
+    If device is not found/does not exist, it will fail and pass back the string "no_device_found", to show clearly in logs up-stack."""
     return """
     source_dev="$(readvar CRYPTSETUP_SOURCE_"$1")"
     source_token="$(readvar CRYPTSETUP_TOKEN_"$1")"
-    if [ -n "$source_dev" ]; then
-        if [ -e "$source_dev" ]; then
-            printf "%s" "$source_dev"
-            return
-        fi
-    fi
-    if [ -n "$source_token" ]; then
-        source_dev=$(blkid --match-token "$source_token" --output device)
+
+    attempts=3; j=0; while [ "$((j=$j+1))" -le $attempts ]; do
         if [ -n "$source_dev" ]; then
-            printf "%s" "$source_dev"
+            if [ -e "$source_dev" ]; then
+                found_device=$(printf "%s" "$source_dev")
+            fi
         fi
-    fi
-    if [ -z "$source_dev" ]; then
-        rd_fail "Failed to find cryptsetup device: $1"
+        if [ -n "$source_token" ]; then
+            source_dev=$(blkid --match-token "$source_token" --output device)
+            if [ -n "$source_dev" ]; then
+                found_device=$(printf "%s" "$source_dev")
+            fi
+        fi
+        if [ -z $found_device ]; then
+            eerror "($j/$attempts): Failed to find device for $1 (slow disk?). Trying again in 1 second." >&2
+            wait_for_space 1 >&2
+        else
+            break
+        fi
+    done
+    if [ -z $found_device ]; then
+        eerror "No device found for $1 after $attempts tries" >&2
+        echo "no_device_found"
+    else
+        einfo "Device for $1 found: $found_device" >&2
+        echo $found_device
     fi
     """
 
