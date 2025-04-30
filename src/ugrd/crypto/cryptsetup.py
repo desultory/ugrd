@@ -448,9 +448,6 @@ def get_crypt_dev(self) -> str:
             printf "%s" "$source_dev"
         fi
     fi
-    if [ -z "$source_dev" ]; then
-        rd_fail "Failed to find cryptsetup device: $1"
-    fi
     """
 
 
@@ -462,6 +459,10 @@ def open_crypt_dev(self) -> str:
     """
     out = """
     crypt_device="$(get_crypt_dev "$1")"
+    if [ -z "$crypt_device" ]; then
+        rd_fail "Failed to find cryptsetup device: $1"
+    fi
+
     header="$(readvar CRYPTSETUP_HEADER_"$1")"
 
     cryptsetup_args="cryptsetup open --tries 1"

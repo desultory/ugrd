@@ -5,7 +5,7 @@ kmod_ignore = [
 'rtw89_core', 'rtw89_pci',  # realtek
 'cdc_acm', 'cdc_ncm', 'cdc_wdm', 'cdc_ether',  # USB CDC
 'stp', '8021q', 'llc', 'garp', 'mrp', 'bridge', 'bonding',  # Ethernet
-'r8169', 'r8152', 'r8153_ecm', 'igb', 'ixgbe', 'tg3', 'e1000e', 'e1000',  # Ethernet cards
+'r8169', 'r8152', 'r8153_ecm', 'igb', 'ixgbe', 'tg3', 'e1000e', 'e1000', 'igc', # Ethernet cards
 'tun', 'tap', 'wireguard', 'udp_tunnel', 'ip6_udp_tunnel',  # Tunnels
 'net_failover', 'failover','vhost_net','usbnet',  # Misc
 'tls', 'sctp',  # Misc protocols
