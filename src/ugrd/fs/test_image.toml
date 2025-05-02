@@ -10,9 +10,6 @@ _cryptsetup_root = "root"
 [imports.build_pre]
 "ugrd.fs.test_image" = ["init_banner"]
 
-[imports.init_main]
-"ugrd.fs.test_image" = ["resume_tests"]
-
 [imports.init_final]
 "ugrd.fs.test_image" = ["complete_tests"]
 

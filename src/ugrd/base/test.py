@@ -86,7 +86,7 @@ def make_test_image(self):
         "validate": False,
         "NO_BASE": True,
         "config": None,
-        "modules": "ugrd.fs.test_image",
+        "modules": ','.join(self["test_modules"]), # By default is only "ugrd.fs.test_image"
         "out_file": self["test_rootfs_name"],
         "build_dir": self["test_rootfs_build_dir"],
         "custom_parameters": get_copy_config_types(self),

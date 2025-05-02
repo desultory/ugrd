@@ -10,6 +10,7 @@ test_cpu = 'host'
 test_arch = 'x86_64'
 test_timeout = 30
 test_cmdline = 'console=ttyS0,115200 panic=0'
+test_modules = [ "ugrd.fs.test_image" ]
 qemu_bool_args = ['nographic', 'enable-kvm' ]
 
 [imports.build_pre]
@@ -30,4 +31,5 @@ test_flag = "str"  # Define the success flag for the test
 test_no_rootfs = "bool"  # Toggle to run tests without mounting the root image
 test_rootfs_name = "str"  # Define the name of the rootfs image
 test_rootfs_build_dir = "Path"  # Define the build directory for the rootfs image
+test_modules = "NoDupFlatList" # List of modules to include in test image
 qemu_bool_args = "NoDupFlatList"  # Define the qemu boolean arguments
