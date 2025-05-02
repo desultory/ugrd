@@ -71,14 +71,16 @@ def handle_late_resume(self) -> None:
     # At the moment it's the same code but delayed, will change when more features are added
     return handle_early_resume(self)
 
-
 @contains("test_resume")
-def test_init_swap_uuid(self):
-    if "test_cpu" in self:
+def test_resume_setup(self) -> None:
+    if "ugrd.base.test" in self["modules"]:
+        # Add resume to the list of test modules
+        self["test_modules"] = "ugrd.fs.test_resume"
+        
+        # Create a uuid for the swap partition in the test image
         from uuid import uuid4
-
         if not self["test_swap_uuid"]:
             self["test_swap_uuid"] = swap_uuid = uuid4()
 
-        # append to test kernel cmdline and adjust planned image size to allow enough space
+        # append to QEMU kernel cmdline
         self["test_cmdline"] = f"{self.get('test_cmdline')} resume=UUID={swap_uuid}"

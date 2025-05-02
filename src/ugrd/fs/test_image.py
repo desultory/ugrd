@@ -15,30 +15,6 @@ def init_banner(self):
     self["banner"] = "echo ugRD Test Image"
 
 
-@contains("test_resume")
-def resume_tests(self):
-    return """
-        echo "Begin resume testing."
-        if [ "$(</sys/power/resume)" != "0:0" ] ; then
-            echo reboot > /sys/power/disk
-            echo 1 > /sys/power/pm_debug_messages
-
-            local SWAPDEV=/dev/$(source "/sys/dev/block/$(</sys/power/resume)/uevent" && echo $DEVNAME)
-            echo "Activating swap device ${SWAPDEV}..."
-            swapon ${SWAPDEV}
-
-            echo "Triggering test hibernation..."
-            echo disk > /sys/power/state || (echo "Suspend to disk failed!" ; echo c > /proc/sysrq-trigger)
-
-            # Assume at this point system has hibernated then resumed again
-            echo "Resume test completed without error."
-        else
-            echo "No resume device found! Resume test not possible!"
-            echo c > /proc/sysrq-trigger
-        fi
-    """
-
-
 @contains("test_flag", "A test flag must be set to create a test image", raise_exception=True)
 def complete_tests(self):
     return f"""
@@ -156,7 +132,7 @@ def make_test_image(self):
         _allocate_image(self, image_path)
 
     loopback = None
-    if self.get("test_resume"):
+    if self.get("test_swap_uuid"):
         try:
             self._run(["sgdisk", "-og", "-n", "1:0:+128M", "-n", "2:0:0", image_path])
         except RuntimeError as e:
@@ -168,6 +144,7 @@ def make_test_image(self):
 
             image_path = f"{loopback}p2"
         except RuntimeError as e:
+            self._run(["losetup", "-d", loopback])   # Free loopback device on fail
             raise RuntimeError("Failed to allocate loopback device for disk creation: %s", e)
 
         # sleep for 100ms, to give the loopback device time to scan for partitions
@@ -178,6 +155,7 @@ def make_test_image(self):
         try:
             self._run(["mkswap", "-U", self["test_swap_uuid"], f"{loopback}p1"])
         except RuntimeError as e:
+            self._run(["losetup", "-d", loopback])
             raise RuntimeError("Failed to create swap partition on test disk: %s", e)
 
     if rootfs_type == "ext4":
