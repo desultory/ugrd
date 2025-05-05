@@ -1,2 +1,5 @@
 [imports.init_main]
 "ugrd.fs.test_resume" = ["resume_tests"]
+
+[custom_parameters]
+test_resume = "bool"

@@ -9,7 +9,7 @@ test_memory = '256M'
 test_cpu = 'host'
 test_arch = 'x86_64'
 test_timeout = 30
-test_cmdline = 'console=ttyS0,115200 panic=0'
+test_cmdline = ['console=ttyS0,115200', 'panic=0']
 test_modules = [ "ugrd.fs.test_image" ]
 qemu_bool_args = ['nographic', 'enable-kvm' ]
 
@@ -24,7 +24,7 @@ test_kernel = "Path"  # Define the kernel to use for the test
 test_memory = "str"  # Define the amount of memory to use for the test image (passed to qemu)
 test_cpu = "str"  # Define the CPU to use for the test image (passed to qemu)
 test_arch = "str"  # Define the qemu arch (added to the qemu-system- command)
-test_cmdline = "str"  # Define the kernel command line for the test image
+test_cmdline = "NoDupFlatList"  # Define the kernel command line for the test image
 test_timeout = "int"  # Define the timeout for the test
 test_image_size = "int"  # Define the size of the test image, in MB
 test_flag = "str"  # Define the success flag for the test

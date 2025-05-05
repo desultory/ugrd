@@ -55,7 +55,7 @@ def _get_qemu_cmd_args(self, test_image):
         "-cpu": self["test_cpu"],
         "-kernel": self["test_kernel"],
         "-initrd": test_initrd,
-        "-append": self["test_cmdline"],
+        "-append": " ".join(self["test_cmdline"]),
         "-drive": "file=%s,format=raw" % test_rootfs,
     }
 
@@ -86,7 +86,7 @@ def make_test_image(self):
         "validate": False,
         "NO_BASE": True,
         "config": None,
-        "modules": ','.join(self["test_modules"]), # By default is only "ugrd.fs.test_image"
+        "modules": ",".join(self["test_modules"]),  # By default is only "ugrd.fs.test_image"
         "out_file": self["test_rootfs_name"],
         "build_dir": self["test_rootfs_build_dir"],
         "custom_parameters": get_copy_config_types(self),
