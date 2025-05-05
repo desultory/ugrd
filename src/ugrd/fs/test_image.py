@@ -144,7 +144,7 @@ def make_test_image(self):
 
             image_path = f"{loopback}p2"
         except RuntimeError as e:
-            self._run(["losetup", "-d", loopback])   # Free loopback device on fail
+            self._run(["losetup", "-d", loopback])  # Free loopback device on fail
             raise RuntimeError("Failed to allocate loopback device for disk creation: %s", e)
 
         # sleep for 100ms, to give the loopback device time to scan for partitions

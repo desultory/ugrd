@@ -3,6 +3,22 @@ __version__ = "0.4.4"
 from zenlib.util import contains
 
 
+@contains("test_resume")
+def setup_resume_tests(self) -> None:
+    if "ugrd.base.test" in self["modules"]:
+        from uuid import uuid4
+
+        # Create a uuid for the swap partition in the test image
+        if not self["test_swap_uuid"]:
+            self["test_swap_uuid"] = uuid4()
+
+        # pull in the hibernation/resume testing module
+        self["test_modules"] = "ugrd.fs.test_resume"
+
+        # append resume partition to QEMU kernel cmdline
+        self["test_cmdline"] = f"resume=UUID={self['test_swap_uuid']}"
+
+
 def resume(self) -> str:
     """Returns a shell script handling resume from hibernation.
     Checks that /sys/power/resume is writable, resume= is set, and noresume is not set, if so,
@@ -30,8 +46,7 @@ def resume(self) -> str:
 
         [ -b "$1" ] || (ewarn "\'$1\' is not a valid block device!" ; return 1)
         einfo "Attempting resume from: $1"
-        # TODO: This could maybe be printf?
-        echo -n "$1" > /sys/power/resume
+        printf "%s" "$1" > /sys/power/resume
         einfo "No image on: $resume"
         return 0
     """
@@ -70,17 +85,3 @@ def handle_late_resume(self) -> None:
 
     # At the moment it's the same code but delayed, will change when more features are added
     return handle_early_resume(self)
-
-@contains("test_resume")
-def test_resume_setup(self) -> None:
-    if "ugrd.base.test" in self["modules"]:
-        # Add resume to the list of test modules
-        self["test_modules"] = "ugrd.fs.test_resume"
-        
-        # Create a uuid for the swap partition in the test image
-        from uuid import uuid4
-        if not self["test_swap_uuid"]:
-            self["test_swap_uuid"] = swap_uuid = uuid4()
-
-        # append to QEMU kernel cmdline
-        self["test_cmdline"] = f"{self.get('test_cmdline')} resume=UUID={swap_uuid}"
