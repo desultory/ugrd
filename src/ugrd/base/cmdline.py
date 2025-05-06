@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "4.2.0"
+__version__ = "4.2.1"
 
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
@@ -164,7 +164,8 @@ def check_proc_cmdline(self):
     self.logger.debug(f"Current cmdline: {c_(cmdline, 'green')}")
 
     for arg in DEPRECATED_ARGS:
-        if search(rf"\b{arg}(\b|=)", cmdline):
+        # Check for deprecated args starting with a space or newline, ending with a space, =, or end of line
+        if search(rf"(?:^|\s){arg}(?=\s|=|$)", cmdline):
             self.logger.warning(f"Detected deprecated cmdline arg: {c_(arg, 'red')}")
             self.logger.warning("Please check the documentation for the updated usage.")
 
