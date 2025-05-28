@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "7.0.0"
+__version__ = "7.1.0"
 
 from pathlib import Path
 from shutil import which
@@ -252,6 +252,8 @@ def prompt_user(self) -> list[str]:
     The first argument is the prompt message.
     The second argument is the timeout in seconds.
 
+    If the timeout is not set, or set to zero, loops wait_for_space until space is pressed.
+
     if plymouth is running, run 'plymouth display-message --text="$prompt" instead of echo.
     """
     output = ['prompt=${1:-"Press space to continue."}']
@@ -266,6 +268,12 @@ def prompt_user(self) -> list[str]:
     else:
         output += [r'printf "\033[1;35m *\033[0m %s\n" "$prompt"']
     output += [
+        'if [ -z "$2" ] || [ "$2" -eq 0 ]; then',
+        '    while ! wait_for_space; do',
+        '        ewarn "Invalid input, press space to continue."',
+        '    done',
+        '    return 0',
+        'fi',
         'wait_for_space "$2"',
         'return "$?"',
     ]
