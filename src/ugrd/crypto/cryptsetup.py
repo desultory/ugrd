@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "4.1.1"
+__version__ = "4.1.2"
 
 from json import loads
 from pathlib import Path
@@ -242,10 +242,18 @@ def _validate_cryptsetup_header(self, mapped_name: str) -> None:
         self.logger.warning(f"Unable to validate LUKS header for: {c_(mapped_name, 'red', bold=True)}\n")
         if "header_file" not in cryptsetup_info:
             self.logger.warning("If the header is detached, please set `header_file` in the configuration.")
-        self.logger.warning("If the header is detached not accessible at build time, please set `validate_header = false`.")
-        self.logger.critical("When header validation is disabled, it's up to the user to ensure valid headers are accessible at boot time, and that cryptsetup is built with the correct dependencies!")
-        self.logger.warning("Validation is not supported for LUKS1. If LUKS1 is being used, please consider using LUKS2 if possible.\n")
-        self.logger.info(f"Header validation can be disabled for this LUKS volume by setting the following configuration:\n\n[cryptsetup.{mapped_name}]\nvalidate_header = false\n\nor by setting `cryptsetup_header_validation = false` globally.\n")
+        self.logger.warning(
+            "If the header is detached not accessible at build time, please set `validate_header = false`."
+        )
+        self.logger.critical(
+            "When header validation is disabled, it's up to the user to ensure valid headers are accessible at boot time, and that cryptsetup is built with the correct dependencies!"
+        )
+        self.logger.warning(
+            "Validation is not supported for LUKS1. If LUKS1 is being used, please consider using LUKS2 if possible.\n"
+        )
+        self.logger.info(
+            f"Header validation can be disabled for this LUKS volume by setting the following configuration:\n\n[cryptsetup.{mapped_name}]\nvalidate_header = false\n\nor by setting `cryptsetup_header_validation = false` globally.\n"
+        )
 
         raise e
 
@@ -504,12 +512,18 @@ def _open_crypt_dev(self, name: str, parameters: dict) -> list[str]:
     key_command = parameters.get("key_command")
     plymouth_key_command = parameters.get("plymouth_key_command") if "ugrd.base.plymouth" in self["modules"] else None
 
-    _key_command_lines = f"""    einfo "($i/$retries)[{name}] Running key command: {key_command}"
-    if ! {key_command} > /run/ugrd/key_data; then
-        ewarn 'Failed to run key command: {key_command}'
-        {reset_command}
-        continue
-    fi"""
+    # Build the key command lines
+    _key_command_lines = "\n".join(
+        [
+            f'einfo "($i/$retries)[{name}] Running key command: {key_command}"',
+            f"if ! {key_command} > /run/ugrd/key_data; then",
+            f"    ewarn 'Failed to run key command: {key_command}'",
+            "    prompt_user 'Press space to retry'" if not self["cryptsetup_autoretry"] else "",
+            f"    {reset_command}" if reset_command else "",
+            "    continue",
+            "fi",
+        ]
+    )
 
     if key_command:
         self.logger.debug("[%s] Using key command: %s" % (name, key_command))
