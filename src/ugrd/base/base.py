@@ -268,7 +268,7 @@ def prompt_user(self) -> list[str]:
     else:
         output += [r'printf "\033[1;35m *\033[0m %s\n" "$prompt"']
     output += [
-        'if [ -z "$2" ] || [ "$2" -eq 0 ]; then',
+        """if [ -z "$2" ] || [ "$(echo "$2 > 0" | bc)" -eq 0 ]; then""",
         '    while ! wait_for_space; do',
         '        ewarn "Invalid input, press space to continue."',
         '    done',
