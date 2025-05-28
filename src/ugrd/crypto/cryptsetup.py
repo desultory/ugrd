@@ -518,8 +518,8 @@ def _open_crypt_dev(self, name: str, parameters: dict) -> list[str]:
             f'einfo "($i/$retries)[{name}] Running key command: {key_command}"',
             f"if ! {key_command} > /run/ugrd/key_data; then",
             f"    ewarn 'Failed to run key command: {key_command}'",
-            f"    {reset_command}" if reset_command else "",
             "    prompt_user 'Press space to retry'" if not self["cryptsetup_autoretry"] else "",
+            f"    {reset_command}" if reset_command else "",
             "    continue",
             "fi",
         ]
