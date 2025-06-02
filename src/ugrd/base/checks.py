@@ -1,4 +1,4 @@
-__version__ = "0.4.1"
+__version__ = "0.4.2"
 
 from pathlib import Path
 
@@ -31,8 +31,11 @@ def _check_in_file(self, file, lines):
     with open(file, "r") as f:
         file_lines = f.readlines()
 
+    stripped_lines = [line.strip() for line in file_lines]
+
     for check_line in lines:
-        if check_line not in file_lines:
+        if check_line not in file_lines and check_line not in stripped_lines:
+            self.logger.info(f"File lines: {file_lines}")
             raise ValueError("Failed to find line '%s' in file '%s'" % (check_line, file))
 
 
