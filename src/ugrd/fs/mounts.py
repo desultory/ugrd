@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "7.1.1"
+__version__ = "7.1.2"
 
 from pathlib import Path
 from re import search
@@ -294,7 +294,9 @@ def _to_fstab_entry(self, mount: dict) -> str:
 
 
 def generate_fstab(self, mount_class="mounts", filename="/etc/fstab") -> None:
-    """Generates the fstab from the specified mounts."""
+    """Generates the fstab from the specified mounts.
+    Adds fstab entries to the check_in_file, to ensure they exist in the final image.
+    """
     fstab_info = [f"# UGRD Filesystem module v{__version__}"]
 
     for mount_name, mount_info in self[mount_class].items():
@@ -308,6 +310,7 @@ def generate_fstab(self, mount_class="mounts", filename="/etc/fstab") -> None:
 
     if len(fstab_info) > 1:
         self._write(filename, fstab_info)
+        self["check_in_file"][filename] = fstab_info
     else:
         self.logger.debug(
             "[%s] No fstab entries generated for mounts: %s" % (mount_class, ", ".join(self[mount_class].keys()))
@@ -865,7 +868,7 @@ def mount_fstab(self) -> list[str]:
     mount_retries sets the number of times to retry the mount, infinite otherwise.
     """
     if not self._get_build_path("/etc/fstab").exists():
-        return self.logger.warning("No initramfs fstab found, skipping mount_fstab.")
+        return self.logger.info("No initramfs fstab found, skipping mount_fstab. If non-root storage devices are not needed at boot, this is fine.")
 
     out = [
         'einfo "Attempting to mount all filesystems."',
