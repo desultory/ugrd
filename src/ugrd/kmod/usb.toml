@@ -1,1 +1,2 @@
-kmod_init = ['uas', 'usbcore', 'scsi_mod', 'ehci_hcd', 'ohci_hcd', 'uhci_hcd', 'xhci_hcd']
+kmod_init = ['uas', 'usbcore']
+kmod_init_optional = ['ehci_hcd', 'ohci_hcd', 'uhci_hcd', 'xhci_hcd']

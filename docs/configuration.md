@@ -171,6 +171,7 @@ The following parameters can be used to change the kernel module pulling and ini
 * `kernel_version` (uname -r) Used to specify the kernel version to pull modules for, should be a directory under `/lib/modules/<kernel_version>`.
 * `kmod_pull_firmware` (true) Adds kernel module firmware to dependencies
 * `kmod_init` - Kernel modules to `modprobe` at boot.
+* `kmod_init_optional` - Modules to attempt to add to `kmod_init`, failing with a warning if not found.
 * `kmod_autodetect_lspci` (false) Finds kernel modules for PCI devices using `/sys/bus/pci/drivers`, formely used `lspci -k`.
 * `kmod_autodetect_lsmod` (false) Pulls kernel modules using `/proc/modules`, formerly used `lsmod`.
 * `kernel_modules` - Kernel modules to pull into the initramfs. These modules will not be `modprobe`'d automatically.
