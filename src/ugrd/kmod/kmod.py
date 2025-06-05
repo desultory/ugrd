@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "3.4.0"
+__version__ = "3.4.1"
 
 from pathlib import Path
 from platform import uname
@@ -455,7 +455,7 @@ def _process_optional_modules(self) -> None:
             _process_kmod_dependencies(self, kmod)
             self["kmod_init"] = kmod  # add to kmod_init so it will be loaded
         except IgnoredModuleError as e:
-            self.logger.info(e)
+            self.logger.warning(e)
         except BuiltinModuleError:
             self.logger.debug(f"Optional kmod_init module is built-in, skipping: {c_(kmod, 'yellow')}")
             continue
@@ -481,7 +481,7 @@ def process_modules(self) -> None:
             self["kernel_modules"].remove(kmod)
             continue  # Don't add built-in modules to the ignore list
         except IgnoredModuleError as e:
-            self.logger.info(e)
+            self.logger.warning(e)
         except DependencyResolutionError as e:
             if kmod in self["kmod_init"]:
                 # Once optional modules are fully implemented, this should raise an exception instead
