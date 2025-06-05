@@ -20,6 +20,7 @@ kmod_autodetect_lsmod = "bool"  # Whether or not to automatically pull currently
 kmod_autodetect_lspci = "bool"  # Whether or not to automatically pull kernel modules from lspci -k
 kernel_modules = "NoDupFlatList"  # Kernel modules to pull into the initramfs
 kmod_init = "NoDupFlatList"  # Kernel modules to load at initramfs startup
+kmod_init_optional = "NoDupFlatList"  # Kernel modules to try to add to kmod_init
 no_kmod = "bool" # Disables kernel modules entirely
 
 [imports.config_processing]

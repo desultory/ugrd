@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "3.3.7"
+__version__ = "3.4.0"
 
 from pathlib import Path
 from platform import uname
@@ -8,7 +8,13 @@ from struct import unpack
 from subprocess import run
 
 from ugrd.exceptions import AutodetectError, ValidationError
-from ugrd.kmod import BuiltinModuleError, MissingModuleError, DependencyResolutionError, IgnoredModuleError, _normalize_kmod_name
+from ugrd.kmod import (
+    BuiltinModuleError,
+    DependencyResolutionError,
+    IgnoredModuleError,
+    MissingModuleError,
+    _normalize_kmod_name,
+)
 from zenlib.util import colorize as c_
 from zenlib.util import contains, unset
 
@@ -35,6 +41,20 @@ def _process_kmod_init_multi(self, module: str) -> None:
     self["kmod_init"].append(module)
     self.logger.debug("Adding kmod_init module to kernel_modules: %s", module)
     self["kernel_modules"] = module
+
+
+def _process_kmod_init_optional_multi(self, module: str) -> None:
+    """Adds an optional kmod init module"""
+    module = _normalize_kmod_name(module)
+    if module in self["kmod_ignore"]:
+        self.logger.warning(f"Optional kmod_init module is in the ignore list: {c_(module, 'yellow', bold=True)}")
+        self["_kmod_removed"] = module
+        return
+    if module in self["kmod_init"]:
+        self.logger.debug(f"Optional kmod_init module is already in kmod_init: {c_(module, 'yellow', bold=True)}")
+        return
+    self.logger.debug(f"Adding optional kmod_init module: {c_(module, 'magenta')}")
+    self["kmod_init_optional"].append(module)
 
 
 def _process__kmod_auto_multi(self, module: str) -> None:
@@ -201,7 +221,9 @@ def _process_kernel_version(self, kver: str) -> None:
         if self["no_kmod"]:
             return self.logger.warning("[%s] Kernel module directory does not exist, but no_kmod is set." % kver)
         self.logger.error(f"Available kernel versions: {', '.join([d.name for d in Path('/lib/modules').iterdir()])}")
-        self.logger.info("If kernel modules are not installed, and not required, set `no_kmod = true` to skip this check.")
+        self.logger.info(
+            "If kernel modules are not installed, and not required, set `no_kmod = true` to skip this check."
+        )
         raise ValidationError(f"Kernel module directory does not exist for kernel: {kver}")
 
     self.data["kernel_version"] = kver
@@ -373,7 +395,9 @@ def add_kmod_deps(self):
         if self.get("kernel_version"):
             _add_kmod_firmware(self, kmod)
         else:
-            self.logger.warning(f"Kernel version is not set, skipping firmware detection for kmod: {c_(kmod, 'yellow')}")
+            self.logger.warning(
+                f"Kernel version is not set, skipping firmware detection for kmod: {c_(kmod, 'yellow')}"
+            )
         # if no_kmod is set, continue and check for the firmware of the next module
         if self["no_kmod"]:
             continue
@@ -421,9 +445,28 @@ def process_ignored_modules(self) -> None:
         process_ignored_module(self, module)
 
 
+def _process_optional_modules(self) -> None:
+    """Processes optional kernel modules."""
+    for kmod in self["kmod_init_optional"]:
+        if kmod in self["kmod_init"]:
+            self.logger.debug(f"Optional kmod_init module is already in kmod_init: {c_(kmod, 'yellow', bold=True)}")
+            continue
+        try:
+            _process_kmod_dependencies(self, kmod)
+            self["kmod_init"] = kmod  # add to kmod_init so it will be loaded
+        except IgnoredModuleError as e:
+            self.logger.info(e)
+        except BuiltinModuleError:
+            self.logger.debug(f"Optional kmod_init module is built-in, skipping: {c_(kmod, 'yellow')}")
+            continue
+        except DependencyResolutionError as e:
+            self.logger.warning(f"[{c_(kmod, 'yellow', bold=True)}] Failed to process optional kernel module dependencies: {e}")
+
+
 @unset("no_kmod", "no_kmod is enabled, skipping.", log_level=30)
 def process_modules(self) -> None:
     """Processes all kernel modules, adding dependencies to the initramfs."""
+    _process_optional_modules(self)
     self.logger.debug("Processing kernel modules: %s" % self["kernel_modules"])
     for kmod in self["kernel_modules"].copy():
         self.logger.debug("Processing kernel module: %s" % kmod)
@@ -441,6 +484,7 @@ def process_modules(self) -> None:
             self.logger.info(e)
         except DependencyResolutionError as e:
             if kmod in self["kmod_init"]:
+                # Once optional modules are fully implemented, this should raise an exception instead
                 self.logger.error("[%s] Failed to get modinfo for init kernel module: %s" % (kmod, e))
             self.logger.debug("[%s] Failed to get modinfo for kernel module: %s" % (kmod, e))
         self["kmod_ignore"] = kmod
@@ -457,8 +501,10 @@ def process_modules(self) -> None:
         except BuiltinModuleError:
             continue  # Don't add built-in modules to the ignore list
         except IgnoredModuleError as e:
-            self.logger.debug(e)
-        except DependencyResolutionError as e:
+            self.logger.debug(e)  # when autodetected modules are ignored, only debug log
+        except (
+            DependencyResolutionError
+        ) as e:  # log a warning, not error or exception when autodetected modules have missing deps
             self.logger.warning("[%s] Failed to process autodetected kernel module dependencies: %s" % (kmod, e))
         self["kmod_ignore"] = kmod
 
@@ -471,7 +517,9 @@ def load_modules(self) -> str:
     removed_kmods = ", ".join(self["_kmod_removed"])
     if self["no_kmod"]:
         if included_kmods or init_kmods:
-            self.logger.warning("no_kmod is enabled, but kernel modules are set, ensure the following kernel modules are built into the kernel:")
+            self.logger.warning(
+                "no_kmod is enabled, but kernel modules are set, ensure the following kernel modules are built into the kernel:"
+            )
             self.logger.warning(f"Init kernel modules: {c_(init_kmods, 'red', bold=True)}")
             self.logger.warning(f"Included kernel modules: {c_(included_kmods, 'red', bold=True)}")
         return
