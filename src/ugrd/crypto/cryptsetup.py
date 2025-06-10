@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "4.1.2"
+__version__ = "4.1.3"
 
 from json import loads
 from pathlib import Path
@@ -404,15 +404,19 @@ def _validate_luks_config(self, mapped_name: str) -> None:
 
 def export_crypt_sources(self) -> list[str]:
     """Validates the cryptsetup configuration (if enabled).
+    Sets CRYPTSETUP_HEADER_{name} if a header file is set.
     Adds the cryptsetup source and token to the exports.
     Sets the token to the partuuid or uuid if it exists.
     Sets the SOURCE when using a path.
     Only allows using the path if validation is disabled.
-    sets CRYPTSETUP_HEADER_{name} if a header file is set.
     """
     for name, parameters in self["cryptsetup"].items():
-        _validate_luks_config(self, name)
-        if parameters.get("path"):
+        _validate_luks_config(self, name)  # First validate the configuration
+        if header_file := parameters.get("header_file"):  # Then add the header file to the exports, if defined
+            self["exports"]["CRYPTSETUP_HEADER_%s" % name] = header_file
+            self.logger.debug("Set CRYPTSETUP_HEADER_%s: %s" % (name, header_file))
+
+        if parameters.get("path"):  # If a path is set, only allow it if validation is disabled
             if not self["validate"]:
                 self.logger.warning(
                     "Using device paths is unreliable and can result in boot failures. Consider using partuuid."
@@ -424,16 +428,13 @@ def export_crypt_sources(self) -> list[str]:
         elif not parameters.get("partuuid") and not parameters.get("uuid") and parameters.get("path"):
             raise ValidationError("Device source for cryptsetup mount must be specified: %s" % name)
 
-        for token_type in ["partuuid", "uuid"]:
+        for token_type in ["partuuid", "uuid"]:  # Attempt to set the token from partuuid or uuid
             if token := parameters.get(token_type):
                 self["exports"]["CRYPTSETUP_TOKEN_%s" % name] = f"{token_type.upper()}={token}"
                 self.logger.debug("Set CRYPTSETUP_TOKEN_%s: %s=%s" % (name, token_type.upper(), token))
                 break
-        else:
+        else:  # Raise an error if no usable token/config is set
             raise ValidationError("A partuuid or uuid must be specified for cryptsetup mount: %s" % name)
-        if header_file := parameters.get("header_file"):
-            self["exports"]["CRYPTSETUP_HEADER_%s" % name] = header_file
-            self.logger.debug("Set CRYPTSETUP_HEADER_%s: %s" % (name, header_file))
 
 
 def get_crypt_dev(self) -> str:
