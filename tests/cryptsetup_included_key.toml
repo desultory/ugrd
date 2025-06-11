@@ -2,6 +2,7 @@
 
 modules = [
   "ugrd.crypto.cryptsetup",
+  "ugrd.fs.fakeudev",
   "ugrd.base.test",
 ]
 
