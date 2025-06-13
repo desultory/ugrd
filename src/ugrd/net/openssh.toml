@@ -1,0 +1,27 @@
+needs = "net"
+
+binaries = ["sshd", "ssh-keygen", "/usr/lib64/misc/sshd-session", "/sbin/nologin"]
+
+paths = ["/etc/ssh", "/var/empty"]
+mount_devpts = true
+
+[masks.custom_init]
+"ugrd.base.console" = "custom_init"  # Don't use the normal console module as well
+
+[imports.config_processing]
+"ugrd.net.openssh" = [ "_process_openssh_authorized_keys" ]
+
+[imports.functions]
+"ugrd.net.openssh" = [ "kill_ssh" ]
+
+[imports.custom_init]
+"ugrd.net.openssh" = [ "sshd_init" ]
+
+[imports.build_tasks]
+"ugrd.net.openssh" = [ "add_openssh_keys" ]
+
+[imports.build_final]
+"ugrd.net.openssh" = [ "ssh_finalize" ]
+
+[custom_parameters]
+openssh_authorized_keys = "Path"  # Path to the authorized_keys file
