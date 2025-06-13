@@ -413,7 +413,28 @@ key_type = "gpg"
 key_file = "/boot/luks.gpg"
 ```
 
-#### masks
+### Network modules
+
+Currently, network modules are only implemented to be used with 3rd party modules which require network access.
+
+The only required config to use networking is to define a specific network interface, by name, using `net_device`.
+
+> `net_device` is used to automatically configure `net_device_mac` which is used to set the MAC address of the primary network interface.
+
+#### ugrd.net.static
+
+If a static IP is required, the following parameters can be used:
+
+* `autodetect_ip` (true) Automatically detect the IP address of the primary network interface, reusing it at boot time.
+* `autodetect_gateway` (true) Automatically detect the gateway of the primary network interface, reusing it at boot time.
+* `ip_address` - The static IP address to use, automatically populated if `autodetect_ip` is true. In the format `a.b.c.d/cidr`.
+* `ip_gateway` - The static gateway to use, automatically populated if `autodetect_gateway` is true.
+
+#### ugrd.net.dhcpcd
+
+If enabled, this module will attempt to use `dhcpcd` to configure the primary network interface.
+
+### masks
 
 To mask an import used by another module, the mask parameter can be used:
 
