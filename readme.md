@@ -117,7 +117,15 @@ If the required kernel module is not built into the kernel, and the filesystem i
 
 ### Architectures
 
-µgRD is primarily designed and tested against `x86_64`, but has been tested on `arm64`.
+µgRD was originally designed for modern `amd64` systems but has been tested on:
+
+* arm64
+   * Raspberry Pi 4
+   * Raspberry Pi 5
+   * Quartz64 Model A
+   * Radxa Zero3E
+* riscv64
+   * StarFive VisionFive 2
 
 ## Docs
 
