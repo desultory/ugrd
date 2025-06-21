@@ -13,6 +13,11 @@ binary_search_paths = [ "/bin", "/sbin", "/usr/bin", "/usr/sbin" ]
 old_count = 1
 timeout = 15
 
+[nodes.console]
+mode = 0o644
+major = 5
+minor = 1
+
 [imports.config_processing]
 "ugrd.base.core" = [ "_process_build_logging",
 		     "_process_out_file",
