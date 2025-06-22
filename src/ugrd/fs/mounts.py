@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "7.1.2"
+__version__ = "7.1.3"
 
 from pathlib import Path
 from re import search
@@ -130,13 +130,16 @@ def _get_mount_dev_fs_type(self, device: str, raise_exception=True) -> str:
         self.logger.debug("No mount found for device: %s" % device)
 
 
-def _get_mount_source_type(self, mount: dict, with_val=False) -> str:
-    """Gets the source from the mount config."""
+def _get_mount_source(self, mount: dict) -> str:
+    """Gets the source from the mount config.
+    Uses the order of SOURCE_TYPES to determine the source type.
+        uuid, partuuid, label, path.
+
+    Returns the source type and value if found, otherwise raises a ValueError.
+    """
     for source_type in SOURCE_TYPES:
         if source_type in mount:
-            if with_val:
-                return source_type, mount[source_type]
-            return source_type
+            return source_type, mount[source_type]
     raise ValueError("No source type found in mount: %s" % mount)
 
 
@@ -249,8 +252,8 @@ def _get_mount_str(self, mount: dict, pad=False, pad_size=44) -> str:
     """returns the mount source string based on the config,
     the output string should work with fstab and mount commands.
     pad: pads the output string with spaces, defined by pad_size (44)."""
-    mount_type, mount_name = _get_mount_source_type(self, mount, with_val=True)
-    out_str = mount_name if mount_type == "path" else f"{mount_type.upper()}={mount_name}"
+    mount_type, mount_val = _get_mount_source(self, mount)
+    out_str = mount_val if mount_type == "path" else f"{mount_type.upper()}={mount_val}"
 
     if pad:
         if len(out_str) > pad_size:
@@ -899,7 +902,7 @@ def _validate_host_mount(self, mount, destination_path=None) -> bool:
     if mount.get("base_mount"):
         return self.logger.debug("Skipping host mount validation for base mount: %s" % mount)
 
-    mount_type, mount_val = _get_mount_source_type(self, mount, with_val=True)
+    mount_type, mount_val = _get_mount_source(self, mount)
     # If a destination path is passed, like for /, use that instead of the mount's destination
     destination_path = str(mount["destination"]) if destination_path is None else destination_path
 
