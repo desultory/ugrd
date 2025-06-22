@@ -997,7 +997,14 @@ def mount_root(self) -> str:
 
 def export_mount_info(self) -> None:
     """Exports mount info based on the config to /run/MOUNTS_ROOT_{option}"""
-    self["exports"]["MOUNTS_ROOT_SOURCE"] = _get_mount_str(self, self["mounts"]["root"])
+    try:
+        self["exports"]["MOUNTS_ROOT_SOURCE"] = _get_mount_str(self, self["mounts"]["root"])
+    except ValueError as e:
+        self.logger.critical(f"Failed to get source info for the root mount: {e}")
+        if not self["hostonly"]:
+            self.logger.info("Root mount infomrmation can be defined under the '[mounts.root]' section.")
+            raise ValidationError("Root mount source information is not set, when hostonly mode is disabled, it must be manually defined.")
+        raise ValidationError("Root mount source information is not set even though hostonly mode is enabled. Please report a bug.")
     self["exports"]["MOUNTS_ROOT_TYPE"] = self["mounts"]["root"].get("type", "auto")
     self["exports"]["MOUNTS_ROOT_OPTIONS"] = ",".join(self["mounts"]["root"]["options"])
     self["exports"]["MOUNTS_ROOT_TARGET"] = self["mounts"]["root"]["destination"]
