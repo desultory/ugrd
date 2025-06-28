@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "7.1.0"
+__version__ = "7.2.0"
 
 from pathlib import Path
 from shutil import which
@@ -36,12 +36,26 @@ def _process_loglevel(self, loglevel: int) -> None:
 @contains("autodetect_init", log_level=30)
 @unset("init_target", "init_target is already set, skipping autodetection.", log_level=30)
 def autodetect_init(self) -> None:
-    """Autodetects the init_target."""
+    """Autodetects the init_target.
+    Attempts to find the "init" binary using which,
+    if this fails, read /proc/1/exe to find the init binary.
+    """
     if init := which("init"):
         self.logger.info("Detected init at: %s", c_(init, "cyan", bright=True))
         self["init_target"] = init
-    else:
-        raise AutodetectError("init_target is not specified and could not be detected.")
+        return
+
+    self.logger.info(f"No init found in PATH, checking {c_('/proc/1/exe', 'green')}")
+    try:
+        init = Path("/proc/1/exe").readlink()
+        init = init.resolve()  # Resolve the symlink to get the actual path
+        self.logger.info("Detected from process 1: %s", c_(init, "cyan", bright=True))
+        self["init_target"] = init
+        return
+    except PermissionError:
+        self.logger.eror("Unable to read /proc/1/exe, permission denied.")
+
+    raise AutodetectError("init_target is not specified and could not be detected.")
 
 
 @unset("shebang", "shebang is already set.", log_level=10)
