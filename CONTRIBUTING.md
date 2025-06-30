@@ -15,10 +15,10 @@ Variables should generally be colored using the following scheme:
 
 * `cyan` for autodetected values
 * `blue` for config/stage info
-* `green` for writted/read files
+* `green` for written/read files
 * `magenta` for kernel/kmod related things
-* `yellow` when cleaning files/build directories
-* `red` for overrides or warnings
+* `yellow` when cleaning files/build directories, soft warnings
+* `red` for overrides or hard warnings
 
 > colorize may be imported as c_
 
