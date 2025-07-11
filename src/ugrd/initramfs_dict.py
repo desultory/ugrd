@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "2.4.0"
+__version__ = "2.4.1"
 
 from collections import UserDict
 from importlib import import_module
@@ -271,11 +271,11 @@ class InitramfsConfigDict(UserDict):
                 self.logger.log(5, "Creating import type: %s" % import_type)
                 self["imports"][import_type] = NoDupFlatList(_log_bump=10, logger=self.logger)
 
-            if import_masks := self.get("masks", {}).get(import_type, {}).get(module_name):
+            if import_masks := self.get("masks", {}).get(import_type, []):
                 import_masks = [import_masks] if isinstance(import_masks, str) else import_masks
                 for mask in import_masks:
                     if mask in function_names:
-                        self.logger.warning("[%s] Skipping import of masked function: %s" % (module_name, mask))
+                        self.logger.warning(f"[{c_(module_name, bright=True)}] Skipping import of masked function: {c_(mask, 'yellow')}")
                         function_names.remove(mask)
                         if import_type == "custom_init":
                             self.logger.warning("Skipping custom init function: %s" % mask)

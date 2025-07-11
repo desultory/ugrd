@@ -90,7 +90,9 @@ class InitramfsGenerator(GeneratorHelpers):
         self.config_dict.validate()  # Validate the config after the build tasks have been run
 
         if self.validate and not self.validated:
-            raise ValidationError(f"Failed to validate config. Unprocessed values: {', '.join(list(self['_processing'].keys()))}")
+            raise ValidationError(
+                f"Failed to validate config. Unprocessed values: {', '.join(list(self['_processing'].keys()))}"
+            )
 
         self.generate_init()
         self.pack_build()
@@ -153,7 +155,7 @@ class InitramfsGenerator(GeneratorHelpers):
         for function in self["imports"].get(hook, []):
             if function.__name__ in self["masks"].get(hook, []):
                 self.logger.warning(
-                    "[%s] Skipping masked function: %s" % (hook, c_(function.__name__, "yellow", bold=True))
+                    f"[{c_(hook, bright=True)}] Skipping masked function: {c_(function.__name__, 'yellow', bold=True)}"
                 )
                 continue
 
