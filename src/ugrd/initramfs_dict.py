@@ -275,7 +275,7 @@ class InitramfsConfigDict(UserDict):
                 import_masks = [import_masks] if isinstance(import_masks, str) else import_masks
                 for mask in import_masks:
                     if mask in function_names:
-                        self.logger.warning("[%s] Skipping import of masked function: %s" % (module_name, mask))
+                        self.logger.warning(f"[{c_(module_name, bright=True)}] Skipping import of masked function: {c_(mask, 'yellow')}")
                         function_names.remove(mask)
                         if import_type == "custom_init":
                             self.logger.warning("Skipping custom init function: %s" % mask)
