@@ -39,7 +39,7 @@ class InitramfsConfigDict(UserDict):
         "validated": bool,  # A flag to indicate if the config has been validated, mostly used for log levels
         "custom_parameters": dict,  # Custom parameters loaded from imports
         "custom_processing": dict,  # Custom processing functions which will be run to validate and process parameters
-        "_processing": dict, # A dict of queues containing parameters which have been set before the type was known
+        "_processing": dict,  # A dict of queues containing parameters which have been set before the type was known
         "test_copy_config": NoDupFlatList,  # A list of config values which are copied into test images, from the parent
     }
 
@@ -275,7 +275,9 @@ class InitramfsConfigDict(UserDict):
                 import_masks = [import_masks] if isinstance(import_masks, str) else import_masks
                 for mask in import_masks:
                     if mask in function_names:
-                        self.logger.warning(f"[{c_(module_name, bright=True)}] Skipping import of masked function: {c_(mask, 'yellow')}")
+                        self.logger.warning(
+                            f"[{c_(module_name, bright=True)}] Skipping import of masked function: {c_(mask, 'yellow')}"
+                        )
                         function_names.remove(mask)
                         if import_type == "custom_init":
                             self.logger.warning("Skipping custom init function: %s" % mask)
