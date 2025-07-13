@@ -27,6 +27,7 @@ class TestCryptsetup(TestCase):
             keyfile.unlink()
 
     def test_cryptsetup_included_key(self):
+        """Tests LUKS based roots using a keyfile included in the initramfs"""
         generator = InitramfsGenerator(logger=self.logger, config="tests/cryptsetup_included_key.toml")
         generator.build()
 
