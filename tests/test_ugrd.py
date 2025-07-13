@@ -1,6 +1,7 @@
 from unittest import TestCase, main
 
 from ugrd.initramfs_generator import InitramfsGenerator
+from pycpio.errors import UnavailableCompression
 from zenlib.logging import loggify
 
 
@@ -19,7 +20,10 @@ class TestUGRD(TestCase):
     def test_zstd(self):
         """Test ZSTD compression for initramfs."""
         generator = InitramfsGenerator(logger=self.logger, config="tests/fullauto.toml", cpio_compression="zstd")
-        generator.build()
+        try:
+            generator.build()
+        except UnavailableCompression as e:
+            self.skipTest(f"ZSTD compression is not available: {e}")
 
     def test_bad_config(self):
         """Test that a bad config file which should raise an error."""
