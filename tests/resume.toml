@@ -1,0 +1,18 @@
+# Hibernation/Resume tests
+modules = [
+	"ugrd.fs.resume",
+	"ugrd.base.test",
+]
+
+late_resume = true
+test_resume = true
+
+out_dir = "initramfs_test"
+test_image_size = 256
+
+cpio_compression = false
+hostonly = false
+
+[mounts.root]
+uuid = "aaaabbbb-cccc-dddd-eeee-ffff00000000"
+type = "ext4"
