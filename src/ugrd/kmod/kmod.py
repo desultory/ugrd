@@ -143,8 +143,12 @@ def _autodetect_modules_lsmod(self) -> None:
         )
 
     with open("/proc/modules", "r") as f:
-        for module in f.readlines():
-            self["_kmod_auto"] = module.split()[0]
+        modules = [line.split()[0] for line in f.readlines()]
+
+    if len(modules) > 25:
+        self.logger.warning(f"[{len(modules)}] More than 25 kernel modules were autodetected from the running kernel. If lsmod detection is required for your use case, please file a bug report so more appropriate detection methods can be implemented.")
+    for module in modules:
+        self["_kmod_auto"] = module.split()[0]
 
 
 @unset("no_kmod", "no_kmod is enabled, skipping.", log_level=30)
