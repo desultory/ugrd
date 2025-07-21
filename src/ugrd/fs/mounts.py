@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "7.1.3"
+__version__ = "7.1.4"
 
 from pathlib import Path
 from re import search
@@ -1070,6 +1070,9 @@ def resolve_blkdev_kmod(self, device) -> list[str]:
         kmods.append("virtio_blk")
     elif device_name.startswith("sd"):
         kmods.append("sd_mod")
+        if self["virtual_machine"]:
+            self.logger.info(f"Auto-enabling virtio_scsi for virtual machine block device: {c_(device_name, 'cyan')}")
+            kmods.append("virtio_scsi")
     elif device_name.startswith("mmcblk"):
         kmods.append("mmc_block")
     elif device_name.startswith("sr"):
