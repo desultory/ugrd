@@ -22,6 +22,7 @@ kernel_modules = "NoDupFlatList"  # Kernel modules to pull into the initramfs
 kmod_init = "NoDupFlatList"  # Kernel modules to load at initramfs startup
 kmod_init_optional = "NoDupFlatList"  # Kernel modules to try to add to kmod_init
 no_kmod = "bool" # Disables kernel modules entirely
+kmod_no_normalize = "NoDupFlatList" # Kernel modules to not normalize (i.e. not convert dashes to underscores)
 
 [imports.config_processing]
 "ugrd.kmod.kmod" = [ "_process_kernel_version",

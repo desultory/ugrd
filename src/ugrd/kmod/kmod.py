@@ -1,11 +1,12 @@
 __author__ = "desultory"
-__version__ = "3.4.1"
+__version__ = "3.5.0"
 
 from pathlib import Path
 from platform import uname
 from struct import error as StructError
 from struct import unpack
 from subprocess import run
+from typing import Union
 
 from ugrd.exceptions import AutodetectError, ValidationError
 from ugrd.kmod import (
@@ -13,17 +14,29 @@ from ugrd.kmod import (
     DependencyResolutionError,
     IgnoredModuleError,
     MissingModuleError,
-    _normalize_kmod_name,
 )
 from zenlib.util import colorize as c_
 from zenlib.util import contains, unset
 
 MODULE_METADATA_FILES = ["modules.order", "modules.builtin", "modules.builtin.modinfo"]
 
+def _normalize_kmod_name(self, module: Union[str, list]) -> str:
+    """Replaces -'s with _'s in a kernel module name.
+    ignores modules defined in kmod_no_normalize.
+    """
+    if isinstance(module, list) and not isinstance(module, str):
+        return [_normalize_kmod_name(self, m) for m in module]
+    if module in self.get("kmod_no_normalize", []):
+        self.logger.debug(f"Not normalizing kernel module name: {module}")
+        return module
+    if "-" in module:
+        self.logger.log(5, f"Replacing - with _ in kernel module name: {module}")
+    return module.replace("-", "_")
+
 
 def _process_kernel_modules_multi(self, module: str) -> None:
     """Adds kernel modules to self['kernel_modules']."""
-    module = _normalize_kmod_name(module)
+    module = _normalize_kmod_name(self, module)
     if module in self["kmod_ignore"]:
         self.logger.debug("[%s] Module is in the ignore list." % module)
         self["_kmod_removed"] = module
@@ -35,7 +48,7 @@ def _process_kernel_modules_multi(self, module: str) -> None:
 
 def _process_kmod_init_multi(self, module: str) -> None:
     """Adds init modules to self['kernel_modules']."""
-    module = _normalize_kmod_name(module)
+    module = _normalize_kmod_name(self, module)
     if module in self["kmod_ignore"]:
         raise IgnoredModuleError("kmod_init module is in the ignore list: %s" % module)
     self["kmod_init"].append(module)
@@ -45,7 +58,7 @@ def _process_kmod_init_multi(self, module: str) -> None:
 
 def _process_kmod_init_optional_multi(self, module: str) -> None:
     """Adds an optional kmod init module"""
-    module = _normalize_kmod_name(module)
+    module = _normalize_kmod_name(self, module)
     if module in self["kmod_ignore"]:
         self.logger.warning(f"Optional kmod_init module is in the ignore list: {c_(module, 'yellow', bold=True)}")
         self["_kmod_removed"] = module
@@ -59,7 +72,7 @@ def _process_kmod_init_optional_multi(self, module: str) -> None:
 
 def _process__kmod_auto_multi(self, module: str) -> None:
     """Adds autodetected modules to self['kernel_modules']."""
-    module = _normalize_kmod_name(module)
+    module = _normalize_kmod_name(self, module)
     if module in self["kmod_ignore"]:
         self.logger.debug("Autodetected module is in the ignore list: %s" % module)
         self["_kmod_removed"] = module
@@ -73,7 +86,7 @@ def _get_kmod_info(self, module: str):
     Runs modinfo on a kernel module, parses the output and stored the results in self['_kmod_modinfo'].
     !!! Should be run after metadata is processed so the kver is set properly !!!
     """
-    module = _normalize_kmod_name(module)
+    module = _normalize_kmod_name(self, module)
     if module in self["_kmod_modinfo"]:
         return self.logger.debug("[%s] Module info already exists." % module)
     args = ["modinfo", module, "--set-version", self["kernel_version"]]
@@ -94,9 +107,9 @@ def _get_kmod_info(self, module: str):
             module_info["filename"] = line.split()[1]
         elif line.startswith("depends:") and line != "depends:":
             if "," in line:
-                module_info["depends"] = _normalize_kmod_name(line.split(":")[1].lstrip().split(","))
+                module_info["depends"] = _normalize_kmod_name(self, line.split(":")[1].lstrip().split(","))
             else:
-                module_info["depends"] = _normalize_kmod_name([line.split()[1]])
+                module_info["depends"] = _normalize_kmod_name(self, [line.split()[1]])
         elif line.startswith("softdep:"):
             if "softdep" not in module_info:
                 module_info["softdep"] = []
@@ -296,7 +309,7 @@ def _add_kmod_firmware(self, kmod: str) -> None:
 
     Attempts to run even if no_kmod is set; this will not work if there are no kmods/no kernel version set
     """
-    kmod = _normalize_kmod_name(kmod)
+    kmod = _normalize_kmod_name(self, kmod)
 
     if kmod not in self["_kmod_modinfo"]:
         if self["no_kmod"]:
@@ -319,7 +332,7 @@ def _add_kmod_firmware(self, kmod: str) -> None:
 
 def _add_firmware_dep(self, kmod: str, firmware: str) -> None:
     """Adds a kernel module firmware file to the initramfs dependencies."""
-    kmod = _normalize_kmod_name(kmod)
+    kmod = _normalize_kmod_name(self, kmod)
     firmware_path = Path("/lib/firmware") / firmware
     if not firmware_path.exists():
         if firmware_path.with_suffix(firmware_path.suffix + ".xz").exists():
@@ -345,7 +358,7 @@ def _process_kmod_dependencies(self, kmod: str, mod_tree=None) -> None:
     If the dependency is already in the module tree, skip it to prevent infinite recursion.
     """
     mod_tree = mod_tree or set()
-    kmod = _normalize_kmod_name(kmod)
+    kmod = _normalize_kmod_name(self, kmod)
     _get_kmod_info(self, kmod)
 
     # Get kernel module dependencies, softedeps if not ignored
