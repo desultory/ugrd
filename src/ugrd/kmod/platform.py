@@ -1,5 +1,5 @@
 from zenlib.util import colorize as c_
-from zenlib.util import contains, unset
+from zenlib.util import contains
 
 __version__ = "0.1.0"
 
@@ -28,7 +28,6 @@ def get_platform_info(self):
         self["_dmi_system_vendor"] = f.read().strip()
 
 
-@unset("virtual_machine", "virtual_machine is already set, skipping VM detection.", log_level=10)
 @contains("hostonly", "hostonly is not enabled, skipping VM detection.", log_level=30)
 def autodetect_virtual_machine(self):
     """Detects if the system is running in a virtual machine, adds relevant kernel modules to the list.
