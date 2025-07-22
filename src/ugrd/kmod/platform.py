@@ -1,7 +1,7 @@
 from zenlib.util import colorize as c_
 from zenlib.util import contains
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 VM_PRODUCT_NAMES = {
     "Virtual Machine": ["virtio_blk"],
@@ -42,3 +42,4 @@ def autodetect_virtual_machine(self):
             f"[{c_(self['_dmi_system_vendor'], color='cyan', bold=True)}]({c_(self['_dmi_product_name'], color='cyan', bright=True)}) Detected VM kmods: {c_((' ').join(kmods), color='magenta', bright=True)}"
         )
         self["virtual_machine"] = True
+        self["kmod_init"] = list(kmods)
