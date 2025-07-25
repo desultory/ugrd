@@ -1,4 +1,4 @@
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 
 from pathlib import Path
 
@@ -38,7 +38,17 @@ def autodetect_input(self):
                     f"[{input_dev.name}:{c_(keyboard_name, 'blue')}] Not enough keys detected: {c_(enabled_keys, 'yellow')} < {self.keyboard_key_threshold}"
                 )
                 continue
-            keyboard_driver = (input_dev / "device" / "driver").resolve().name
+            if (input_dev / "device" / "driver").exists():
+                keyboard_driver = (input_dev / "device" / "driver").resolve().name
+            elif (input_dev / "device" / "device" / "driver").exists():
+                # Some devices may have an additional "device" directory
+                keyboard_driver = (input_dev / "device" / "device" / "driver").resolve().name
+            else:
+                self.logger.error(
+                    f"[{input_dev.name}:{c_(keyboard_name, 'blue')}] Unable to resolve driver for input device: {c_(input_dev, 'red')}"
+                )
+                continue
+
             self.logger.info(f"[{c_(keyboard_name, 'blue')}] Detected driver: {c_(keyboard_driver, 'cyan')}")
             self._kmod_auto = [keyboard_driver]
             found_keyboard = True

@@ -1,7 +1,9 @@
+from pathlib import Path
+
 from zenlib.util import colorize as c_
 from zenlib.util import contains
 
-__version__ = "0.1.2"
+__version__ = "0.2.1"
 
 VM_PRODUCT_NAMES = {
     "Virtual Machine": ["virtio_blk"],
@@ -21,11 +23,19 @@ VM_VENDOR_NAMES = {
 @contains("hostonly", "hostonly is not enabled, skipping platform detection.", log_level=30)
 def get_platform_info(self):
     """Detects plaform information such as the vendor and product name"""
-    with open("/sys/class/dmi/id/product_name", "r") as f:
-        self["_dmi_product_name"] = f.read().strip()
+    try:
+        with open("/sys/class/dmi/id/product_name", "r") as f:
+            self["_dmi_product_name"] = f.read().strip()
+    except FileNotFoundError:
+        self.logger.warning("Could not read /sys/class/dmi/id/product_name, skipping product name detection.")
+        self["_dmi_product_name"] = "Unknown Product"
 
-    with open("/sys/class/dmi/id/sys_vendor", "r") as f:
-        self["_dmi_system_vendor"] = f.read().strip()
+    try:
+        with open("/sys/class/dmi/id/sys_vendor", "r") as f:
+            self["_dmi_system_vendor"] = f.read().strip()
+    except FileNotFoundError:
+        self.logger.warning("Could not read /sys/class/dmi/id/sys_vendor, skipping system vendor detection.")
+        self["_dmi_system_vendor"] = "Unknown Vendor"
 
 
 @contains("hostonly", "hostonly is not enabled, skipping VM detection.", log_level=30)
@@ -49,3 +59,44 @@ def autodetect_virtual_machine(self):
             self["kmod_init"] = vendor_kmods
         if product_kmods:
             self["_kmod_auto"] = product_kmods
+
+@contains("hostonly", "hostonly is not enabled, skipping regulator driver detection.", log_level=30)
+def autodetect_regulator_drivers(self):
+    """ Detects regulator drivers from /sys/class/regulator and adds them to the _kmod_auto list."""
+    regulators_path = Path("/sys/class/regulator")
+    if not regulators_path.exists():
+        self.logger.warning(f"[{c_(regulators_path, 'yellow')}] Regulator path does not exist, skipping detection.")
+        return
+
+    kmods = set()
+
+    for regulator in regulators_path.iterdir():
+        if regulator.is_dir() and (regulator / "device").exists():
+            name = (regulator / "name").read_text().strip() if (regulator / "name").exists() else regulator.name
+            driver = (regulator / "device" / "driver").resolve().name
+            kmods.add(driver)
+            self.logger.debug(f"[{c_(name, 'cyan', bright=True)}] Detected regulator driver: {c_(driver, 'magenta', bright=True)}")
+
+    if not kmods:
+        self.logger.info("No regulator drivers detected.")
+    else:
+        self.logger.info(f"Detected regulator drivers: {c_(', '.join(kmods), color='magenta', bright=True)}")
+        self["_kmod_auto"] = list(kmods)
+
+
+@contains("hostonly", "hostonly is not enabled, skipping platform bus driver detection.", log_level=30)
+def autodetect_platform_bus_drivers(self):
+    """ Reads drivers from /sys/bus/platform/drivers and adds them to the _kmod_auto list."""
+
+    drivers_path = Path("/sys/bus/platform/drivers")
+    if not drivers_path.exists():
+        self.logger.warning(f"[{c_(drivers_path, 'yellow')}] Platform bus drivers path does not exist, skipping detection.")
+        return
+
+    drivers = [driver.name for driver in drivers_path.iterdir() if driver.is_dir()]
+    if drivers:
+        self["_kmod_auto"] = list(set(self.get("_kmod_auto", []) + drivers))
+        self.logger.info(f"Detected platform bus drivers: {c_(', '.join(drivers), color='magenta', bright=True)}")
+    else:
+        self.logger.info("No platform bus drivers detected.")
+

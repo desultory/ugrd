@@ -1,5 +1,5 @@
 [imports.build_enum]
-"ugrd.kmod.platform" = ["get_platform_info", "autodetect_virtual_machine"]
+"ugrd.kmod.platform" = ["get_platform_info", "autodetect_virtual_machine", "autodetect_regulator_drivers"]
 
 [import_order.before]
 "get_platform_info" = "autodetect_virtual_machine"
