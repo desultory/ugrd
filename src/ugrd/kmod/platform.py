@@ -3,7 +3,7 @@ from pathlib import Path
 from zenlib.util import colorize as c_
 from zenlib.util import contains
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 
 VM_PRODUCT_NAMES = {
     "Virtual Machine": ["virtio_blk"],
@@ -23,11 +23,19 @@ VM_VENDOR_NAMES = {
 @contains("hostonly", "hostonly is not enabled, skipping platform detection.", log_level=30)
 def get_platform_info(self):
     """Detects plaform information such as the vendor and product name"""
-    with open("/sys/class/dmi/id/product_name", "r") as f:
-        self["_dmi_product_name"] = f.read().strip()
+    try:
+        with open("/sys/class/dmi/id/product_name", "r") as f:
+            self["_dmi_product_name"] = f.read().strip()
+    except FileNotFoundError:
+        self.logger.warning("Could not read /sys/class/dmi/id/product_name, skipping product name detection.")
+        self["_dmi_product_name"] = "Unknown Product"
 
-    with open("/sys/class/dmi/id/sys_vendor", "r") as f:
-        self["_dmi_system_vendor"] = f.read().strip()
+    try:
+        with open("/sys/class/dmi/id/sys_vendor", "r") as f:
+            self["_dmi_system_vendor"] = f.read().strip()
+    except FileNotFoundError:
+        self.logger.warning("Could not read /sys/class/dmi/id/sys_vendor, skipping system vendor detection.")
+        self["_dmi_system_vendor"] = "Unknown Vendor"
 
 
 @contains("hostonly", "hostonly is not enabled, skipping VM detection.", log_level=30)
