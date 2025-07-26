@@ -6,6 +6,7 @@ from re import search
 from typing import Union
 
 from ugrd.exceptions import AutodetectError, ValidationError
+from ugrd.kmod.platform import _get_platform_mmc_drivers
 from zenlib.util import colorize as c_
 from zenlib.util import contains, pretty_print
 
@@ -1075,6 +1076,7 @@ def resolve_blkdev_kmod(self, device) -> list[str]:
             kmods.append("virtio_scsi")
     elif device_name.startswith("mmcblk"):
         kmods.append("mmc_block")
+        kmods.extend(_get_platform_mmc_drivers(self, device_name))
     elif device_name.startswith("sr"):
         kmods.append("sr_mod")
     elif device_name.startswith("md"):

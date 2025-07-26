@@ -84,6 +84,7 @@ def autodetect_regulator_drivers(self):
         self["_kmod_auto"] = list(kmods)
 
 
+@contains("kmod_autodetect_platform_bus_drivers", "kmod_autodetect_platform_bus_drivers is not enabled, skipping platform bus driver detection.", log_level=10)
 @contains("hostonly", "hostonly is not enabled, skipping platform bus driver detection.", log_level=30)
 def autodetect_platform_bus_drivers(self):
     """ Reads drivers from /sys/bus/platform/drivers and adds them to the _kmod_auto list."""
@@ -100,3 +101,34 @@ def autodetect_platform_bus_drivers(self):
     else:
         self.logger.info("No platform bus drivers detected.")
 
+
+def _get_platform_mmc_drivers(self, mmc_dev):
+    """Helper function to get MMC drivers from a given device.
+    Strips the partition number from the device name if present.
+    """
+    mmc_name = mmc_dev.split("p")[0].replace('blk', '')  # Strip partition number if present, and 'blk' prefix
+    mmc_path = Path(f"/sys/class/mmc_host/{mmc_name}/device")
+    if not mmc_path.exists():
+        self.logger.warning(f"[{c_(mmc_path, 'yellow')}] MMC device path does not exist, skipping detection.")
+        return []
+
+    drivers = set()
+    if driver := (mmc_path / "driver").resolve().name:
+        self.logger.info(f"[{c_(mmc_dev, 'green', bright=True)}] Detected MMC driver: {c_(driver, 'magenta', bright=True)}")
+        drivers.add(driver)
+
+    # Check for supplier drivers
+    for supplier in mmc_path.iterdir():
+        if not supplier.name.startswith("supplier:"):
+            continue
+
+        supplier_driver = (supplier / "supplier" / "driver")
+        if not supplier_driver.exists():
+            self.logger.warning(f"[{c_(mmc_dev, 'yellow', bright=True)}] Supplier driver not found, skipping: {c_(supplier_driver, 'red', bright=True)}")
+            continue
+
+        supplier_driver = supplier_driver.resolve()
+        self.logger.debug(f"[{c_(mmc_dev, 'green', bright=True)}:{c_(supplier, 'blue')}] Detected MMC supplier driver: {c_(supplier_driver.name, 'magenta', bright=True)}")
+        drivers.add(supplier_driver.name)
+
+    return list(drivers)
