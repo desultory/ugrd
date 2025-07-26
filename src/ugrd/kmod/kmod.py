@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "4.0.0"
+__version__ = "4.1.0"
 
 from pathlib import Path
 from platform import uname
@@ -52,7 +52,7 @@ def _resolve_kmod_alias(self, module: str) -> str:
     module = module.replace("_", "[_-]")  # Allow for both _ and - in the module name
     for alias, kmod in _KMOD_ALIASES.items():
         if search(module, alias):
-            self.logger.debug(f"Resolved kernel module alias: {c_(alias, 'green')} -> {c_(kmod, 'cyan')}")
+            self.logger.info(f"Resolved kernel module alias: {c_(alias, 'blue')} -> {c_(kmod, 'cyan')}")
             return kmod
 
     raise MissingModuleError(f"Failed to resolve kernel module alias: {module}")
@@ -120,7 +120,7 @@ def _get_kmod_info(self, module: str) -> dict:
     """
     module = _normalize_kmod_name(self, module)
     if module in self["_kmod_modinfo"]:
-        return self["_kmod_modinfo"][module]
+        return module, self["_kmod_modinfo"][module]
     args = ["modinfo", module, "--set-version", self["kernel_version"]]
 
     try:
@@ -163,7 +163,7 @@ def _get_kmod_info(self, module: str) -> dict:
 
     self.logger.debug("[%s] Module info: %s" % (module, module_info))
     self["_kmod_modinfo"][module] = module_info
-    return module_info
+    return module, module_info
 
 
 @unset("no_kmod", "no_kmod is enabled, skipping module alias enumeration.", log_level=30)
@@ -395,7 +395,7 @@ def _add_kmod_firmware(self, kmod: str) -> None:
     Attempts to run even if no_kmod is set; this will not work if there are no kmods/no kernel version set
     """
     try:
-        modinfo = _get_kmod_info(self, kmod)
+        kmod, modinfo = _get_kmod_info(self, kmod)
     except DependencyResolutionError as e:
         if self["no_kmod"]:
             return self.logger.warning(
@@ -441,9 +441,11 @@ def _process_kmod_dependencies(self, kmod: str, mod_tree=None) -> None:
 
     Iterate over dependencies, adding them to kernel_mdules if they (or sub-dependencies) are not in the ignore list.
     If the dependency is already in the module tree, skip it to prevent infinite recursion.
+
+    returns the name of the kernel module (in case it was an alias) and the list of dependencies.
     """
     mod_tree = mod_tree or set()
-    modinfo = _get_kmod_info(self, kmod)
+    kmod, modinfo = _get_kmod_info(self, kmod)
 
     # Get kernel module dependencies, softedeps if not ignored
     dependencies = []
@@ -462,7 +464,7 @@ def _process_kmod_dependencies(self, kmod: str, mod_tree=None) -> None:
         if dependency in mod_tree:
             self.logger.debug("[%s] Dependency is already in mod_tree: %s" % (kmod, dependency))
             continue
-        dep_modinfo = _get_kmod_info(self, dependency)  # Get modinfo for the dependency
+        dependency, dep_modinfo = _get_kmod_info(self, dependency)  # Get modinfo for the dependency
         if dependency in self["kmod_ignore"]:  # Don't add modules with ignored dependencies
             if dep_modinfo["filename"] == "(builtin)":
                 self.logger.debug("[%s] Ignored dependency is a built-in module: %s" % (kmod, dependency))
@@ -485,6 +487,8 @@ def _process_kmod_dependencies(self, kmod: str, mod_tree=None) -> None:
         _add_kmod_firmware(self, kmod)
         raise BuiltinModuleError("Not adding built-in module to dependencies: %s" % kmod)
 
+    return kmod, dependencies
+
 
 def add_kmod_deps(self):
     """Adds all kernel modules to the initramfs dependencies.
@@ -503,7 +507,7 @@ def add_kmod_deps(self):
             continue
 
         # Add the kmod file to the initramfs dependenceis
-        modinfo = _get_kmod_info(self, kmod)
+        kmod, modinfo = _get_kmod_info(self, kmod)
         filename = modinfo["filename"]
         if filename.endswith(".ko"):
             self["dependencies"] = filename
@@ -525,7 +529,7 @@ def process_ignored_module(self, module: str) -> None:
         if module in self[key]:
             if key == "kmod_init":
                 try:
-                    modinfo = _get_kmod_info(self, module)
+                    module, modinfo = _get_kmod_info(self, module)
                     if modinfo["filename"] == "(builtin)":
                         self.logger.debug("Removing built-in module from kmod_init: %s" % module)
                 except DependencyResolutionError:
@@ -556,7 +560,7 @@ def _process_optional_modules(self) -> None:
             self.logger.debug(f"Optional kmod_init module is already in kmod_init: {c_(kmod, 'yellow', bold=True)}")
             continue
         try:
-            _process_kmod_dependencies(self, kmod)
+            kmod, dependencies = _process_kmod_dependencies(self, kmod)
             self["kmod_init"] = kmod  # add to kmod_init so it will be loaded
         except IgnoredModuleError as e:
             self.logger.warning(e)
@@ -607,8 +611,8 @@ def process_modules(self) -> None:
             continue
         self.logger.debug("Processing autodetected kernel module: %s" % kmod)
         try:
-            _process_kmod_dependencies(self, kmod)
-            self["kmod_init"] = kmod
+            kmod_name, dependencies = _process_kmod_dependencies(self, kmod)
+            self["kmod_init"] = kmod_name
             continue
         except BuiltinModuleError:
             continue  # Don't add built-in modules to the ignore list
