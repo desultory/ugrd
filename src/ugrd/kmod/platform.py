@@ -84,6 +84,7 @@ def autodetect_regulator_drivers(self):
         self["_kmod_auto"] = list(kmods)
 
 
+@contains("kmod_autodetect_platform_bus_drivers", "kmod_autodetect_platform_bus_drivers is not enabled, skipping platform bus driver detection.", log_level=10)
 @contains("hostonly", "hostonly is not enabled, skipping platform bus driver detection.", log_level=30)
 def autodetect_platform_bus_drivers(self):
     """ Reads drivers from /sys/bus/platform/drivers and adds them to the _kmod_auto list."""
