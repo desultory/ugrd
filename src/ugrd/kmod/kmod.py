@@ -109,6 +109,14 @@ def _get_kmod_info(self, module: str) -> dict:
     """
     Runs modinfo on a kernel module, parses the output and stored the results in self['_kmod_modinfo'].
     !!! Should be run after metadata is processed so the kver is set properly !!!
+
+    Returns the module info as a dictionary with the following keys:
+    - filename: The path to the module file.
+    - depends: A list of module dependencies.
+    - softdep: A list of soft dependencies.
+    - firmware: A list of firmware files required by the module.
+    Raises:
+        DependencyResolutionError: If the modinfo command fails, returns no output, or the module name can't be resolved.
     """
     module = _normalize_kmod_name(self, module)
     if module in self["_kmod_modinfo"]:
