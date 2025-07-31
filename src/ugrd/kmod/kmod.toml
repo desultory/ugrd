@@ -40,4 +40,4 @@ kmod_no_normalize = "NoDupFlatList" # Kernel modules to not normalize (i.e. not 
 "ugrd.kmod.kmod" = [ "regen_kmod_metadata" ]
 
 [imports.init_pre]
-"ugrd.kmod.kmod" = [ "load_modules" ]
+"ugrd.kmod.kmod" = [ "check_kver", "load_modules" ]

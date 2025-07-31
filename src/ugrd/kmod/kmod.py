@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "4.1.0"
+__version__ = "4.2.0"
 
 from pathlib import Path
 from platform import uname
@@ -623,6 +623,17 @@ def process_modules(self) -> None:
         ) as e:  # log a warning, not error or exception when autodetected modules have missing deps
             self.logger.warning("[%s] Failed to process autodetected kernel module dependencies: %s" % (kmod, e))
         self["kmod_ignore"] = kmod
+
+@contains("kernel_version", "Kernel version is not set, skipping kernel version check.", log_level=30)
+def check_kver(self) -> str:
+    """ Returns shell lines to check that the defined kernel version matches the running kernel version."""
+    return f"""
+    running_kver=$(awk '{{print $3}}' /proc/version)
+    if [[ "$running_kver" != "{self['kernel_version']}" ]]; then
+        eerror "Running kernel version ($running_kver) does not match the defined kernel version ({self['kernel_version']})"
+        eerror "Please ensure the correct kernel version is being booted."
+    fi
+    """
 
 
 @contains("kmod_init", "No kernel modules to load.", log_level=30)
