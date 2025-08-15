@@ -151,6 +151,12 @@ Defines /dev/ttyS1 as a `vt100` terminal with a `115200` baud rate.
 
 `primary_console` (tty0) Used to set which console will be initialized with agetty on boot.
 
+#### base.keymap
+
+This module can be used to set keymaps in the initramfs.
+
+The only available parameter is `keymap_file`, which should point to a valid keymap file.
+
 #### base.debug
 
 This module contains debug programs such as `cp`, `mv`, `rm`, `grep`, `dmesg`, `find`, and an editor,
