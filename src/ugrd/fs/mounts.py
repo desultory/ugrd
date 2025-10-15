@@ -602,6 +602,16 @@ def _autodetect_dm(self, mountpoint, device=None) -> None:
     # Run autodetect on all slaves, in case of nested device mapper devices
     for slave in self["_vblk_info"][dev_name]["slaves"]:
         try:
+            # If the slave is a CRYPT-SUBDEV, iterate over its slaves instead
+            if self["_vblk_info"][slave]["uuid"].startswith("CRYPT-SUBDEV"):
+                for crypt_slave in self["_vblk_info"][slave]["slaves"]:
+                    _autodetect_dm(self, mountpoint, crypt_slave)
+                    self.logger.info(
+                        "[%s] Autodetected device mapper container: %s"
+                        % (c_(source_device.name, "blue", bright=True), c_(crypt_slave, "cyan"))
+                    )
+                continue
+            # Otherwise, just autodetect the slave device
             _autodetect_dm(self, mountpoint, slave)  # Just pass the slave device name, as it will be re-detected
             self.logger.info(
                 "[%s] Autodetected device mapper container: %s"
