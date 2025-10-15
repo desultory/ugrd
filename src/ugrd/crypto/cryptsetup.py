@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "4.1.3"
+__version__ = "4.2.0"
 
 from json import loads
 from pathlib import Path
@@ -147,6 +147,9 @@ def _get_dm_info(self, mapped_name: str) -> dict:
 def _get_dm_slave_info(self, device_info: dict) -> (str, dict):
     """Gets the device mapper slave information for a particular device."""
     slave_source = device_info["slaves"][0]
+    # For integrity backed devices, get the slave's slave
+    if self["_vblk_info"].get(slave_source, {}).get("uuid", "").startswith("CRYPT-SUBDEV"):
+        slave_source = self["_vblk_info"][slave_source]["slaves"][0]
     slave_name = self["_vblk_info"].get(slave_source, {}).get("name")
     search_paths = ["/dev/", "/dev/mapper/"]
 
