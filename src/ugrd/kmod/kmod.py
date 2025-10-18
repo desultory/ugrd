@@ -315,13 +315,28 @@ def _get_kver_from_header(self) -> str:
 
 
 def _process_kernel_version(self, kver: str) -> None:
-    """Sets the kerenl_version, checks that the kmod directory exits, sets the _kmod_dir variable."""
+    """Sets the kerenl_version, checks that the kmod directory exits, sets the _kmod_dir variable.
+    If no_kmod is set, logs a warning because no_kmod will skip kmod functions later.
+
+    If the kmod directory does not exist, and no_kmod is not set, raises a ValidationError.
+    If there is no /lib/modules directory, assumes 'no_kmod' is true and logs a critical error.
+    """
     if self["no_kmod"]:
-        self.logger.error("kernel_version is set, but no_kmod is enabled.")
+        # Log a warning is no_kmod is already set, but a kver is passed. Check it anyways
+        self.logger.warning("kernel_version is set, but no_kmod is enabled.")
+
+    # Checks that the kmod directoty exists for the kernel version
     kmod_dir = Path("/lib/modules") / kver
     if not kmod_dir.exists():
+        # If no_kmod is set, log a warning and continue
         if self["no_kmod"]:
-            return self.logger.warning("[%s] Kernel module directory does not exist, but no_kmod is set." % kver)
+            return self.logger.warning("[%s] Kernel module directory does not exist, but no_kmod is set, continuing." % kver)
+        elif not Path("/lib/modules").exists():  # If /lib/modules doesn't exist, assume no_kmod is true because no kmods are installed
+            self.logger.critical(f"/lib/modules directory does not exist, assuming {c_('no_kmod', 'blue')}=true.")
+            self["no_kmod"] = True
+            return
+
+        # If there are other kernel versions available, log them for the user
         self.logger.error(f"Available kernel versions: {', '.join([d.name for d in Path('/lib/modules').iterdir()])}")
         self.logger.info(
             "If kernel modules are not installed, and not required, set `no_kmod = true` to skip this check."
