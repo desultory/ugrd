@@ -646,7 +646,7 @@ def process_modules(self) -> None:
 
 @contains("kernel_version", "Kernel version is not set, skipping kernel version check.", log_level=30)
 def check_kver(self) -> str:
-    """Returns poxixshell lines to check that the defined kernel version matches the running kernel version."""
+    """Returns posix shell lines to check that the defined kernel version matches the running kernel version."""
     return f"""
     running_kver=$(awk '{{print $3}}' /proc/version)
     if [ "$running_kver" != "{self["kernel_version"]}" ]; then
