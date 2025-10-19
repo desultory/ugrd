@@ -104,6 +104,8 @@ def make_test_luks_image(self, image_path):
             "--batch-mode",
             "--key-file",
             keyfile_path,
+            "--pbkdf-memory",
+            "8192",  # Only use 8MB of memory for PBKDF to speed up test image creation and avoid high memory usage
             *extra_args,
         ]
     )
