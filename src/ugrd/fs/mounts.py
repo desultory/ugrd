@@ -562,7 +562,7 @@ def _autodetect_dm(self, mountpoint, device=None) -> None:
         self.logger.info(f"[{c_(dev_name, 'blue')}] Slave is a CRYPT-SUBDEV, using its slave instead: {c_(slave_source, 'cyan')}")
         # Add the kmod for it
         self.logger.info(f"[{c_(dev_name, 'blue')}] Adding kmod for CRYPT-SUBDEV: {c_('dm-crypt', 'magenta')}")
-        self["kernel_modules"] = "dm_integrity"
+        self["_kmod_auto"] = ["dm_integrity", "authenc"]
 
     autodetect_mount_kmods(self, slave_source)
 

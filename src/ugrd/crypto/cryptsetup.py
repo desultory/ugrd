@@ -234,13 +234,12 @@ def _detect_luks_header_sha(self, luks_info: dict) -> dict:
 
 
 def _detect_luks_header_integrity(self, luks_info: dict) -> dict:
-    """ Reads the integrity algorithm from the LUKS header,
-    Enables the dm-integrity module, and returns the integrity type. """
+    """Reads the integrity algorithm from the LUKS header,
+    Enables the dm-integrity module, and returns the integrity type."""
     for segment in luks_info.get("segments", {}).values():
         if integrity_type := segment.get("integrity", {}).get("type"):
-            self["kernel_modules"] = "dm_integrity"
+            self["_kmod_auto"] = ["dm_integrity", "authenc"]
             return integrity_type
-
 
 
 @contains("cryptsetup_header_validation", "Skipping cryptsetup header validation.", log_level=30)
@@ -282,7 +281,6 @@ def _validate_cryptsetup_header(self, mapped_name: str) -> None:
     if integrity_type := _detect_luks_header_integrity(self, luks_info):
         self.logger.info(f"[{c_(mapped_name, 'blue')}] Detected dm-integrity type: {c_(integrity_type, 'cyan')}")
         self["cryptsetup"][mapped_name]["_dm-integrity"] = integrity_type
-
 
     if not self["argon2"]:  # if argon support was not detected, check if the header wants it
         for keyslot in luks_info.get("keyslots", {}).values():
