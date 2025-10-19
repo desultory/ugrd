@@ -330,8 +330,12 @@ def _process_kernel_version(self, kver: str) -> None:
     if not kmod_dir.exists():
         # If no_kmod is set, log a warning and continue
         if self["no_kmod"]:
-            return self.logger.warning("[%s] Kernel module directory does not exist, but no_kmod is set, continuing." % kver)
-        elif not Path("/lib/modules").exists():  # If /lib/modules doesn't exist, assume no_kmod is true because no kmods are installed
+            return self.logger.warning(
+                "[%s] Kernel module directory does not exist, but no_kmod is set, continuing." % kver
+            )
+        elif not Path(
+            "/lib/modules"
+        ).exists():  # If /lib/modules doesn't exist, assume no_kmod is true because no kmods are installed
             self.logger.critical(f"/lib/modules directory does not exist, assuming {c_('no_kmod', 'blue')}=true.")
             self["no_kmod"] = True
             return
@@ -639,13 +643,14 @@ def process_modules(self) -> None:
             self.logger.warning("[%s] Failed to process autodetected kernel module dependencies: %s" % (kmod, e))
         self["kmod_ignore"] = kmod
 
+
 @contains("kernel_version", "Kernel version is not set, skipping kernel version check.", log_level=30)
 def check_kver(self) -> str:
-    """ Returns shell lines to check that the defined kernel version matches the running kernel version."""
+    """Returns poxixshell lines to check that the defined kernel version matches the running kernel version."""
     return f"""
     running_kver=$(awk '{{print $3}}' /proc/version)
-    if [[ "$running_kver" != "{self['kernel_version']}" ]]; then
-        eerror "Running kernel version ($running_kver) does not match the defined kernel version ({self['kernel_version']})"
+    if [ "$running_kver" != "{self["kernel_version"]}" ]; then
+        eerror "Running kernel version ($running_kver) does not match the defined kernel version ({self["kernel_version"]})"
         eerror "Please ensure the correct kernel version is being booted."
     fi
     """
