@@ -36,7 +36,7 @@ class TestCryptsetup(TestCase):
         generator = InitramfsGenerator(
             logger=self.logger,
             config="tests/cryptsetup_included_key.toml",
-            _kmod_auto=["dm-integrity", "authenc", "hmac", "sha256", "aes", "xts"],  # Specify this because its usually auto-detected during header validation
+            _kmod_auto=["dm-integrity", "authenc"],  # Specify this because its usually auto-detected during header validation
             cryptsetup={"root": {"_dm-integrity": "hmac(sha256)"}},  # Use the type like defined in the header, not the proper args to test processing
         )
         generator.build()
