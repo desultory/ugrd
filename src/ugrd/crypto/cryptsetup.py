@@ -8,7 +8,7 @@ from textwrap import dedent
 
 from ugrd.exceptions import AutodetectError, ValidationError
 from zenlib.util import colorize as c_
-from zenlib.util import contains, unset
+from zenlib.util import contains, unset, pretty_print
 
 _module_name = "ugrd.crypto.cryptsetup"
 
@@ -28,6 +28,7 @@ CRYPTSETUP_PARAMETERS = [
     "include_header",
     "validate_key",
     "validate_header",
+    "_dm-integrity",  # Internal parameter for when dm-integrity was detected. mostly used for test automation
 ]
 
 
@@ -150,6 +151,11 @@ def _get_dm_slave_info(self, device_info: dict) -> (str, dict):
     # For integrity backed devices, get the slave's slave
     if self["_vblk_info"].get(slave_source, {}).get("uuid", "").startswith("CRYPT-SUBDEV"):
         slave_source = self["_vblk_info"][slave_source]["slaves"][0]
+        # Set the _dm-integrity flag on the cryptsetup configuration, if it exists
+        if device_info.get("name") in self["cryptsetup"]:
+            self["cryptsetup"][device_info["name"]]["_dm-integrity"] = True
+        else:
+            self.logger.warning(f"[{c_(device_info['name'], 'yellow')}] Unable to set _dm-integrity flag, cryptsetup configuration not found: {pretty_print(self['cryptsetup'])}")
     slave_name = self["_vblk_info"].get(slave_source, {}).get("name")
     search_paths = ["/dev/", "/dev/mapper/"]
 
