@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "7.1.4"
+__version__ = "7.2.1"
 
 from pathlib import Path
 from re import search
@@ -504,20 +504,26 @@ def _autodetect_dm(self, mountpoint, device=None) -> None:
     Ensures it's a device mapper mount, then autodetects the mount type.
     Adds kmods to the autodetect list based on the mount source.
     """
+    # If a device is explicity passed, set it as the source device
     if device:
         self.logger.debug("[%s] Using provided device for mount autodetection: %s" % (mountpoint, device))
         source_device = device
+    # If it's a mountpoint, try to resolve underlying devices
     elif mountpoint:
         source_device = _resolve_overlay_lower_device(self, mountpoint)
     else:
         raise AutodetectError("Mountpoint not found in host mounts: %s" % mountpoint)
 
+    # Get the name of the device from the path
     device_name = source_device.split("/")[-1]
+    # Check that it's a device mapper mount (by prefix or path)
+    # If it's not, skip this autodetection by returning early
     if not any(device_name.startswith(prefix) for prefix in ["dm-", "md"]):
         if not source_device.startswith("/dev/mapper/"):
             self.logger.debug("Mount is not a device mapper mount: %s" % source_device)
             return
 
+    # Get the source device using blkid info/virtual block device info
     if source_device not in self["_blkid_info"]:
         if device_name in self["_vblk_info"]:
             source_name = self["_vblk_info"][device_name]["name"]
@@ -535,6 +541,7 @@ def _autodetect_dm(self, mountpoint, device=None) -> None:
     major, minor = _get_device_id(source_device)
     self.logger.debug("[%s] Major: %s, Minor: %s" % (source_device, major, minor))
 
+    # Get the virtual block device name using the major/minor
     for name, info in self["_vblk_info"].items():
         if info["major"] == str(major) and info["minor"] == str(minor):
             dev_name = name
@@ -544,27 +551,43 @@ def _autodetect_dm(self, mountpoint, device=None) -> None:
             "[%s] Unable to find device mapper device with maj: %s min: %s" % (source_device, major, minor)
         )
 
+    # Check that the virtual block device has slaves defined
     if len(self["_vblk_info"][dev_name]["slaves"]) == 0:
         raise AutodetectError("No slaves found for device mapper device, unknown type: %s" % source_device.name)
+    # Treat the first slave as the source for autodetection
     slave_source = self["_vblk_info"][dev_name]["slaves"][0]
+    # If the slave source is a CRYPT-SUBDEV device, use its slave instead
+    if self["_vblk_info"].get(slave_source, {}).get("uuid", "").startswith("CRYPT-SUBDEV"):
+        slave_source = self["_vblk_info"][slave_source]["slaves"][0]
+        self.logger.info(f"[{c_(dev_name, 'blue')}] Slave is a CRYPT-SUBDEV, using its slave instead: {c_(slave_source, 'cyan')}")
+        # Add the kmod for it
+        self.logger.info(f"[{c_(dev_name, 'blue')}] Adding kmod for CRYPT-SUBDEV: {c_('dm-crypt', 'magenta')}")
+        self["_kmod_auto"] = ["dm_integrity", "authenc"]
+
     autodetect_mount_kmods(self, slave_source)
 
-    try:
-        blkid_info = self["_blkid_info"][f"/dev/{slave_source}"]
-    except KeyError:
-        if slave_source in self["_vblk_info"]:
-            blkid_info = self["_blkid_info"][f"/dev/mapper/{self['_vblk_info'][slave_source]['name']}"]
-        else:
-            return self.logger.warning(f"No blkid info found for device mapper slave: {c_(slave_source, 'yellow')}")
+    # Check that the source device name matches the devie mapper name
     if source_device.name != self["_vblk_info"][dev_name]["name"] and source_device.name != dev_name:
         raise ValidationError(
             "Device mapper device name mismatch: %s != %s" % (source_device.name, self["_vblk_info"][dev_name]["name"])
         )
 
+    # Get block info using the slave source device
+    try:
+        blkid_info = self["_blkid_info"][f"/dev/{slave_source}"]
+    except KeyError:
+        if slave_source in self["_vblk_info"]:
+            # If the slave source isn't used in blkid, use the /dev/mapper path with the slave name
+            blkid_info = self["_blkid_info"][f"/dev/mapper/{self['_vblk_info'][slave_source]['name']}"]
+        else:
+            return self.logger.warning(f"No blkid info found for device mapper slave: {c_(slave_source, 'yellow')}")
+
     self.logger.debug(
         "[%s] Device mapper info: %s\nDevice config: %s"
         % (source_device.name, self["_vblk_info"][dev_name], blkid_info)
     )
+
+    # With the blkid info, run the appropriate autodetect function based on the type
     if blkid_info.get("type") == "crypto_LUKS" or source_device.name in self.get("cryptsetup", {}):
         autodetect_luks(self, source_device, dev_name, blkid_info)
     elif blkid_info.get("type") == "LVM2_member":
@@ -579,8 +602,19 @@ def _autodetect_dm(self, mountpoint, device=None) -> None:
             raise AutodetectError("[%s] No type found for device mapper device: %s" % (dev_name, source_device))
         raise ValidationError("Unknown device mapper device type: %s" % blkid_info.get("type"))
 
+    # Run autodetect on all slaves, in case of nested device mapper devices
     for slave in self["_vblk_info"][dev_name]["slaves"]:
         try:
+            # If the slave is a CRYPT-SUBDEV, iterate over its slaves instead
+            if self["_vblk_info"][slave]["uuid"].startswith("CRYPT-SUBDEV"):
+                for crypt_slave in self["_vblk_info"][slave]["slaves"]:
+                    _autodetect_dm(self, mountpoint, crypt_slave)
+                    self.logger.info(
+                        "[%s] Autodetected device mapper container: %s"
+                        % (c_(source_device.name, "blue", bright=True), c_(crypt_slave, "cyan"))
+                    )
+                continue
+            # Otherwise, just autodetect the slave device
             _autodetect_dm(self, mountpoint, slave)  # Just pass the slave device name, as it will be re-detected
             self.logger.info(
                 "[%s] Autodetected device mapper container: %s"

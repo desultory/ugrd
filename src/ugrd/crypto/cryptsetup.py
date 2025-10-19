@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "4.1.3"
+__version__ = "4.2.0"
 
 from json import loads
 from pathlib import Path
@@ -28,6 +28,7 @@ CRYPTSETUP_PARAMETERS = [
     "include_header",
     "validate_key",
     "validate_header",
+    "_dm-integrity",  # Internal parameter for when dm-integrity was detected. mostly used for test automation
 ]
 
 
@@ -147,6 +148,9 @@ def _get_dm_info(self, mapped_name: str) -> dict:
 def _get_dm_slave_info(self, device_info: dict) -> (str, dict):
     """Gets the device mapper slave information for a particular device."""
     slave_source = device_info["slaves"][0]
+    # For integrity backed devices, get the slave's slave
+    if self["_vblk_info"].get(slave_source, {}).get("uuid", "").startswith("CRYPT-SUBDEV"):
+        slave_source = self["_vblk_info"][slave_source]["slaves"][0]
     slave_name = self["_vblk_info"].get(slave_source, {}).get("name")
     search_paths = ["/dev/", "/dev/mapper/"]
 
@@ -207,7 +211,7 @@ def _detect_luks_aes_module(self, luks_cipher_name: str) -> None:
         self["_kmod_auto"] = crypto_config["module"]
 
 
-def _detect_luks_header_aes(self, luks_info: dict) -> dict:
+def _detect_luks_header_aes(self, luks_info: dict) -> None:
     """Checks the cipher type in the LUKS header, reads /proc/crypto to find the
     corresponding driver. If it's not builtin, adds the module to the kernel modules."""
     for keyslot in luks_info.get("keyslots", {}).values():
@@ -218,7 +222,7 @@ def _detect_luks_header_aes(self, luks_info: dict) -> dict:
             _detect_luks_aes_module(self, segment["encryption"])
 
 
-def _detect_luks_header_sha(self, luks_info: dict) -> dict:
+def _detect_luks_header_sha(self, luks_info: dict) -> None:
     """Reads the hash algorithm from the LUKS header,
     enables the corresponding kernel module using _crypto_ciphers"""
     for keyslot in luks_info.get("keyslots", {}).values():
@@ -227,6 +231,21 @@ def _detect_luks_header_sha(self, luks_info: dict) -> dict:
     for digest in luks_info.get("digests", {}).values():
         if digest.get("hash", "").startswith("sha"):
             self["kernel_modules"] = self._crypto_ciphers[digest["hash"]]["driver"]
+
+
+def _detect_luks_header_integrity(self, luks_info: dict, mapped_name: str) -> None:
+    """Reads the integrity algorithm from the LUKS header,
+    Enables the dm-integrity module, and returns the integrity type."""
+    for segment in luks_info.get("segments", {}).values():
+        if integrity_type := segment.get("integrity", {}).get("type"):
+            integrity_kmods = ["dm_integrity", "authenc"]
+            if integrity_type.startswith("hmac"):
+                integrity_kmods.append("hmac")
+            self.logger.info(
+                f"[{c_(mapped_name, 'blue')}]({c_(integrity_type, 'cyan')}) Enabling kernel modules for dm-integrity: {c_(', '.join(integrity_kmods), 'magenta', bright=True)}"
+            )
+            self["cryptsetup"][mapped_name]["_dm-integrity"] = integrity_type
+            return
 
 
 @contains("cryptsetup_header_validation", "Skipping cryptsetup header validation.", log_level=30)
@@ -265,6 +284,7 @@ def _validate_cryptsetup_header(self, mapped_name: str) -> None:
 
     _detect_luks_header_aes(self, luks_info)
     _detect_luks_header_sha(self, luks_info)
+    _detect_luks_header_integrity(self, luks_info, mapped_name)
 
     if not self["argon2"]:  # if argon support was not detected, check if the header wants it
         for keyslot in luks_info.get("keyslots", {}).values():
