@@ -8,7 +8,7 @@ from textwrap import dedent
 
 from ugrd.exceptions import AutodetectError, ValidationError
 from zenlib.util import colorize as c_
-from zenlib.util import contains, unset, pretty_print
+from zenlib.util import contains, unset
 
 _module_name = "ugrd.crypto.cryptsetup"
 
@@ -151,11 +151,6 @@ def _get_dm_slave_info(self, device_info: dict) -> (str, dict):
     # For integrity backed devices, get the slave's slave
     if self["_vblk_info"].get(slave_source, {}).get("uuid", "").startswith("CRYPT-SUBDEV"):
         slave_source = self["_vblk_info"][slave_source]["slaves"][0]
-        # Set the _dm-integrity flag on the cryptsetup configuration, if it exists
-        if device_info.get("name") in self["cryptsetup"]:
-            self["cryptsetup"][device_info["name"]]["_dm-integrity"] = True
-        else:
-            self.logger.warning(f"[{c_(device_info['name'], 'yellow')}] Unable to set _dm-integrity flag, cryptsetup configuration not found: {pretty_print(self['cryptsetup'])}")
     slave_name = self["_vblk_info"].get(slave_source, {}).get("name")
     search_paths = ["/dev/", "/dev/mapper/"]
 
@@ -238,6 +233,16 @@ def _detect_luks_header_sha(self, luks_info: dict) -> dict:
             self["kernel_modules"] = self._crypto_ciphers[digest["hash"]]["driver"]
 
 
+def _detect_luks_header_integrity(self, luks_info: dict) -> dict:
+    """ Reads the integrity algorithm from the LUKS header,
+    Enables the dm-integrity module, and returns the integrity type. """
+    for segment in luks_info.get("segments", {}).values():
+        if integrity_type := segment.get("integrity", {}).get("type"):
+            self["kernel_modules"] = "dm_integrity"
+            return integrity_type
+
+
+
 @contains("cryptsetup_header_validation", "Skipping cryptsetup header validation.", log_level=30)
 def _validate_cryptsetup_header(self, mapped_name: str) -> None:
     """Validates configured cryptsetup volumes against the LUKS header."""
@@ -274,6 +279,10 @@ def _validate_cryptsetup_header(self, mapped_name: str) -> None:
 
     _detect_luks_header_aes(self, luks_info)
     _detect_luks_header_sha(self, luks_info)
+    if integrity_type := _detect_luks_header_integrity(self, luks_info):
+        self.logger.info(f"[{c_(mapped_name, 'blue')}] Detected dm-integrity type: {c_(integrity_type, 'cyan')}")
+        self["cryptsetup"][mapped_name]["_dm-integrity"] = integrity_type
+
 
     if not self["argon2"]:  # if argon support was not detected, check if the header wants it
         for keyslot in luks_info.get("keyslots", {}).values():
