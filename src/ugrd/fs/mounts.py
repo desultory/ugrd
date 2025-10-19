@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "7.2.0"
+__version__ = "7.2.1"
 
 from pathlib import Path
 from re import search
@@ -562,7 +562,7 @@ def _autodetect_dm(self, mountpoint, device=None) -> None:
         self.logger.info(f"[{c_(dev_name, 'blue')}] Slave is a CRYPT-SUBDEV, using its slave instead: {c_(slave_source, 'cyan')}")
         # Add the kmod for it
         self.logger.info(f"[{c_(dev_name, 'blue')}] Adding kmod for CRYPT-SUBDEV: {c_('dm-crypt', 'magenta')}")
-        self["_kmod_auto"] = "dm_integrity"
+        self["kernel_modules"] = "dm_integrity"
 
     autodetect_mount_kmods(self, slave_source)
 

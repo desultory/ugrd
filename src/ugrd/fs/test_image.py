@@ -1,12 +1,13 @@
-__version__ = "2.0.0"
+__version__ = "2.1.0"
 
+from re import match
 from tempfile import TemporaryDirectory
 
 from zenlib.util import colorize as c_
 from zenlib.util import contains
 
-
 MIN_FS_SIZES = {"btrfs": 110, "f2fs": 50}
+
 
 @contains("test_flag", "A test flag must be set to create a test image", raise_exception=True)
 def init_banner(self):
@@ -33,12 +34,13 @@ def _allocate_image(self, image_path, padding=0):
 
     with open(image_path, "wb") as f:
         total_size = (self.test_image_size + padding) * (2**20)  # Convert MB to bytes
-        self.logger.info(f"Allocating {self.test_image_size + padding}MB test image file: { c_(f.name, 'green')}")
-        self.logger.debug(f"[{f.name}] Total bytes: { c_(total_size, 'green')}")
+        self.logger.info(f"Allocating {self.test_image_size + padding}MB test image file: {c_(f.name, 'green')}")
+        self.logger.debug(f"[{f.name}] Total bytes: {c_(total_size, 'green')}")
         f.write(b"\0" * total_size)
 
+
 def _copy_fs_contents(self, image_path, build_dir):
-    """ Mount and copy the filesystem contents into the image,
+    """Mount and copy the filesystem contents into the image,
     for filesystems which cannot be created directly from a directory"""
     try:
         with TemporaryDirectory() as tmp_dir:
@@ -84,6 +86,14 @@ def make_test_luks_image(self, image_path):
     keyfile_path = _get_luks_keyfile(self)
     self.logger.info("Using LUKS keyfile: %s" % c_(keyfile_path, "green"))
     self.logger.info("Creating LUKS image: %s" % c_(image_path, "green"))
+    extra_args = []
+    if integrity_type := _get_luks_config(self).get("_dm-integrity"):
+        # If it's the type reported in the header like <type>(<algo>), turn it into <type>-<algo> for arg usage
+        if m := match(r"^(?P<type>\w+)\((?P<algo>[\w-]+)\)$", integrity_type):
+            integrity_type = f"{m['type']}-{m['algo']}"
+        self.logger.info(f"[{c_(image_path, 'green')}] LUKS integrity type: {c_(integrity_type, 'cyan')}")
+        extra_args.extend(["--integrity", integrity_type])
+
     self._run(
         [
             "cryptsetup",
@@ -94,6 +104,7 @@ def make_test_luks_image(self, image_path):
             "--batch-mode",
             "--key-file",
             keyfile_path,
+            *extra_args,
         ]
     )
     self.logger.info("Opening LUKS image: %s" % c_(image_path, "magenta"))
