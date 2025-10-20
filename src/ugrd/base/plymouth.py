@@ -51,14 +51,6 @@ def pull_plymouth(self) -> None:
         }
 
 
-def make_devpts(self) -> str:
-    """Creates /dev/pts and mounts the fstab entry"""
-    return """
-    mkdir -m755 -p /dev/pts
-    mount /dev/pts
-    """
-
-
 def _get_plymouthd_args(self) -> str:
     """Returns arguments for running plymouthd"""
     base_args = "--mode=boot --pid-file=/run/plymouth/plymouth.pid --attach-to-session"
