@@ -63,10 +63,12 @@ def _get_plymouthd_args(self) -> str:
     """Returns arguments for running plymouthd"""
     base_args = "--mode=boot --pid-file=/run/plymouth/plymouth.pid --attach-to-session"
     cmdline_args = []
-    if "ugrd.kmod.novideo" in self["modules"]:  # If novideo is enabled, force the plymouth.use-simpledrm option
+    if self["kmod_ignore_video"]:  # If the video mask is enabled, force plymouth.use-simpledrm option
         cmdline_args.append("plymouth.use-simpledrm")
     if self["plymouth_force_splash"]:
         base_args += " --splash"
+    if self["plymouth_debug"]:
+        base_args += " --debug --debug-file=/run/plymouth/plymouth.log"
 
     if cmdline_args:
         return f'{base_args} --kernel-command-line="{" ".join(cmdline_args)} $(< /proc/cmdline)"'
