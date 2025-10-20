@@ -67,10 +67,24 @@ def _get_plymouthd_args(self) -> str:
     return base_args
 
 
+def wait_for_drm(self) -> str:
+    """Checks for /sys/class/drm/card0 to exist before starting plymouthd"""
+    return """
+    attempts=0
+    while [ "$attempts" -lt 10 ] && [ ! -e /sys/class/drm/card0 ]; do
+        edebug "Framebuffer device /sys/class/drm/card0 not found, waiting 1 second to check again"
+        sleep 0.1
+        attempts=$((attempts + 1))
+    done
+    """
+
 def start_plymouth(self) -> str:
-    """Returns shell lines to run plymouthd"""
+    """Returns shell lines to run plymouthd
+    checks for /dev/fb0 to exist before starting plymouthd
+    and verifies that plymouthd started successfully
+    """
     return f"""
-    {"klog '[UGRD] Starting plymouthd'" if self['plymouth_debug'] else ""}
+    wait_for_drm
     plymouthd {_get_plymouthd_args(self)}
     if ! plymouth --ping; then
         eerror "Failed to start plymouthd"

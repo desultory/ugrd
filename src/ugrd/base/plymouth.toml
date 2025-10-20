@@ -1,4 +1,4 @@
-binaries = ['plymouthd', 'plymouth', 'plymouth-set-default-theme', '/usr/libexec/plymouth/plymouthd-fd-escrow']
+binaries = ['plymouthd', 'plymouth', 'plymouth-set-default-theme', '/usr/libexec/plymouth/plymouthd-fd-escrow', 'sleep']
 
 dependencies = ['/usr/share/plymouth/plymouthd.defaults',
                 '/usr/share/plymouth/themes/text/text.plymouth',
@@ -16,6 +16,10 @@ mount_devpts = true
 [imports.build_tasks]
 "ugrd.base.plymouth" = [ "pull_plymouth" ]
 
+
+[imports.functions]
+"ugrd.base.plymouth" = [ "wait_for_drm" ]
+
 [imports.init_pre]
 "ugrd.base.plymouth" = [ "start_plymouth" ]
 
@@ -23,8 +27,7 @@ mount_devpts = true
 start_plymouth = "print_banner"
 
 [import_order.after]
-start_plymouth = ["parse_cmdline", "make_run_dirs"]
-load_modules = "start_plymouth"
+start_plymouth = ["parse_cmdline", "make_run_dirs", "load_modules"]
 
 [custom_parameters]
 plymouth_config = "Path"  # Path to the plymouth configuration file
