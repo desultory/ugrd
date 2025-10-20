@@ -16,7 +16,6 @@ mount_devpts = true
 [imports.build_tasks]
 "ugrd.base.plymouth" = [ "pull_plymouth" ]
 
-
 [imports.functions]
 "ugrd.base.plymouth" = [ "wait_for_drm" ]
 

@@ -18,7 +18,7 @@ def find_plymouth_config(self) -> None:
             if str(self["plymouth_config"]) == ".":  # Set the first config file found
                 self["plymouth_config"] = file
             continue
-        self.logger.debug("Plymouth config file missing theme option: %s" % file)
+        self.logger.warning("Plymouth config file missing theme option: %s" % file)
     if not self["plymouth_themes"]:
         self.logger.error("No plymouth theme found in config files.")
 
@@ -36,9 +36,9 @@ def pull_plymouth(self) -> None:
     dir_list = [*PLYMOUTH_LIBRARIES]
     for theme in self["plymouth_themes"]:
         dir_list += [Path("/usr/share/plymouth/themes/") / theme]
-    for lib_dir in PLYMOUTH_LIBRARIES:
+    for lib_dir in dir_list:
         if Path(lib_dir).exists():
-            self.logger.debug(f"Adding plymouth library files to dependencies: {lib_dir}")
+            self.logger.debug(f"Adding plymouth files to dependencies: {lib_dir}")
             for file in Path(lib_dir).rglob("*"):
                 if file.name.endswith(".so"):
                     self["libraries"] = file
@@ -78,6 +78,7 @@ def wait_for_drm(self) -> str:
     done
     """
 
+
 def start_plymouth(self) -> str:
     """Returns shell lines to run plymouthd
     checks for /dev/fb0 to exist before starting plymouthd
@@ -88,7 +89,7 @@ def start_plymouth(self) -> str:
     plymouthd {_get_plymouthd_args(self)}
     if ! plymouth --ping; then
         eerror "Failed to start plymouthd"
-        {"klog '[UGRD] Failed to start plymouthd'" if self['plymouth_debug'] else ""}
+        {"klog '[UGRD] Failed to start plymouthd'" if self["plymouth_debug"] else ""}
         return 1
     fi
     setvar plymouth 1
