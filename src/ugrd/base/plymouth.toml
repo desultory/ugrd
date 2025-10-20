@@ -1,7 +1,7 @@
-binaries = ['plymouthd', 'plymouth', 'plymouth-set-default-theme']
+binaries = ['plymouthd', 'plymouth', 'plymouth-set-default-theme', '/usr/libexec/plymouth/plymouthd-fd-escrow']
 
 dependencies = ['/usr/share/plymouth/plymouthd.defaults',
-		'/usr/share/plymouth/themes/text/text.plymouth',
+                '/usr/share/plymouth/themes/text/text.plymouth',
                 '/usr/share/plymouth/themes/details/details.plymouth']
 
 run_dirs = ["plymouth"]
