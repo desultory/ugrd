@@ -29,3 +29,4 @@ start_plymouth = ["parse_cmdline", "make_run_dirs", "load_modules"]
 plymouth_config = "Path"  # Path to the plymouth configuration file
 plymouth_force_splash = "bool"  # Hardcode the splash argument into the plymouthd fake kernel cmdline
 plymouth_themes = "NoDupFlatList"  # List of plymouth themes to pull
+plymouth_debug = "bool"  # Enable plymouth debug mode and write logs to /run/plymouth/plymouth.log
