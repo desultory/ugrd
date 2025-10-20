@@ -23,7 +23,8 @@ mount_devpts = true
 start_plymouth = "print_banner"
 
 [import_order.after]
-start_plymouth = ["parse_cmdline", "make_run_dirs", "load_modules"]
+start_plymouth = ["parse_cmdline", "make_run_dirs"]
+load_modules = "start_plymouth"
 
 [custom_parameters]
 plymouth_config = "Path"  # Path to the plymouth configuration file
