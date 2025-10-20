@@ -1,9 +1,10 @@
-__version__ = "0.4.0"
+__version__ = "0.5.0"
 
 from configparser import ConfigParser
 from pathlib import Path
 
 PLYMOUTH_CONFIG_FILES = ["/etc/plymouth/plymouthd.conf", "/usr/share/plymouth/plymouthd.defaults"]
+PLYMOUTH_LIBRARIES = ["/usr/lib64/plymouth", "/usr/lib/plymouth"]
 
 
 def find_plymouth_config(self) -> None:
@@ -32,13 +33,17 @@ def _process_plymouth_themes_multi(self, theme) -> None:
 
 def pull_plymouth(self) -> None:
     """Adds plymouth files to dependencies"""
-    dir_list = [Path("/usr/lib64/plymouth")]
+    dir_list = [*PLYMOUTH_LIBRARIES]
     for theme in self["plymouth_themes"]:
         dir_list += [Path("/usr/share/plymouth/themes/") / theme]
-    self.logger.debug("Adding plymouth files to dependencies.")
-    for directory in dir_list:
-        for file in directory.rglob("*"):
-            self["dependencies"] = file
+    for lib_dir in PLYMOUTH_LIBRARIES:
+        if Path(lib_dir).exists():
+            self.logger.debug(f"Adding plymouth library files to dependencies: {lib_dir}")
+            for file in Path(lib_dir).rglob("*"):
+                if file.name.endswith(".so"):
+                    self["libraries"] = file
+                else:
+                    self["dependencies"] = file
 
     if str(self["plymouth_config"]) != "/usr/share/plymouth/plymouthd.defaults":
         self["copies"] = {
