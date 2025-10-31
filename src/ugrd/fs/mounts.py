@@ -1024,6 +1024,7 @@ def mount_root(self) -> str:
     rootflags="$(readvar rootflags 'defaults,ro')"
     einfo "Mounting root partition based on /proc/cmdline: $root -t $roottype -o $rootflags"
     if ! mount "$root" "$(readvar MOUNTS_ROOT_TARGET)" -t "$roottype" -o "$rootflags"; then
+        klog "[UGRD $(readvar VERSION)] Failed to mount root partition using /proc/cmdline: $root -t $roottype -o $rootflags"
         eerror "Failed to mount the root partition using /proc/cmdline: $root -t $roottype -o $rootflags"
         mount_default_root
     fi
