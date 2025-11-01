@@ -513,7 +513,15 @@ def add_kmod_deps(self):
     """Adds all kernel modules to the initramfs dependencies.
     Always attempt to add firmware, continuing if no_kmod is set.
     If they are compressed with a supported extension, they are decompressed before being added.
+
+    Adds modprobe to the binaries list if no_kmod is not set.
     """
+    if not self["no_kmod"]:
+        self.logger.debug("Adding modprobe to binaries list.")
+        self["binaries"] = "modprobe"
+    else:
+        self.logger.info("no_kmod is enabled, skipping adding modprobe to binaries list.")
+
     for kmod in self["kernel_modules"]:
         if self.get("kernel_version"):
             _add_kmod_firmware(self, kmod)
