@@ -1,7 +1,5 @@
 modules = [ "ugrd.kmod.standard_mask", "ugrd.kmod.platform", "ugrd.kmod.input" ]
 
-binaries = [ "modprobe" ]
-
 kmod_pull_firmware = true
 kmod_decompress_firmware = true
 
