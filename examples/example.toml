@@ -25,6 +25,9 @@ modules = [
 #out_dir = "/usr/src/initramfs"
 #out_dir = "/boot"
 
+# create device nodes in build dir, requires root
+#make_nodes = true
+
 # By default, xz compression is used. This can be disabled or set to zstd if the zstandard python module is installed
 #cpio_compression = "zstd"  # Use zstd compression
 #cpio_compression = false  # No compression
