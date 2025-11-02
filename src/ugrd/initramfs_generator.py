@@ -31,7 +31,7 @@ class InitramfsGenerator(GeneratorHelpers):
         try:  # Attempt to load the config file, if it exists
             self.load_config(config)  # The user config is loaded over the base config, clobbering kwargs
             self.config_dict.import_args(
-                kwargs, quiet=True
+                kwargs, quiet=True, late=True
             )  # Re-import kwargs (cmdline params) to apply them over the config
         except FileNotFoundError:
             if config:  # If a config file was specified, log an error that it's missing
