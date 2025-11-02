@@ -21,7 +21,7 @@ modules = [
 #kmod_ignore_sound = false
 #kmod_ignore_network = false
 
-# The initramfs will be built in /tmp/initramfs if "build_dir" is not specified not specified
+# The initramfs will be built in /tmp/initramfs if "build_dir" is not specified
 #out_dir = "/usr/src/initramfs"
 #out_dir = "/boot"
 
