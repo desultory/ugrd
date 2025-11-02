@@ -41,7 +41,7 @@ Modules write to a shared config dict that is accessible by other modules.
 * `build_dir` (initramfs_build) If relative, it will be placed under `tmpdir`, defines the build directory.
 * `random_build_dir` (false) Adds a uuid to the end of the build dir name when true.
 * `build_logging` (false) Enables additional logging during the build process.
-* `make_nodes` (false) Create real device nodes in the build dir. 
+* `make_nodes` (false) Create real device nodes in the build dir. Otherwise they are created in the CPIO archive. 
 * `find_libgcc` (true) Automatically locates libgcc using ldconfig -p and adds it to the initramfs.
 * `musl_libc` (false) Disable ldconfig -p usage for libgcc detection, skip ld.so.cache regeneration.
 * `out_dir` (initramfs_out) If relative, it will be placed under `tmpdir`, defines the output directory.
@@ -296,7 +296,6 @@ This module can be enabled by adding `ugrd.fs.fakeudev` to the `modules` list.
 
 This module handles CPIO creation.
 
-* `mknod_cpio` (true) Only create device nodes within the CPIO.
 * `cpio_compression` (xz) Sets the compression method for the CPIO file, passed to PyCPIO.
 * `cpio_rotate` (true) Rotates old CPIO files, keeping `old_count` number of old files.
 

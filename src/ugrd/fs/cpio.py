@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "3.7.3"
+__version__ = "3.8.0"
 
 from pathlib import Path
 
@@ -86,13 +86,13 @@ def make_cpio(self) -> None:
     """
     Populates the CPIO archive using the build directory,
     writes it to the output file, and rotates the output file if necessary.
-    Creates device nodes in the CPIO archive if the mknod_cpio option is set.
+    Creates device nodes in the CPIO archive if make_nodes is False. (make_nodes will create actual files instead)
     Raises FileNotFoundError if the output directory does not exist.
     """
     cpio = self._cpio_archive
     cpio.append_recursive(self._get_build_path("/"), relative=True)
 
-    if self.get("mknod_cpio"):
+    if not self.get("make_nodes"):
         for node in self["nodes"].values():
             self.logger.debug("Adding CPIO node: %s" % node)
             cpio.add_chardev(name=node["path"], mode=node["mode"], major=node["major"], minor=node["minor"])
