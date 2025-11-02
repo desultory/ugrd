@@ -1,4 +1,3 @@
-mknod_cpio = true
 cpio_compression = "xz"
 cpio_rotate = true
 check_cpio = true
@@ -14,7 +13,6 @@ check_cpio = true
 
 [custom_parameters]
 cpio_rotate = "bool"  # makes a .old backup of the cpio file if it already exists.
-mknod_cpio = "bool"  # When enabled, mknod is not used to create device nodes, they are just created in the cpio.
 cpio_compression = "str"  # The compression method to use for the cpio file. XZ and ZSTD are supported.
 _cpio_archive = "PyCPIO"  # The cpio archive object.
 check_cpio = "bool"  # When enabled, the CPIO archive contents are checked for errors.
