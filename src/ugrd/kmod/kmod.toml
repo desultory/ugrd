@@ -3,6 +3,8 @@ modules = [ "ugrd.kmod.standard_mask", "ugrd.kmod.platform", "ugrd.kmod.input" ]
 kmod_pull_firmware = true
 kmod_decompress_firmware = true
 
+_late_args = ["kernel_version"]
+
 [custom_parameters]
 _kmod_removed = "NoDupFlatList"  # Meant to be used internally, defines kernel modules which have been ignored at runtime
 _kmod_modinfo = "dict" # Used internally, caches modinfo output for kernel modules

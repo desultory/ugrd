@@ -40,6 +40,7 @@ class InitramfsConfigDict(UserDict):
         "custom_parameters": dict,  # Custom parameters loaded from imports
         "custom_processing": dict,  # Custom processing functions which will be run to validate and process parameters
         "_processing": dict,  # A dict of queues containing parameters which have been set before the type was known
+        "_late_args": NoDupFlatList,  # A list of arguments which could be passed as command line args but need to be processed after the config is loaded
         "test_copy_config": NoDupFlatList,  # A list of config values which are copied into test images, from the parent
     }
 
@@ -57,7 +58,7 @@ class InitramfsConfigDict(UserDict):
         else:
             self["modules"] = "ugrd.base.core"
 
-    def import_args(self, args: dict, quiet=False) -> None:
+    def import_args(self, args: dict, quiet=False, late=False) -> None:
         """Imports data from an argument dict."""
         log_level = 10 if quiet else 20
         for arg, value in args.items():
@@ -66,6 +67,11 @@ class InitramfsConfigDict(UserDict):
             if arg == "modules":  # allow loading modules by name from the command line
                 for module in value.split(","):
                     self[arg] = module
+            elif arg in self["_late_args"] and not late:
+                self.logger.debug(
+                    f"[{c_(arg, 'yellow')}] Deferring late argument processing until after config load: {c_(value, 'green')}",
+                )
+                continue
             elif getattr(self, arg, None) != value:  # Only set the value if it differs:
                 self[arg] = value
             else:
