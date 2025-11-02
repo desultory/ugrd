@@ -135,11 +135,6 @@ def main():
         },
         {"flags": ["--livecd-label"], "action": "store", "help": "Sets the label for the livecd"},
         {"flags": ["--squashfs-image"], "action": "store", "help": "Sets the filename for the livede squashfs image"},
-        {
-            "flags": ["--force-out"],
-            "action": "store_true",
-            "help": "Force set the output file/dir, do not use a tmpdir.",
-        },
         {"flags": ["out_file"], "action": "store", "help": "set the output image location", "nargs": "?"},
     ]
 
