@@ -1,0 +1,10 @@
+cmdline_strings = [ "resume" ]
+
+[imports.init_main]
+"ugrd.fs.resume_swapfile" = [ "handle_resume_swapfile" ]
+
+[import_order.before]
+handle_resume_swapfile = "mount_fstab"
+
+[import_order.after]
+handle_resume_swapfile = "crypt_init"
