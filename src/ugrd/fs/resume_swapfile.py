@@ -2,9 +2,9 @@ __version__ = "0.4.2"
 
 
 def handle_resume_swapfile(self) -> None:
-    """Returns a shell script handling resume from hibernation.
-    Checks that /sys/power/resume is writable, resume= is set, and noresume is not set, if so,
-    checks if UUID= or PARTUUID= or LABEL= is in the resume var,
+    """Returns a shell script handling resume from hibernation with a swapfile.
+    Checks that /sys/power/resume is writable, resume_offset= is sane, resume= is set, and noresume is not set,
+    if so, checks if UUID= or PARTUUID= or LABEL= is in the resume var,
     and tries to use blkid to find the resume device.
     If the specified device exists, writes resume device to /sys/power/resume.
     In the event of failure, it prints an error message, a list of block devuices, then runs rd_fail.
@@ -26,7 +26,7 @@ def handle_resume_swapfile(self) -> None:
         "    else",
         "        resume=$resumeval",
         "    fi",
-        '    if [ ! -n "$offset" ] || [ "$offset" -le 0 ]; then',
+        '    if [ ! -n "$offset" ] || [ "$offset" -le 0 ]; then', # check for sane offset value, i.e. not empty and greater than 0
         '        ewarn "resume_offset not set, resume from swapfile likely to fail"',
         "    fi",
         '    if [ -e "$resume" ]; then',  # Check if the resume device exists
