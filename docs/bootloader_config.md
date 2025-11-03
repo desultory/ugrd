@@ -24,6 +24,9 @@ The `build_dir`can be embedded into the Linux kernel with:
 CONFIG_INITRAMFS_SOURCE="/tmp/initramfs"
 ```
 
+Take care to set `make_nodes = true` to create `/dev/console` in the build dir (instead of in the cpio when packing it).
+The console device node file is required in builtin initrds.
+
 A CPIO file can be embedded into the Linux kernel with: 
 
 ```
