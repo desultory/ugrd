@@ -1,3 +1,9 @@
+##############################################################################
+##                                                                          ##
+##    there are docs at https://github.com/desultory/ugrd/tree/main/docs    ##
+##                                                                          ##
+##############################################################################
+
 # This config will decrypt the LUKS volume with uuid "fdf442da-0574-4531-98c7-55227a041f1d", mapping it to "/dev/mapper/root"
 # Note: In most cases, the uuid of the LUKS volume will be detected from the root mount. It's set as an example here.
 # It will attempt to mount the btrfs volume with label "rootfs" to /target_rootfs
