@@ -26,15 +26,19 @@ The original goal of this project was to create an initramfs suitable for decryp
 ### Auto-detection
 
 * Root mount, using `/proc/mounts`. `root=` and `rootflags=` can be used but are not required
-* MDRAID auto-configuration for the root mount
-* LUKS auto-configuration and validation for the root mount
+* MDRAID auto-configuration
+* LVM auto-configuration
+* LUKS auto-configuration and validation
   - LUKS under LVM support
   - LUKS under MDRAID support
-* LVM based root volumes are auto-mounted
-* BTRFS root subvolumes are automatically detected to `root_subvol`
-    - `subvol_selector` can be used to select a subvolume at boot time
-* `/usr` auto-mounting if the init system requires it
-* Auto-detection of kernel modules required by the storage device used by the root filesystem
+  - Detached header support
+  - YubiKey (OpenPGP smartcard) support
+  - Recovery using a passprhase using `try_nokey`
+  - DM-Integrity support
+* BTRFS root subvolumes are automatically detected or can be manually set with `root_subvol`
+    - `subvol_selector` can be used to interactively select a subvolume at boot time
+* `/usr`, `/var`, and `/etc` auto-mounting if the init system requires it
+* Auto-detection of kernel modules required by storage devices and filesystems
 * Init system/target auto-detection
 
 ### Validation

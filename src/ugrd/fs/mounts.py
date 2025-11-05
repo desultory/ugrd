@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "7.2.1"
+__version__ = "7.3.0"
 
 from pathlib import Path
 from re import search
@@ -436,7 +436,7 @@ def get_virtual_block_info(self):
     sys_block = Path("/sys/devices/virtual/block")
 
     if not sys_block.exists():
-        self["autodetect_root_dm"] = False
+        self["autodetect_dm"] = False
         return self.logger.warning("Virtual block devices unavailable, disabling device mapper autodetection.")
 
     devices = []
@@ -450,7 +450,7 @@ def get_virtual_block_info(self):
                 devices.append(part)
 
     if not devices:
-        self["autodetect_root_dm"] = False
+        self["autodetect_dm"] = False
         return self.logger.warning("No virtual block devices found, disabling device mapper autodetection.")
 
     for virt_dev in devices:
@@ -541,6 +541,17 @@ def _autodetect_dm(self, mountpoint, device=None) -> None:
     major, minor = _get_device_id(source_device)
     self.logger.debug("[%s] Major: %s, Minor: %s" % (source_device, major, minor))
 
+    # If the mountpoint is in auto_mounts, log a big error about it being prone to failure, allow
+    if mountpoint in self["auto_mounts"]:
+        self.logger.error(f"Found a device mapper mount in auto_mounts: {c_(mountpoint, 'yellow', bold=True)}")
+        self.logger.warning(
+            "auto_mounts is used for mounts before LVM/LUKS init (during mount_fstab). Device mapper mounts defined here may fail to activate and stop the boot process!"
+        )
+        if self["validate"]:
+            raise ValidationError(
+                f"Device mapper mount found in auto_mounts, auto_mounts cannot be device mapper based: {c_(mountpoint, 'red', bold=True)}"
+            )
+
     # Get the virtual block device name using the major/minor
     for name, info in self["_vblk_info"].items():
         if info["major"] == str(major) and info["minor"] == str(minor):
@@ -559,7 +570,9 @@ def _autodetect_dm(self, mountpoint, device=None) -> None:
     # If the slave source is a CRYPT-SUBDEV device, use its slave instead
     if self["_vblk_info"].get(slave_source, {}).get("uuid", "").startswith("CRYPT-SUBDEV"):
         slave_source = self["_vblk_info"][slave_source]["slaves"][0]
-        self.logger.info(f"[{c_(dev_name, 'blue')}] Slave is a CRYPT-SUBDEV, using its slave instead: {c_(slave_source, 'cyan')}")
+        self.logger.info(
+            f"[{c_(dev_name, 'blue')}] Slave is a CRYPT-SUBDEV, using its slave instead: {c_(slave_source, 'cyan')}"
+        )
         # Add the kmod for it
         self.logger.info(f"[{c_(dev_name, 'blue')}] Adding kmod for CRYPT-SUBDEV: {c_('dm-crypt', 'magenta')}")
         self["_kmod_auto"] = ["dm_integrity", "authenc"]
@@ -624,7 +637,7 @@ def _autodetect_dm(self, mountpoint, device=None) -> None:
             self.logger.debug("Slave does not appear to be a DM device: %s" % slave)
 
 
-@contains("autodetect_root_raid", "Skipping RAID autodetection, autodetect_root_raid is disabled.", log_level=30)
+@contains("autodetect_raid", "Skipping RAID autodetection, autodetect_raid is disabled.", log_level=30)
 @contains("hostonly", "Skipping RAID autodetection, hostonly mode is disabled.", log_level=30)
 def autodetect_raid(self, source_dev, dm_name, blkid_info) -> None:
     """Autodetects MD RAID mounts and sets the raid config.
@@ -641,7 +654,7 @@ def autodetect_raid(self, source_dev, dm_name, blkid_info) -> None:
         raise AutodetectError("[%s] Failed to autodetect MDRAID level: %s" % (dm_name, blkid_info))
 
 
-@contains("autodetect_root_lvm", "Skipping LVM autodetection, autodetect_root_lvm is disabled.", log_level=20)
+@contains("autodetect_lvm", "Skipping LVM autodetection, autodetect_lvm is disabled.", log_level=20)
 @contains("hostonly", "Skipping LVM autodetection, hostonly mode is disabled.", log_level=30)
 def autodetect_lvm(self, source_dev, dm_num, blkid_info) -> None:
     """Autodetects LVM mounts and sets the lvm config."""
@@ -664,7 +677,7 @@ def autodetect_lvm(self, source_dev, dm_num, blkid_info) -> None:
     self["lvm"] = {source_dev.name: lvm_config}
 
 
-@contains("autodetect_root_luks", "Skipping LUKS autodetection, autodetect_root_luks is disabled.", log_level=30)
+@contains("autodetect_luks", "Skipping LUKS autodetection, autodetect_luks is disabled.", log_level=30)
 @contains("hostonly", "Skipping LUKS autodetection, hostonly mode is disabled.", log_level=30)
 def autodetect_luks(self, source_dev, dm_num, blkid_info) -> None:
     """Autodetects LUKS mounts and sets the cryptsetup config."""
@@ -747,22 +760,10 @@ def autodetect_root(self) -> None:
         raise AutodetectError(
             "Root mount not found in host mounts.\nCurrent mounts: %s" % pretty_print(self["_mounts"])
         )
-    root_dev = _autodetect_mount(self, "/")
-    if self["autodetect_root_dm"]:
-        if self["mounts"]["root"]["type"] == "btrfs":
-            from ugrd.fs.btrfs import _get_btrfs_mount_devices
-
-            # Btrfs volumes may be backed by multiple dm devices
-            for device in _get_btrfs_mount_devices(self, "/", root_dev):
-                _autodetect_dm(self, "/", device)
-        elif self["mounts"]["root"]["type"] == "zfs":
-            for device in get_zpool_info(self, root_dev)["devices"]:
-                _autodetect_dm(self, "/", device)
-        else:
-            _autodetect_dm(self, "/")
+    _autodetect_mount(self, "/")
 
 
-def _autodetect_mount(self, mountpoint, mount_class="mounts", missing_ok=False) -> str:
+def _autodetect_mount(self, mountpoint, mount_class="mounts", missing_ok=False) -> None:
     """Sets mount config for the specified mountpoint, in the specified mount class.
 
     Returns the "real" device path for the mountpoint.
@@ -815,7 +816,7 @@ def _autodetect_mount(self, mountpoint, mount_class="mounts", missing_ok=False) 
         # Inherit mount options from the host mount for certain mount types
         if fs_type in MOUNT_INHERIT_OPTIONS:
             mount_options = self["_mounts"][mountpoint].get("options", ["ro"])
-            if 'rw' in mount_options:
+            if "rw" in mount_options:
                 mount_options.pop(mount_options.index("rw"))  # Remove rw option if it exists
         else:  # For standard mounts, default ro
             mount_options = ["ro"]
@@ -840,8 +841,21 @@ def _autodetect_mount(self, mountpoint, mount_class="mounts", missing_ok=False) 
     if fs_type == "zfs":
         mount_config[mount_name]["path"] = mount_device
 
+    # Run device mapper autodetection if enabled
+    if self["autodetect_dm"]:
+        if fs_type == "btrfs":
+            from ugrd.fs.btrfs import _get_btrfs_mount_devices
+
+            # Btrfs volumes may be backed by multiple dm devices
+            for device in _get_btrfs_mount_devices(self, mountpoint, mount_device):
+                _autodetect_dm(self, mountpoint, mount_device)
+        elif fs_type == "zfs":
+            for device in get_zpool_info(self, mount_device)["devices"]:
+                _autodetect_dm(self, mountpoint, mount_device)
+        else:
+            _autodetect_dm(self, mountpoint)
+
     self[mount_class] = mount_config
-    return mount_device
 
 
 @contains("auto_mounts", "Skipping auto mounts, auto_mounts is empty.", log_level=10)
@@ -850,6 +864,14 @@ def autodetect_mounts(self) -> None:
     """Configured the mount config for a device based on the host mount config."""
     for mountpoint in self["auto_mounts"]:
         _autodetect_mount(self, mountpoint)
+
+
+@contains("auto_late_mounts", "Skipping auto late mounts, auto_late_mounts is empty.", log_level=10)
+@contains("hostonly", "Skipping late mount autodetection, hostonly mode is disabled.", log_level=30)
+def autodetect_late_mounts(self) -> None:
+    """Configured the late_mounts config for a device based on the host mount config."""
+    for mountpoint in self["auto_late_mounts"]:
+        _autodetect_mount(self, mountpoint, mount_class="late_mounts")
 
 
 def mount_base(self) -> list[str]:
@@ -906,7 +928,9 @@ def mount_fstab(self) -> list[str]:
     mount_retries sets the number of times to retry the mount, infinite otherwise.
     """
     if not self._get_build_path("/etc/fstab").exists():
-        return self.logger.info("No initramfs fstab found, skipping mount_fstab. If non-root storage devices are not needed at boot, this is fine.")
+        return self.logger.info(
+            "No initramfs fstab found, skipping mount_fstab. If non-root storage devices are not needed at boot, this is fine."
+        )
 
     out = [
         'einfo "Attempting to mount all filesystems."',
@@ -1039,8 +1063,12 @@ def export_mount_info(self) -> None:
         self.logger.critical(f"Failed to get source info for the root mount: {e}")
         if not self["hostonly"]:
             self.logger.info("Root mount infomrmation can be defined under the '[mounts.root]' section.")
-            raise ValidationError("Root mount source information is not set, when hostonly mode is disabled, it must be manually defined.")
-        raise ValidationError("Root mount source information is not set even though hostonly mode is enabled. Please report a bug.")
+            raise ValidationError(
+                "Root mount source information is not set. When hostonly mode is disabled, it must be manually defined."
+            )
+        raise ValidationError(
+            "Root mount source information is not set even though hostonly mode is enabled. Please report a bug."
+        )
     self["exports"]["MOUNTS_ROOT_TYPE"] = self["mounts"]["root"].get("type", "auto")
     self["exports"]["MOUNTS_ROOT_OPTIONS"] = ",".join(self["mounts"]["root"]["options"])
     self["exports"]["MOUNTS_ROOT_TARGET"] = self["mounts"]["root"]["destination"]
