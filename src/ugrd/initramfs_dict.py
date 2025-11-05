@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "2.4.1"
+__version__ = "2.4.2"
 
 from collections import UserDict
 from importlib import import_module
@@ -372,8 +372,13 @@ class InitramfsConfigDict(UserDict):
             if name in ["imports", "custom_parameters", "provides", "needs"]:
                 self.logger.log(5, "[%s] Skipping '%s'" % (module, name))
                 continue
-            self.logger.debug("[%s] (%s) Setting value: %s" % (module, name, value))
-            self[name] = value
+            if name in self["_processing"]:
+                self.logger.debug(
+                    f"Skipping setting defaults for parameter with queued values: {c_(name, 'yellow')}"
+                )
+            else:
+                self.logger.debug("[%s] (%s) Setting value: %s" % (module, name, value))
+                self[name] = value
 
         # Add custom parameters after values are added, so they are processed in the correct order
         custom_parameters = module_config.get("custom_parameters", {})
