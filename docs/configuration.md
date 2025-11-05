@@ -234,14 +234,14 @@ Additional modules include:
 #### ugrd.fs.mounts
 
 * `autodetect_root` (true) Set the root mount parameter based on the current root label or uuid.
-* `autodetect_root_dm` (true) Attempt to automatically configure virtual block devices such as LUKS/LVM/MDRAID.
-* `autodetect_root_luks` (true) Attempt to automatically configure LUKS mounts for the root device.
-* `autodetect_root_lvm` (true) Attempt to automatically configure LVM mounts for the root device.
-* `autodetect_root_mdraid` (true) Attempt to automatically configure MDRAID mounts for the root device.
+* `autodetect_dm` (true) Attempt to automatically configure virtual block devices such as LUKS/LVM/MDRAID.
+* `autodetect_luks` (true) Attempt to automatically configure LUKS mounts for the root device.
+* `autodetect_lvm` (true) Attempt to automatically configure LVM mounts for the root device.
+* `autodetect_mdraid` (true) Attempt to automatically configure MDRAID mounts for the root device.
 * `autodetect_init_mount'` (true) Automatically detect the mountpoint for the init binary, and add it to `late_mounts`.
 * `run_dirs` A list of directories to create under `/run/` at runtime
 
-> `autodetect_root` is required for `autodetect_root_<type>` to work.
+> `autodetect_root` is required for `autodetect_<type>` to work.
 
 `mounts`: A dictionary containing entries for mounts, with their associated config.
 

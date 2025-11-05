@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "7.2.1"
+__version__ = "7.3.0"
 
 from pathlib import Path
 from re import search
@@ -436,7 +436,7 @@ def get_virtual_block_info(self):
     sys_block = Path("/sys/devices/virtual/block")
 
     if not sys_block.exists():
-        self["autodetect_root_dm"] = False
+        self["autodetect_dm"] = False
         return self.logger.warning("Virtual block devices unavailable, disabling device mapper autodetection.")
 
     devices = []
@@ -450,7 +450,7 @@ def get_virtual_block_info(self):
                 devices.append(part)
 
     if not devices:
-        self["autodetect_root_dm"] = False
+        self["autodetect_dm"] = False
         return self.logger.warning("No virtual block devices found, disabling device mapper autodetection.")
 
     for virt_dev in devices:
@@ -624,7 +624,7 @@ def _autodetect_dm(self, mountpoint, device=None) -> None:
             self.logger.debug("Slave does not appear to be a DM device: %s" % slave)
 
 
-@contains("autodetect_root_raid", "Skipping RAID autodetection, autodetect_root_raid is disabled.", log_level=30)
+@contains("autodetect_raid", "Skipping RAID autodetection, autodetect_raid is disabled.", log_level=30)
 @contains("hostonly", "Skipping RAID autodetection, hostonly mode is disabled.", log_level=30)
 def autodetect_raid(self, source_dev, dm_name, blkid_info) -> None:
     """Autodetects MD RAID mounts and sets the raid config.
@@ -641,7 +641,7 @@ def autodetect_raid(self, source_dev, dm_name, blkid_info) -> None:
         raise AutodetectError("[%s] Failed to autodetect MDRAID level: %s" % (dm_name, blkid_info))
 
 
-@contains("autodetect_root_lvm", "Skipping LVM autodetection, autodetect_root_lvm is disabled.", log_level=20)
+@contains("autodetect_lvm", "Skipping LVM autodetection, autodetect_lvm is disabled.", log_level=20)
 @contains("hostonly", "Skipping LVM autodetection, hostonly mode is disabled.", log_level=30)
 def autodetect_lvm(self, source_dev, dm_num, blkid_info) -> None:
     """Autodetects LVM mounts and sets the lvm config."""
@@ -664,7 +664,7 @@ def autodetect_lvm(self, source_dev, dm_num, blkid_info) -> None:
     self["lvm"] = {source_dev.name: lvm_config}
 
 
-@contains("autodetect_root_luks", "Skipping LUKS autodetection, autodetect_root_luks is disabled.", log_level=30)
+@contains("autodetect_luks", "Skipping LUKS autodetection, autodetect_luks is disabled.", log_level=30)
 @contains("hostonly", "Skipping LUKS autodetection, hostonly mode is disabled.", log_level=30)
 def autodetect_luks(self, source_dev, dm_num, blkid_info) -> None:
     """Autodetects LUKS mounts and sets the cryptsetup config."""
@@ -748,7 +748,7 @@ def autodetect_root(self) -> None:
             "Root mount not found in host mounts.\nCurrent mounts: %s" % pretty_print(self["_mounts"])
         )
     root_dev = _autodetect_mount(self, "/")
-    if self["autodetect_root_dm"]:
+    if self["autodetect_dm"]:
         if self["mounts"]["root"]["type"] == "btrfs":
             from ugrd.fs.btrfs import _get_btrfs_mount_devices
 

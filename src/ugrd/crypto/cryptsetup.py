@@ -100,7 +100,7 @@ def _validate_cryptsetup_config(self, mapped_name: str) -> None:
         ).exists():  # Make sure the header file exists, it may not be present at build time
             self.logger.warning("[%s] Header file not found: %s" % (mapped_name, c_(config["header_file"], "yellow")))
     elif not any([config.get("partuuid"), config.get("uuid"), config.get("path")]):
-        if not self["autodetect_root_luks"]:
+        if not self["autodetect_luks"]:
             raise ValidationError(
                 "A device uuid, partuuid, or path must be specified for cryptsetup mount: %s" % mapped_name
             )
