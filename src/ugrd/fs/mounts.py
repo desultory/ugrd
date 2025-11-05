@@ -541,6 +541,17 @@ def _autodetect_dm(self, mountpoint, device=None) -> None:
     major, minor = _get_device_id(source_device)
     self.logger.debug("[%s] Major: %s, Minor: %s" % (source_device, major, minor))
 
+    # If the mountpoint is in auto_mounts, log a big error about it being prone to failure, allow
+    if mountpoint in self["auto_mounts"]:
+        self.logger.error(f"Found a device mapper mount in auto_mounts: {c_(mountpoint, 'yellow', bold=True)}")
+        self.logger.warning(
+            "auto_mounts is used for mounts before LVM/LUKS init (during mount_fstab). Device mapper mounts defined here may fail to activate and stop the boot process!"
+        )
+        if self["validate"]:
+            raise ValidationError(
+                f"Device mapper mount found in auto_mounts, auto_mounts cannot be device mapper based: {c_(mountpoint, 'red', bold=True)}"
+            )
+
     # Get the virtual block device name using the major/minor
     for name, info in self["_vblk_info"].items():
         if info["major"] == str(major) and info["minor"] == str(minor):
@@ -1045,7 +1056,7 @@ def export_mount_info(self) -> None:
         if not self["hostonly"]:
             self.logger.info("Root mount infomrmation can be defined under the '[mounts.root]' section.")
             raise ValidationError(
-                "Root mount source information is not set, when hostonly mode is disabled, it must be manually defined."
+                "Root mount source information is not set. When hostonly mode is disabled, it must be manually defined."
             )
         raise ValidationError(
             "Root mount source information is not set even though hostonly mode is enabled. Please report a bug."
