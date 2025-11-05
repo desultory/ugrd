@@ -559,7 +559,9 @@ def _autodetect_dm(self, mountpoint, device=None) -> None:
     # If the slave source is a CRYPT-SUBDEV device, use its slave instead
     if self["_vblk_info"].get(slave_source, {}).get("uuid", "").startswith("CRYPT-SUBDEV"):
         slave_source = self["_vblk_info"][slave_source]["slaves"][0]
-        self.logger.info(f"[{c_(dev_name, 'blue')}] Slave is a CRYPT-SUBDEV, using its slave instead: {c_(slave_source, 'cyan')}")
+        self.logger.info(
+            f"[{c_(dev_name, 'blue')}] Slave is a CRYPT-SUBDEV, using its slave instead: {c_(slave_source, 'cyan')}"
+        )
         # Add the kmod for it
         self.logger.info(f"[{c_(dev_name, 'blue')}] Adding kmod for CRYPT-SUBDEV: {c_('dm-crypt', 'magenta')}")
         self["_kmod_auto"] = ["dm_integrity", "authenc"]
@@ -747,22 +749,10 @@ def autodetect_root(self) -> None:
         raise AutodetectError(
             "Root mount not found in host mounts.\nCurrent mounts: %s" % pretty_print(self["_mounts"])
         )
-    root_dev = _autodetect_mount(self, "/")
-    if self["autodetect_dm"]:
-        if self["mounts"]["root"]["type"] == "btrfs":
-            from ugrd.fs.btrfs import _get_btrfs_mount_devices
-
-            # Btrfs volumes may be backed by multiple dm devices
-            for device in _get_btrfs_mount_devices(self, "/", root_dev):
-                _autodetect_dm(self, "/", device)
-        elif self["mounts"]["root"]["type"] == "zfs":
-            for device in get_zpool_info(self, root_dev)["devices"]:
-                _autodetect_dm(self, "/", device)
-        else:
-            _autodetect_dm(self, "/")
+    _autodetect_mount(self, "/")
 
 
-def _autodetect_mount(self, mountpoint, mount_class="mounts", missing_ok=False) -> str:
+def _autodetect_mount(self, mountpoint, mount_class="mounts", missing_ok=False) -> None:
     """Sets mount config for the specified mountpoint, in the specified mount class.
 
     Returns the "real" device path for the mountpoint.
@@ -815,7 +805,7 @@ def _autodetect_mount(self, mountpoint, mount_class="mounts", missing_ok=False) 
         # Inherit mount options from the host mount for certain mount types
         if fs_type in MOUNT_INHERIT_OPTIONS:
             mount_options = self["_mounts"][mountpoint].get("options", ["ro"])
-            if 'rw' in mount_options:
+            if "rw" in mount_options:
                 mount_options.pop(mount_options.index("rw"))  # Remove rw option if it exists
         else:  # For standard mounts, default ro
             mount_options = ["ro"]
@@ -840,8 +830,21 @@ def _autodetect_mount(self, mountpoint, mount_class="mounts", missing_ok=False) 
     if fs_type == "zfs":
         mount_config[mount_name]["path"] = mount_device
 
+    # Run device mapper autodetection if enabled
+    if self["autodetect_dm"]:
+        if fs_type == "btrfs":
+            from ugrd.fs.btrfs import _get_btrfs_mount_devices
+
+            # Btrfs volumes may be backed by multiple dm devices
+            for device in _get_btrfs_mount_devices(self, mountpoint, mount_device):
+                _autodetect_dm(self, mountpoint, mount_device)
+        elif fs_type == "zfs":
+            for device in get_zpool_info(self, mount_device)["devices"]:
+                _autodetect_dm(self, mountpoint, mount_device)
+        else:
+            _autodetect_dm(self, mountpoint)
+
     self[mount_class] = mount_config
-    return mount_device
 
 
 @contains("auto_mounts", "Skipping auto mounts, auto_mounts is empty.", log_level=10)
@@ -906,7 +909,9 @@ def mount_fstab(self) -> list[str]:
     mount_retries sets the number of times to retry the mount, infinite otherwise.
     """
     if not self._get_build_path("/etc/fstab").exists():
-        return self.logger.info("No initramfs fstab found, skipping mount_fstab. If non-root storage devices are not needed at boot, this is fine.")
+        return self.logger.info(
+            "No initramfs fstab found, skipping mount_fstab. If non-root storage devices are not needed at boot, this is fine."
+        )
 
     out = [
         'einfo "Attempting to mount all filesystems."',
@@ -1039,8 +1044,12 @@ def export_mount_info(self) -> None:
         self.logger.critical(f"Failed to get source info for the root mount: {e}")
         if not self["hostonly"]:
             self.logger.info("Root mount infomrmation can be defined under the '[mounts.root]' section.")
-            raise ValidationError("Root mount source information is not set, when hostonly mode is disabled, it must be manually defined.")
-        raise ValidationError("Root mount source information is not set even though hostonly mode is enabled. Please report a bug.")
+            raise ValidationError(
+                "Root mount source information is not set, when hostonly mode is disabled, it must be manually defined."
+            )
+        raise ValidationError(
+            "Root mount source information is not set even though hostonly mode is enabled. Please report a bug."
+        )
     self["exports"]["MOUNTS_ROOT_TYPE"] = self["mounts"]["root"].get("type", "auto")
     self["exports"]["MOUNTS_ROOT_OPTIONS"] = ",".join(self["mounts"]["root"]["options"])
     self["exports"]["MOUNTS_ROOT_TARGET"] = self["mounts"]["root"]["destination"]
