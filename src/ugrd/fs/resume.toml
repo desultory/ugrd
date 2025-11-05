@@ -3,8 +3,8 @@ cmdline_strings = [ "resume" ]
 [imports.init_main] 
 "ugrd.fs.resume" = [ "handle_resume" ]
 
-[import_order.before]
-handle_resume = "mount_fstab"
-
 [import_order.after]
-handle_resume = "crypt_init"
+handle_resume = [ "crypt_init", "init_lvm" ]
+
+[import_order.before]
+handle_resume = [ "mount_root", "mount_fstab", "btrfs_scan", "md_init" ]
