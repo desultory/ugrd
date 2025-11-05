@@ -245,7 +245,15 @@ Additional modules include:
 
 `mounts`: A dictionary containing entries for mounts, with their associated config.
 
+Mounts defined here are mounted before `init_main` is run. This cannot be used for mounts backed by LUKS, LVM, or MDRAID devices, because the backend will not be available when these mounts are attempted.
+
+> `mounts` can be automatically populated by configuring paths as list items in `auto_mounts`.
+
 `mounts.root` is predefined to have a destination of `/target_rootfs` and defines the root filesystem mount, used by `switch_root`.
+
+`late_mounts`: A dictionary containing entries for mounts that should be mounted after `init_main` is run.
+
+>  `late_mounts` can be automatically populated by configuring paths as list items in `auto_late_mounts`.
 
 Each mount has the following available parameters:
 
@@ -284,6 +292,8 @@ label = "extra"
 ##### auto_mounts
 
 Paths added to `auto_mounts` will be auto-configured to mount before `init_main` is run.
+
+Paths added to `auto_late_mounts` will be auto-configured to mount after `init_main` is run.  
 
 #### ugrd.fs.fakeudev
 

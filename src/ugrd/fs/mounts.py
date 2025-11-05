@@ -866,6 +866,14 @@ def autodetect_mounts(self) -> None:
         _autodetect_mount(self, mountpoint)
 
 
+@contains("auto_late_mounts", "Skipping auto late mounts, auto_late_mounts is empty.", log_level=10)
+@contains("hostonly", "Skipping late mount autodetection, hostonly mode is disabled.", log_level=30)
+def autodetect_late_mounts(self) -> None:
+    """Configured the late_mounts config for a device based on the host mount config."""
+    for mountpoint in self["auto_late_mounts"]:
+        _autodetect_mount(self, mountpoint, mount_class="late_mounts")
+
+
 def mount_base(self) -> list[str]:
     """Generates mount commands for the base mounts.
     Must be run before variables are used, as it creates the /run/ugrd directory.

@@ -22,7 +22,7 @@ autodetect_init_mount = true
 
 [imports.build_enum]
 "ugrd.fs.mounts" = [ "get_mounts_info", "get_virtual_block_info", "get_blkid_info", "get_zpool_info",
-		     "autodetect_root", "autodetect_mounts", "autodetect_init_mount" ]
+		     "autodetect_root", "autodetect_mounts", "autodetect_late_mounts", "autodetect_init_mount" ]
 
 [imports.build_tasks]
 "ugrd.fs.mounts" = [ "export_mount_info" ]
@@ -58,6 +58,7 @@ mount_devpts = "bool"  # Whether or not to mount devpts
 run_dirs = "NoDupFlatList"  # A list of directories to be created under /run
 late_mounts = "dict"  # Like mounts, but run after the root is mounted
 auto_mounts = "NoDupFlatList"  # A list of mounts to be automatically added to the mounts list
+auto_late_mounts = "NoDupFlatList"  # A list of mounts to be automatically added to the late mounts list
 mount_timeout = "float"  # The time to wait between mount attempts
 mount_retries = "int"  # The number of times to re-attempt mounting the fstab, infinite if not set
 mount_cmd = "str"  # The mount command called by mount_root, can be overridden
