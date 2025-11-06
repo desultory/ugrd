@@ -324,6 +324,7 @@ Importing this module will run `btrfs device scan` and pull btrfs modules.
 * `autodetect_root_subvol` (true) Autodetect the root subvolume, unless `root_subvol` or `subvol_selector` is set. Depends on `hostonly`.
 * `root_subvol` - Set the desired root subvolume.
 * `_base_mount_path` (/root_base) Sets where the subvolume selector mounts the base filesytem to scan for subvolumes.
+* `btrfs_userspace` (true) Add btrfs binary to be able to mount multi-device btrfs partitions.
 
 #### ugrd.fs.resume
 
