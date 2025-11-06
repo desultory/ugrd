@@ -75,6 +75,7 @@ def _process_subvol_selector(self, subvol_selector: bool) -> None:
         self["paths"] = self["_base_mount_path"]
 
 
+@contains("btrfs_userspace", message="btrfs_userspace is disabled, will not add btrfs_scan to init.")
 def btrfs_scan(self) -> str:
     """scan for new btrfs devices."""
     return 'einfo "$(btrfs device scan)"'
@@ -98,6 +99,7 @@ def autodetect_root_subvol(self):
 
 @contains("subvol_selector", message="subvol_selector is not enabled, skipping.")
 @unset("root_subvol", message="root_subvol is set, skipping.")
+@contains("btrfs_userspace", message="btrfs_userspace is not enabled, skipping.")
 def select_subvol(self) -> str:
     """Returns a POSIX shell script to list subvolumes on the root volume."""
     return f"""
@@ -134,3 +136,8 @@ def set_root_subvol(self) -> str:
     """Adds the root_subvol to the root_mount options."""
     _validate_root_subvol(self)
     return f"""setvar root_extra_options ',subvol={self["root_subvol"]}'"""
+
+@contains("btrfs_userspace", message="btrfs_userspace is disabled, skipping adding btrfs to binaries list.", log_level=30)
+def pull_btrfs_userspace(self):
+    self.logger.debug("Adding btrfs to binaries list.")
+    self["binaries"] = "btrfs"

@@ -234,18 +234,26 @@ Additional modules include:
 #### ugrd.fs.mounts
 
 * `autodetect_root` (true) Set the root mount parameter based on the current root label or uuid.
-* `autodetect_root_dm` (true) Attempt to automatically configure virtual block devices such as LUKS/LVM/MDRAID.
-* `autodetect_root_luks` (true) Attempt to automatically configure LUKS mounts for the root device.
-* `autodetect_root_lvm` (true) Attempt to automatically configure LVM mounts for the root device.
-* `autodetect_root_mdraid` (true) Attempt to automatically configure MDRAID mounts for the root device.
+* `autodetect_dm` (true) Attempt to automatically configure virtual block devices such as LUKS/LVM/MDRAID.
+* `autodetect_luks` (true) Attempt to automatically configure LUKS mounts for the root device.
+* `autodetect_lvm` (true) Attempt to automatically configure LVM mounts for the root device.
+* `autodetect_mdraid` (true) Attempt to automatically configure MDRAID mounts for the root device.
 * `autodetect_init_mount'` (true) Automatically detect the mountpoint for the init binary, and add it to `late_mounts`.
 * `run_dirs` A list of directories to create under `/run/` at runtime
 
-> `autodetect_root` is required for `autodetect_root_<type>` to work.
+> `autodetect_root` is required for `autodetect_<type>` to work.
 
 `mounts`: A dictionary containing entries for mounts, with their associated config.
 
+Mounts defined here are mounted before `init_main` is run. This cannot be used for mounts backed by LUKS, LVM, or MDRAID devices, because the backend will not be available when these mounts are attempted.
+
+> `mounts` can be automatically populated by configuring paths as list items in `auto_mounts`.
+
 `mounts.root` is predefined to have a destination of `/target_rootfs` and defines the root filesystem mount, used by `switch_root`.
+
+`late_mounts`: A dictionary containing entries for mounts that should be mounted after `init_main` is run.
+
+>  `late_mounts` can be automatically populated by configuring paths as list items in `auto_late_mounts`.
 
 Each mount has the following available parameters:
 
@@ -285,6 +293,8 @@ label = "extra"
 
 Paths added to `auto_mounts` will be auto-configured to mount before `init_main` is run.
 
+Paths added to `auto_late_mounts` will be auto-configured to mount after `init_main` is run.  
+
 #### ugrd.fs.fakeudev
 
 This module is used to create fake udev entries for DM devices.
@@ -314,6 +324,7 @@ Importing this module will run `btrfs device scan` and pull btrfs modules.
 * `autodetect_root_subvol` (true) Autodetect the root subvolume, unless `root_subvol` or `subvol_selector` is set. Depends on `hostonly`.
 * `root_subvol` - Set the desired root subvolume.
 * `_base_mount_path` (/root_base) Sets where the subvolume selector mounts the base filesytem to scan for subvolumes.
+* `btrfs_userspace` (true) Add btrfs binary to be able to mount multi-device btrfs partitions.
 
 #### ugrd.fs.resume
 

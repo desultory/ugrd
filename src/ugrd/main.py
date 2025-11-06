@@ -94,36 +94,36 @@ def main():
             "dest": "autodetect_root",
         },
         {
-            "flags": ["--autodetect-root-luks"],
+            "flags": ["--autodetect-luks"],
             "action": "store_true",
             "help": "autodetect LUKS volumes under the root partition",
         },
         {
-            "flags": ["--no-autodetect-root-luks"],
+            "flags": ["--no-autodetect-luks"],
             "action": "store_false",
-            "help": "do not autodetect root LUKS volumes",
-            "dest": "autodetect_root_luks",
+            "help": "do not autodetect LUKS volumes",
+            "dest": "autodetect_luks",
         },
-        {"flags": ["--autodetect-root-lvm"], "action": "store_true", "help": "autodetect LVM volumes"},
+        {"flags": ["--autodetect-lvm"], "action": "store_true", "help": "autodetect LVM volumes"},
         {
-            "flags": ["--no-autodetect-root-lvm"],
+            "flags": ["--no-autodetect-lvm"],
             "action": "store_false",
             "help": "do not autodetect LVM volumes",
-            "dest": "autodetect_root_lvm",
+            "dest": "autodetect_lvm",
         },
-        {"flags": ["--autodetect-root-raid"], "action": "store_true", "help": "autodetect MRRAID volumes"},
+        {"flags": ["--autodetect-raid"], "action": "store_true", "help": "autodetect MRRAID volumes"},
         {
-            "flags": ["--no-autodetect-root-raid"],
+            "flags": ["--no-autodetect-raid"],
             "action": "store_false",
             "help": "do not autodetect MRRAID volumes",
-            "dest": "autodetect_root_raid",
+            "dest": "autodetect_raid",
         },
-        {"flags": ["--autodetect-root-dm"], "action": "store_true", "help": "autodetect DM (LUKS/LVM) root partitions"},
+        {"flags": ["--autodetect-dm"], "action": "store_true", "help": "autodetect DM (LUKS/LVM) root partitions"},
         {
-            "flags": ["--no-autodetect-root-dm"],
+            "flags": ["--no-autodetect-dm"],
             "action": "store_false",
-            "help": "do not autodetect root DM volumes",
-            "dest": "autodetect_root_dm",
+            "help": "do not autodetect device mapper volumes",
+            "dest": "autodetect_dm",
         },
         {"flags": ["--print-config"], "action": "store_true", "help": "print the final config dict"},
         {"flags": ["--print-init"], "action": "store_true", "help": "print the final init structure"},
@@ -156,7 +156,7 @@ def main():
     if test:
         logger.warning("TEST MODE ENABLED")
         logger.info("Disabling DM autodetection")
-        kwargs["autodetect_root_dm"] = False
+        kwargs["autodetect_dm"] = False
         kwargs["modules"] = kwargs["modules"] + ",ugrd.base.test" if kwargs.get("modules") else "ugrd.base.test"
 
     logger.debug(f"Using the following kwargs: {kwargs}")
