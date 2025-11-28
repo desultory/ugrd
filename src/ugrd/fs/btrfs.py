@@ -1,4 +1,4 @@
-__version__ = "2.1.0"
+__version__ = "2.1.1"
 __author__ = "desultory"
 
 from pathlib import Path
@@ -16,6 +16,10 @@ class SubvolIsRoot(Exception):
     pass
 
 
+class RootNotBtrfs(Exception):
+    pass
+
+
 def _get_btrfs_mount_devices(self, mountpoint: str, dev=None) -> list:
     """Returns a list of device paths for a btfrs mountpoint."""
     fs_dev = dev or self["_mounts"][mountpoint]["device"]
@@ -28,7 +32,7 @@ def _get_mount_subvol(self, mountpoint: str) -> list:
     if self["_mounts"][mountpoint]["fstype"] == "overlay":
         mountpoint = _resolve_overlay_lower_dir(self, mountpoint)
     elif self["_mounts"][mountpoint]["fstype"] != "btrfs":
-        raise ValidationError("Mountpoint is not a btrfs mount: %s" % mountpoint)
+        raise RootNotBtrfs("Root filesystem is not btrfs, cannot detect subvolume.")
     for option in self["_mounts"][mountpoint]["options"]:
         if option.startswith("subvol="):
             subvol = option.split("=")[1]
@@ -54,6 +58,12 @@ def _validate_root_subvol(self) -> None:
             raise ValidationError(
                 "Current root mount is not using a subvolume, but root_subvol is set: %s" % self["root_subvol"]
             )
+    except RootNotBtrfs:
+        if self["root_subvol"]:
+            raise ValidationError(
+                "Current root filesystem is not btrfs, but root_subvol is set: %s" % self["root_subvol"]
+            )
+        return
 
     if self["root_subvol"] != detected_subvol:
         raise ValidationError(
@@ -94,6 +104,8 @@ def autodetect_root_subvol(self):
         self.logger.warning("Failed to detect root subvolume.")
     except SubvolIsRoot:
         self.logger.debug("Root mount is not using a subvolume.")
+    except RootNotBtrfs:
+        self.logger.debug("Root filesystem is not btrfs, cannot detect subvolume.")
 
 
 @contains("subvol_selector", message="subvol_selector is not enabled, skipping.")
