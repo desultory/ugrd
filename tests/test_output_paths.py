@@ -59,6 +59,7 @@ class TestOutFile(TestCase):
     def test_implied_relative_output(self):
         """Tests implied relative output paths. Should resolve out_dir to the current dir."""
         from shutil import rmtree
+
         out_base_dir = str(uuid4())
         out_file = f"{out_base_dir}/implied/relative/path/initrd"
         generator = InitramfsGenerator(logger=self.logger, config="tests/fullauto.toml", out_file=out_file)
@@ -72,6 +73,22 @@ class TestOutFile(TestCase):
         self.assertTrue(test_image.exists())
         test_image.unlink()
         rmtree(out_base_dir)
+
+    def test_absolute_build_dir(self):
+        """Tests that an absolute build directory path is handled correctly."""
+        build_dir = Path(f"/tmp/{uuid4()}/{uuid4()}")
+        if build_dir.exists():
+            self.fail(f"Build directory {build_dir} already exists")
+        generator = InitramfsGenerator(logger=self.logger, config="tests/fullauto.toml", build_dir=build_dir)
+        expected_path = build_dir / "test_file.txt"
+        self.assertEqual(expected_path, generator._get_build_path("test_file.txt"))
+
+    def test_relative_build_dir(self):
+        """Tests that a relative build directory path is handled correctly."""
+        build_dir = Path(f"{uuid4()}")
+        generator = InitramfsGenerator(logger=self.logger, config="tests/fullauto.toml", build_dir=build_dir)
+        expected_path = generator.tmpdir / build_dir / "test_file.txt"
+        self.assertEqual(expected_path, generator._get_build_path("test_file.txt"))
 
 
 if __name__ == "__main__":
