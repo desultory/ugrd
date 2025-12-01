@@ -44,6 +44,8 @@ class GeneratorHelpers:
             build_dir = self.build_dir.with_name(self.build_dir.name + "-" + _RANDOM_BUILD_ID)
         else:
             build_dir = self.build_dir
+        if  build_dir.is_absolute():
+            return get_subpath(build_dir, path)
         return get_subpath(get_subpath(self.tmpdir, build_dir), path)
 
     def _mkdir(self, path: Path, resolve_build=True) -> None:
