@@ -77,8 +77,6 @@ class TestOutFile(TestCase):
     def test_absolute_build_dir(self):
         """Tests that an absolute build directory path is handled correctly."""
         build_dir = Path(f"/tmp/{uuid4()}/{uuid4()}")
-        if build_dir.exists():
-            self.fail(f"Build directory {build_dir} already exists")
         generator = InitramfsGenerator(logger=self.logger, config="tests/fullauto.toml", build_dir=build_dir)
         expected_path = build_dir / "test_file.txt"
         self.assertEqual(expected_path, generator._get_build_path("test_file.txt"))
