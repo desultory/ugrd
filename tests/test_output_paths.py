@@ -1,6 +1,7 @@
 from pathlib import Path
 from shutil import rmtree
 from unittest import TestCase, main
+from unittest.mock import patch
 from uuid import uuid4
 
 from ugrd.initramfs_generator import InitramfsGenerator
@@ -123,6 +124,26 @@ class TestOutFile(TestCase):
             content, test_text, f"[{expected_path}] File content does not match expected text: {content} != {test_text}"
         )
         rmtree(generator.tmpdir / build_dir)
+
+    @patch("ugrd.generator_helpers._RANDOM_BUILD_ID", "test")
+    def test_absolute_random_build_dir(self):
+        """Tests that an absolute random build directory path is handled correctly."""
+        build_dir = Path(f"/tmp/{uuid4()}/{uuid4()}")
+        generator = InitramfsGenerator(
+            logger=self.logger, config="tests/fullauto.toml", build_dir=build_dir, random_build_dir=True
+        )
+        expected_path = Path(f"{build_dir}-test/test_file.txt")
+        self.assertEqual(expected_path, generator._get_build_path("test_file.txt"))
+
+    @patch("ugrd.generator_helpers._RANDOM_BUILD_ID", "test")
+    def test_relative_random_build_dir(self):
+        """Tests that a relative random build directory path is handled correctly."""
+        build_dir = Path(f"{uuid4()}")
+        generator = InitramfsGenerator(
+            logger=self.logger, config="tests/fullauto.toml", build_dir=build_dir, random_build_dir=True
+        )
+        expected_path = Path(f"{generator.tmpdir}/{build_dir}-test/test_file.txt")
+        self.assertEqual(expected_path, generator._get_build_path("test_file.txt"))
 
 
 if __name__ == "__main__":
