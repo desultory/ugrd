@@ -1,0 +1,12 @@
+[imports.build_enum]
+"ugrd.kmod.platform" = ["get_platform_info", "autodetect_virtual_machine", "autodetect_regulator_drivers", "autodetect_platform_bus_drivers"]
+
+[import_order.before]
+"get_platform_info" = "autodetect_virtual_machine"
+"autodetect_virtual_machine" = "autodetect_root"
+
+[custom_parameters]
+_dmi_product_name = "str"  # /sys/class/dmi/id/product_name
+_dmi_system_vendor = "str"  # /sys/class/dmi/id/sys_vendor
+virtual_machine = "bool"  # Boolean to indicate if the instance is a virtual machine
+kmod_autodetect_platform_bus_drivers = "bool"  # Boolean to indicate if platform bus drivers should be autodetected

@@ -1,4 +1,4 @@
-__version__ = "2.1.0"
+__version__ = "2.1.1"
 __author__ = "desultory"
 
 from pathlib import Path
@@ -16,6 +16,10 @@ class SubvolIsRoot(Exception):
     pass
 
 
+class RootNotBtrfs(Exception):
+    pass
+
+
 def _get_btrfs_mount_devices(self, mountpoint: str, dev=None) -> list:
     """Returns a list of device paths for a btfrs mountpoint."""
     fs_dev = dev or self["_mounts"][mountpoint]["device"]
@@ -28,7 +32,7 @@ def _get_mount_subvol(self, mountpoint: str) -> list:
     if self["_mounts"][mountpoint]["fstype"] == "overlay":
         mountpoint = _resolve_overlay_lower_dir(self, mountpoint)
     elif self["_mounts"][mountpoint]["fstype"] != "btrfs":
-        raise ValidationError("Mountpoint is not a btrfs mount: %s" % mountpoint)
+        raise RootNotBtrfs("Root filesystem is not btrfs, cannot detect subvolume.")
     for option in self["_mounts"][mountpoint]["options"]:
         if option.startswith("subvol="):
             subvol = option.split("=")[1]
@@ -54,6 +58,12 @@ def _validate_root_subvol(self) -> None:
             raise ValidationError(
                 "Current root mount is not using a subvolume, but root_subvol is set: %s" % self["root_subvol"]
             )
+    except RootNotBtrfs:
+        if self["root_subvol"]:
+            raise ValidationError(
+                "Current root filesystem is not btrfs, but root_subvol is set: %s" % self["root_subvol"]
+            )
+        return
 
     if self["root_subvol"] != detected_subvol:
         raise ValidationError(
@@ -75,6 +85,7 @@ def _process_subvol_selector(self, subvol_selector: bool) -> None:
         self["paths"] = self["_base_mount_path"]
 
 
+@contains("btrfs_userspace", message="btrfs_userspace is disabled, will not add btrfs_scan to init.")
 def btrfs_scan(self) -> str:
     """scan for new btrfs devices."""
     return 'einfo "$(btrfs device scan)"'
@@ -94,10 +105,13 @@ def autodetect_root_subvol(self):
         self.logger.warning("Failed to detect root subvolume.")
     except SubvolIsRoot:
         self.logger.debug("Root mount is not using a subvolume.")
+    except RootNotBtrfs:
+        self.logger.debug("Root filesystem is not btrfs, cannot detect subvolume.")
 
 
 @contains("subvol_selector", message="subvol_selector is not enabled, skipping.")
 @unset("root_subvol", message="root_subvol is set, skipping.")
+@contains("btrfs_userspace", message="btrfs_userspace is not enabled, skipping.")
 def select_subvol(self) -> str:
     """Returns a POSIX shell script to list subvolumes on the root volume."""
     return f"""
@@ -134,3 +148,8 @@ def set_root_subvol(self) -> str:
     """Adds the root_subvol to the root_mount options."""
     _validate_root_subvol(self)
     return f"""setvar root_extra_options ',subvol={self["root_subvol"]}'"""
+
+@contains("btrfs_userspace", message="btrfs_userspace is disabled, skipping adding btrfs to binaries list.", log_level=30)
+def pull_btrfs_userspace(self):
+    self.logger.debug("Adding btrfs to binaries list.")
+    self["binaries"] = "btrfs"

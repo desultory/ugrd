@@ -17,7 +17,7 @@ Generated images are as static and secure as possible, only including components
 
 The final build environment is left in the specified `build_dir`, where it can be examined or repacked.
 
-Unless validation is disabled, µgRD attemts to validate most configuration against the host system, raising exceptions or logging warnings warnings if the configuration is invalid.
+Unless validation is disabled, µgRD attempts to validate most configuration against the host system, raising exceptions or logging warnings warnings if the configuration is invalid.
 
 ## Project goal and features
 
@@ -26,15 +26,19 @@ The original goal of this project was to create an initramfs suitable for decryp
 ### Auto-detection
 
 * Root mount, using `/proc/mounts`. `root=` and `rootflags=` can be used but are not required
-* MDRAID auto-configuration for the root mount
-* LUKS auto-configuration and validation for the root mount
+* MDRAID auto-configuration
+* LVM auto-configuration
+* LUKS auto-configuration and validation
   - LUKS under LVM support
   - LUKS under MDRAID support
-* LVM based root volumes are auto-mounted
-* BTRFS root subvolumes are automatically detected to `root_subvol`
-    - `subvol_selector` can be used to select a subvolume at boot time
-* `/usr` auto-mounting if the init system requires it
-* Auto-detection of kernel modules required by the storage device used by the root filesystem
+  - Detached header support
+  - YubiKey (OpenPGP smartcard) support
+  - Recovery using a passphrase using `try_nokey`
+  - DM-Integrity support
+* BTRFS root subvolumes are automatically detected or can be manually set with `root_subvol`
+    - `subvol_selector` can be used to interactively select a subvolume at boot time
+* `/usr`, `/var`, and `/etc` auto-mounting if the init system requires it
+* Auto-detection of kernel modules required by storage devices and filesystems
 * Init system/target auto-detection
 
 ### Validation
@@ -61,7 +65,7 @@ The original goal of this project was to create an initramfs suitable for decryp
   - Device nodes are created within the CPIO only, so true root privileges are not required
   - Hardlinks are automatically created for files with matching SHA256 hashes
   - Automatic xz compression
-* "merged usr" symlinks are creatd by default and can be disabled by setting `merge_usr = false`
+* "merged usr" symlinks are created by default and can be disabled by setting `merge_usr = false`
 * ZSH and BASH autocompletion for the `ugrd` command
 * Basic hibernation/resume support with `ugrd.fs.resume`
 * Similar usage/arguments as Dracut

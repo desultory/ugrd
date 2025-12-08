@@ -7,7 +7,7 @@ modules = [
 ]
 
 # Device mapper autodetection is enabled by default
-# autodetect_root_luks = true
+# autodetect_luks = true
 
 # Information about the LUKS volume can be manually specified
 #[cryptsetup.root]

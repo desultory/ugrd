@@ -1,15 +1,18 @@
-binaries = [ "btrfs" ]
 kmod_init = [ "btrfs", "crc32c" ] # crc32c is a softdep but more or less required
 
 _base_mount_path = "/root_base"
 subvol_selector = false
 autodetect_root_subvol = true
+btrfs_userspace = true
 
 [imports.config_processing]
 "ugrd.fs.btrfs" = [ "_process_root_subvol", "_process_subvol_selector" ]
 
 [imports.build_pre]
 "ugrd.fs.btrfs" = [ "autodetect_root_subvol" ]
+
+[imports.build_late]
+"ugrd.fs.btrfs" = [ "pull_btrfs_userspace" ]
 
 [imports.init_mount]
 "ugrd.fs.btrfs" = [ "btrfs_scan", "set_root_subvol", "select_subvol" ]
@@ -28,3 +31,4 @@ _base_mount_path = "Path"  # Set the mount point for the root filesystem when us
 root_subvol = "str"  # Set the default btrfs subvolume for the root filesystem
 subvol_selector = "bool"  # Select a btrfs subvolume for the root partition at runtime
 autodetect_root_subvol = "bool"  # Automatically detect the root subvolume
+btrfs_userspace = "bool"  # Add btrfs binary to be able to mount multi-device btrfs partitions

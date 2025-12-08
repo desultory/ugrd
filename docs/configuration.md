@@ -41,7 +41,7 @@ Modules write to a shared config dict that is accessible by other modules.
 * `build_dir` (initramfs_build) If relative, it will be placed under `tmpdir`, defines the build directory.
 * `random_build_dir` (false) Adds a uuid to the end of the build dir name when true.
 * `build_logging` (false) Enables additional logging during the build process.
-* `make_nodes` (false) Create real device nodes in the build dir. 
+* `make_nodes` (false) Create real device nodes in the build dir. Otherwise they are created in the CPIO archive. 
 * `find_libgcc` (true) Automatically locates libgcc using ldconfig -p and adds it to the initramfs.
 * `musl_libc` (false) Disable ldconfig -p usage for libgcc detection, skip ld.so.cache regeneration.
 * `out_dir` (initramfs_out) If relative, it will be placed under `tmpdir`, defines the output directory.
@@ -151,6 +151,12 @@ Defines /dev/ttyS1 as a `vt100` terminal with a `115200` baud rate.
 
 `primary_console` (tty0) Used to set which console will be initialized with agetty on boot.
 
+#### base.keymap
+
+This module can be used to set keymaps in the initramfs.
+
+The only available parameter is `keymap_file`, which should point to a valid keymap file.
+
 #### base.debug
 
 This module contains debug programs such as `cp`, `mv`, `rm`, `grep`, `dmesg`, `find`, and an editor,
@@ -178,6 +184,7 @@ The following parameters can be used to change the kernel module pulling and ini
 * `kmod_ignore` - Kernel modules to ignore. Modules which depend on ignored modules will also be ignored.
 * `kmod_ignore_softdeps` (false) Ignore softdeps when checking kernel module dependencies.
 * `no_kmod` (false) Disable kernel modules entirely.
+* `kmod_no_normalize` - A list of kernel module names to not normalize (replace dashes with underscores).
 
 ##### ugrd.kmod.input
 
@@ -227,18 +234,26 @@ Additional modules include:
 #### ugrd.fs.mounts
 
 * `autodetect_root` (true) Set the root mount parameter based on the current root label or uuid.
-* `autodetect_root_dm` (true) Attempt to automatically configure virtual block devices such as LUKS/LVM/MDRAID.
-* `autodetect_root_luks` (true) Attempt to automatically configure LUKS mounts for the root device.
-* `autodetect_root_lvm` (true) Attempt to automatically configure LVM mounts for the root device.
-* `autodetect_root_mdraid` (true) Attempt to automatically configure MDRAID mounts for the root device.
+* `autodetect_dm` (true) Attempt to automatically configure virtual block devices such as LUKS/LVM/MDRAID.
+* `autodetect_luks` (true) Attempt to automatically configure LUKS mounts for the root device.
+* `autodetect_lvm` (true) Attempt to automatically configure LVM mounts for the root device.
+* `autodetect_mdraid` (true) Attempt to automatically configure MDRAID mounts for the root device.
 * `autodetect_init_mount'` (true) Automatically detect the mountpoint for the init binary, and add it to `late_mounts`.
 * `run_dirs` A list of directories to create under `/run/` at runtime
 
-> `autodetect_root` is required for `autodetect_root_<type>` to work.
+> `autodetect_root` is required for `autodetect_<type>` to work.
 
 `mounts`: A dictionary containing entries for mounts, with their associated config.
 
+Mounts defined here are mounted before `init_main` is run. This cannot be used for mounts backed by LUKS, LVM, or MDRAID devices, because the backend will not be available when these mounts are attempted.
+
+> `mounts` can be automatically populated by configuring paths as list items in `auto_mounts`.
+
 `mounts.root` is predefined to have a destination of `/target_rootfs` and defines the root filesystem mount, used by `switch_root`.
+
+`late_mounts`: A dictionary containing entries for mounts that should be mounted after `init_main` is run.
+
+>  `late_mounts` can be automatically populated by configuring paths as list items in `auto_late_mounts`.
 
 Each mount has the following available parameters:
 
@@ -278,6 +293,8 @@ label = "extra"
 
 Paths added to `auto_mounts` will be auto-configured to mount before `init_main` is run.
 
+Paths added to `auto_late_mounts` will be auto-configured to mount after `init_main` is run.  
+
 #### ugrd.fs.fakeudev
 
 This module is used to create fake udev entries for DM devices.
@@ -289,7 +306,6 @@ This module can be enabled by adding `ugrd.fs.fakeudev` to the `modules` list.
 
 This module handles CPIO creation.
 
-* `mknod_cpio` (true) Only create device nodes within the CPIO.
 * `cpio_compression` (xz) Sets the compression method for the CPIO file, passed to PyCPIO.
 * `cpio_rotate` (true) Rotates old CPIO files, keeping `old_count` number of old files.
 
@@ -308,6 +324,7 @@ Importing this module will run `btrfs device scan` and pull btrfs modules.
 * `autodetect_root_subvol` (true) Autodetect the root subvolume, unless `root_subvol` or `subvol_selector` is set. Depends on `hostonly`.
 * `root_subvol` - Set the desired root subvolume.
 * `_base_mount_path` (/root_base) Sets where the subvolume selector mounts the base filesytem to scan for subvolumes.
+* `btrfs_userspace` (true) Add btrfs binary to be able to mount multi-device btrfs partitions.
 
 #### ugrd.fs.resume
 

@@ -27,7 +27,18 @@ class TestCryptsetup(TestCase):
             keyfile.unlink()
 
     def test_cryptsetup_included_key(self):
+        """Tests LUKS based roots using a keyfile included in the initramfs"""
         generator = InitramfsGenerator(logger=self.logger, config="tests/cryptsetup_included_key.toml")
+        generator.build()
+
+    def test_cryptsetup_integrity(self):
+        """Tests LUKS based roots using a keyfile included in the initramfs with integrity protection"""
+        generator = InitramfsGenerator(
+            logger=self.logger,
+            config="tests/cryptsetup_included_key.toml",
+            _kmod_auto=["dm-integrity", "authenc"],  # Specify this because its usually auto-detected during header validation
+            cryptsetup={"root": {"_dm-integrity": "hmac(sha256)"}},  # Use the type like defined in the header, not the proper args to test processing
+        )
         generator.build()
 
 

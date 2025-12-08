@@ -9,9 +9,7 @@ from zenlib.util import pretty_print
 
 from .exceptions import ValidationError
 
-__version__ = "1.7.0"
-__author__ = "desultory"
-
+__version__ = "1.7.1"
 
 _RANDOM_BUILD_ID = str(uuid4())
 
@@ -46,6 +44,8 @@ class GeneratorHelpers:
             build_dir = self.build_dir.with_name(self.build_dir.name + "-" + _RANDOM_BUILD_ID)
         else:
             build_dir = self.build_dir
+        if  build_dir.is_absolute():
+            return get_subpath(build_dir, path)
         return get_subpath(get_subpath(self.tmpdir, build_dir), path)
 
     def _mkdir(self, path: Path, resolve_build=True) -> None:
@@ -240,7 +240,7 @@ class GeneratorHelpers:
             if not fail_silent:
                 print_err(cmd)  # Print the full error output if not failing silently
             if fail_hard:  # Fail hard means raise an exception
-                raise RuntimeError("Failed to run command: %s" % " ".join(cmd.args))
+                raise RuntimeError("Failed to run command: %s" % c_(" ".join(cmd.args), "red", bright=True))
 
         return cmd
 

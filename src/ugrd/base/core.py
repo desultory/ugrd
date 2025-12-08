@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "4.7.0"
+__version__ = "4.7.1"
 
 from os import environ, makedev, mknod, uname
 from pathlib import Path
@@ -303,9 +303,7 @@ def deploy_nodes(self) -> None:
             self.logger.info("Created device node '%s' at path: %s" % (node, node_path))
         except PermissionError as e:
             self.logger.error("Unable to create device node %s at path: %s" % (node, node_path))
-            self.logger.info(
-                "`mknod_cpio` in `ugrd.base` can be used to generate device nodes within the initramfs archive if they cannot be created on the host system."
-            )
+            self.logger.info("When `make_nodes` is disabled, device nodes are synthetically created in the resulting CPIO archive.")
             raise e
 
 

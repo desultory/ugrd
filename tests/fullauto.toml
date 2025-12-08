@@ -12,7 +12,7 @@ out_dir = "initramfs_test"
 #test_kernel = "/boot/vmlinuz-6.6.35-gentoo-dist"
 cpio_compression = false
 
-autodetect_root_dm = false
+autodetect_dm = false
 
 # Optionally supply a kernel version, uses the current kernel version if not specified
 #kernel_version = "6.1.53-gentoo-dist"

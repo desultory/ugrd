@@ -3,7 +3,7 @@ binaries = [ 'lsblk' ]
 test_copy_config = [ "test_resume", "test_swap_uuid" ]
 
 [imports.build_pre]
-"ugrd.fs.resume" = [ "test_init_swap_uuid" ]
+"ugrd.fs.resume" = [ "setup_resume_tests" ]
 
 [imports.init_main]
 "ugrd.fs.resume" = [ "handle_early_resume", "handle_late_resume"]
@@ -15,10 +15,9 @@ handle_early_resume = "mount_fstab"
 handle_late_resume = ["crypt_init", "init_lvm"]
 
 [imports.functions]
-"ugrd.fs.resume" = ["resume"]
+"ugrd.fs.resume" = [ "resume" ]
 
 [custom_parameters]
-late_resume = "bool"
-test_resume = "bool"
-test_swap_uuid = "str"
-
+late_resume = "bool"  # Include code for late resume
+test_resume = "bool" # Test hibernation/resume pathways when test is enabled
+test_swap_uuid = "str" # Define the uuid of the swap partition on the test image

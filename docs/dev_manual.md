@@ -10,6 +10,8 @@ Python functions can be added imported into `init` and `build` runlevels to exec
 
 Within modules, all config values are imported, then processed according to the order of the `custom_parameters` list.
 
+> If config values have validation which may fail if other config is not loaded, those values can be added to the `_late_args' list to be processed last.
+
 `_module_name` can be set within a module for logging purposes, it is verified to be accurate when imported but optional.
 
 ## Imports

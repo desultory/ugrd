@@ -1,3 +1,9 @@
+##############################################################################
+##                                                                          ##
+##    there are docs at https://github.com/desultory/ugrd/tree/main/docs    ##
+##                                                                          ##
+##############################################################################
+
 # This config will decrypt the LUKS volume with uuid "fdf442da-0574-4531-98c7-55227a041f1d", mapping it to "/dev/mapper/root"
 # Note: In most cases, the uuid of the LUKS volume will be detected from the root mount. It's set as an example here.
 # It will attempt to mount the btrfs volume with label "rootfs" to /target_rootfs
@@ -21,9 +27,12 @@ modules = [
 #kmod_ignore_sound = false
 #kmod_ignore_network = false
 
-# The initramfs will be built in /tmp/initramfs if "build_dir" is not specified not specified
+# The initramfs will be built in /tmp/initramfs if "build_dir" is not specified
 #out_dir = "/usr/src/initramfs"
 #out_dir = "/boot"
+
+# create device nodes in build dir, requires root
+#make_nodes = true
 
 # By default, xz compression is used. This can be disabled or set to zstd if the zstandard python module is installed
 #cpio_compression = "zstd"  # Use zstd compression

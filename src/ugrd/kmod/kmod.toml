@@ -1,9 +1,9 @@
-modules = [ "ugrd.kmod.standard_mask", "ugrd.kmod.input" ]
-
-binaries = [ "modprobe" ]
+modules = [ "ugrd.kmod.standard_mask", "ugrd.kmod.platform", "ugrd.kmod.input" ]
 
 kmod_pull_firmware = true
 kmod_decompress_firmware = true
+
+_late_args = ["kernel_version"]
 
 [custom_parameters]
 _kmod_removed = "NoDupFlatList"  # Meant to be used internally, defines kernel modules which have been ignored at runtime
@@ -22,6 +22,7 @@ kernel_modules = "NoDupFlatList"  # Kernel modules to pull into the initramfs
 kmod_init = "NoDupFlatList"  # Kernel modules to load at initramfs startup
 kmod_init_optional = "NoDupFlatList"  # Kernel modules to try to add to kmod_init
 no_kmod = "bool" # Disables kernel modules entirely
+kmod_no_normalize = "NoDupFlatList" # Kernel modules to not normalize (i.e. not convert dashes to underscores)
 
 [imports.config_processing]
 "ugrd.kmod.kmod" = [ "_process_kernel_version",
@@ -30,7 +31,7 @@ no_kmod = "bool" # Disables kernel modules entirely
 		     "_process__kmod_auto_multi" ]
 
 [imports.build_enum]
-"ugrd.kmod.kmod" = [ "get_kernel_version", "autodetect_modules" ]
+"ugrd.kmod.kmod" = [ "get_kernel_version", "get_module_aliases", "get_builtin_module_info", "autodetect_modules" ]
 
 [imports.build_late]
 "ugrd.kmod.kmod" = [ "process_modules", "process_ignored_modules", "process_module_metadata", "add_kmod_deps" ]
@@ -39,4 +40,4 @@ no_kmod = "bool" # Disables kernel modules entirely
 "ugrd.kmod.kmod" = [ "regen_kmod_metadata" ]
 
 [imports.init_pre]
-"ugrd.kmod.kmod" = [ "load_modules" ]
+"ugrd.kmod.kmod" = [ "check_kver", "load_modules" ]

@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "2.4.1"
+__version__ = "2.4.2"
 
 from collections import UserDict
 from importlib import import_module
@@ -39,7 +39,8 @@ class InitramfsConfigDict(UserDict):
         "validated": bool,  # A flag to indicate if the config has been validated, mostly used for log levels
         "custom_parameters": dict,  # Custom parameters loaded from imports
         "custom_processing": dict,  # Custom processing functions which will be run to validate and process parameters
-        "_processing": dict, # A dict of queues containing parameters which have been set before the type was known
+        "_processing": dict,  # A dict of queues containing parameters which have been set before the type was known
+        "_late_args": NoDupFlatList,  # A list of arguments which could be passed as command line args but need to be processed after the config is loaded
         "test_copy_config": NoDupFlatList,  # A list of config values which are copied into test images, from the parent
     }
 
@@ -57,7 +58,7 @@ class InitramfsConfigDict(UserDict):
         else:
             self["modules"] = "ugrd.base.core"
 
-    def import_args(self, args: dict, quiet=False) -> None:
+    def import_args(self, args: dict, quiet=False, late=False) -> None:
         """Imports data from an argument dict."""
         log_level = 10 if quiet else 20
         for arg, value in args.items():
@@ -66,6 +67,11 @@ class InitramfsConfigDict(UserDict):
             if arg == "modules":  # allow loading modules by name from the command line
                 for module in value.split(","):
                     self[arg] = module
+            elif arg in self["_late_args"] and not late:
+                self.logger.debug(
+                    f"[{c_(arg, 'yellow')}] Deferring late argument processing until after config load: {c_(value, 'green')}",
+                )
+                continue
             elif getattr(self, arg, None) != value:  # Only set the value if it differs:
                 self[arg] = value
             else:
@@ -275,7 +281,9 @@ class InitramfsConfigDict(UserDict):
                 import_masks = [import_masks] if isinstance(import_masks, str) else import_masks
                 for mask in import_masks:
                     if mask in function_names:
-                        self.logger.warning(f"[{c_(module_name, bright=True)}] Skipping import of masked function: {c_(mask, 'yellow')}")
+                        self.logger.warning(
+                            f"[{c_(module_name, bright=True)}] Skipping import of masked function: {c_(mask, 'yellow')}"
+                        )
                         function_names.remove(mask)
                         if import_type == "custom_init":
                             self.logger.warning("Skipping custom init function: %s" % mask)
@@ -364,8 +372,13 @@ class InitramfsConfigDict(UserDict):
             if name in ["imports", "custom_parameters", "provides", "needs"]:
                 self.logger.log(5, "[%s] Skipping '%s'" % (module, name))
                 continue
-            self.logger.debug("[%s] (%s) Setting value: %s" % (module, name, value))
-            self[name] = value
+            if name in self["_processing"]:
+                self.logger.debug(
+                    f"Skipping setting defaults for parameter with queued values: {c_(name, 'yellow')}"
+                )
+            else:
+                self.logger.debug("[%s] (%s) Setting value: %s" % (module, name, value))
+                self[name] = value
 
         # Add custom parameters after values are added, so they are processed in the correct order
         custom_parameters = module_config.get("custom_parameters", {})
