@@ -1,7 +1,25 @@
-__version__ = "0.4.2"
+__version__ = "0.4.4"
+
+from zenlib.util import contains
 
 
-def handle_resume(self) -> None:
+@contains("test_resume")
+def setup_resume_tests(self) -> None:
+    if "ugrd.base.test" in self["modules"]:
+        from uuid import uuid4
+
+        # Create a uuid for the swap partition in the test image
+        if not self["test_swap_uuid"]:
+            self["test_swap_uuid"] = uuid4()
+
+        # pull in the hibernation/resume testing module
+        self["test_modules"] = "ugrd.fs.test_resume"
+
+        # append resume partition to QEMU kernel cmdline
+        self["test_cmdline"] = f"resume=UUID={self['test_swap_uuid']}"
+
+
+def resume(self) -> str:
     """Returns a shell script handling resume from hibernation.
     Checks that /sys/power/resume is writable, resume= is set, and noresume is not set, if so,
     checks if UUID= or PARTUUID= or LABEL= is in the resume var,
@@ -15,26 +33,55 @@ def handle_resume(self) -> None:
     If the system is freshly booted, it will not be able to resume, as there is no hibernation image.
     Distinguising between a fresh boot and missing/borked hibernation image is not possible at run time.
     """
-    return [
-        "resumeval=$(readvar resume)",  # read the cmdline resume var
-        'if ! check_var noresume && [ -n "$resumeval" ] && [ -w /sys/power/resume ]; then',
-        '    if echo "$resumeval" | grep -q "UUID="     ||',      #    resolve uuid to device
-        '       echo "$resumeval" | grep -q "PARTUUID=" ||',      # or resolve partuuid to device
-        '       echo "$resumeval" | grep -q "LABEL="    ; then',  # or resolve label to device
-        '        resume=$(blkid -t "$resumeval" -o device)',
-        "    else",
-        "        resume=$resumeval",
-        "    fi",
-        '    if [ -e "$resume" ]; then',  # Check if the resume device exists
-        '        einfo "Resuming from: $resume"',
-        '        printf "%s" "$resume" > /sys/power/resume',  # Attempt to resume
-        '        ewarn "Failed to resume from: $resume"',
-        "    else",
-        '        ewarn "Resume device not found: $resume)"',  # Warn if the resume device does not exist
-        r'        eerror "Block devices:\n$(blkid)"',
-        '        eerror "If you wish to continue booting, remove the resume= kernel parameter."',
-        '''        eerror " or run 'setvar noresume 1' from the recovery shell to skip resuming."''',
-        '        rd_fail "Failed to resume from $(readvar resume)."',
-        "    fi",
-        "fi",
-    ]
+    return r"""
+        # Check resume support
+        [ -n "$1" ] || (ewarn "A resume device must be specified." ; return 1)
+        [ -w /sys/power/resume ] || (eerror "Kernel does not support resume!" ; return 1)
+        [ "$(cat /sys/power/resume)" != "0:0" ] || ewarn "/sys/power/resume not empty, resume has already been attempted!"
+        # Safety checks
+        if ! [ -z $(lsblk -Q MOUNTPOINT)] ; then
+            eerror "Cannot safely resume with mounted block devices:\n$(lsblk -Q MOUNTPOINT -no PATH)"
+            return 1
+        fi
+
+        [ -b "$1" ] || (ewarn "\'$1\' is not a valid block device!" ; return 1)
+        einfo "Attempting resume from: $1"
+        printf "%s" "$1" > /sys/power/resume
+        einfo "No image on: $resume"
+        return 0
+    """
+
+
+def handle_early_resume(self) -> str:
+    return """
+        resumeval="$(readvar resume)"  # read the cmdline resume var
+        if ! check_var noresume && [ -n "$resumeval" ] && [ -w /sys/power/resume ]; then
+            # Resolve the UUID, PARTUUID, or LABEL to a device
+            if echo "$resumeval" | grep -q "UUID="     ||
+               echo "$resumeval" | grep -q "PARTUUID=" ||
+               echo "$resumeval" | grep -q "LABEL="    ; then
+                resume=$(blkid -t "$resumeval" -o device)
+            else
+                resume="$resumeval"
+            fi
+            if ! [ -z $resume ] ; then  # Check that the resolved device is not empty, the resume func checks it's a device
+                if ! resume "$resume" ; then
+                    eerror "If you wish to continue booting, remove the resume= kernel parameter."
+                    eerror " or run 'setvar noresume 1' from the recovery shell to skip resuming."
+                    rd_fail "Failed to resume from $(readvar resume) ($resumeval)"
+                fi
+            else
+                eerror "Resume device not found: $resumeval"
+            fi
+        fi
+    """
+
+
+@contains("late_resume")
+def handle_late_resume(self) -> None:
+    self.logger.warning(
+        "[late_resume] enabled, this can result in data loss if filesystems are modified before resuming. Read the docs for more info."
+    )
+
+    # At the moment it's the same code but delayed, will change when more features are added
+    return handle_early_resume(self)
