@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "7.3.0"
+__version__ = "7.3.1"
 
 from pathlib import Path
 from re import search
@@ -1044,12 +1044,12 @@ def mount_root(self) -> str:
         mount_default_root
         return
     fi
-    roottype="$(readvar roottype auto)"
+    rootfstype="$(readvar rootfstype auto)"
     rootflags="$(readvar rootflags 'defaults,ro')"
-    einfo "Mounting root partition based on /proc/cmdline: $root -t $roottype -o $rootflags"
-    if ! mount "$root" "$(readvar MOUNTS_ROOT_TARGET)" -t "$roottype" -o "$rootflags"; then
-        klog "[UGRD $(readvar VERSION)] Failed to mount root partition using /proc/cmdline: $root -t $roottype -o $rootflags"
-        eerror "Failed to mount the root partition using /proc/cmdline: $root -t $roottype -o $rootflags"
+    einfo "Mounting root partition based on /proc/cmdline: $root -t $rootfstype -o $rootflags"
+    if ! mount "$root" "$(readvar MOUNTS_ROOT_TARGET)" -t "$rootfstype" -o "$rootflags"; then
+        klog "[UGRD $(readvar VERSION)] Failed to mount root partition using /proc/cmdline: $root -t $rootfstype -o $rootflags"
+        eerror "Failed to mount the root partition using /proc/cmdline: $root -t $rootfstype -o $rootflags"
         mount_default_root
     fi
     """
