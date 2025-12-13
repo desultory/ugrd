@@ -18,6 +18,14 @@ class TestFilesystems(TestCase):
         generator = InitramfsGenerator(logger=self.logger, config="tests/fs/btrfs.toml")
         generator.build()
 
+    def test_btrfs_bad_rootfstype(self):
+        """Test btrfs root filesystem with bad rootfstype specified.
+        This should log an error about the mount failing, but fall back to the autodetected type.
+        """
+        generator = InitramfsGenerator(logger=self.logger, config="tests/fs/btrfs.toml")
+        generator["test_cmdline"] += f" root=UUID={generator['mounts']['root']['uuid']} rootfstype=ext4"
+        generator.build()
+
     def test_xfs(self):
         """Test xfs root filesystem functionality."""
         generator = InitramfsGenerator(logger=self.logger, config="tests/fs/xfs.toml")
