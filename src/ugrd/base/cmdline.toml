@@ -2,7 +2,7 @@ cmdline_bools = ['quiet', 'ugrd_debug', 'ugrd_recovery']
 cmdline_strings = ['init', 'loglevel']
 
 # Ensure all cmdline arguments but ones the kernel expects the initramfs to handle are namespaced
-_non_namespaced_cmdline_args = ["init", "resume", "root", "rootdelay", "rootflags", "roottype", "quiet", "loglevel"]
+_non_namespaced_cmdline_args = ["init", "resume", "root", "rootdelay", "rootflags", "rootfstype", "quiet", "loglevel"]
 
 [imports.config_processing]
 "ugrd.base.cmdline" = ["_process__non_namespaced_cmdline_args", "_process_cmdline_bools_multi", "_process_cmdline_strings_multi"]

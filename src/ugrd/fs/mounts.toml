@@ -2,12 +2,13 @@ binaries = [ "lsblk", "blkid", "mount", "umount", "mkdir" ]
 
 provides = "mounts" 
 
-cmdline_strings =  ["root", "roottype", "rootflags", "ugrd_mount_timeout" ]
+cmdline_strings =  ["root", "rootfstype", "rootflags", "ugrd_mount_timeout" ]
 cmdline_bools = ["ugrd_no_fsck"]
 
 run_dirs = [ "ugrd" ]
 
 mount_timeout = 1
+mount_shm = true
 autodetect_root = true
 autodetect_dm = true
 autodetect_luks = true
@@ -55,6 +56,7 @@ make_run_dirs = "mount_base"
 [custom_parameters]
 mounts = "dict"  # Add the mounts property, used to define the mounts to be made in the fstab
 mount_devpts = "bool"  # Whether or not to mount devpts
+mount_shm = "bool"  # Whether or not to mount /dev/shm
 run_dirs = "NoDupFlatList"  # A list of directories to be created under /run
 late_mounts = "dict"  # Like mounts, but run after the root is mounted
 auto_mounts = "NoDupFlatList"  # A list of mounts to be automatically added to the mounts list
@@ -106,6 +108,13 @@ type = "devpts"
 path = "devpts"
 destination = "/dev/pts"
 options = ['noauto', 'nosuid', 'noexec', 'rw', 'mode=620', 'gid=5']
+base_mount = true
+
+[mounts.shm]
+type = "tmpfs"
+path = "shm"
+destination = "/dev/shm"
+options = ['nosuid', 'noexec', 'nodev']
 base_mount = true
 
 [mounts.run]
