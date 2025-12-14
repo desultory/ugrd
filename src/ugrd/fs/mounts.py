@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "7.3.1"
+__version__ = "7.3.2"
 
 from pathlib import Path
 from re import search
@@ -880,12 +880,14 @@ def mount_base(self) -> list[str]:
     """
     out = []
     for mount_name, mount_info in self["mounts"].items():
-        if not mount_info.get("base_mount") or mount_name == "devpts":
-            continue  # devpts must be mounted last, if needed
+        if not mount_info.get("base_mount") or mount_name in ["devpts", "shm"]:
+            continue  # devpts and /dev/shm must be mounted last, if needed
         out.extend(_to_mount_cmd(self, mount_info))
 
     if self["mount_devpts"]:
         out.extend(_to_mount_cmd(self, self["mounts"]["devpts"], mkdir=True))
+    if self["mount_shm"]:
+        out.extend(_to_mount_cmd(self, self["mounts"]["shm"], mkdir=True))
 
     out += [f'einfo "Mounted base mounts, version: {__version__}"']
     return out
