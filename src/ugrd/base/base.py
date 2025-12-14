@@ -188,14 +188,14 @@ def rd_fail(self) -> list[str]:
             "    if plymouth --ping; then",
             '        plymouth display-message --text="Entering recovery shell"',
             "        plymouth hide-splash",
-            "        sh -l",
+            "        sh -i",
             "        plymouth show-splash",
             "    else",
-            "        sh -l",
+            "        sh -i",
             "    fi",
         ]
     else:
-        output += ["    sh -l"]
+        output += ["    sh -i"]
     output += ["fi", 'prompt_user "Press space to restart init."', "rd_restart"]
     return output
 
