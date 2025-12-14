@@ -47,7 +47,7 @@ def start_shell(self) -> str:
         return
     fi
     einfo "Starting debug shell"
-    sh -l
+    setsid -c sh -i -l
     """
 
 
