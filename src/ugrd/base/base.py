@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "7.2.0"
+__version__ = "7.2.1"
 
 from pathlib import Path
 from shutil import which
@@ -188,14 +188,14 @@ def rd_fail(self) -> list[str]:
             "    if plymouth --ping; then",
             '        plymouth display-message --text="Entering recovery shell"',
             "        plymouth hide-splash",
-            "        sh -l",
+            "        setsid -c sh -i -l",
             "        plymouth show-splash",
             "    else",
-            "        sh -l",
+            "        setsid -c sh -i -l",
             "    fi",
         ]
     else:
-        output += ["    sh -l"]
+        output += ["    setsid -c sh -i -l"]
     output += ["fi", 'prompt_user "Press space to restart init."', "rd_restart"]
     return output
 

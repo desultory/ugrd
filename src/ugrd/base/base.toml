@@ -6,7 +6,7 @@ modules = [ "ugrd.base.core",
 	    "ugrd.fs.cpio",
 	    "ugrd.base.checks" ]
 
-binaries = [ "awk", "bc", "dd", "grep", "ls", "cp", "cat", "stty", "switch_root", "rm" ]
+binaries = [ "awk", "bc", "dd", "grep", "ls", "cp", "cat", "setsid", "stty", "switch_root", "rm" ]
 
 paths = [ "etc", "root", "tmp" ]
 
