@@ -131,7 +131,7 @@ def do_switch_root(self) -> str:
         rd_fail "Root not found at: $switch_root_target"
     fi
     if [ -z "$(readvar init)" ]; then
-        einfo "Init is no set, running autodetection."
+        einfo "init= is not set, running autodetection."
         _find_init || rd_fail "Unable to find init."
     fi
     init_target=$(readvar init)
