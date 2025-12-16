@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "7.3.2"
+__version__ = "7.3.3"
 
 from pathlib import Path
 from re import search
@@ -928,6 +928,7 @@ def mount_fstab(self) -> list[str]:
     """Generates the init function for mounting the fstab.
     Keeps re-attempting with mount_timeout until successful.
     mount_retries sets the number of times to retry the mount, infinite otherwise.
+    If space is pressed during the wait, the mount process will be aborted, and execution will continue
     """
     if not self._get_build_path("/etc/fstab").exists():
         return self.logger.info(
@@ -945,8 +946,10 @@ def mount_fstab(self) -> list[str]:
     else:
         out += [
             "while ! mount -a; do",  # Retry forever, retry with a very short timeout may fail
-            '    if prompt_user "Press space to break, waiting: $(readvar ugrd_mount_timeout)s" "$(readvar ugrd_mount_timeout)"; then',
-            '        rd_fail "Failed to mount all filesystems. Process interrupted by user."',
+            '    if prompt_user "Press space to continue booting, waiting: $(readvar ugrd_mount_timeout)s" "$(readvar ugrd_mount_timeout)"; then',
+            '        ewarn "Mount process interrupted, continuing without mounting fstab. Required may not be mounted."',
+            '        if check_var ugrd_debug; then cat /etc/fstab; fi',
+            '        return 1',
             "    fi",
             '    eerror "Failed to mount all filesystems, retrying."',
             "done",
