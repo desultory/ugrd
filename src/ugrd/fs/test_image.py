@@ -7,7 +7,7 @@ from zenlib.util import contains
 from zenlib.util import colorize as c_
 from time import sleep
 
-MIN_FS_SIZES = {"btrfs": 110, "f2fs": 50}
+MIN_FS_SIZES = {"btrfs": 110, "f2fs": 50, "swap": 128}
 
 
 @contains("test_flag", "A test flag must be set to create a test image", raise_exception=True)
@@ -40,6 +40,13 @@ def _allocate_image(self, image_path, padding=0):
         if self.test_image_size < min_fs_size + padding:
             needed_padding = min_fs_size - self.test_image_size
             self.logger.warning(f"{self['mounts']['root']['type']} detected, increasing padding by: {needed_padding}MB")
+            padding += needed_padding
+
+    if self.get("test_swap_uuid"):  # if a swap UUID is defined, assume we need swap
+        min_img_size = MIN_FS_SIZES["swap"] + MIN_FS_SIZES[self["mounts"]["root"]["type"]]
+        if self.test_image_size < min_img_size + padding:
+            needed_padding = min_img_size - (self.test_image_size + padding)
+            self.logger.warning(f"Test image requires swap, increasing padding by: {needed_padding}MB")
             padding += needed_padding
 
     with open(image_path, "wb") as f:
@@ -146,7 +153,7 @@ def make_test_image(self):
     loopback = None
     if self.get("test_swap_uuid"):
         try:
-            self._run(["sgdisk", "-og", "-n", "1:0:+128M", "-n", "2:0:0", image_path])
+            self._run(["sgdisk", "-og", "-n", f"1:0:+{MIN_FS_SIZES['swap'] - 1}M", "-n", "2:0:0", image_path])
         except RuntimeError as e:
             raise RuntimeError("Failed to partition test disk: %s", e)
 

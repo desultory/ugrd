@@ -2,7 +2,7 @@ modules = [ 'ugrd.base.banner' ]  # get_archive_path
 paths = ['dev', 'sys', 'proc']
 binaries = ['swapon']
 
-test_image_size = 256
+test_image_size = 16
 shebang = "#!/bin/sh -l"
 _cryptsetup_root = "root"
 

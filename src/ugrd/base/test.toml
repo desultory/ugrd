@@ -1,6 +1,6 @@
 test_rootfs_name = 'ugrd-test-rootfs'
 test_rootfs_build_dir = 'initramfs_test_rootfs'
-test_image_size = 256
+test_image_size = 16
 
 test_copy_config = ["_mounts", "mounts", "out_dir", "tmpdir", "clean", "test_image_size", "test_no_rootfs", "test_flag", "cryptsetup"]
 kmod_init = ["ata_piix", "sd_mod"]
