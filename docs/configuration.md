@@ -41,7 +41,7 @@ Modules write to a shared config dict that is accessible by other modules.
 * `build_dir` (initramfs_build) If relative, it will be placed under `tmpdir`, defines the build directory.
 * `random_build_dir` (false) Adds a uuid to the end of the build dir name when true.
 * `build_logging` (false) Enables additional logging during the build process.
-* `make_nodes` (false) Create real device nodes in the build dir. Otherwise they are created in the CPIO archive. 
+* `make_nodes` (false) Create real device nodes in the build dir. Otherwise they are created in the CPIO archive.
 * `find_libgcc` (true) Automatically locates libgcc using ldconfig -p and adds it to the initramfs.
 * `musl_libc` (false) Disable ldconfig -p usage for libgcc detection, skip ld.so.cache regeneration.
 * `out_dir` (initramfs_out) If relative, it will be placed under `tmpdir`, defines the output directory.
@@ -212,7 +212,7 @@ By default, most unnecesaary modules are masked, by the following categories:
 * `kmod_ignore_network` (true) - Ignores network modules.
 * `kmod_ignore_sound` (true) - Ignores sound modules.
 
-These bools simply import `ugrd.kmod.no<category>` modules during `build_pre`. 
+These bools simply import `ugrd.kmod.no<category>` modules during `build_pre`.
 
 ### Filesystem modules
 
@@ -293,7 +293,7 @@ label = "extra"
 
 Paths added to `auto_mounts` will be auto-configured to mount before `init_main` is run.
 
-Paths added to `auto_late_mounts` will be auto-configured to mount after `init_main` is run.  
+Paths added to `auto_late_mounts` will be auto-configured to mount after `init_main` is run.
 
 #### ugrd.fs.fakeudev
 
@@ -330,9 +330,11 @@ Importing this module will run `btrfs device scan` and pull btrfs modules.
 
 When enabled, attempts to resume after hibernation if resume= is passed on the kernel command line.
 
+
 > Please use the following option with **CAUTION** as it can be unstable in certain configurations! Any writes to disks that occur pre-resume run the risk of causing system instability! For more information have a read of the warnings in the [kernel docs](https://www.kernel.org/doc/html/latest/power/swsusp.html).
 
-* `late_resume` (true) When enabled will attempt to resume from hibernation after decryption and device mapping, allowing resume from encrypted or otherwise hidden swap devices.
+* `late_resume` (false) Attempt to resume from hibernation after decryption and device mapping, allowing resume from encrypted or otherwise hidden swap devices.
+* `test_resume` (false) Run tests on hibernation/resume functionality when testing is enabled.
 
 ### Cryptographic modules
 
@@ -403,7 +405,7 @@ key_type = "gpg"
 
 Cryptsetup global config:
 
-* `cryptsetup_key_type` - Sets the default `key_type` for all cryptsetup entries. 
+* `cryptsetup_key_type` - Sets the default `key_type` for all cryptsetup entries.
 * `cryptsetup_retries` (5) The default number of times to try to unlock a device.
 * `cryptsetup_prompt` (false) Whether or not to prompt the user to press space before attempting to unlock a device.
 * `cryptsetup_autoretry` (false) Whether or not to automatically retry mount attempts.
@@ -466,4 +468,3 @@ init_final = ['mount_root']
 ```
 
 This will mask the `mount_root` function pulled by the base module, if another mount function is being used.
-
