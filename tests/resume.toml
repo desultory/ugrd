@@ -8,7 +8,6 @@ late_resume = true
 test_resume = true
 
 out_dir = "initramfs_test"
-test_image_size = 256
 
 cpio_compression = false
 hostonly = false
