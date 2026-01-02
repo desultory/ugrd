@@ -7,40 +7,22 @@ from zenlib.util import contains
 from zenlib.util import colorize as c_
 from time import sleep
 
-MIN_FS_SIZES = {"btrfs": 110, "f2fs": 50}
+MIN_FS_SIZES = {"btrfs": 110, "f2fs": 50, "swap": 128}
 
 
 @contains("test_flag", "A test flag must be set to create a test image", raise_exception=True)
 def init_banner(self):
     """Initialize the test image banner, set a random flag if not set."""
-    self["banner"] = f"echo {self['test_flag']}"
+    self["banner"] = "echo ugRD Test Image"
 
 
-@contains("test_resume")
-def resume_tests(self):
-    return [
-        'if [ "$(</sys/power/resume)" != "0:0" ] ; then',
-        '   [ -e "/resumed" ] && (rm /resumed ; echo c > /proc/sysrq-trigger)',
-        # Set correct resume parameters
-        "   echo reboot > /sys/power/disk",
-        # trigger resume
-        "   echo disk > /sys/power/state",
-        '   [ -e "/resume" ] || echo c > /proc/sysrq-trigger',
-        # if we reach this point, resume was successful
-        # reset environment in case resume needs to be rerun
-        "   rm /resumed",
-        '   echo "Resume completed without error.',
-        "else",
-        '   echo "No resume device found! Resume test not possible!',
-        "fi",
-    ]
-
-
+@contains("test_flag", "A test flag must be set to create a test image", raise_exception=True)
 def complete_tests(self):
-    return [
-        "echo s > /proc/sysrq-trigger",
-        "echo o > /proc/sysrq-trigger",
-    ]
+    return f"""
+        echo {self["test_flag"]}
+        echo s > /proc/sysrq-trigger
+        echo o > /proc/sysrq-trigger
+    """
 
 
 def _allocate_image(self, image_path, padding=0):
@@ -58,6 +40,13 @@ def _allocate_image(self, image_path, padding=0):
         if self.test_image_size < min_fs_size + padding:
             needed_padding = min_fs_size - self.test_image_size
             self.logger.warning(f"{self['mounts']['root']['type']} detected, increasing padding by: {needed_padding}MB")
+            padding += needed_padding
+
+    if self.get("test_swap_uuid"):  # if a swap UUID is defined, assume we need swap
+        min_img_size = MIN_FS_SIZES["swap"] + MIN_FS_SIZES[self["mounts"]["root"]["type"]]
+        if self.test_image_size < min_img_size + padding:
+            needed_padding = min_img_size - (self.test_image_size + padding)
+            self.logger.warning(f"Test image requires swap, increasing padding by: {needed_padding}MB")
             padding += needed_padding
 
     with open(image_path, "wb") as f:
@@ -162,11 +151,9 @@ def make_test_image(self):
         _allocate_image(self, image_path)
 
     loopback = None
-    if self.get("test_resume"):
+    if self.get("test_swap_uuid"):
         try:
-            self._run(["sgdisk", "-og", image_path])
-            self._run(["sgdisk", "-n", "1:0:+256", image_path])
-            self._run(["sgdisk", "-n", "2:0", image_path])
+            self._run(["sgdisk", "-og", "-n", f"1:0:+{MIN_FS_SIZES['swap'] - 1}M", "-n", "2:0:0", image_path])
         except RuntimeError as e:
             raise RuntimeError("Failed to partition test disk: %s", e)
 
@@ -176,6 +163,7 @@ def make_test_image(self):
 
             image_path = f"{loopback}p2"
         except RuntimeError as e:
+            self._run(["losetup", "-d", loopback])  # Free loopback device on fail
             raise RuntimeError("Failed to allocate loopback device for disk creation: %s", e)
 
         # sleep for 100ms, to give the loopback device time to scan for partitions
@@ -186,6 +174,7 @@ def make_test_image(self):
         try:
             self._run(["mkswap", "-U", self["test_swap_uuid"], f"{loopback}p1"])
         except RuntimeError as e:
+            self._run(["losetup", "-d", loopback])
             raise RuntimeError("Failed to create swap partition on test disk: %s", e)
 
     if rootfs_type == "ext4":

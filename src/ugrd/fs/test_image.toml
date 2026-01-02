@@ -1,16 +1,14 @@
 modules = [ 'ugrd.base.banner' ]  # get_archive_path
 paths = ['dev', 'sys', 'proc']
+binaries = ['swapon']
 
 test_image_size = 16
-shebang = "#!/bin/sh"  # Don't use -l, no profile is generated
+shebang = "#!/bin/sh -l"
 _cryptsetup_root = "root"
 
 
 [imports.build_pre]
 "ugrd.fs.test_image" = ["init_banner"]
-
-[imports.init_main]
-"ugrd.fs.test_image" = ["resume_tests"]
 
 [imports.init_final]
 "ugrd.fs.test_image" = ["complete_tests"]
@@ -28,3 +26,4 @@ test_image_size = "int"  # Define the size of the test image in MiB
 test_flag = "str"  # Define the success flag used to determine if the test was successful
 check_included_or_mounted = "NoDupFlatList"  # Only defined to suppress errors about unknown config
 test_resume = "bool" # Enable code to test the suspend/resume pathways
+test_swap_uuid = "str" # Define the UUID of the swap partition

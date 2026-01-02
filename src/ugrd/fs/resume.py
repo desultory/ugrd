@@ -3,6 +3,22 @@ __version__ = "0.4.4"
 from zenlib.util import contains
 
 
+@contains("test_resume")
+def setup_resume_tests(self) -> None:
+    if "ugrd.base.test" in self["modules"]:
+        from uuid import uuid4
+
+        # Create a uuid for the swap partition in the test image
+        if not self["test_swap_uuid"]:
+            self["test_swap_uuid"] = uuid4()
+
+        # pull in the hibernation/resume testing module
+        self["test_modules"] = "ugrd.fs.test_resume"
+
+        # append resume partition to QEMU kernel cmdline
+        self["test_cmdline"] = f"resume=UUID={self['test_swap_uuid']}"
+
+
 def resume(self) -> str:
     """Returns a shell script handling resume from hibernation.
     Checks that /sys/power/resume is writable, resume= is set, and noresume is not set, if so,
@@ -27,10 +43,10 @@ def resume(self) -> str:
             eerror "Cannot safely resume with mounted block devices:\n$(lsblk -Q MOUNTPOINT -no PATH)"
             return 1
         fi
+
         [ -b "$1" ] || (ewarn "\'$1\' is not a valid block device!" ; return 1)
         einfo "Attempting resume from: $1"
-        # TODO: This could maybe be printf?
-        echo -n "$1" > /sys/power/resume
+        printf "%s" "$1" > /sys/power/resume
         einfo "No image on: $resume"
         return 0
     """
@@ -66,18 +82,6 @@ def handle_late_resume(self) -> None:
     self.logger.warning(
         "[late_resume] enabled, this can result in data loss if filesystems are modified before resuming. Read the docs for more info."
     )
-    return handle_early_resume(
-        self
-    )  # At the moment it's the same code but delayed, will change when more features are added
 
-
-@contains("test_resume")
-def test_init_swap_uuid(self):
-    if "test_cpu" in self:
-        from uuid import uuid4
-
-        self["test_swap_uuid"] = swap_uuid = uuid4()
-
-        # append to test kernel cmdline and adjust planned image size to allow enough space
-        self["test_cmdline"] = f"{self.get('test_cmdline')} resume=UUID={swap_uuid}"
-        self["test_image_size"] = 256 + self.get("test_image_size")
+    # At the moment it's the same code but delayed, will change when more features are added
+    return handle_early_resume(self)
