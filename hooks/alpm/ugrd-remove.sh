@@ -1,0 +1,16 @@
+#!/usr/bin/bash
+# ALPM hook script for ugrd removal
+
+set -e
+
+# If KERNEL_INSTALL_INITRD_GENERATOR is set, disable this hook
+if [ -n "$KERNEL_INSTALL_INITRD_GENERATOR" ]; then
+    exit 0
+fi
+
+while read -r line; do
+    if [[ "$line" == 'usr/lib/modules/'+([^/])'/pkgbase' ]]; then
+        read -r pkgbase < "/${line}"
+        rm -f "/boot/vmlinuz-${pkgbase}" "/boot/initramfs-${pkgbase}.img"
+    fi
+done

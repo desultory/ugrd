@@ -1,0 +1,12 @@
+[Trigger]
+Type = Path
+Operation = Install
+Operation = Upgrade
+Target = usr/lib/modules/*/vmlinuz
+Target = usr/lib/modules/*/pkgbase
+
+[Action]
+Description = Building initramfs with ugrd
+When = PostTransaction
+Exec = /usr/share/libalpm/scripts/ugrd-install
+NeedsTargets
