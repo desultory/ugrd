@@ -21,9 +21,8 @@ sys-kernel/installkernel ugrd
 
 ## Arch Linux
 
-`ugrd` is available in the AUR as `python-ugrd-git`. It can be installed with:
+`ugrd` is available in the AUR as [ugrd](https://aur.archlinux.org/packages/ugrd) (for the latest release version) and [ugrd-git](https://aur.archlinux.org/packages/ugrd-git) (for the latest commit). It can be installed with the usual steps for [installing and upgrading AUR packages](https://wiki.archlinux.org/title/Arch_User_Repository#Installing_and_upgrading_packages), or by using an [AUR helper](https://wiki.archlinux.org/title/AUR_helpers). For example, `yay`:
 
 `yay ugrd`
 
 Once installed, running `ugrd` will generate an initramfs for the latest installed kernel.
-
