@@ -29,17 +29,26 @@ MOUNT_INHERIT_OPTIONS = ["f2fs"]
 
 
 def _get_device_id(device: str) -> str:
-    """Gets the device id from the device path."""
-    return Path(device).stat().st_rdev >> 8, Path(device).stat().st_rdev & 0xFF
+    """Gets the device id from the device path.
+    Gets the first device if multiple are passed (eg: /dev/sda1:/dev/sda2).
+    """
+    device_name = device.split(":")[0] if ":" in device else device
+    return Path(device_name).stat().st_rdev >> 8, Path(device_name).stat().st_rdev & 0xFF
 
 
 def _resolve_dev(self, device_path) -> str:
-    """Resolves a device to one indexed in blkid.
+    """Resolves a device path to an actual block device.
+    Used for determining the backend device for mounts.
 
-    Takes the device path, such as /dev/root, and resolves it to a device indexed in blkid.
+    If the device is already in blkid, returns it directly.
+
+    Takes the device path, such as /dev/root, and tries to resolve it to a device indexed in blkid.
     If the device is an overlayfs, resolves the lowerdir device.
 
-    If the device is a ZFS device, returns the device path.
+    If the device is a ZFS device, returns the device path using zpool info.
+
+    If the device is not found in blkid, tries to match the major/minor device ids to find the correct device.
+    If it's not in blkid info at all, attempts to use virtual block device info to resolve it.
     """
     if str(device_path) in self["_blkid_info"]:
         self.logger.debug("Device already resolved to blkid indexed device: %s" % device_path)
@@ -55,22 +64,60 @@ def _resolve_dev(self, device_path) -> str:
         return device_path
 
     mount_dev = self["_mounts"][mountpoint]["device"]
-    major, minor = _get_device_id(mount_dev.split(":")[0] if ":" in mount_dev else mount_dev)
+    major, minor = _get_device_id(mount_dev)
 
     for device in self["_blkid_info"]:
         check_major, check_minor = _get_device_id(device)
         if (major, minor) == (check_major, check_minor):
             self.logger.info("Resolved device: %s -> %s" % (c_(device_path, "blue"), c_(device, "cyan")))
             return device
+    self.logger.warning(f"[{major}:{minor}] Device not found in blkid info: {c_(device_path, 'yellow')}")
+
+    if virtual_dev_path := _resolve_virtblk_dev(self, mount_dev):
+        self.logger.info(
+            "Resolved device via virtual block device: %s -> %s"
+            % (c_(device_path, "blue"), c_(virtual_dev_path, "cyan"))
+        )
+        return virtual_dev_path
+
     self.logger.critical(f"[{major}:{minor}] Failed to resolve device: {c_(device_path, 'red', bold=True)}")
     self.logger.error("Blkid info: %s" % pretty_print(self["_blkid_info"]))
     self.logger.error("Mount info: %s" % pretty_print(self["_mounts"]))
     return device_path
 
 
+def _resolve_virtblk_dev(self, name) -> str:
+    """Attempts to resolve a virtual block device to its underlying device using its name"""
+    try:
+        major, minor = _get_device_id(name)
+    except FileNotFoundError:
+        major, minor = _get_device_id(f"/dev/{name}")
+
+    self.logger.debug(f"[{major}:{minor}] Resolving virtual block device: {name}")
+
+    if "/" in name:
+        name = name.split("/")[-1]
+
+    if name not in self["_vblk_info"]:
+        for dev_id, info in self["_vblk_info"].items():
+            if info["major"] == str(major) and info["minor"] == str(minor):
+                name = dev_id
+                break
+        else:
+            return self.logger.debug(f"[{major}:{minor}] Virtual block device not found by name: {c_(name, 'yellow')}")
+
+    backing_device = self["_vblk_info"][name]["slaves"][0]
+
+    if backing_device not in self["_vblk_info"]:
+        return f"/dev/{backing_device}"
+    return _resolve_virtblk_dev(self, backing_device)
+
+
 def _find_mountpoint(self, path: str) -> str:
     """Finds the mountpoint of a file or directory,
-    Checks if the parent dir is a mountpoint, if not, recursively checks the parent dir."""
+    Checks if the parent dir is a mountpoint, if not, recursively checks the parent dir.
+    Otherwise, raises an AutodetectError.
+    """
     check_path = Path(path).resolve()
     parent = check_path.parent if not check_path.is_dir() else check_path
     if str(parent) in self["_mounts"]:
@@ -81,10 +128,13 @@ def _find_mountpoint(self, path: str) -> str:
 
 
 def _resolve_device_mountpoint(self, device) -> str:
-    """Gets the mountpoint of a device based on the device path."""
+    """Gets the mountpoint of a device based on the device path.
+    Raises an AutodetectError if the device is not found in mounts.
+    """
     for mountpoint, mount_info in self["_mounts"].items():
         if str(device) == mount_info["device"]:
             return mountpoint
+
     self.logger.error("Mount info:\n%s" % pretty_print(self["_mounts"]))
     raise AutodetectError("Device mountpoint not found: %s" % repr(device))
 
@@ -531,9 +581,11 @@ def _autodetect_dm(self, mountpoint, device=None) -> None:
             elif f"/dev/mapper/{source_name}" in self["_blkid_info"]:
                 source_device = f"/dev/mapper/{source_name}"
             elif not get_blkid_info(self, source_device):
-                raise AutodetectError("[%s] No blkid info for virtual device: %s" % (mountpoint, source_device))
+                self.logger.warning(f"[{mountpoint}] No blkid info found for device: {c_(source_device, 'yellow')}")
         else:
-            raise AutodetectError("[%s] No blkid info for virtual device: %s" % (mountpoint, source_device))
+            raise AutodetectError(
+                f"[{mountpoint}] No virtual block info for virtual device: {c_(source_device, 'yellow')}"
+            )
 
     self.logger.info("[%s] Detected virtual block device: %s" % (c_(mountpoint, "blue"), c_(source_device, "cyan")))
     source_device = Path(source_device)
@@ -852,7 +904,7 @@ def _autodetect_mount(self, mountpoint, mount_class="mounts", missing_ok=False) 
             for device in get_zpool_info(self, mount_device)["devices"]:
                 _autodetect_dm(self, mountpoint, mount_device)
         else:
-            _autodetect_dm(self, mountpoint)
+            _autodetect_dm(self, mountpoint, mount_device)
 
     self[mount_class] = mount_config
 
@@ -947,8 +999,8 @@ def mount_fstab(self) -> list[str]:
             "while ! mount -a; do",  # Retry forever, retry with a very short timeout may fail
             '    if prompt_user "Press space to continue booting, waiting: $(readvar ugrd_mount_timeout)s" "$(readvar ugrd_mount_timeout)"; then',
             '        ewarn "Mount process interrupted, continuing without mounting fstab. Required may not be mounted."',
-            '        if check_var ugrd_debug; then cat /etc/fstab; fi',
-            '        return 1',
+            "        if check_var ugrd_debug; then cat /etc/fstab; fi",
+            "        return 1",
             "    fi",
             '    eerror "Failed to mount all filesystems, retrying."',
             "done",
