@@ -62,7 +62,7 @@ def _resolve_dev(self, device_path) -> str:
         if (major, minor) == (check_major, check_minor):
             self.logger.info("Resolved device: %s -> %s" % (c_(device_path, "blue"), c_(device, "cyan")))
             return device
-    self.logger.critical("Failed to resolve device: %s" % c_(device_path, "red", bold=True))
+    self.logger.critical(f"[{major}:{minor}] Failed to resolve device: {c_(device_path, 'red', bold=True)}")
     self.logger.error("Blkid info: %s" % pretty_print(self["_blkid_info"]))
     self.logger.error("Mount info: %s" % pretty_print(self["_mounts"]))
     return device_path
