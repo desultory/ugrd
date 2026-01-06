@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "7.3.3"
+__version__ = "7.3.4"
 
 from pathlib import Path
 from re import search
@@ -367,7 +367,6 @@ def get_blkid_info(self, device=None) -> dict:
         else:
             blkid_output = self._run(["blkid"]).stdout.decode().strip()
     except RuntimeError:
-        self.logger.error("Blkid output: %s" % blkid_output)
         raise AutodetectError("Failed to get blkid info for: %s" % device)
 
     if not blkid_output:
