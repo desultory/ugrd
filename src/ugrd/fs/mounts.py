@@ -848,7 +848,8 @@ def _autodetect_mount(self, mountpoint, mount_class="mounts", missing_ok=False) 
 
             # Btrfs volumes may be backed by multiple dm devices
             for device in _get_btrfs_mount_devices(self, mountpoint, mount_device):
-                _autodetect_dm(self, mountpoint, mount_device)
+                self.logger.debug(f"[{c_(mountpoint, 'blue')}] Autodetecting device mapper for Btrfs device: {c_(device, 'cyan')}")
+                _autodetect_dm(self, mountpoint, device)
         elif fs_type == "zfs":
             for device in get_zpool_info(self, mount_device)["devices"]:
                 _autodetect_dm(self, mountpoint, mount_device)
