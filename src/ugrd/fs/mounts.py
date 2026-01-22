@@ -141,7 +141,7 @@ def _get_mount_source(self, mount: dict) -> str:
     for source_type in SOURCE_TYPES:
         if source_type in mount:
             return source_type, mount[source_type]
-    raise ValueError("No source type found in mount: %s" % mount)
+    raise ValueError(f"No source type found in mount: {c_(mount, 'red', bold=True)}")
 
 
 def _merge_mounts(self, mount_name: str, mount_config, mount_class) -> None:
@@ -170,11 +170,13 @@ def _validate_mount_config(self, mount_name: str, mount_config) -> None:
 
     for source_type in SOURCE_TYPES:
         if source_type in mount_config:
-            self.logger.debug("[%s] Validated source type: %s" % (mount_name, mount_config))
+            self.logger.debug(f"[{c_(mount_name, 'blue')}] Validated source type: {c_(mount_config, bold=True)}")
             break
     else:  # If no source type is found, raise an error, unless it's the root mount
         if source_type not in mount_config and mount_name != "root":
-            raise ValidationError("[%s] No source type found in mount: %s" % (mount_name, mount_config))
+            raise ValidationError(
+                f"[{c_(mount_name, 'yellow')}] No source type found in mount:\n{c_(mount_config, 'yellow', bold=True)}"
+            )
 
     for parameter, value in mount_config.copy().items():
         self.logger.debug("[%s] Validating parameter: %s" % (mount_name, parameter))
@@ -799,8 +801,7 @@ def _autodetect_mount(self, mountpoint, mount_class="mounts", missing_ok=False) 
     # Don't overwrite existing mounts if a source type is already set
     if mount_name in self[mount_class] and any(s_type in self[mount_class][mount_name] for s_type in SOURCE_TYPES):
         return self.logger.warning(
-            "[%s] Skipping autodetection, mount config already set:\n%s"
-            % (c_(mountpoint, "yellow"), pretty_print(self[mount_class][mount_name]))
+            f"[{c_(mountpoint, 'yellow')}] Skipping autodetection, mount config already set:\n{pretty_print(self[mount_class][mount_name])}"
         )
 
     # Attempt to get the fs type, use auto if not found
@@ -828,8 +829,7 @@ def _autodetect_mount(self, mountpoint, mount_class="mounts", missing_ok=False) 
     for source_type in SOURCE_TYPES:
         if source := mount_info.get(source_type):
             self.logger.info(
-                "[%s] Autodetected mount source: %s=%s"
-                % (c_(mount_name, "blue", bright=True), c_(source_type, "blue"), c_(source, "cyan"))
+                f"[{c_(mount_name, 'blue', bright=True)}] Autodetected mount source: {c_(source_type, 'blue')}={c_(source, 'cyan')}"
             )
             mount_config[mount_name][source_type] = source
             break
@@ -848,7 +848,9 @@ def _autodetect_mount(self, mountpoint, mount_class="mounts", missing_ok=False) 
 
             # Btrfs volumes may be backed by multiple dm devices
             for device in _get_btrfs_mount_devices(self, mountpoint, mount_device):
-                self.logger.debug(f"[{c_(mountpoint, 'blue')}] Autodetecting device mapper for Btrfs device: {c_(device, 'cyan')}")
+                self.logger.debug(
+                    f"[{c_(mountpoint, 'blue')}] Autodetecting device mapper for Btrfs device: {c_(device, 'cyan')}"
+                )
                 _autodetect_dm(self, mountpoint, device)
         elif fs_type == "zfs":
             for device in get_zpool_info(self, mount_device)["devices"]:
@@ -949,8 +951,8 @@ def mount_fstab(self) -> list[str]:
             "while ! mount -a; do",  # Retry forever, retry with a very short timeout may fail
             '    if prompt_user "Press space to continue booting, waiting: $(readvar ugrd_mount_timeout)s" "$(readvar ugrd_mount_timeout)"; then',
             '        ewarn "Mount process interrupted, continuing without mounting fstab. Required may not be mounted."',
-            '        if check_var ugrd_debug; then cat /etc/fstab; fi',
-            '        return 1',
+            "        if check_var ugrd_debug; then cat /etc/fstab; fi",
+            "        return 1",
             "    fi",
             '    eerror "Failed to mount all filesystems, retrying."',
             "done",
