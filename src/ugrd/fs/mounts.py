@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "7.3.3"
+__version__ = "7.4.0"
 
 from pathlib import Path
 from re import search
@@ -10,8 +10,8 @@ from ugrd.kmod.platform import _get_platform_mmc_drivers
 from zenlib.util import colorize as c_
 from zenlib.util import contains, pretty_print
 
-BLKID_FIELDS = ["uuid", "partuuid", "label", "type"]
-SOURCE_TYPES = ["uuid", "partuuid", "label", "path"]
+BLKID_FIELDS = ["uuid", "partuuid", "label", "partlabel", "type"]
+SOURCE_TYPES = ["uuid", "partuuid", "label", "partlabel", "path"]
 MOUNT_PARAMETERS = [
     "destination",
     "source",
@@ -134,7 +134,7 @@ def _get_mount_dev_fs_type(self, device: str, raise_exception=True) -> str:
 def _get_mount_source(self, mount: dict) -> str:
     """Gets the source from the mount config.
     Uses the order of SOURCE_TYPES to determine the source type.
-        uuid, partuuid, label, path.
+        uuid, partuuid, label, partlabel, path.
 
     Returns the source type and value if found, otherwise raises a ValueError.
     """
@@ -990,6 +990,7 @@ def _validate_host_mount(self, mount, destination_path=None) -> bool:
                 "Host mount options mismatch. Expected: %s, Found: %s" % (mount["options"], host_mount_options)
             )
 
+    non_path_types =  SOURCE_TYPES.copy().remove("path")
     if mount_type == "path":
         if mount_val == Path(host_source_dev) or mount_val == host_source_dev:
             self.logger.debug("[%s] Host mount validated: %s" % (destination_path, mount))
@@ -997,7 +998,7 @@ def _validate_host_mount(self, mount, destination_path=None) -> bool:
         raise ValidationError(
             "Host mount path device path does not match config. Expected: %s, Found: %s" % (mount_val, host_source_dev)
         )
-    elif mount_type in ["uuid", "partuuid", "label"]:
+    elif mount_type in non_path_types:
         # For uuid, partuuid, and label types, check that the source matches the host mount
         if self["_blkid_info"][host_source_dev][mount_type] != mount_val:
             raise ValidationError(

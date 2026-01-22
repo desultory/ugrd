@@ -1,3 +1,5 @@
-modules = [ "ugrd.fs.livecd" ]
+modules = [ "ugrd.fs.livecd", "ugrd.kmod.usb" ]
 kmod_init = ["hfsplus"]  # Needed for the Gentoo LiveCD
 livecd_label = "gentoo-amd64-livegui"
+livecd_persistence = true
+livecd_persistence_label = "Appended3"

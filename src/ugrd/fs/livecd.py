@@ -47,6 +47,23 @@ def set_livecd_mount(self):
     self["exports"]["ugrd_livecd_label"] = self.livecd_label
 
 
+@contains("livecd_persistence", "Skipptig livecd persistence setup because livecd_persistence is not enabled.")
+@contains(
+    "livecd_persistence_label",
+    "livecd_persistence_label must be set to the label of the livecd persistence storage root.",
+    raise_exception=True,
+)
+def set_livecd_persistence_mount(self) -> str:
+    """Adds a mount for the livecd persistence storage root."""
+    self["mounts"]["livecd_persistence"] = {
+        "type": "auto",
+        "options": ["rw"],
+        "partlabel": self.livecd_persistence_label,
+        "destination": "/run/livecd_persistence",
+    }
+    self["run_dirs"] = "/livecd_persistence"
+
+
 def set_squashfs_root_source(self) -> str:
     """Returns shell lines to set MOUNTS_ROOT_SOURCE to the squashfs_image if set,
     otherwise checks that the built-in squashfs source exists."""
@@ -69,4 +86,3 @@ def set_squashfs_root_source(self) -> str:
         rd_fail "Squashfs image does not exist: $squashfs_image"
     fi
     """
-

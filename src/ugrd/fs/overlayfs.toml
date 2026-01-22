@@ -1,11 +1,10 @@
 kmod_init = ["overlay"]
-run_dirs = ["upperdir", "workdir", "lowerdir"]
 
 [imports.build_pre]
-"ugrd.fs.overlayfs" = ["update_root_lowerdir"]
+"ugrd.fs.overlayfs" = ["update_root_lowerdir", "add_overlayfs_rundirs"]
 
 [imports.init_mount]
-"ugrd.fs.overlayfs" = ["mount_overlayfs"]
+"ugrd.fs.overlayfs" = ["mount_overlayfs", "mount_persistent_overlayfs"]
 
 [import_order.after]
 "mount_overlayfs" = ["mount_root"]

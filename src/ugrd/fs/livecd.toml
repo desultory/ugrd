@@ -3,6 +3,7 @@ modules = ["ugrd.fs.overlayfs"]
 cmdline_strings = [ "ugrd_livecd_label", "ugrd_squashfs_image" ]
 
 squashfs_image = 'image.squashfs'
+livecd_persistence_label = 'persistence'
 hostonly = false
 
 kmod_init = ['nls_utf8', 'squashfs', 'isofs', 'loop']
@@ -11,7 +12,7 @@ run_dirs = ['livecd']
 test_copy_config = ["squashfs_image", "livecd_label"]
 
 [imports.build_pre]
-"ugrd.fs.livecd" = [ "set_livecd_mount" ]
+"ugrd.fs.livecd" = [ "set_livecd_mount", "set_livecd_persistence_mount" ]
 
 [imports.init_mount]
 "ugrd.fs.livecd" = [ "mount_livecd", "set_squashfs_root_source" ]
@@ -23,3 +24,5 @@ test_copy_config = ["squashfs_image", "livecd_label"]
 [custom_parameters]
 squashfs_image = "Path"  # the path to the squashfs image (at runtime)
 livecd_label = "str"  # The label of the livecd
+livecd_persistence_label = "str"  # The label of the persistence partition
+livecd_persistence = "bool"  # Whether to enable persistence

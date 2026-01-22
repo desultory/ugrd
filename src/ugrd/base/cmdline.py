@@ -133,7 +133,7 @@ def parse_cmdline(self) -> str:
     return rf"""
     cmdline=$(awk -F '--' '{{print $1}}' /proc/cmdline)  # Get everything before '--'
     setvar INIT_ARGS "$(awk -F '--' '{{print $2}}' /proc/cmdline)"  # Get everything after '--'
-    for bool in {" ".join([f'"{bool}"' for bool in self["cmdline_bools"]])}; do
+    for bool in {" ".join([f'"{b}"' for b in self["cmdline_bools"]])}; do
         parse_cmdline_bool "$bool"
     done
     for string in {" ".join([f'"{string}"' for string in self["cmdline_strings"]])}; do
