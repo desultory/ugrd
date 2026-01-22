@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "2.4.2"
+__version__ = "2.5.0"
 
 from collections import UserDict
 from importlib import import_module
@@ -79,19 +79,22 @@ class InitramfsConfigDict(UserDict):
 
     def __setitem__(self, key: str, value) -> None:
         if self["validated"]:
-            return self.logger.error("[%s] Config is validated, refusing to set value: %s" % (key, c_(value, "red")))
+            return self.logger.error(
+                f"[{c_(key, 'yellow')}] Config is validated, refusing to set value: {c_(value, 'red')}"
+            )
         # If the type is registered, use the appropriate update function
         if any(key in d for d in (self.builtin_parameters, self["custom_parameters"])):
             return self.handle_parameter(key, value)
         else:
             self.logger.debug(
-                "[%s] Unable to determine expected type, valid builtin types: %s"
-                % (key, self.builtin_parameters.keys())
+                f"[{c_(key, 'yellow')}] Unable to determine expected type, valid builtin types:\n{c_(self.builtin_parameters.keys(), bold=True)}"
             )
-            self.logger.debug("[%s] Custom types: %s" % (key, self["custom_parameters"].keys()))
+            self.logger.debug("f[{c_(key, 'blue')}] Custom types: {c_(self['custom_parameters'].keys(), bold=True')}")
             # for anything but the logger, add to the processing queue
             if key != "logger":
-                self.logger.debug("Adding unknown internal parameter to processing queue: %s" % key)
+                self.logger.debug(
+                    f"[{c_(key, 'yellow')}] Adding unknown internal parameter to processing queue: {c_(value, bold=True)}"
+                )
                 if key not in self["_processing"]:
                     self["_processing"][key] = Queue()
                 self["_processing"][key].put(value)
@@ -367,21 +370,20 @@ class InitramfsConfigDict(UserDict):
             else:
                 raise ValueError("[%s] Invalid needs value: %s" % (module, needs))
 
+        custom_parameters = module_config.get("custom_parameters", {})
+
         # Process other config such as import orders, defined values
         for name, value in module_config.items():
             if name in ["imports", "custom_parameters", "provides", "needs"]:
                 self.logger.log(5, "[%s] Skipping '%s'" % (module, name))
                 continue
-            if name in self["_processing"]:
-                self.logger.debug(
-                    f"Skipping setting defaults for parameter with queued values: {c_(name, 'yellow')}"
-                )
+            if name in self["_processing"] and custom_parameters.get(name) not in ["list", "NoDupFlatList", "dict"]:
+                self.logger.debug(f"Skipping setting defaults for parameter with queued values: {c_(name, 'yellow')}")
             else:
                 self.logger.debug("[%s] (%s) Setting value: %s" % (module, name, value))
                 self[name] = value
 
         # Add custom parameters after values are added, so they are processed in the correct order
-        custom_parameters = module_config.get("custom_parameters", {})
         if custom_parameters:
             self.logger.debug("[%s] Processing custom parameters: %s" % (module, custom_parameters))
             self["custom_parameters"] = custom_parameters
