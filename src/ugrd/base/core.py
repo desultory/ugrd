@@ -303,7 +303,9 @@ def deploy_nodes(self) -> None:
             self.logger.info("Created device node '%s' at path: %s" % (node, node_path))
         except PermissionError as e:
             self.logger.error("Unable to create device node %s at path: %s" % (node, node_path))
-            self.logger.info("When `make_nodes` is disabled, device nodes are synthetically created in the resulting CPIO archive.")
+            self.logger.info(
+                "When `make_nodes` is disabled, device nodes are synthetically created in the resulting CPIO archive."
+            )
             raise e
 
 
@@ -339,7 +341,23 @@ def autodetect_libgcc(self) -> None:
         self.logger.warning("If libgcc_s is not required, set `find_libgcc = false` in the configuration.")
         return
 
-    libgcc = [lib for lib in ldconfig if "libgcc_s" in lib and "(libc6," in lib][0]
+    libgcc_libs = [lib for lib in ldconfig if "libgcc_s" in lib]
+    if not libgcc_libs:
+        raise AutodetectError("libgcc_s not found in ldconfig output")
+
+    # Find the best match for libgcc_s
+    for lib in libgcc_libs:
+        # Prefer the multiarch version if it exists
+        if "(libc6," in lib:
+            libgcc = lib
+            break
+        # Otherwise use the 32 bit version if it exists
+        elif "(libc6)" in lib:
+            libgcc = lib
+            break
+    else:
+        raise AutodetectError("No suitable libgcc_s version found in ldconfig output")
+
     source_path = Path(libgcc.partition("=> ")[-1])
     self.logger.info(f"Source path for libgcc_s: {c_(source_path, 'green')}")
 
