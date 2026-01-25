@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "4.7.1"
+__version__ = "4.7.2"
 
 from os import environ, makedev, mknod, uname
 from pathlib import Path
@@ -322,7 +322,8 @@ def _get_ldconfig(self) -> list:
     if cmd.returncode != 0:
         raise LDConfigError("ldconfig failed to run: %s" % cmd.stderr.decode("utf-8"))
 
-    return cmd.stdout.decode("utf-8").splitlines()
+    self.logger.log(5, "ldconfig -p output:\n%s" % cmd.stdout.decode())
+    return cmd.stdout.decode().splitlines()
 
 
 @unset("musl_libc", "Skipping libgcc_s dependency resolution, musl_libc is enabled.", log_level=20)
