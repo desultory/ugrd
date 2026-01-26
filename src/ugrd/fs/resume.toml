@@ -1,6 +1,6 @@
 cmdline_strings = [ "resume" ]
 
-[imports.init_main] 
+[imports.init_main]
 "ugrd.fs.resume" = [ "handle_resume" ]
 
 [import_order.before]
