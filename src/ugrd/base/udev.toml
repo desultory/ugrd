@@ -1,0 +1,10 @@
+binaries = ["/lib/systemd/systemd-udevd"]
+
+[imports.build_tasks]
+"ugrd.base.udev" = [ "pull_udev_deps" ]
+
+[imports.init_pre]
+"ugrd.base.udev" = [ "start_udev" ]
+
+[import_order.after]
+"start_udev" = [ "kmod_init" ]
