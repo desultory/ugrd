@@ -177,6 +177,7 @@ def rd_fail(self) -> list[str]:
         "fi",
         'prompt_user "Press space to display debug info."',
         r'eerror "Kernel version: $(cat /proc/version)"',
+        r'eerror "Kernel command line: $(cat /proc/cmdline)"',
         r'eerror "Loaded modules:\n$(cat /proc/modules)"',
         r'eerror "Block devices:\n$(blkid)"',
         r'eerror "Mounts:\n$(mount)"',
