@@ -16,6 +16,11 @@ def autodetect_editor(self):
     """ Auto-detect the editor from the environment. """
     self["editor"] = environ.get("EDITOR", "nano")
 
+@contains("debug_tty2", "debug_tty2 is not set, not pulling agetty for tty2.", log_level=10)
+def pull_agetty_for_debug_shell(self):
+    """ Pull in agetty binary for debug shell on tty2. """
+    self["binaries"] = "agetty"
+
 def _process_editor(self, editor: str):
     """ Process the editor configuration. """
     _validate_editor(self, editor)
@@ -46,14 +51,20 @@ def start_shell(self) -> str:
         ewarn "The ugrd.base.debug module is enabled, but ugrd_debug is not enabled!"
         return
     fi
-    einfo "Starting debug shell"
     """
     if self["debug_tty2"]:
         outstr += 'einfo "Starting debug shell on tty2"\n'
-        outstr += "setsid -c sh -i </dev/tty2 >/dev/tty2 2>/dev/tty2 &\n"
-        outstr += "wait_for_space\n"
+        outstr += 'einfo "Switch to tty2 with Ctrl+Alt+F2"\n'
+        if not self["debug_parallel"]:
+            outstr += 'einfo "Continue execution by exiting the debug shell"\n'
+        outstr += "agetty --skip-login --noclear --login-program $(command -v setsid) --login-options '-c sh -l' tty2"
+        if self["debug_parallel"]:
+            outstr += " &\n"
+        else:
+            outstr += "\n"
     else:
-        outstr += "setsid -c sh -i -l\n"
+        outstr += 'einfo "Starting debug shell on the main console"\n'
+        outstr += "setsid -c sh -l -l\n"
 
     return outstr
 
