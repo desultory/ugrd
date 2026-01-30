@@ -55,8 +55,13 @@ def start_shell(self) -> str:
     if self["debug_tty2"]:
         outstr += 'einfo "Starting debug shell on tty2"\n'
         outstr += 'einfo "Switch to tty2 with Ctrl+Alt+F2"\n'
-        outstr += 'einfo "Continue execution by exiting the debug shell"\n'
-        outstr += "agetty --skip-login --noclear --login-program $(command -v setsid) --login-options '-c sh -l' tty2\n"
+        if not self["debug_parallel"]:
+            outstr += 'einfo "Continue execution by exiting the debug shell"\n'
+        outstr += "agetty --skip-login --noclear --login-program $(command -v setsid) --login-options '-c sh -l' tty2"
+        if self["debug_parallel"]:
+            outstr += " &\n"
+        else:
+            outstr += "\n"
     else:
         outstr += 'einfo "Starting debug shell on the main console"\n'
         outstr += "setsid -c sh -l -l\n"
