@@ -12,7 +12,7 @@ log_file = "ugrd-debug.log"
 "ugrd.base.debug" = [ "_process_editor" ]
 
 [imports.build_enum]
-"ugrd.base.debug" = [ "autodetect_editor" ]
+"ugrd.base.debug" = [ "autodetect_editor", "pull_agetty_for_debug_shell" ]
 
 [imports.init_pre]
 "ugrd.base.debug" = [ "enable_debug" ]
