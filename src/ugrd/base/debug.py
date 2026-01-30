@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "1.4.1"
+__version__ = "1.5.0"
 
 from os import environ
 from pathlib import Path
@@ -41,14 +41,21 @@ def _validate_editor(self, editor: str):
 
 def start_shell(self) -> str:
     """Start a shell at the start of the initramfs."""
-    return """
+    outstr ="""
     if ! check_var ugrd_debug; then
         ewarn "The ugrd.base.debug module is enabled, but ugrd_debug is not enabled!"
         return
     fi
     einfo "Starting debug shell"
-    setsid -c sh -i -l
     """
+    if self["debug_tty2"]:
+        outstr += 'einfo "Starting debug shell on tty2"\n'
+        outstr += "setsid -c sh -i </dev/tty2 >/dev/tty2 2>/dev/tty2 &\n"
+        outstr += "wait_for_space\n"
+    else:
+        outstr += "setsid -c sh -i -l\n"
+
+    return outstr
 
 
 @contains("start_shell", "Not enabling the debug shell, as the start_shell option is not set.", log_level=30)
