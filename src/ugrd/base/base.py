@@ -186,6 +186,9 @@ def rd_fail(self) -> list[str]:
         r'eerror "Loaded modules:\n$(cat /proc/modules)"',
         r'eerror "Block devices:\n$(blkid)"',
         r'eerror "Mounts:\n$(mount)"',
+        r'if [ -n "$(readvar ugrd_log_file)" ]; then',
+        r'    eerror "UGRD log file: (/run/$(readvar ugrd_log_file))"',
+        r'fi',
         'if [ "$(readvar ugrd_recovery)" = "1" ]; then',
         '    einfo "Entering recovery shell"',
     ]
