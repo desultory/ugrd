@@ -6,6 +6,7 @@ dependencies = [ "/usr/share/terminfo/l/linux" ] # required by most editors
 # 3. fallback to 'nano'
 
 start_shell = true
+log_file = "ugrd-debug.log"
 
 [imports.config_processing]
 "ugrd.base.debug" = [ "_process_editor" ]

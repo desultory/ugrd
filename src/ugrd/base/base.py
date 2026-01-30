@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "7.2.1"
+__version__ = "7.3.0"
 
 from pathlib import Path
 from shutil import which
@@ -30,6 +30,11 @@ def _process_loglevel(self, loglevel: int) -> None:
     """Sets the loglevel."""
     self.data["loglevel"] = int(loglevel)
     self["exports"]["loglevel"] = loglevel
+
+def _process_log_file(self, log_file: Path | str) -> None:
+    """Sets the log_file."""
+    self.data["log_file"] = Path(log_file)
+    self["exports"]["ugrd_log_file"] = str(self["log_file"])
 
 
 @contains("hostonly", "Skipping init_target autodetection, hostonly is not set.", log_level=30)
@@ -205,7 +210,9 @@ def setvar(self) -> str:
     """Returns a shell function that sets a variable in /run/ugrd/{name}."""
     return """
     if check_var ugrd_debug; then
-        edebug "Setting $1 to $2"
+        edebug "Setting $1 to: $2"
+    else
+        rd_log "Setting $1 to: $2"
     fi
     printf "%s" "$2" > "/run/ugrd/${1}"
     """
@@ -328,12 +335,24 @@ def klog(self) -> str:
     """Logs a message to the kernel log."""
     return 'echo "${*}" > /dev/kmsg'
 
+def rd_log(self) -> str:
+    """ If ugrd_log_file is set, logs a message to the log file.
+    Always log under /run
+    """
+    return r"""
+    log_file="$(readvar ugrd_log_file)"
+    if [ -n "${log_file}" ]; then
+        printf "%b\n" "${*}" >> "/run/${log_file}"
+    fi
+    """
+
 
 # To feel more at home
 def edebug(self) -> str:
     """Returns a shell function like edebug."""
     return r"""
     output="$(printf "%b" "${*}")"
+    rd_log "DEBUG: ${output}"
     if check_var quiet; then
         return
     fi
@@ -346,7 +365,7 @@ def edebug(self) -> str:
 
 def einfo(self) -> list[str]:
     """Returns a shell function like einfo."""
-    output = ['output="$(printf "%b" "${*}")"']
+    output = ['output="$(printf "%b" "${*}")"', 'rd_log "INFO: ${output}"']
     if "ugrd.base.plymouth" in self["modules"]:
         output += [
             "if plymouth --ping; then",
@@ -363,7 +382,7 @@ def ewarn(self) -> list[str]:
     """Returns a shell function like ewarn.
     If plymouth is running, it displays a message instead of echoing.
     """
-    output = ['output="$(printf "%b" "${*}")"']
+    output = ['output="$(printf "%b" "${*}")"', 'rd_log "WARN: ${output}"']
     if "ugrd.base.plymouth" in self["modules"]:
         output += [
             "if plymouth --ping; then",  # Always show the message if plymouth is running
@@ -383,7 +402,7 @@ def ewarn(self) -> list[str]:
 
 def eerror(self) -> list[str]:
     """Returns a shell function like eerror."""
-    output = ['output="$(printf "%b" "${*}")"']
+    output = ['output="$(printf "%b" "${*}")"', 'rd_log "ERROR: ${output}"']
     if "ugrd.base.plymouth" in self["modules"]:
         output += [
             "if plymouth --ping; then",
