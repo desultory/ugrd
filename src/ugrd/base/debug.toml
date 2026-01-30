@@ -6,6 +6,7 @@ dependencies = [ "/usr/share/terminfo/l/linux" ] # required by most editors
 # 3. fallback to 'nano'
 
 start_shell = true
+log_file = "ugrd-debug.log"
 
 [imports.config_processing]
 "ugrd.base.debug" = [ "_process_editor" ]
@@ -27,5 +28,6 @@ start_shell = true
 
 [custom_parameters]
 start_shell = "bool"  # Start a shell after init_early, before init_pre. Can be enabled by the debug cmdline option.
+debug_tty2 = "bool"  # If true, debug shell will be started on tty2 instead of the current tty.
 editor = "str"  # override editor variable
 no_validate_editor = "bool"  # will skip validation of the editor binary, when validation is in use. Otherwise does nothing.

@@ -10,12 +10,14 @@ binaries = [ "awk", "bc", "dd", "grep", "ls", "cp", "cat", "setsid", "stty", "sw
 
 paths = [ "etc", "root", "tmp" ]
 
+cmdline_strings = [ "ugrd_log_file" ]
+
 loglevel = 5
 shebang_args = "-l"
 autodetect_init = true
 
 [imports.config_processing]
-"ugrd.base.base" = [ "_process_loglevel", "_process_init_target" ]
+"ugrd.base.base" = [ "_process_loglevel", "_process_log_file", "_process_init_target" ]
 
 [imports.build_enum]
 "ugrd.base.base" = [ "autodetect_init" ]
@@ -34,7 +36,7 @@ autodetect_init = true
 
 [imports.functions]
 "ugrd.base.base" = [ "check_var", "setvar", "readvar", "wait_for_space", "prompt_user", "retry",
-                     "klog", "edebug", "einfo", "ewarn", "eerror",
+                     "klog", "rd_log", "edebug", "einfo", "ewarn", "eerror",
 		     "rd_fail", "rd_restart", "_find_init" ]
 
 [imports.checks]
@@ -48,5 +50,6 @@ switch_root_target = "Path"  # Specifies the location of the new root filesystem
 init_target = "Path"  # Specifies the location of the system init file
 autodetect_init = "bool"  # If set to true, the init_target will be autodetected based on the system's init system
 loglevel = "int"  # Set the kernel log level at /proc/sys/kernel/printk
+log_file = "Path"  # Path to the log file where boot messages will be stored
 shebang = "str"  # Add the shebang property, shebang_args should be used instead
 shebang_args = "str"  # Add the shebang_args property
