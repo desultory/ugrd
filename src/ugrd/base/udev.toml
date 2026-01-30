@@ -1,4 +1,6 @@
 binaries = ["/lib/systemd/systemd-udevd"]
+dependencies = ["/etc/group"]
+
 
 [imports.build_tasks]
 "ugrd.base.udev" = [ "pull_udev_deps" ]
