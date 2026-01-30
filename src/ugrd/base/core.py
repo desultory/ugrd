@@ -354,6 +354,7 @@ def autodetect_libgcc(self) -> None:
         # Otherwise use the 32 bit version if it exists
         elif "(libc6)" in lib:
             libgcc = lib
+            self.logger.warning("Using 32-bit libgcc_s version, multiarch version not found.")
             break
     else:
         raise AutodetectError("No suitable libgcc_s version found in ldconfig output")
