@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "4.7.2"
+__version__ = "4.7.3"
 
 from os import environ, makedev, mknod, uname
 from pathlib import Path
@@ -166,12 +166,12 @@ def find_library(self, library: str) -> None:
     for path in search_paths:
         lib_path = Path(path).joinpath(library)
         if lib_path.exists():
-            self.logger.info("[%s] Found library file: %s" % (library, c_(lib_path, "cyan")))
+            self.logger.info(f"[{c_(library, 'blue')}] Found library file: {c_(lib_path, 'cyan')}")
             return lib_path
         # Attempt to find the library with a .so extension
         lib_path = lib_path.with_suffix(".so")
         if lib_path.exists():
-            self.logger.info("[%s] Found library file: %s" % (library, c_(lib_path, "cyan")))
+            self.logger.info(f"[{c_(library, 'blue')}] Found library file: {c_(lib_path, 'cyan')}")
             return lib_path
     raise AutodetectError("Library not found: %s" % library)
 
