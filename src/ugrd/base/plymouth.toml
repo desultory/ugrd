@@ -4,6 +4,8 @@ dependencies = ['/usr/share/plymouth/plymouthd.defaults',
                 '/usr/share/plymouth/themes/text/text.plymouth',
                 '/usr/share/plymouth/themes/details/details.plymouth']
 
+modules = ["ugrd.base.udev"]
+
 run_dirs = ["plymouth"]
 mount_devpts = true
 
