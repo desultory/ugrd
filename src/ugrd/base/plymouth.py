@@ -49,6 +49,7 @@ def pull_plymouth(self) -> None:
         self["copies"] = {
             "plymouth_config_file": {"source": self["plymouth_config"], "destination": "/etc/plymouth/plymouthd.conf"}
         }
+    self["libraries"] = "libdrm"
 
 
 def _get_plymouthd_args(self) -> str:
