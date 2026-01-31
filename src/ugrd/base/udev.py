@@ -47,3 +47,9 @@ def start_udev(self):
     udevadm trigger
     udevadm settle
     """
+
+def stop_udev(self):
+    """Returns shell lines to stop udev"""
+    return """
+    edebug "Stopping udev: $(udevadm control --exit 2>&1)"
+    """
