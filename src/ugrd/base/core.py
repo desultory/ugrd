@@ -161,7 +161,8 @@ def calculate_dependencies(self, binary: str) -> list[Path]:
 
 def find_library(self, library: str) -> None:
     """Given a library file name, searches for it in the library paths, adds it to the dependencies list."""
-    search_paths = set(self["library_paths"]) | {"/lib64", "/lib", "/usr/lib64", "/usr/lib"}
+    search_paths = NoDupFlatList(self["library_paths"], logger=self.logger)
+    search_paths.append(["/lib64", "/lib", "/usr/lib64", "/usr/lib"])
 
     for path in search_paths:
         lib_path = Path(path).joinpath(library)
