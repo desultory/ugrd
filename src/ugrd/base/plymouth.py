@@ -82,3 +82,18 @@ def start_plymouth(self) -> str:
     setvar plymouth 1
     plymouth show-splash
     """
+
+def finish_plymouth(self) -> str:
+    """Returns shell lines to stop plymouthd
+    verifies that plymouthd stopped successfully
+    f"""
+    if "systemd" in str(self["init_target"]) and self["plymouth_kill"]:
+        self.logger.warning("plymouth_kill is set with systemd as an init target, this may cause issues.")
+    return f"""
+    if ! plymouth --ping; then
+        edebug "Plymouthd is not running, skipping stop"
+        return 0
+    fi
+    plymouth --newroot="$(readvar SWITCH_ROOT_TARGET)"
+    {"plymouth --quit" if self["plymouth_kill"] else ""}
+    """

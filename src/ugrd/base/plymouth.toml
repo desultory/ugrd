@@ -7,6 +7,8 @@ dependencies = ['/usr/share/plymouth/plymouthd.defaults',
 run_dirs = ["plymouth"]
 mount_devpts = true
 
+plymouth_kill = true
+
 [imports.config_processing]
 "ugrd.base.plymouth" = [ "_process_plymouth_themes_multi" ]
 
@@ -19,14 +21,20 @@ mount_devpts = true
 [imports.init_pre]
 "ugrd.base.plymouth" = [ "start_plymouth" ]
 
+[imports.init_final]
+"ugrd.base.plymouth" = [ "finish_plymouth" ]
+
 [import_order.before]
 start_plymouth = "print_banner"
+finish_plymouth = "switch_root"
 
 [import_order.after]
-start_plymouth = ["parse_cmdline", "make_run_dirs", "load_modules"]
+start_plymouth = ["parse_cmdline", "make_run_dirs", "load_modules", "start_udev"]
+finish_plymouth = "stop_udev"
 
 [custom_parameters]
 plymouth_config = "Path"  # Path to the plymouth configuration file
 plymouth_force_splash = "bool"  # Hardcode the splash argument into the plymouthd fake kernel cmdline
 plymouth_themes = "NoDupFlatList"  # List of plymouth themes to pull
 plymouth_debug = "bool"  # Enable plymouth debug mode and write logs to /run/plymouth/plymouth.log
+plymouth_kill = "bool"  # Kill plymouthd at the end of initramfs execution
