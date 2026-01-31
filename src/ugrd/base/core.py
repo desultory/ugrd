@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "4.7.3"
+__version__ = "4.7.4"
 
 from os import environ, makedev, mknod, uname
 from pathlib import Path
@@ -130,8 +130,14 @@ def _get_lddtree_deps(self, binary_path: Union[str, Path]) -> list[Path]:
     dependencies = run(["lddtree", "-l", binary_path], capture_output=True)
 
     if dependencies.returncode != 0:
+        # If there is a magic number error, the python version of lddtree is not looking at a binary file
+        # Simply return a list with the binary path itself
+        if "Magic number does not match" in dependencies.stderr.decode():
+            self.logger.debug(f"[{c_(binary_path, 'red')}] Magic number does not match, assuming no dependencies.")
+            return [Path(binary_path)]
+
         self.logger.warning("Unable to calculate dependencies for: %s" % c_(binary_path, "red", bold=True, bright=True))
-        raise AutodetectError("Unable to resolve dependencies, error: %s" % dependencies.stderr.decode("utf-8"))
+        raise AutodetectError("Unable to resolve dependencies, error: %s" % dependencies.stderr.decode())
 
     dependency_paths = []
     for dependency in dependencies.stdout.decode().splitlines():
