@@ -44,4 +44,6 @@ def start_udev(self):
     """Returns shell lines to start udev"""
     return """
     edebug "Starting udev: $(/lib/systemd/systemd-udevd --daemon 2>&1)"
-    udevadm trigger"""
+    udevadm trigger
+    udevadm settle
+    """
