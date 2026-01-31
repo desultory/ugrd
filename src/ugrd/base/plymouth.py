@@ -3,6 +3,10 @@ __version__ = "0.5.0"
 from configparser import ConfigParser
 from pathlib import Path
 
+from ugrd.exceptions import ValidationError
+from zenlib.types import NoDupFlatList
+from zenlib.util import colorize as c_
+
 PLYMOUTH_CONFIG_FILES = ["/etc/plymouth/plymouthd.conf", "/usr/share/plymouth/plymouthd.defaults"]
 PLYMOUTH_LIBRARIES = ["/usr/lib64/plymouth", "/usr/lib/plymouth"]
 
@@ -31,11 +35,40 @@ def _process_plymouth_themes_multi(self, theme) -> None:
     self.data["plymouth_themes"].append(theme)
 
 
+def _get_plymouth_theme_fonts(self, theme_name: str) -> NoDupFlatList[Path]:
+    """Reads Font and TitleFont from plymouth theme .plymouth files
+    returns a list of paths for all fonts found
+    """
+    config_file = Path("/usr/share/plymouth/themes") / theme_name / f"{theme_name}.plymouth"
+    theme_config = ConfigParser()
+    theme_config.read(config_file)
+    font_files = NoDupFlatList(logger=self.logger)
+
+    for section in theme_config.sections():
+        for key in ["Font", "TitleFont"]:
+            if theme_config.has_option(section, key):
+                font_files.append(theme_config[section][key])
+
+    return font_files
+
+
 def pull_plymouth(self) -> None:
     """Adds plymouth files to dependencies"""
     dir_list = [*PLYMOUTH_LIBRARIES]
     for theme in self["plymouth_themes"]:
-        dir_list += [Path("/usr/share/plymouth/themes/") / theme]
+        theme_path = Path("/usr/share/plymouth/themes/") / theme
+        if not theme_path.exists():
+            raise ValidationError(f"Plymouth theme not found: {c_(theme, 'red')}")
+
+        if font_files := _get_plymouth_theme_fonts(self, theme):
+            font_str = c_(", ".join(str(f) for f in font_files), "green")
+            self.logger.info(f"[{c_(theme, 'blue')}] Adding plymouth theme fonts: {font_str}")
+            self["fonts"] = font_files
+        else:
+            self.logger.info(f"[{c_(theme, 'yellow')}] No fonts found in plymouth theme.")
+
+        dir_list.append(theme_path)
+
     for lib_dir in dir_list:
         if Path(lib_dir).exists():
             self.logger.debug(f"Adding plymouth files to dependencies: {lib_dir}")
@@ -82,6 +115,7 @@ def start_plymouth(self) -> str:
     setvar plymouth 1
     plymouth show-splash
     """
+
 
 def finish_plymouth(self) -> str:
     """Returns shell lines to stop plymouthd
