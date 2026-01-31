@@ -328,29 +328,31 @@ class GeneratorHelpers:
                     def reorder_func(direction):
                         """Reorders the function based on the direction."""
                         if direction == "before":  # Move the function before the other function
-                            self.logger.debug("[%s] Moving function before: %s" % (func_name, other_func))
+                            self.logger.debug(f"[{c_(func_name, 'green')}] Moving function before: {c_(other_func, 'blue')}")
                             func_names.insert(other_index, func_names.pop(func_index))
                             self["imports"][hook].insert(other_index, self["imports"][hook].pop(func_index))
                         elif direction == "after":  # Move the other function before the current function
-                            self.logger.debug("[%s] Moving function before: %s" % (other_func, func_name))
+                            self.logger.debug(f"[{c_(func_name, 'green')}] Moving function after: {c_(other_func, 'blue')}")
                             func_names.insert(func_index, func_names.pop(other_index))
                             self["imports"][hook].insert(func_index, self["imports"][hook].pop(other_index))
                         else:
                             raise ValueError("Invalid direction: %s" % direction)
 
-                    self.logger.log(5, "[%s] Imports:\n%s", hook, ", ".join(i.__name__ for i in self["imports"][hook]))
+                    import_funcs = ", ".join([i.__name__ for i in self["imports"][hook]])
+                    self.logger.log(5, f"[{c_(hook, 'blue')}] Current function order: {c_(import_funcs, 'yellow')}")
+
                     if direction == "before":  # func_index should be before other_index
                         if func_index > other_index:  # If the current function is after the other function
                             reorder_func("before")  # Move the current function before the other function)
                             changed = True
                         else:  # Log otherwise
-                            self.logger.log(5, "Function %s already before: %s" % (func_name, other_func))
+                            self.logger.log(5, f"[{c_(func_name, 'green')}] Function already before: {c_(other_func, 'blue')}")
                     elif direction == "after":  # func_index should be after other_index
                         if func_index < other_index:  # If the current function is before the other function
                             reorder_func("after")  # Move the current function after the other function
                             changed = True
                         else:
-                            self.logger.log(5, "Function %s already after: %s" % (func_name, other_func))
+                            self.logger.log(5, f"[{c_(func_name, 'green')}] Function already after: {c_(other_func, 'blue')}")
                     else:
                         raise ValueError("Invalid direction: %s" % direction)
                     func_index = func_names.index(func_name)  # Update the index after moving
