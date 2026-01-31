@@ -19,9 +19,13 @@ def check_init_target(self) -> None:
 def _process_init_target(self, target: Path) -> None:
     if not isinstance(target, Path):
         target = Path(target).resolve()
-    if "systemd" in str(target) and "ugrd.fs.fakeudev" not in self["modules"]:
-        self.logger.warning("[systemd] Auto-enabling 'ugrd.fs.fakeudev'. This module is experimental.")
-        self["modules"] = "ugrd.fs.fakeudev"
+        if "systemd" in str(target):
+            if "ugrd.fs.fakeudev" in self["modules"]:
+                self.logger.warning("[systemd] 'ugrd.fs.fakeudev' is experimental, consider using 'ugrd.base.udev' instead.")
+            elif "ugrd.base.udev" not in self["modules"]:
+                self.logger.warning("[systemd] Auto-enabling 'ugrd.base.udev' for systemd support.")
+                self["modules"] = "ugrd.base.udev"
+
     self.data["init_target"] = target
     self["exports"]["init"] = self["init_target"]
 

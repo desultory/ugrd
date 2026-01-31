@@ -210,6 +210,8 @@ This module is loaded in the imports section of the `base.yaml` file:
 
 Modules can provide/need a certain "tag" to be set by other modules.
 
+Provided tags are stored in config["provided"], which is a set of strings, each tag must be unique and cannot be provided by multiple modules.
+
 If a module has a `provides` string or list of strings, those will be added to config["provided"].
 When a module has a `needs` string or list of strings, those will be checked against config["provided"].
 
@@ -239,3 +241,4 @@ def hello_world(self) -> str:
 ```
 
 This module can be used with `ugrd -m hello_world`
+

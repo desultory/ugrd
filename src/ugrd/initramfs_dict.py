@@ -15,6 +15,8 @@ from zenlib.types import NoDupFlatList
 from zenlib.util import colorize as c_
 from zenlib.util import handle_plural, pretty_print
 
+from .exceptions import ValidationError
+
 
 @loggify
 class InitramfsConfigDict(UserDict):
@@ -395,9 +397,16 @@ class InitramfsConfigDict(UserDict):
         # Append the module to the list of loaded modules, avoid recursion
         self["modules"].append(module)
 
-        if provides := module_config.get("provides"):  # Handle provided tags last
-            self.logger.debug("[%s] Provided: %s" % (module, provides))
-            self["provided"] = provides
+        # Handle provides tags, ensure only a single module provides a tag
+        if provides := module_config.get("provides"):
+            self.logger.debug(f"[{c_(module, bright=True)}] Processing provided tags: {c_(provides, 'green')}")
+            if isinstance(provides, str):
+                provides = [provides]
+            for tag in provides:
+                if tag in self["provided"]:
+                    raise ValidationError(f"[{c_(module, 'yellow')}] Provided tag already registered: {c_(tag, 'red')}")
+                self["provided"] = tag
+                self.logger.info(f"[{c_(module, bright=True)}] Registered provided tag: {c_(tag, 'green', bold=True)}")
 
     def validate(self) -> None:
         """Validate config, checks that all values are processed, sets validated flag."""

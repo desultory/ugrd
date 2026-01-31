@@ -1,0 +1,20 @@
+binaries = ["/lib/systemd/systemd-udevd"]
+dependencies = ["/etc/group"]
+
+provides = "udev"
+
+[imports.build_tasks]
+"ugrd.base.udev" = [ "pull_udev_deps" ]
+
+[imports.init_pre]
+"ugrd.base.udev" = [ "start_udev" ]
+
+[imports.init_final]
+"ugrd.base.udev" = [ "stop_udev" ]
+
+[import_order.before]
+"start_udev" = [ "load_modules" ]
+"stop_udev" = [ "unmount_fstab", "do_switch_root" ]
+
+[import_order.after]
+"start_udev" = ["mount_base"]
