@@ -239,3 +239,4 @@ def hello_world(self) -> str:
 ```
 
 This module can be used with `ugrd -m hello_world`
+

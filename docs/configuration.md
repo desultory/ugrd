@@ -166,6 +166,14 @@ Setting `start_shell` to `true` will start a bash shell in `init_debug`.
 Use `editor` to manually specify the editor binary, otherwise it is autodetected from the `EDITOR` environment variable
 > If `validation` is enabled the editor binary is checked against a list of common editors, use `no_validate_editor` to skip this check if needed
 
+### base.udev
+
+This module adds systemd-udev support to the initramfs.
+
+This is required for plymouth and recommended for systems using systemd.
+
+No configuration options are available.
+
 ### Kernel modules
 
 `ugrd.kmod.kmod` is the core of the kernel module loading..
@@ -301,6 +309,8 @@ This module is used to create fake udev entries for DM devices.
 This is only needed when using systemd, and if there are mounts that depend on a root DM device.
 
 This module can be enabled by adding `ugrd.fs.fakeudev` to the `modules` list.
+
+> Cannot be used with the (real) 'ugrd.base.udev' module 
 
 #### ugrd.fs.cpio
 
