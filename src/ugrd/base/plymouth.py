@@ -63,7 +63,8 @@ def _get_plymouthd_args(self) -> str:
         base_args += " --debug --debug-file=/run/plymouth/plymouth.log"
 
     if cmdline_args:
-        return f'{base_args} --kernel-command-line="{" ".join(cmdline_args)} $(< /proc/cmdline)"'
+        return f'{base_args} --kernel-command-line="{" ".join(cmdline_args)} $(cat /proc/cmdline)"'
+
     return base_args
 
 
