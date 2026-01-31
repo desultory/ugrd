@@ -122,6 +122,28 @@ def _determine_interpreter(self, binary: Path) -> str:
             self.logger.log(5, "No shebang found in: %s" % binary)
 
 
+def _get_lddtree_deps(self, binary_path: Union[str, Path]) -> list[Path]:
+    """Gets dependencies using lddtree."""
+    binary_path = str(binary_path)
+
+    self.logger.debug(f"Calculating dependencies for: {c_(binary_path, 'blue')}")
+    dependencies = run(["lddtree", "-l", binary_path], capture_output=True)
+
+    if dependencies.returncode != 0:
+        self.logger.warning("Unable to calculate dependencies for: %s" % c_(binary_path, "red", bold=True, bright=True))
+        raise AutodetectError("Unable to resolve dependencies, error: %s" % dependencies.stderr.decode("utf-8"))
+
+    dependency_paths = []
+    for dependency in dependencies.stdout.decode().splitlines():
+        # Remove extra slash at the start if it exists
+        if dependency.startswith("//"):
+            dependency = dependency[1:]
+
+        dependency_paths.append(Path(dependency))
+    self.logger.debug(f"[{c_(binary_path, 'blue')}] Calculated dependencies: {c_(dependency_paths, 'cyan')}")
+    return dependency_paths
+
+
 def calculate_dependencies(self, binary: str) -> list[Path]:
     """Calculates the dependencies of a binary using lddtree.
 
@@ -141,22 +163,7 @@ def calculate_dependencies(self, binary: str) -> list[Path]:
         else:
             self.logger.debug(f"Interpreter already in binaries list, skipping: {c_(interpreter, 'yellow')}")
 
-    self.logger.debug("Calculating dependencies for: %s" % binary_path)
-    dependencies = run(["lddtree", "-l", str(binary_path)], capture_output=True)
-
-    if dependencies.returncode != 0:
-        self.logger.warning("Unable to calculate dependencies for: %s" % c_(binary, "red", bold=True, bright=True))
-        raise AutodetectError("Unable to resolve dependencies, error: %s" % dependencies.stderr.decode("utf-8"))
-
-    dependency_paths = []
-    for dependency in dependencies.stdout.decode("utf-8").splitlines():
-        # Remove extra slash at the start if it exists
-        if dependency.startswith("//"):
-            dependency = dependency[1:]
-
-        dependency_paths.append(Path(dependency))
-    self.logger.debug("[%s] Calculated dependencies: %s" % (binary, dependency_paths))
-    return dependency_paths
+    return _get_lddtree_deps(self, binary_path)
 
 
 def find_library(self, library: str) -> None:
@@ -465,6 +472,7 @@ def _process_libraries_multi(self, library: Union[str]) -> None:
     self["libraries"].append(library)
     self["dependencies"] = library_path
     self["library_paths"] = str(library_path.parent)
+    self["libraries"] = _get_lddtree_deps(self, library_path)
 
 
 def _process_binaries_multi(self, binary: str) -> None:
