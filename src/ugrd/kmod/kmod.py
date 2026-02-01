@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "4.2.0"
+__version__ = "4.2.1"
 
 from pathlib import Path
 from platform import uname
@@ -147,11 +147,13 @@ def _get_kmod_info(self, module: str) -> dict:
             if "," in line:
                 module_info["depends"] = _normalize_kmod_name(self, line.split(":")[1].lstrip().split(","))
             else:
-                module_info["depends"] = _normalize_kmod_name(self, [line.split()[1]])
+                module_info["depends"] = [_normalize_kmod_name(self, line.split()[1])]
         elif line.startswith("softdep:"):
-            if "softdep" not in module_info:
-                module_info["softdep"] = []
-            module_info["softdep"] += line.split()[2::2]
+            softdep_info = line.rsplit(":", 1)[1].strip()
+            if "," in softdep_info:
+                module_info["softdep"] = _normalize_kmod_name(self, softdep_info.split(","))
+            else:
+                module_info["softdep"] = [_normalize_kmod_name(self, softdep_info)]
         elif line.startswith("firmware:"):
             # Firmware is a list, so append to it, making sure it exists first
             if "firmware" not in module_info:
