@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "7.3.0"
+__version__ = "7.4.0"
 
 from pathlib import Path
 from shutil import which
@@ -21,7 +21,9 @@ def _process_init_target(self, target: Path) -> None:
         target = Path(target).resolve()
         if "systemd" in str(target):
             if "ugrd.fs.fakeudev" in self["modules"]:
-                self.logger.warning("[systemd] 'ugrd.fs.fakeudev' is experimental, consider using 'ugrd.base.udev' instead.")
+                self.logger.warning(
+                    "[systemd] 'ugrd.fs.fakeudev' is experimental, consider using 'ugrd.base.udev' instead."
+                )
             elif "ugrd.base.udev" not in self["modules"]:
                 self.logger.warning("[systemd] Auto-enabling 'ugrd.base.udev' for systemd support.")
                 self["modules"] = "ugrd.base.udev"
@@ -34,6 +36,7 @@ def _process_loglevel(self, loglevel: int) -> None:
     """Sets the loglevel."""
     self.data["loglevel"] = int(loglevel)
     self["exports"]["loglevel"] = loglevel
+
 
 def _process_log_file(self, log_file: Path | str) -> None:
     """Sets the log_file."""
@@ -192,7 +195,7 @@ def rd_fail(self) -> list[str]:
         r'eerror "Mounts:\n$(mount)"',
         r'if [ -n "$(readvar ugrd_log_file)" ]; then',
         r'    eerror "UGRD log file: (/run/$(readvar ugrd_log_file))"',
-        r'fi',
+        r"fi",
         'if [ "$(readvar ugrd_recovery)" = "1" ]; then',
         '    einfo "Entering recovery shell"',
     ]
@@ -298,11 +301,11 @@ def prompt_user(self) -> list[str]:
         output += [r'printf "\033[1;35m *\033[0m %s\n" "$prompt"']
     output += [
         """if [ -z "$2" ] || [ "$(echo "$2 > 0" | bc)" -eq 0 ]; then""",
-        '    while ! wait_for_space; do',
+        "    while ! wait_for_space; do",
         '        ewarn "Invalid input, press space to continue."',
-        '    done',
-        '    return 0',
-        'fi',
+        "    done",
+        "    return 0",
+        "fi",
         'wait_for_space "$2"',
         'return "$?"',
     ]
@@ -342,14 +345,16 @@ def klog(self) -> str:
     """Logs a message to the kernel log."""
     return 'echo "${*}" > /dev/kmsg'
 
+
 def rd_log(self) -> str:
-    """ If ugrd_log_file is set, logs a message to the log file.
+    """If ugrd_log_file is set, logs a message to the log file.
     Always log under /run
     """
     return r"""
     log_file="$(readvar ugrd_log_file)"
+    output="$(printf %s "${*}" | awk '{gsub("\\\\n","\n"); print}')"
     if [ -n "${log_file}" ]; then
-        printf "%b\n" "${*}" >> "/run/${log_file}"
+        printf "%s\n" "${output}" >> "/run/${log_file}"
     fi
     """
 
@@ -358,7 +363,7 @@ def rd_log(self) -> str:
 def edebug(self) -> str:
     """Returns a shell function like edebug."""
     return r"""
-    output="$(printf "%b" "${*}")"
+    output="$(printf %s "${*}" | awk '{gsub("\\\\n","\n"); print}')"
     rd_log "DEBUG: ${output}"
     if check_var quiet; then
         return
@@ -366,13 +371,13 @@ def edebug(self) -> str:
     if [ "$(readvar ugrd_debug)" != "1" ]; then
         return
     fi
-    printf "\033[1;34m *\033[0m %b\n" "${output}"
+    printf "\033[1;34m *\033[0m %s\n" "${output}"
     """
 
 
 def einfo(self) -> list[str]:
     """Returns a shell function like einfo."""
-    output = ['output="$(printf "%b" "${*}")"', 'rd_log "INFO: ${output}"']
+    output = [r'''output="$(printf %s "${*}" | awk '{gsub("\\\\n","\n"); print}')"''', 'rd_log "INFO: ${output}"']
     if "ugrd.base.plymouth" in self["modules"]:
         output += [
             "if plymouth --ping; then",
@@ -381,7 +386,7 @@ def einfo(self) -> list[str]:
             "fi",
         ]
 
-    output += ["if check_var quiet; then", "    return", "fi", r'printf "\033[1;32m *\033[0m %b\n" "${output}"']
+    output += ["if check_var quiet; then", "    return", "fi", r'printf "\033[1;32m *\033[0m %s\n" "${output}"']
     return output
 
 
@@ -389,7 +394,7 @@ def ewarn(self) -> list[str]:
     """Returns a shell function like ewarn.
     If plymouth is running, it displays a message instead of echoing.
     """
-    output = ['output="$(printf "%b" "${*}")"', 'rd_log "WARN: ${output}"']
+    output = [r'''output="$(printf %s "${*}" | awk '{gsub("\\\\n","\n"); print}')"''', 'rd_log "WARN: ${output}"']
     if "ugrd.base.plymouth" in self["modules"]:
         output += [
             "if plymouth --ping; then",  # Always show the message if plymouth is running
@@ -402,14 +407,14 @@ def ewarn(self) -> list[str]:
         "if check_var quiet; then",
         "    return",
         "fi",
-        r'printf "\033[1;33m *\033[0m %b\n" "${output}"',
+        r'printf "\033[1;33m *\033[0m %s\n" "${output}"',
     ]
     return output
 
 
 def eerror(self) -> list[str]:
     """Returns a shell function like eerror."""
-    output = ['output="$(printf "%b" "${*}")"', 'rd_log "ERROR: ${output}"']
+    output = [r'''output="$(printf %s "${*}" | awk '{gsub("\\\\n","\n"); print}')"''', 'rd_log "ERROR: ${output}"']
     if "ugrd.base.plymouth" in self["modules"]:
         output += [
             "if plymouth --ping; then",
@@ -418,5 +423,5 @@ def eerror(self) -> list[str]:
             "fi",
         ]
     else:
-        output += [r'printf "\033[1;31m *\033[0m %b\n" "${output}"']
+        output += [r'printf "\033[1;31m *\033[0m %s\n" "${output}"']
     return output
