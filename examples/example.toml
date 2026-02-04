@@ -96,6 +96,8 @@ kmod_autodetect_lspci = true
 #include_key = true
 # If the key file is on storage not accessible to the build system, validation can be disabled:
 #validate_key = false
+# If key unlocking fails, attempt a password unlock:
+#try_nokey = true
 
 # If using detached headers, the header file can be treated similarly to the key file
 #header_file = "/boot/rootfs.luks.header"
