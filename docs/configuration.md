@@ -318,6 +318,7 @@ This module handles CPIO creation.
 
 * `cpio_compression` (xz) Sets the compression method for the CPIO file, passed to PyCPIO.
 * `cpio_rotate` (true) Rotates old CPIO files, keeping `old_count` number of old files.
+* `cpio_deduplicate` (true) Deduplicates files in the CPIO archive to save space (make hardlinks).
 
 ##### General mount options
 

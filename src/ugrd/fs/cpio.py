@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "3.8.0"
+__version__ = "3.9.0"
 
 from pathlib import Path
 
@@ -8,7 +8,7 @@ from zenlib.util import colorize, contains, unset
 
 
 @contains("check_cpio")
-def check_cpio_deps(self) -> None:
+def check_cpio_deps(self) -> str:
     """Checks that all dependenceis are in the generated CPIO file."""
     for dep in self["dependencies"]:
         _check_in_cpio(self, dep)
@@ -16,7 +16,7 @@ def check_cpio_deps(self) -> None:
 
 
 @contains("check_cpio")
-def check_cpio_funcs(self) -> None:
+def check_cpio_funcs(self) -> str:
     """Checks that all included functions are in the profile included in the generated CPIO file."""
     sh_func_names = [func + "() {" for func in self.included_functions]
     _check_in_cpio(self, "etc/profile", sh_func_names)
@@ -25,14 +25,14 @@ def check_cpio_funcs(self) -> None:
 
 @contains("check_in_cpio")
 @contains("check_cpio")
-def check_in_cpio(self) -> None:
+def check_in_cpio(self) -> str:
     """Checks that all required files and lines are in the generated CPIO file."""
     for file, lines in self["check_in_cpio"].items():
         _check_in_cpio(self, file, lines)
     return "All files and lines found in CPIO."
 
 
-def _check_in_cpio(self, file, lines=[], quiet=False):
+def _check_in_cpio(self, file, lines=[], quiet=False) -> None:
     """Checks that the file is in the CPIO archive, and it contains the specified lines."""
     cpio = self._cpio_archive
     file = str(file).lstrip("/")  # Normalize as it may be a path
@@ -64,8 +64,10 @@ def _check_in_cpio(self, file, lines=[], quiet=False):
 
 
 @unset("out_file")
-def get_archive_name(self) -> str:
-    """Determines the filename for the output CPIO archive based on the current configuration."""
+def get_archive_name(self) -> None:
+    """Determines the filename for the output CPIO archive based on the current configuration.
+    Sets the 'out_file' key in the configuration dictionary.
+    """
     if self.get("kmod_init") and self.get("kernel_version"):
         out_file = f"ugrd-{self['kernel_version']}.cpio"
     else:
@@ -85,11 +87,13 @@ def get_archive_name(self) -> str:
 def make_cpio(self) -> None:
     """
     Populates the CPIO archive using the build directory,
+    toggles the deduplication setting based on cpio_deduplicate,
     writes it to the output file, and rotates the output file if necessary.
     Creates device nodes in the CPIO archive if make_nodes is False. (make_nodes will create actual files instead)
     Raises FileNotFoundError if the output directory does not exist.
     """
     cpio = self._cpio_archive
+    cpio.deduplicate = self["cpio_deduplicate"]
     cpio.append_recursive(self._get_build_path("/"), relative=True)
 
     if not self.get("make_nodes"):

@@ -1,4 +1,5 @@
 cpio_compression = "xz"
+cpio_deduplicate = true
 cpio_rotate = true
 check_cpio = true
 
@@ -14,6 +15,7 @@ check_cpio = true
 [custom_parameters]
 cpio_rotate = "bool"  # makes a .old backup of the cpio file if it already exists.
 cpio_compression = "str"  # The compression method to use for the cpio file. XZ and ZSTD are supported.
+cpio_deduplicate = "bool"  # When enabled, duplicate files are hardlinked in the cpio archive.
 _cpio_archive = "PyCPIO"  # The cpio archive object.
 check_cpio = "bool"  # When enabled, the CPIO archive contents are checked for errors.
 check_in_cpio = "dict"  # A dictionary of files to check for in the cpio archive.
