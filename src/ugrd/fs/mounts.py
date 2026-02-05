@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "7.3.3"
+__version__ = "7.3.4"
 
 from pathlib import Path
 from re import search
@@ -403,7 +403,7 @@ def get_zpool_info(self, poolname=None) -> Union[dict, None]:
     # Always try to get zpool info, but only raise an error if a poolname is passed or the ZFS module is enabled
     try:
         pool_info = self._run(["zpool", "list", "-vPH", "-o", "name"]).stdout.decode().strip().split("\n")
-    except FileNotFoundError:
+    except (FileNotFoundError, RuntimeError):
         if "ugrd.fs.zfs" not in self["modules"]:
             return self.logger.debug("ZFS pool detection failed, but ZFS module not enabled, skipping.")
         if poolname:
