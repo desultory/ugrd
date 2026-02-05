@@ -3,7 +3,7 @@ __version__ = "0.5.0"
 from configparser import ConfigParser
 from pathlib import Path
 
-from ugrd.exceptions import ValidationError
+from ugrd.exceptions import AutodetectError, ValidationError
 from zenlib.types import NoDupFlatList
 from zenlib.util import colorize as c_
 
@@ -82,7 +82,11 @@ def pull_plymouth(self) -> None:
         self["copies"] = {
             "plymouth_config_file": {"source": self["plymouth_config"], "destination": "/etc/plymouth/plymouthd.conf"}
         }
-    self["libraries"] = "libdrm"
+
+    try:
+        self["libraries"] = "libdrm"
+    except AutodetectError:
+        self["libraries"] = "libdrm.so.2"
 
 
 def _get_plymouthd_args(self) -> str:
