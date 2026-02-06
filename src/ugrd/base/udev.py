@@ -1,8 +1,7 @@
 from pathlib import Path
 
-from zenlib.util import colorize as c_
-
 from ugrd.exceptions import AutodetectError
+from zenlib.util import colorize as c_
 
 
 def _get_udev_rule_progs(rule_file: Path):
@@ -23,7 +22,15 @@ def _get_udev_rule_progs(rule_file: Path):
 
 
 def pull_udev_deps(self):
-    """Pulls udev rule files"""
+    """Pulls udev rule files
+    Reads for binary requirements and adds them to the dependencies list
+    Adds /usr/lib64/udev or /usr/lib/udev to the binary_search_paths attribute if they exist
+    """
+
+    for udev_binary_path in [Path("/usr/lib64/udev"), Path("/usr/lib/udev")]:
+        if udev_binary_path.is_dir():
+            self.logger.info(f"Adding udev binary search path: {c_(udev_binary_path, 'green')}")
+            self["binary_search_paths"] = str(udev_binary_path)
 
     udev_rule_dirs = [Path("/etc/udev/rules.d"), Path("/lib/udev/rules.d")]
 
@@ -47,6 +54,7 @@ def start_udev(self):
     udevadm trigger
     udevadm settle
     """
+
 
 def stop_udev(self):
     """Returns shell lines to stop udev"""
