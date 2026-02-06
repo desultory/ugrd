@@ -9,7 +9,6 @@ merge_usr = true
 hostonly = true
 validate = true
 library_paths = [ "/lib64", "/lib" ]
-binary_search_paths = [ "/bin", "/sbin", "/usr/bin", "/usr/sbin" ]
 old_count = 1
 timeout = 15
 
@@ -21,6 +20,7 @@ minor = 1
 [imports.config_processing]
 "ugrd.base.core" = [ "_process_build_logging",
 		     "_process_out_file",
+		     "_process_binary_search_paths_multi",
 		     "_process_binaries_multi",
 		     "_process_libraries_multi",
 		     "_process_dependencies_multi",
