@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "4.7.4"
+__version__ = "4.8.0"
 
 from os import environ, makedev, mknod, uname
 from pathlib import Path
@@ -12,6 +12,17 @@ from ugrd.exceptions import AutodetectError, ValidationError
 from zenlib.types import NoDupFlatList
 from zenlib.util import colorize as c_
 from zenlib.util import contains, unset
+
+# Use the default PATH environment variable, split into a list, as the default binary search paths.
+# Use a hardcoded list of common binary paths if PATH is not set or empty, to ensure there are always some search paths available.
+_DEFAULT_BINARY_SEARCH_PATHS = environ.get("PATH", "").split(":") or [
+    "/bin",
+    "/sbin",
+    "/usr/bin",
+    "/usr/sbin",
+    "/usr/local/bin",
+    "/usr/local/sbin",
+]
 
 
 def _has_zstd() -> bool:
@@ -157,9 +168,13 @@ def calculate_dependencies(self, binary: str) -> list[Path]:
 
     Returns a list of Path objects for each dependency.
     """
-    binary_path = which(binary)
+    search_paths = ":".join(self["binary_search_paths"] or _DEFAULT_BINARY_SEARCH_PATHS)
+    self.logger.log(
+        5, f"Calculating dependencies for binary: {c_(binary, 'blue')} with PATH: {c_(search_paths, 'cyan')}"
+    )
+    binary_path = which(binary, path=search_paths)
     if not binary_path:
-        raise AutodetectError(f"Binary not found not found in PATH: {binary}")
+        raise AutodetectError(f"[{c_(binary, 'red')}] Binary not found not found in PATH: {c_(search_paths, 'yellow')}")
 
     binary_path = Path(binary_path)
     if interpreter := _determine_interpreter(self, binary_path):
@@ -479,6 +494,23 @@ def _process_libraries_multi(self, library: Union[str]) -> None:
     self["dependencies"] = library_path
     self["library_paths"] = str(library_path.parent)
     self["libraries"] = _get_lddtree_deps(self, library_path)
+
+
+def _process_binary_search_paths_multi(self, path: Union[Path, str]) -> None:
+    """Processes binary search paths."""
+    self.logger.log(5, "Processing binary search path: %s" % path)
+    if not isinstance(path, Path):
+        path = Path(path)
+
+    if not path.exists():
+        self.logger.warning(f"Binary search path does not exist, skipping: {c_(str(path), 'yellow')}")
+
+    if not self["binary_search_paths"]:
+        self.logger.info(f"Setting initial binary search path: {c_(', '.join(_DEFAULT_BINARY_SEARCH_PATHS), 'cyan')}")
+        self["binary_search_paths"].extend(_DEFAULT_BINARY_SEARCH_PATHS.copy())
+
+    self.logger.debug(f"Adding binary search path: {c_(str(path), 'green')}")
+    self["binary_search_paths"].append(str(path))
 
 
 def _process_binaries_multi(self, binary: str) -> None:
