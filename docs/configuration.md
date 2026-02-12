@@ -341,6 +341,13 @@ Importing this module will run `btrfs device scan` and pull btrfs modules.
 
 When enabled, attempts to resume after hibernation if resume= is passed on the kernel command line.
 
+If you have an encrypted swap partition, also add it like:
+
+```toml
+[cryptsetup.swap]
+uuid = "x"
+```
+
 ### Cryptographic modules
 
 Several cryptographic modules are provided, mostly to assist in mounting encrypted volumes and handling keyfiles.
