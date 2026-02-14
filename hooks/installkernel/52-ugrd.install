@@ -32,7 +32,13 @@ main() {
 
 	[[ ${EUID} -eq 0 ]] || die "Please run this script as root"
 
-	ugrd "$([ "${INSTALLKERNEL_VERBOSE}" = 1 ] && echo --log-level=10 || echo --log-level=20)" --no-rotate --kver "${ver}" "${initrd}"
+    # Check if no_kmod is enabled in the config
+    [[ -n "$(grep -e "no_kmod = true" /etc/ugrd/config.toml | grep -v "#")" ]] && kernel_version='--no-kmod' || kernel_version='--kver "${ver}"'
+
+    # Set log level
+    [ "${INSTALLKERNEL_VERBOSE}" = 1 ] && log_level='--log-level=10' || log_level='--log-level=20'
+
+    ugrd ${log_level} ${kernel_version} --no-rotate "${initrd}"
 	case $? in
 		0) einfo "Generated initramfs for kernel: ${ver}";;
 		77) ewarn "Missing ZFS kernel module for kernel: ${ver}" && exit 77;;
