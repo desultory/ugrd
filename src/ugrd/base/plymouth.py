@@ -1,4 +1,4 @@
-__version__ = "0.5.0"
+__version__ = "0.6.0"
 
 from configparser import ConfigParser
 from pathlib import Path
@@ -7,22 +7,49 @@ from ugrd.exceptions import AutodetectError, ValidationError
 from zenlib.types import NoDupFlatList
 from zenlib.util import colorize as c_
 
-PLYMOUTH_CONFIG_FILES = ["/etc/plymouth/plymouthd.conf", "/usr/share/plymouth/plymouthd.defaults"]
+PLYMOUTH_CONFIG_DEFAULT = Path("/usr/share/plymouth/plymouthd.defaults")
+PLYMOUTH_CONFIG_ETC = Path("/etc/plymouth/plymouthd.conf")
 PLYMOUTH_LIBRARIES = ["/usr/lib64/plymouth", "/usr/lib/plymouth"]
 
 
+def _process_plymouth_config(self, file: Path) -> bool:
+    """Processes a plymouth config file, if themes are defined, adds them to the plymouth_themes list
+    returns False if the file is missing the Daemon section
+    """
+    if str(file) == ".":
+        self.logger.debug("Empty path passed as plymouth config, skipping.")
+        return False
+
+    plymouth_config = ConfigParser()
+    plymouth_config.read(file)
+    if not plymouth_config.has_section("Daemon"):
+        self.logger.error(f"[{c_(str(file), 'red')}] Plymouth config file missing Daemon section.")
+        return False
+    if plymouth_config.has_option("Daemon", "Theme"):
+        self["plymouth_themes"] += plymouth_config["Daemon"]["Theme"]
+    else:
+        self.logger.warning(f"[{c_(str(file), 'yellow')}] Plymouth config file missing theme option.")
+    return True
+
+
 def find_plymouth_config(self) -> None:
-    """Processes themes from plymouth config file
-    Sets the config file if it is the first one found"""
-    for file in PLYMOUTH_CONFIG_FILES:
-        plymouth_config = ConfigParser()
-        plymouth_config.read(file)
-        if plymouth_config.has_section("Daemon") and plymouth_config.has_option("Daemon", "Theme"):
-            self["plymouth_themes"] += plymouth_config["Daemon"]["Theme"]
-            if str(self["plymouth_config"]) == ".":  # Set the first config file found
-                self["plymouth_config"] = file
-            continue
-        self.logger.warning("Plymouth config file missing theme option: %s" % file)
+    """Processes all plymouth config files (system default, etc config, user config)
+    Processed config files have themes added to the plymouth_themes list, and the file is added to dependencies.
+    If plymouth_config is not set, sets it to the file in /etc if daemon config was found there, otherwise uses the default config.
+
+    If a config file is defined, and has daemon config defined, process it and don't check the config from /etc
+    this allows users to specify their own config file without having to worry about the config file in /etc taking precedence.
+    """
+    if _process_plymouth_config(self, self["plymouth_config"]):
+        self.logger.info(f"Using user defined plymouth config file: {c_(self['plymouth_config'], 'green')}")
+        _process_plymouth_config(self, PLYMOUTH_CONFIG_DEFAULT)
+    else:
+        _process_plymouth_config(self, PLYMOUTH_CONFIG_DEFAULT)
+        # Set the plymouth config to the file in /etc if it was configured
+        self["plymouth_config"] = (
+            PLYMOUTH_CONFIG_ETC if _process_plymouth_config(self, PLYMOUTH_CONFIG_ETC) else PLYMOUTH_CONFIG_DEFAULT
+        )
+
     if not self["plymouth_themes"]:
         self.logger.error("No plymouth theme found in config files.")
 
@@ -61,7 +88,7 @@ def pull_plymouth(self) -> None:
             raise ValidationError(f"Plymouth theme not found: {c_(theme, 'red')}")
 
         if font_files := _get_plymouth_theme_fonts(self, theme):
-            font_str = c_(", ".join(str(f) for f in font_files), "green")
+            font_str = c_(", ".join(str(f) for f in font_files), "cyan")
             self.logger.info(f"[{c_(theme, 'blue')}] Adding plymouth theme fonts: {font_str}")
             self["fonts"] = font_files
         else:
@@ -79,6 +106,7 @@ def pull_plymouth(self) -> None:
                     self["dependencies"] = file
 
     if str(self["plymouth_config"]) != "/usr/share/plymouth/plymouthd.defaults":
+        self.logger.info(f"Adding plymouth config file to dependencies: {c_(self['plymouth_config'], 'blue')}")
         self["copies"] = {
             "plymouth_config_file": {"source": self["plymouth_config"], "destination": "/etc/plymouth/plymouthd.conf"}
         }
