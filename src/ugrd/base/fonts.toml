@@ -1,0 +1,6 @@
+[imports.config_processing]
+"ugrd.base.fonts" = ["_process_fonts_multi", "_process_default_font"]
+
+[custom_parameters]
+default_font = "str"  # The default system font
+fonts = "dict"  # All fonts to be pulled, key is the name, value is the path to the font file

@@ -174,6 +174,23 @@ This is required for plymouth and recommended for systems using systemd.
 
 No configuration options are available.
 
+### base.plymouth
+
+experimental plymouth module. Depends on `base.udev`
+
+This module requires manual user configuration outside of ugrd, specifically for "quiet" and "splash" to be set on the kernel command line.
+
+Themes will fail to install if dependencies of themes such as fonts are missing.
+
+By default, the `plymouth_kill` option is set to `true` which will kill plymouth once the initrd is done.
+This is to prevent plymouth from hanging onto the display after the initramfs is done if nothing is configured to handle the handover from the initramfs to the main system, such as a display manager or window manager.
+
+* plymouth_config (/etc/plymouth/plymouth.conf) - The path to the plymouth config file, used to determine which theme to use
+* plymouth_force_splash (false) - Force plymouth to start even if splash is not set in the kernel command line (quiet still must be set)
+* plymouth_themes - A list of plymouth themes to pull into the initramfs. This is generally parsed from config files and does not need manual definition
+* plymouth_debug (false) - Enable additional debug toggles and logging for plymouthd
+* plymouth_kill (true) - Kill plymouthd at the end of the initramfs, to prevent it from hanging onto the display if nothing else is configured to take over.
+
 ### Kernel modules
 
 `ugrd.kmod.kmod` is the core of the kernel module loading..
