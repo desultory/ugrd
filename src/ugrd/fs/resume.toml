@@ -5,3 +5,6 @@ cmdline_strings = [ "resume" ]
 
 [import_order.before]
 handle_resume = "mount_fstab"
+
+[custom_parameters]
+swap_uuid = "str"  # The UUID of the swap partition, used to resume from hibernation.
