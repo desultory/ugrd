@@ -6,15 +6,17 @@ There is very little to configure in the base image, unless you are just interes
 
 Modules may be imported to extend the functionality of the build system and resulting image. Many modules are automatically included whn their features are used.
 
-## Modules
+## Modules (Plugins)
 
-The modules config directive should contain a list with names specifying the path of which will be loaded, such as `ugrd.base.base`, `ugrd.base.console` or `ugrd.crypto.crypsetup`.
+The `modules` config directive should contain a list with names specifying the path of which will be loaded, such as `ugrd.base.base`, `ugrd.base.console` or `ugrd.crypto.crypsetup`.
 
 > By default `ugrd.base.base` and `ugrd.base.core` are loaded. These modules include the cmdline, kmod, and mounts modules.
 
-When a module is loaded, `initramfs_dict.py` will try to load the toml file for that module, parsing it in the same manner `config.yaml` is parsed.
+When a module is loaded, `initramfs_dict.py` will try to load the toml file for that module, parsing it in the same manner `config.toml` is parsed.
 
 Modules can load other modules, and can therefore be used as aliases for a set of modules.
+
+> Not to be confused with `kmod_init` for specifing kmods to pull and initialize at boot
 
 ## Base modules
 
