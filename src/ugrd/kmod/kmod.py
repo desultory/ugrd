@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "4.2.1"
+__version__ = "4.2.2"
 
 from pathlib import Path
 from platform import uname
@@ -7,28 +7,23 @@ from re import search
 from struct import error as StructError
 from struct import unpack
 from subprocess import run
-from typing import Union
 
 from ugrd.exceptions import AutodetectError, ValidationError
 from ugrd.kmod import BuiltinModuleError, DependencyResolutionError, IgnoredModuleError, MissingModuleError
 from zenlib.util import colorize as c_
 from zenlib.util import contains, unset
 
-_KMOD_ALIASES = {}
+_KMOD_ALIASES: dict[str, str] = {}
 MODULE_METADATA_FILES = ["modules.order", "modules.builtin", "modules.builtin.modinfo"]
 
 
-def _normalize_kmod_name(self, module: Union[str, list]) -> str:
+def _normalize_kmod_name(self, module: str) -> str:
     """Replaces -'s with _'s in a kernel module name.
     ignores modules defined in kmod_no_normalize.
     """
-    if isinstance(module, list) and not isinstance(module, str):
-        return [_normalize_kmod_name(self, m) for m in module]
     if module in self.get("kmod_no_normalize", []):
         self.logger.debug(f"Not normalizing kernel module name: {module}")
         return module
-    if "-" in module:
-        self.logger.log(5, f"Replacing - with _ in kernel module name: {module}")
     return module.replace("-", "_")
 
 
@@ -105,7 +100,7 @@ def _process__kmod_auto_multi(self, module: str) -> None:
     self["_kmod_auto"].append(module)
 
 
-def _get_kmod_info(self, module: str) -> dict:
+def _get_kmod_info(self, module: str) -> tuple[str, dict]:
     """
     Runs modinfo on a kernel module, parses the output and stored the results in self['_kmod_modinfo'].
     !!! Should be run after metadata is processed so the kver is set properly !!!
@@ -138,27 +133,26 @@ def _get_kmod_info(self, module: str) -> dict:
                 "[%s] Modinfo returned no output and the alias name could no be resolved." % module
             )
 
-    module_info = {"filename": None, "depends": [], "softdep": [], "firmware": []}
+    module_info: dict[str, list[str] | str] = {"filename": "", "depends": [], "softdep": [], "firmware": []}
     for line in cmd.stdout.decode().split("\n"):
         line = line.strip()
         if line.startswith("filename:"):
             module_info["filename"] = line.split()[1]
         elif line.startswith("depends:") and line != "depends:":
             if "," in line:
-                module_info["depends"] = _normalize_kmod_name(self, line.split(":")[1].lstrip().split(","))
+                kmod_deps = line.split(":")[1].lstrip().split(",")
+                module_info["depends"] = [_normalize_kmod_name(self, dep) for dep in kmod_deps]
             else:
                 module_info["depends"] = [_normalize_kmod_name(self, line.split()[1])]
         elif line.startswith("softdep:"):
             softdep_info = line.rsplit(":", 1)[1].strip()
             if "," in softdep_info:
-                module_info["softdep"] = _normalize_kmod_name(self, softdep_info.split(","))
+                kmod_deps = softdep_info.split(",")
+                module_info["softdep"] = [_normalize_kmod_name(self, dep) for dep in kmod_deps]
             else:
                 module_info["softdep"] = [_normalize_kmod_name(self, softdep_info)]
         elif line.startswith("firmware:"):
-            # Firmware is a list, so append to it, making sure it exists first
-            if "firmware" not in module_info:
-                module_info["firmware"] = []
-            module_info["firmware"] += line.split()[1:]
+            module_info["firmware"].extend(line.split()[1:])  # type: ignore[union-attr]  # ignore for now, fixup later
 
     if not module_info.get("filename"):
         raise DependencyResolutionError("[%s] Failed to process modinfo output: %s" % (module, cmd.stdout.decode()))
