@@ -12,7 +12,7 @@ The modules config directive should contain a list with names specifying the pat
 
 > By default `ugrd.base.base` and `ugrd.base.core` are loaded. These modules include the cmdline, kmod, and mounts modules.
 
-When a module is loaded, `initramfs_dict.py` will try to load the toml file for that module, parsing it in the same manner `config.yaml` is parsed.
+When a module is loaded, `initramfs_dict.py` will try to load the toml file for that module, parsing it in the same manner `config.toml` is parsed.
 
 Modules can load other modules, and can therefore be used as aliases for a set of modules.
 
