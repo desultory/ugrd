@@ -209,7 +209,6 @@ The following parameters can be used to change the kernel module pulling and ini
 * `kmod_ignore` - Kernel modules to ignore. Modules which depend on ignored modules will also be ignored.
 * `kmod_ignore_softdeps` (false) Ignore softdeps when checking kernel module dependencies.
 * `no_kmod` (false) Disable kernel modules entirely.
-* `kmod_no_normalize` - A list of kernel module names to not normalize (replace dashes with underscores).
 
 ##### ugrd.kmod.input
 

@@ -1,6 +1,8 @@
 __author__ = "desultory"
 __version__ = "4.2.2"
 
+
+from functools import lru_cache
 from pathlib import Path
 from platform import uname
 from re import search
@@ -17,13 +19,9 @@ _KMOD_ALIASES: dict[str, str] = {}
 MODULE_METADATA_FILES = ["modules.order", "modules.builtin", "modules.builtin.modinfo"]
 
 
-def _normalize_kmod_name(self, module: str) -> str:
-    """Replaces -'s with _'s in a kernel module name.
-    ignores modules defined in kmod_no_normalize.
-    """
-    if module in self.get("kmod_no_normalize", []):
-        self.logger.debug(f"Not normalizing kernel module name: {module}")
-        return module
+@lru_cache(maxsize=None)
+def _normalize_kmod_name(module: str) -> str:
+    """Replaces -'s with _'s in a kernel module name."""
     return module.replace("-", "_")
 
 
@@ -35,7 +33,7 @@ def _normalize_kmod_alias(self, alias: str) -> str:
         return ""
     alias = alias.split(":", 1)[-1]  # Strip bus type
     alias = alias.split(",", 1)[-1]
-    return _normalize_kmod_name(self, alias)
+    return _normalize_kmod_name(alias)
 
 
 def _resolve_kmod_alias(self, module: str) -> str:
@@ -55,7 +53,7 @@ def _resolve_kmod_alias(self, module: str) -> str:
 
 def _process_kernel_modules_multi(self, module: str) -> None:
     """Adds kernel modules to self['kernel_modules']."""
-    module = _normalize_kmod_name(self, module)
+    module = _normalize_kmod_name(module)
     if module in self["kmod_ignore"]:
         self.logger.debug("[%s] Module is in the ignore list." % module)
         self["_kmod_removed"] = module
@@ -67,7 +65,7 @@ def _process_kernel_modules_multi(self, module: str) -> None:
 
 def _process_kmod_init_multi(self, module: str) -> None:
     """Adds init modules to self['kernel_modules']."""
-    module = _normalize_kmod_name(self, module)
+    module = _normalize_kmod_name(module)
     if module in self["kmod_ignore"]:
         raise IgnoredModuleError("kmod_init module is in the ignore list: %s" % module)
     self["kmod_init"].append(module)
@@ -77,7 +75,7 @@ def _process_kmod_init_multi(self, module: str) -> None:
 
 def _process_kmod_init_optional_multi(self, module: str) -> None:
     """Adds an optional kmod init module"""
-    module = _normalize_kmod_name(self, module)
+    module = _normalize_kmod_name(module)
     if module in self["kmod_ignore"]:
         self.logger.warning(f"Optional kmod_init module is in the ignore list: {c_(module, 'yellow', bold=True)}")
         self["_kmod_removed"] = module
@@ -91,7 +89,7 @@ def _process_kmod_init_optional_multi(self, module: str) -> None:
 
 def _process__kmod_auto_multi(self, module: str) -> None:
     """Adds autodetected modules to self['kernel_modules']."""
-    module = _normalize_kmod_name(self, module)
+    module = _normalize_kmod_name(module)
     if module in self["kmod_ignore"]:
         self.logger.debug("Autodetected module is in the ignore list: %s" % module)
         self["_kmod_removed"] = module
@@ -113,7 +111,7 @@ def _get_kmod_info(self, module: str) -> tuple[str, dict]:
     Raises:
         DependencyResolutionError: If the modinfo command fails, returns no output, or the module name can't be resolved.
     """
-    module = _normalize_kmod_name(self, module)
+    module = _normalize_kmod_name(module)
     if module in self["_kmod_modinfo"]:
         return module, self["_kmod_modinfo"][module]
     args = ["modinfo", module, "--set-version", self["kernel_version"]]
@@ -141,16 +139,16 @@ def _get_kmod_info(self, module: str) -> tuple[str, dict]:
         elif line.startswith("depends:") and line != "depends:":
             if "," in line:
                 kmod_deps = line.split(":")[1].lstrip().split(",")
-                module_info["depends"] = [_normalize_kmod_name(self, dep) for dep in kmod_deps]
+                module_info["depends"] = [_normalize_kmod_name(dep) for dep in kmod_deps]
             else:
-                module_info["depends"] = [_normalize_kmod_name(self, line.split()[1])]
+                module_info["depends"] = [_normalize_kmod_name(line.split()[1])]
         elif line.startswith("softdep:"):
             softdep_info = line.rsplit(":", 1)[1].strip()
             if "," in softdep_info:
                 kmod_deps = softdep_info.split(",")
-                module_info["softdep"] = [_normalize_kmod_name(self, dep) for dep in kmod_deps]
+                module_info["softdep"] = [_normalize_kmod_name(dep) for dep in kmod_deps]
             else:
-                module_info["softdep"] = [_normalize_kmod_name(self, softdep_info)]
+                module_info["softdep"] = [_normalize_kmod_name(softdep_info)]
         elif line.startswith("firmware:"):
             module_info["firmware"].extend(line.split()[1:])  # type: ignore[union-attr]  # ignore for now, fixup later
 
@@ -171,7 +169,7 @@ def get_module_aliases(self):
     else:
         for line in alias_file.read_text().splitlines():
             _, alias, module = line.strip().split(" ", 2)
-            _KMOD_ALIASES[_normalize_kmod_alias(self, alias)] = _normalize_kmod_name(self, module)
+            _KMOD_ALIASES[_normalize_kmod_alias(self, alias)] = _normalize_kmod_name(module)
 
 
 @unset("no_kmod", "no_kmod is enabled, skipping builtin module enumeration.", log_level=30)
@@ -191,7 +189,7 @@ def get_builtin_module_info(self) -> None:
             if not line or "." not in line or "=" not in line:
                 continue
             name, parameter = line.split(".", 1)
-            name = _normalize_kmod_name(self, name)
+            name = _normalize_kmod_name(name)
             parameter, value = parameter.split("=", 1)
             modinfo = self["_kmod_modinfo"].get(
                 name, {"filename": "(builtin)", "depends": [], "softdep": [], "firmware": []}
@@ -434,7 +432,7 @@ def _add_kmod_firmware(self, kmod: str) -> None:
 
 def _add_firmware_dep(self, kmod: str, firmware: str) -> None:
     """Adds a kernel module firmware file to the initramfs dependencies."""
-    kmod = _normalize_kmod_name(self, kmod)
+    kmod = _normalize_kmod_name(kmod)
     firmware_path = Path("/lib/firmware") / firmware
     if not firmware_path.exists():
         if firmware_path.with_suffix(firmware_path.suffix + ".xz").exists():
