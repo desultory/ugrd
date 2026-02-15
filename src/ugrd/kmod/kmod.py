@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "4.2.1"
+__version__ = "4.2.2"
 
 from pathlib import Path
 from platform import uname
@@ -7,28 +7,23 @@ from re import search
 from struct import error as StructError
 from struct import unpack
 from subprocess import run
-from typing import Union
 
 from ugrd.exceptions import AutodetectError, ValidationError
 from ugrd.kmod import BuiltinModuleError, DependencyResolutionError, IgnoredModuleError, MissingModuleError
 from zenlib.util import colorize as c_
 from zenlib.util import contains, unset
 
-_KMOD_ALIASES = {}
+_KMOD_ALIASES: dict[str, str] = {}
 MODULE_METADATA_FILES = ["modules.order", "modules.builtin", "modules.builtin.modinfo"]
 
 
-def _normalize_kmod_name(self, module: Union[str, list]) -> str:
+def _normalize_kmod_name(self, module: str) -> str:
     """Replaces -'s with _'s in a kernel module name.
     ignores modules defined in kmod_no_normalize.
     """
-    if isinstance(module, list) and not isinstance(module, str):
-        return [_normalize_kmod_name(self, m) for m in module]
     if module in self.get("kmod_no_normalize", []):
         self.logger.debug(f"Not normalizing kernel module name: {module}")
         return module
-    if "-" in module:
-        self.logger.log(5, f"Replacing - with _ in kernel module name: {module}")
     return module.replace("-", "_")
 
 
@@ -105,7 +100,7 @@ def _process__kmod_auto_multi(self, module: str) -> None:
     self["_kmod_auto"].append(module)
 
 
-def _get_kmod_info(self, module: str) -> dict:
+def _get_kmod_info(self, module: str) -> tuple[str, dict]:
     """
     Runs modinfo on a kernel module, parses the output and stored the results in self['_kmod_modinfo'].
     !!! Should be run after metadata is processed so the kver is set properly !!!
@@ -138,27 +133,26 @@ def _get_kmod_info(self, module: str) -> dict:
                 "[%s] Modinfo returned no output and the alias name could no be resolved." % module
             )
 
-    module_info = {"filename": None, "depends": [], "softdep": [], "firmware": []}
+    module_info: dict[str, list[str] | str] = {"filename": "", "depends": [], "softdep": [], "firmware": []}
     for line in cmd.stdout.decode().split("\n"):
         line = line.strip()
         if line.startswith("filename:"):
             module_info["filename"] = line.split()[1]
         elif line.startswith("depends:") and line != "depends:":
             if "," in line:
-                module_info["depends"] = _normalize_kmod_name(self, line.split(":")[1].lstrip().split(","))
+                kmod_deps = line.split(":")[1].lstrip().split(",")
+                module_info["depends"] = [_normalize_kmod_name(self, dep) for dep in kmod_deps]
             else:
                 module_info["depends"] = [_normalize_kmod_name(self, line.split()[1])]
         elif line.startswith("softdep:"):
             softdep_info = line.rsplit(":", 1)[1].strip()
             if "," in softdep_info:
-                module_info["softdep"] = _normalize_kmod_name(self, softdep_info.split(","))
+                kmod_deps = softdep_info.split(",")
+                module_info["softdep"] = [_normalize_kmod_name(self, dep) for dep in kmod_deps]
             else:
                 module_info["softdep"] = [_normalize_kmod_name(self, softdep_info)]
         elif line.startswith("firmware:"):
-            # Firmware is a list, so append to it, making sure it exists first
-            if "firmware" not in module_info:
-                module_info["firmware"] = []
-            module_info["firmware"] += line.split()[1:]
+            module_info["firmware"].extend(line.split()[1:])  # type: ignore[union-attr]  # ignore for now, fixup later
 
     if not module_info.get("filename"):
         raise DependencyResolutionError("[%s] Failed to process modinfo output: %s" % (module, cmd.stdout.decode()))
@@ -272,27 +266,29 @@ def _find_kernel_image(self) -> Path:
     Searches for the file with the prefix, then files starting with the prefix and a hyphen.
     If multiple files are found, uses the last modified."""
 
-    def search_prefix(prefix: str) -> Path:
+    def search_prefix(prefix: str) -> Path | None:
         for path in ["/boot", "/efi"]:
-            kernel_path = (Path(path) / f"{prefix}").resolve()
+            kernel_path: Path = (Path(path) / f"{prefix}").resolve()
             if kernel_path.exists():
                 return kernel_path
-            kernel_path = None
+            kernel_path = Path()  # Reset because the supplied prefix file doesn't exit
             for file in Path(path).glob(f"{prefix}-*"):
                 file = file.resolve()
                 if not file.is_file():
-                    continue
-                if not kernel_path:
+                    continue  # Skip directories and non-files
+                if str(kernel_path) == ".":  # If kernel_path is not set, set it to the first file found with the prefix
                     kernel_path = file
                 elif file.stat().st_mtime > kernel_path.stat().st_mtime:
+                    # if the file is newer than the current kernel_path, set it as the new kernel_path
                     kernel_path = file
-            if kernel_path:
+            if str(kernel_path) != ".":
+                # If a file with the prefix was found, return it
                 return kernel_path
-        self.logger.debug("Failed to find kernel image with prefix: %s" % prefix)
+        return self.logger.debug("Failed to find kernel image with prefix: %s" % prefix)
 
     for prefix in ["vmlinuz", "linux", "bzImage"]:
         if kernel_path := search_prefix(prefix):
-            self.logger.info("Detected kernel image: %s" % (c_(kernel_path, "cyan")))
+            self.logger.info(f"Detected kernel image: {c_(str(kernel_path), 'cyan')}")
             return kernel_path
     raise AutodetectError("Failed to find kernel image")
 
@@ -453,7 +449,7 @@ def _add_firmware_dep(self, kmod: str, firmware: str) -> None:
     self["dependencies"] = firmware_path
 
 
-def _process_kmod_dependencies(self, kmod: str, mod_tree=None) -> None:
+def _process_kmod_dependencies(self, kmod: str, mod_tree=None) -> tuple[str, list[str]]:
     """Processes a kernel module's dependencies.
 
     If the kernel module is built in, only add firmware, don't resolve dependencies.
@@ -667,7 +663,7 @@ def check_kver(self) -> str:
 
 
 @contains("kmod_init", "No kernel modules to load.", log_level=30)
-def load_modules(self) -> str:
+def load_modules(self) -> str | None:
     """Creates a shell function which loads all kernel modules in kmod_init."""
     init_kmods = ", ".join(self["kmod_init"])
     included_kmods = ", ".join(list(set(self["kernel_modules"]) ^ set(self["kmod_init"])))
@@ -679,7 +675,7 @@ def load_modules(self) -> str:
             )
             self.logger.warning(f"Init kernel modules: {c_(init_kmods, 'red', bold=True)}")
             self.logger.warning(f"Included kernel modules: {c_(included_kmods, 'red', bold=True)}")
-        return
+        return None
 
     self.logger.info(f"Init kernel modules: {c_(init_kmods, 'magenta', bright=True, bold=True)}")
     if included_kmods:
