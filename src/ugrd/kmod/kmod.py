@@ -266,27 +266,29 @@ def _find_kernel_image(self) -> Path:
     Searches for the file with the prefix, then files starting with the prefix and a hyphen.
     If multiple files are found, uses the last modified."""
 
-    def search_prefix(prefix: str) -> Path:
+    def search_prefix(prefix: str) -> Path | None:
         for path in ["/boot", "/efi"]:
-            kernel_path = (Path(path) / f"{prefix}").resolve()
+            kernel_path: Path = (Path(path) / f"{prefix}").resolve()
             if kernel_path.exists():
                 return kernel_path
-            kernel_path = None
+            kernel_path = Path()  # Reset because the supplied prefix file doesn't exit
             for file in Path(path).glob(f"{prefix}-*"):
                 file = file.resolve()
                 if not file.is_file():
-                    continue
-                if not kernel_path:
+                    continue  # Skip directories and non-files
+                if str(kernel_path) == ".":  # If kernel_path is not set, set it to the first file found with the prefix
                     kernel_path = file
                 elif file.stat().st_mtime > kernel_path.stat().st_mtime:
+                    # if the file is newer than the current kernel_path, set it as the new kernel_path
                     kernel_path = file
-            if kernel_path:
+            if str(kernel_path) != ".":
+                # If a file with the prefix was found, return it
                 return kernel_path
-        self.logger.debug("Failed to find kernel image with prefix: %s" % prefix)
+        return self.logger.debug("Failed to find kernel image with prefix: %s" % prefix)
 
     for prefix in ["vmlinuz", "linux", "bzImage"]:
         if kernel_path := search_prefix(prefix):
-            self.logger.info("Detected kernel image: %s" % (c_(kernel_path, "cyan")))
+            self.logger.info(f"Detected kernel image: {c_(str(kernel_path), 'cyan')}")
             return kernel_path
     raise AutodetectError("Failed to find kernel image")
 
@@ -447,7 +449,7 @@ def _add_firmware_dep(self, kmod: str, firmware: str) -> None:
     self["dependencies"] = firmware_path
 
 
-def _process_kmod_dependencies(self, kmod: str, mod_tree=None) -> None:
+def _process_kmod_dependencies(self, kmod: str, mod_tree=None) -> tuple[str, list[str]]:
     """Processes a kernel module's dependencies.
 
     If the kernel module is built in, only add firmware, don't resolve dependencies.
@@ -661,7 +663,7 @@ def check_kver(self) -> str:
 
 
 @contains("kmod_init", "No kernel modules to load.", log_level=30)
-def load_modules(self) -> str:
+def load_modules(self) -> str | None:
     """Creates a shell function which loads all kernel modules in kmod_init."""
     init_kmods = ", ".join(self["kmod_init"])
     included_kmods = ", ".join(list(set(self["kernel_modules"]) ^ set(self["kmod_init"])))
@@ -673,7 +675,7 @@ def load_modules(self) -> str:
             )
             self.logger.warning(f"Init kernel modules: {c_(init_kmods, 'red', bold=True)}")
             self.logger.warning(f"Included kernel modules: {c_(included_kmods, 'red', bold=True)}")
-        return
+        return None
 
     self.logger.info(f"Init kernel modules: {c_(init_kmods, 'magenta', bright=True, bold=True)}")
     if included_kmods:
