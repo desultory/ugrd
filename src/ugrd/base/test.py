@@ -1,8 +1,8 @@
 __version__ = "2.0.0"
 
 from pathlib import Path
+from selectors import EVENT_READ, DefaultSelector
 from subprocess import PIPE, Popen
-from selectors import DefaultSelector, EVENT_READ
 from time import time
 from uuid import uuid4
 
@@ -18,7 +18,10 @@ def _process_test_swap_partition(self, value):
 
     if not self["swap_uuid"]:
         self["swap_uuid"] = str(uuid4())
-        self.logger.log(33, f"test_swap_partition enabled but no swap_uuid specified, generated random UUID: {c_(self['swap_uuid'], 'yellow')}")
+        self.logger.log(
+            33,
+            f"test_swap_partition enabled but no swap_uuid specified, generated random UUID: {c_(self['swap_uuid'], 'yellow')}",
+        )
 
     self.data["test_swap_partition"] = value
 
@@ -53,17 +56,11 @@ def init_test_vars(self):
 def _get_qemu_cmd_args(self, test_image):
     """Returns arguements to run QEMU for the current test configuration."""
     test_initrd = self._get_out_path(self["out_file"])
-    self.logger.info("Testing initramfs image: %s", c_(test_initrd, "yellow", bold=True))
+    self.logger.log(33, f"Testing initramfs image: { c_(test_initrd, 'blue', bold=True)}")
     test_rootfs = test_image._get_out_path(test_image["out_file"])
-    self.logger.info(
-        "Test rootfs image: %s",
-        c_(
-            test_rootfs,
-            "yellow",
-        ),
-    )
+    self.logger.log(33, f"Test rootfs image: { c_(test_rootfs, 'green', bold=True)}")
+    self.logger.log(33, f"Test kernel: { c_(self['test_kernel'], 'magenta')}")
     self.logger.info("Test kernel: %s", c_(self["test_kernel"], "yellow"))
-
     cmdline = self["test_cmdline"]
     if self["test_swap_partition"]:
         cmdline += f" resume=UUID={self['swap_uuid']}"
@@ -125,6 +122,7 @@ def make_test_image(self):
 
     return target_fs
 
+
 def make_swap_image(self):
     """Creates a swap image (detached partition) for testing swap support in the initramfs"""
     swap_path = self._get_out_path("swap.img")
@@ -146,6 +144,7 @@ def make_swap_image(self):
 
     self._run(["mkswap", swap_path, "-U", self["swap_uuid"]])
 
+
 def test_image(self, image=None, hibernate=False):
     """Runs the test image in QEMU
     If 'image' is not provided, it will be created using 'make_test_image'
@@ -157,11 +156,12 @@ def test_image(self, image=None, hibernate=False):
     if not hibernate and self["test_swap_partition"]:
         make_swap_image(self)
 
-    qemu_cmd = _get_qemu_cmd_args(self, image)
-
     self.logger.debug("Test config:\n%s", image)
-    self.logger.info("Test flag: %s", c_(self["test_flag"], "magenta"))
-    self.logger.info("QEMU command: %s", c_(" ".join([str(arg) for arg in qemu_cmd]), bold=True))
+    self.logger.log(33, "Test flag: %s", c_(self["test_flag"], "red", bold=True))
+
+    qemu_cmd = _get_qemu_cmd_args(self, image)
+    qemu_cmd_str = " ".join([str(arg) for arg in qemu_cmd])
+    self.logger.log(33, f"Running QEMU with command: {c_(qemu_cmd_str, 'cyan', bold=True)}")
 
     # Sentinel to check if the test has timed out
     start_time = time()
@@ -213,7 +213,7 @@ def test_image(self, image=None, hibernate=False):
 
             run_log.append(line)
             if self["test_flag"] in line:
-                self.logger.info("Test flag found in output: %s", c_(line, "green"))
+                self.logger.log(33, f"Test flag found in output: {c_(line.strip(), 'green', bold=True)}")
                 break
             elif line.endswith("exitcode=0x00000000"):
                 failed = True
