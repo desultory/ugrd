@@ -14,6 +14,30 @@ def init_banner(self):
     """Initialize the test image banner, set a random flag if not set."""
     self["banner"] = f"echo {self['test_flag']}"
 
+@contains("test_hibernate", "Hibernation testing is disabled", log_level=20)
+def test_hibernate(self):
+    """ Returns shell lines to hibernate to the swap device """
+    return """
+    echo 1 > /sys/power/pm_debug_messages
+    if [ ! -f "/sys/power/resume" ] ; then
+        echo "Resume device does not exist!"
+        ls -l /sys/power/
+        echo c > /proc/sysrq-trigger
+    fi
+    swap_device=$(cat /sys/power/resume)
+    . "/sys/dev/block/$swap_device/uevent"
+    echo "Activating swap device: /dev/$DEVNAME"
+    swapon -v "/dev/$DEVNAME"
+    echo "Hibernating to swap device: $swap_device"
+    echo disk > /sys/power/state || (echo "Suspend to disk failed!" ; echo c > /proc/sysrq-trigger)
+
+    echo "Hibernation completed"
+    """
+
+def add_test_deps(self):
+    """ Adds additional dependencies depending on the test image configuration """
+    if self["test_hibernate"]:
+        self["binaries"] = ["swapon", "echo", "cat", "ls"]
 
 def _allocate_image(self, image_path, padding=0):
     """Allocate the test image size"""
