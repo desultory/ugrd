@@ -34,3 +34,4 @@ test_no_rootfs = "bool"  # Toggle to run tests without mounting the root image
 test_rootfs_name = "str"  # Define the name of the rootfs image
 test_rootfs_build_dir = "Path"  # Define the build directory for the rootfs image
 qemu_bool_args = "NoDupFlatList"  # Define the qemu boolean arguments
+qemu_stdout = "bool"  # Toggle to enable qemu stdout output during tests

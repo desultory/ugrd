@@ -206,7 +206,8 @@ def test_image(self, image=None, hibernate=False):
                         line = line.replace("\x1b[0m", "")  # filter reset
                         self.logger.debug("Filtered ANSI code: %s", repr(line))
                     if line:
-                        self.logger.info(line.strip())
+                        loglevel = 33 if self["qemu_stdout"] else 20
+                        self.logger.log(loglevel, line.strip())
                     else:
                         raise RuntimeError("QEMU stdout closed")
 
