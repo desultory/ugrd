@@ -1,0 +1,15 @@
+# Don't actually test it because it's not likely the image will work
+# This is just to ensure that when something like installkernel passes a kernel version
+# but the user does not use kmods, the image will still be built
+# whether or not it is bootable is up to the user and how they configure their kernel
+
+# Test for cases where kmods are not desired or needed
+no_kmod = true
+
+# speed up the build by not compressing the cpio archive, which is not needed for testing
+cpio_compression = false
+
+# use the test build dir, like fullauto.toml
+out_dir = "initramfs_test"
+
+# Don't disable hostonly mode for this test, disabling kmods should work either way and no hostonly will be less likely to even find required kmods
