@@ -90,3 +90,13 @@ def handle_resume(self) -> list[str]:
         ]
 
     return out_lines
+
+def determine_resume_order(self):
+    """ If late_resume is enabled, runs handle_resume at the very end of init_main
+    Otherwise, runs it before mount_fstab is run
+    """
+    if self["late_resume"]:
+        self.logger.warning("Enabling late resume. Late resume carries the risk of filesystems being in an inconsistent state if writes were made between hibernation and resume. Only enable late resume if you know what you are doing and have a specific reason to do so.")
+        self["import_order"]["after"]["handle_resume"] = ["crypt_init", "init_lvm"]
+    else:
+        self["import_order"]["before"]["handle_resume"] = ["mount_fstab"]

@@ -359,6 +359,7 @@ Importing this module will run `btrfs device scan` and pull btrfs modules.
 
 When enabled, attempts to resume after hibernation if resume= is passed on the kernel command line.
 
+* `late_resume` (false) If true, the resume process will be handled in after cryptsetup/luks operations. This is required if the resume device is encrypted by LUKS, but has a small risk of filesystem damage if writes are performed
 * `strict_resume` (false) If true, the initramfs will fail to boot if resume= is not passed on the kernel command line or if the resume device cannot be found.
 
 ### Cryptographic modules
