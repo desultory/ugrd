@@ -27,6 +27,8 @@ def handle_resume(self) -> list[str]:
         "resumeval=$(readvar resume)",  # read the cmdline resume var
         # Check if resume= is set, if not print a message and skip resuming
         '[ -n "$resumeval" ] || { ewarn "No resume device specified: resume= kernel parameter not set"; return 1; }',
+        # Check if /sys/power/resume is not "0:0", if it is, warn that resume is being attempted again
+        '[ "$(cat /sys/power/resume)" != "0:0" ] && ewarn "Resume device is not 0:0, resume may have been attempted already. Attempting to resume again..."',
         'if printf "%s" "$resumeval" | grep -q =; then',  # Check if resume= value contains an "="
         '    resume="$(blkid -t "$resumeval" -o device)"',  # Attempt to resolve the resume device using blkid
         "else",
