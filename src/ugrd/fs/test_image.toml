@@ -1,16 +1,20 @@
 modules = [ 'ugrd.base.banner' ]  # get_archive_path
 paths = ['dev', 'sys', 'proc']
 
-test_image_size = 16
-shebang = "#!/bin/sh"  # Don't use -l, no profile is generated
+shebang = "#!/bin/sh -l"
 _cryptsetup_root = "root"
 
-
 [imports.build_pre]
-"ugrd.fs.test_image" = ["init_banner"]
+"ugrd.fs.test_image" = ["init_banner", "add_test_deps"]
+
+[imports.init_pre]
+"ugrd.fs.test_image" = ["test_hibernate"]
 
 [imports.pack]
 "ugrd.fs.test_image" = ["make_test_image"]
+
+[import_order.before]
+"test_hibernate" = "print_banner"
 
 [custom_parameters]
 shebang = "str"  # Add the shebang property, because the test mode disables the base module
@@ -20,4 +24,5 @@ cryptsetup = "dict"  # Same as above
 _cryptsetup_root = "str"  # Define the root device for cryptsetup
 test_image_size = "int"  # Define the size of the test image in MiB
 test_flag = "str"  # Define the success flag used to determine if the test was successful
+test_hibernate = "bool"  # Define whether to test hibernation or not
 check_included_or_mounted = "NoDupFlatList"  # Only defined to suppress errors about unknown config

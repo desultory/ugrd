@@ -14,6 +14,30 @@ def init_banner(self):
     """Initialize the test image banner, set a random flag if not set."""
     self["banner"] = f"echo {self['test_flag']}"
 
+@contains("test_hibernate", "Hibernation testing is disabled", log_level=20)
+def test_hibernate(self):
+    """ Returns shell lines to hibernate to the swap device """
+    return """
+    echo 1 > /sys/power/pm_debug_messages
+    if [ ! -f "/sys/power/resume" ] ; then
+        echo "Resume device does not exist!"
+        ls -l /sys/power/
+        echo c > /proc/sysrq-trigger
+    fi
+    swap_device=$(cat /sys/power/resume)
+    . "/sys/dev/block/$swap_device/uevent"
+    echo "Activating swap device: /dev/$DEVNAME"
+    swapon -v "/dev/$DEVNAME"
+    echo "Hibernating to swap device: $swap_device"
+    echo disk > /sys/power/state || (echo "Suspend to disk failed!" ; echo c > /proc/sysrq-trigger)
+
+    echo "Hibernation completed"
+    """
+
+def add_test_deps(self):
+    """ Adds additional dependencies depending on the test image configuration """
+    if self["test_hibernate"]:
+        self["binaries"] = ["swapon", "echo", "cat", "ls"]
 
 def _allocate_image(self, image_path, padding=0):
     """Allocate the test image size"""
@@ -29,12 +53,12 @@ def _allocate_image(self, image_path, padding=0):
         min_fs_size = MIN_FS_SIZES[self["mounts"]["root"]["type"]]
         if self.test_image_size < min_fs_size + padding:
             needed_padding = min_fs_size - self.test_image_size
-            self.logger.warning(f"{self['mounts']['root']['type']} detected, increasing padding by: {needed_padding}MB")
+            self.logger.log(33, f"{self['mounts']['root']['type']} detected, increasing padding by: {needed_padding}MB")
             padding += needed_padding
 
     with open(image_path, "wb") as f:
         total_size = (self.test_image_size + padding) * (2**20)  # Convert MB to bytes
-        self.logger.info(f"Allocating {self.test_image_size + padding}MB test image file: {c_(f.name, 'green')}")
+        self.logger.log(33, f"Allocating {self.test_image_size + padding}MB test image file: {c_(f.name, 'green')}")
         self.logger.debug(f"[{f.name}] Total bytes: {c_(total_size, 'green')}")
         f.write(b"\0" * total_size)
 
@@ -116,11 +140,12 @@ def make_test_luks_image(self, image_path):
 def make_test_image(self):
     """Creates a test image from the build dir"""
     build_dir = self._get_build_path("/").resolve()
-    self.logger.info("Creating test image from: %s" % c_(build_dir, "blue", bold=True))
+    self.logger.log(33, f"Creating test image from build directory: {c_(build_dir, 'blue', bold=True)}")
 
     rootfs_type = self["mounts"]["root"]["type"]
     try:
         rootfs_uuid = self["mounts"]["root"]["uuid"]
+        self.logger.log(33, f"[{c_(rootfs_type, 'green')}] Test image rootfs uuid: {c_(rootfs_uuid, 'blue')}")
     except KeyError:
         if rootfs_type != "squashfs":
             raise ValueError("Root filesystem UUID is required for non-squashfs rootfs")
