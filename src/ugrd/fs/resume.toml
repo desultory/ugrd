@@ -7,4 +7,5 @@ cmdline_strings = [ "resume" ]
 handle_resume = "mount_fstab"
 
 [custom_parameters]
+strict_resume = "bool"  # If true, the ramdisk will trigger a failure if resuming fails
 swap_uuid = "str"  # The UUID of the swap partition, used to resume from hibernation.

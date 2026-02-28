@@ -359,6 +359,8 @@ Importing this module will run `btrfs device scan` and pull btrfs modules.
 
 When enabled, attempts to resume after hibernation if resume= is passed on the kernel command line.
 
+* `strict_resume` (false) If true, the initramfs will fail to boot if resume= is not passed on the kernel command line or if the resume device cannot be found.
+
 ### Cryptographic modules
 
 Several cryptographic modules are provided, mostly to assist in mounting encrypted volumes and handling keyfiles.
