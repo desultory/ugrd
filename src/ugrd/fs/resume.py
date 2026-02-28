@@ -5,7 +5,7 @@ def handle_resume(self) -> list[str]:
     """Returns a shell script handling resume from hibernation.
     Checks that /sys/power/resume is writable, resume= is set, and noresume is not set
 
-    if "=" is in the resuume= kernel parameter, it attempts to resolve the resume device using blkid -t <resume= value> -o device.
+    if "=" is in the resume= kernel parameter, it attempts to resolve the resume device using blkid -t <resume= value> -o device.
 
     If the specified device exists, writes resume device to /sys/power/resume.
     In the event of failure, it prints an error message, then runs rd_fail.
@@ -14,7 +14,7 @@ def handle_resume(self) -> list[str]:
     Resuming or failing to do so is potentially dangerous.
     If the system was hibernated, and fails to resume, it will be in an inconsistent state.
     If the system is freshly booted, it will not be able to resume, as there is no hibernation image.
-    Distinguising between a fresh boot and missing/borked hibernation image is not possible at run time.
+    Distinguishing between a fresh boot and missing/borked hibernation image is not possible at run time.
     !!!
     """
     return [
