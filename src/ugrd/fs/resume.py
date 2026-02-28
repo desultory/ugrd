@@ -11,7 +11,7 @@ _SANITY_CHECK_RESUME = [
     "[ -w /sys/power/resume ] || { eerror 'Skipping resume: /sys/power/resume not writable'; return 1; }",
     # Check if /sys/power/resume is not "0:0", if it is, warn that resume is being attempted again
     '[ "$(cat /sys/power/resume)" != "0:0" ] && ewarn "Resume device is not 0:0, resume may have been attempted already. Attempting to resume again..."',
-    ]
+]
 
 """ Shell lines to attempt resuming from the $resume variable, logs the attempt and any failure """
 _DO_RESUME = [
@@ -29,14 +29,30 @@ _GET_RESUME_DEVICE = [
     '[ -n "$resumeval" ] || { ewarn "No resume device specified: resume= kernel parameter not set"; return 1; }',
     'if printf "%s" "$resumeval" | grep -q =; then',  # Check if resume= value contains an "="
     '    resume="$(blkid -t "$resumeval" -o device)"',  # Attempt to resolve the resume device using blkid
-    "else",
-    '    if [ -b "$resumeval" ]; then',  # If it doesn't contain an "=", check if it's a block device
-    '        resume="$resumeval"',  # If it is a block device, use the resume= value as the resume device
-    '    else',
-    '        rd_fail "resume= parameter specified but is not a block device: $resumeval"',  # If it is not, print an error message and fail
+    'elif [ -e "$resumeval" ]; then',  # If it doesn't contain an "=", check if the specified resume= value is a valid path
+    '    resume="$resumeval"',  # If it is, use the resume= value
+    "fi",
+]
+
+
+_STRICT_FAIL_LINES = [
+    "    if check_var ugrd_recovery; then",
+    "        eerror 'If you wish to continue booting, fix the resume var or disable resuming with: setvar noresume 1'",
     "    fi",
-    "fi"
-    ]
+    '    rd_fail "Cannot resume from invalid device: $resume ($resumeval)"',  # Fail with an error message
+    "fi",
+]
+
+""" Shell lines to fail when strict mode is enabled """
+_STRICT_CHECK_RESUME = [
+    'if [ ! -b "$resume" ]; then',  # Check if the resume device is a block device
+    "    eerror 'Resume device is not a block device: $resume'",
+    *_STRICT_FAIL_LINES,
+    'if [ -z "$resume" ]; then',  # Check if the resume device var is empty, if so print an error message and fail
+    "    eerror 'Failed to resolve resume device from resume= parameter: $resumeval'",
+    *_STRICT_FAIL_LINES,
+]
+
 
 def handle_resume(self) -> list[str]:
     """Returns a shell script handling resume from hibernation.
@@ -45,7 +61,8 @@ def handle_resume(self) -> list[str]:
     if "=" is in the resume= kernel parameter, it attempts to resolve the resume device using blkid -t <resume= value> -o device.
 
     If the specified device exists, writes resume device to /sys/power/resume.
-    In the event of failure, it prints an error message, then runs rd_fail.
+    If strict_resume is enabled and the resume device is not a block device, stop booting and rd_fail with an error message.
+    Otherwise, warn that resume failed but continue booting.
 
     !!!
     Resuming or failing to do so is potentially dangerous.
@@ -57,14 +74,19 @@ def handle_resume(self) -> list[str]:
     out_lines = []
     out_lines += _SANITY_CHECK_RESUME
     out_lines += _GET_RESUME_DEVICE
-    out_lines += [
-        'if [ -z "$resume" ]; then',
-        "    eerror 'Refusing to boot, resume= parameter specified but failed to resolve a device with blkid'",  # If blkid fails, print an error message
-        "    if check_var ugrd_recovery; then",  # If the recovery shell is enabled, print a different message
-        "        eerror 'If you wish to continue booting, fix the resume var or disable resuming with: setvar noresume 1'",  # If so, print a message about how to disable resuming from the recovery shell
-        "    fi",
-        '    rd_fail "Failed to resolve resume device from resume= parameter: $resumeval"',
-        "fi",
-    ]
+    if self["strict_resume"]:
+        self.logger.info(
+            "Enabling strict resume checks: invalid resume devices will cause the boot to fail instead of skipping resume"
+        )
+        out_lines += _STRICT_CHECK_RESUME
+    else:
+        out_lines += [
+            '[ -n "$resume" ] || { ewarn "Failed to resolve resume device from resume= parameter: $resumeval"; return 1; }',  # If the resume device is empty, print a warning and skip resuming
+        ]
     out_lines += _DO_RESUME
+    if self["strict_resume"]:
+        out_lines += [
+            'rd_fail "Failed to resume from: $resume"',
+        ]
+
     return out_lines
