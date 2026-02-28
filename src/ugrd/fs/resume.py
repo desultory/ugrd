@@ -1,6 +1,43 @@
 __version__ = "0.5.0"
 
 
+""" Shell lines to sanity check the environment for resuming, logs any issues """
+_SANITY_CHECK_RESUME = [
+    "if check_var noresume; then",  # Check if noresume= is set, if so skip resuming
+    "    ewarn 'Skipping resume: noresume set'",  # If so, print
+    "    return 1",  # Skip resuming
+    "fi",
+    # Check if /sys/power/resume is writable, if not print a message and skip resuming
+    "[ -w /sys/power/resume ] || { eerror 'Skipping resume: /sys/power/resume not writable'; return 1; }",
+    # Check if /sys/power/resume is not "0:0", if it is, warn that resume is being attempted again
+    '[ "$(cat /sys/power/resume)" != "0:0" ] && ewarn "Resume device is not 0:0, resume may have been attempted already. Attempting to resume again..."',
+    ]
+
+""" Shell lines to attempt resuming from the $resume variable, logs the attempt and any failure """
+_DO_RESUME = [
+    'einfo "Attempting to resume from: $resume"',  # Print the resume device
+    'klog "[UGRD] Attempting to resume from: $resume"',  # Log the resume device
+    'printf "%s" "$resume" > /sys/power/resume',  # Attempt to resume
+    'eerror "Failed to resume from: $resume"',  # If it fails, print an error message
+    'klog "[UGRD] Failed to resume from: $resume"',  # Log the failure
+]
+
+""" Shell lines to get the $resume device from the resume= kernel parameter """
+_GET_RESUME_DEVICE = [
+    "resumeval=$(readvar resume)",  # read the cmdline resume var
+    # Check if resume= is set, if not print a message and skip resuming
+    '[ -n "$resumeval" ] || { ewarn "No resume device specified: resume= kernel parameter not set"; return 1; }',
+    'if printf "%s" "$resumeval" | grep -q =; then',  # Check if resume= value contains an "="
+    '    resume="$(blkid -t "$resumeval" -o device)"',  # Attempt to resolve the resume device using blkid
+    "else",
+    '    if [ -b "$resumeval" ]; then',  # If it doesn't contain an "=", check if it's a block device
+    '        resume="$resumeval"',  # If it is a block device, use the resume= value as the resume device
+    '    else',
+    '        rd_fail "resume= parameter specified but is not a block device: $resumeval"',  # If it is not, print an error message and fail
+    "    fi",
+    "fi"
+    ]
+
 def handle_resume(self) -> list[str]:
     """Returns a shell script handling resume from hibernation.
     Checks that /sys/power/resume is writable, resume= is set, and noresume is not set
@@ -17,27 +54,10 @@ def handle_resume(self) -> list[str]:
     Distinguishing between a fresh boot and missing/borked hibernation image is not possible at run time.
     !!!
     """
-    return [
-        "if check_var noresume; then",  # Check if noresume is set
-        "    ewarn 'Skipping resume: noresume set'",  # If so, print a message and skip resuming
-        "    return",  # Skip resuming
-        "fi",
-        # Check if /sys/power/resume is writable, if not print a message and skip resuming
-        "[ -w /sys/power/resume ] || { eerror 'Skipping resume: /sys/power/resume not writable'; return 1; }",
-        "resumeval=$(readvar resume)",  # read the cmdline resume var
-        # Check if resume= is set, if not print a message and skip resuming
-        '[ -n "$resumeval" ] || { ewarn "No resume device specified: resume= kernel parameter not set"; return 1; }',
-        # Check if /sys/power/resume is not "0:0", if it is, warn that resume is being attempted again
-        '[ "$(cat /sys/power/resume)" != "0:0" ] && ewarn "Resume device is not 0:0, resume may have been attempted already. Attempting to resume again..."',
-        'if printf "%s" "$resumeval" | grep -q =; then',  # Check if resume= value contains an "="
-        '    resume="$(blkid -t "$resumeval" -o device)"',  # Attempt to resolve the resume device using blkid
-        "else",
-        '    if [ -b "$resumeval" ]; then',  # If it doesn't contain an "=", check if it's a block device
-        '        resume="$resumeval"',  # If not, use the resume= value as the
-        '    else',
-        '        rd_fail "resume= parameter specified but is not a block device: $resumeval"',  # If it is not, print an error message and fail
-        "    fi",
-        "fi",
+    out_lines = []
+    out_lines += _SANITY_CHECK_RESUME
+    out_lines += _GET_RESUME_DEVICE
+    out_lines += [
         'if [ -z "$resume" ]; then',
         "    eerror 'Refusing to boot, resume= parameter specified but failed to resolve a device with blkid'",  # If blkid fails, print an error message
         "    if check_var ugrd_recovery; then",  # If the recovery shell is enabled, print a different message
@@ -45,9 +65,6 @@ def handle_resume(self) -> list[str]:
         "    fi",
         '    rd_fail "Failed to resolve resume device from resume= parameter: $resumeval"',
         "fi",
-        'einfo "Attempting to resume from: $resume"',  # Print the resume device
-        'klog "[UGRD] Attempting to resume from: $resume"',  # Log the resume device
-        'printf "%s" "$resume" > /sys/power/resume',  # Attempt to resume
-        'eerror "Failed to resume from: $resume"',  # If it fails, print an error message
-        'klog "[UGRD] Failed to resume from: $resume"',  # Log the failure
     ]
+    out_lines += _DO_RESUME
+    return out_lines
