@@ -3,9 +3,10 @@ cmdline_strings = [ "resume" ]
 [imports.init_main] 
 "ugrd.fs.resume" = [ "handle_resume" ]
 
-[import_order.before]
-handle_resume = "mount_fstab"
+[imports.build_late]
+"ugrd.fs.resume" = [ "determine_resume_order" ]
 
 [custom_parameters]
 strict_resume = "bool"  # If true, the ramdisk will trigger a failure if resuming fails
+late_resume = "bool"  # If true, the resume process will be delayed until the end of init_main
 swap_uuid = "str"  # The UUID of the swap partition, used to resume from hibernation.

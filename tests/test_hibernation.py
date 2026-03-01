@@ -17,5 +17,10 @@ class TestHibernation(TestCase):
         generator = InitramfsGenerator(logger=self.logger, config="tests/fullauto.toml", modules="ugrd.fs.resume")
         generator.build()
 
+    def test_late_resume(self):
+        """ Test with the resume module and late resume enabled """
+        generator = InitramfsGenerator(logger=self.logger, config="tests/fullauto.toml", test_swap_partition=True, late_resume=True)
+        generator.build()
+
 if __name__ == "__main__":
     main()
