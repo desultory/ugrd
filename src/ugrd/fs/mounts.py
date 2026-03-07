@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "7.3.4"
+__version__ = "7.3.5"
 
 from pathlib import Path
 from re import search
@@ -854,7 +854,7 @@ def _autodetect_mount(self, mountpoint, mount_class="mounts", missing_ok=False) 
                 _autodetect_dm(self, mountpoint, device)
         elif fs_type == "zfs":
             for device in get_zpool_info(self, mount_device)["devices"]:
-                _autodetect_dm(self, mountpoint, mount_device)
+                _autodetect_dm(self, mountpoint, device)
         else:
             _autodetect_dm(self, mountpoint)
 
