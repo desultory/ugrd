@@ -9,6 +9,7 @@ kmod_ignore = [
 'snd_sof_intel_hda', 'snd_sof_intel_hda_common', # intel sof
 'snd_hda_intel', 'snd_intel_sdw_acpi', 'snd_intel_dspcfg',  # intel
 'ac97_bus', 'snd_rpl_pci_acp6x', 'snd_rn_pci_acp3x', 'snd_pci_acp3x',  # AMD
+'snd_hda_scodec_component',  # hd audio component binding
 'snd_hda_codec_hdmi',  # hdmi
 'soundwire_cadence', 'soundwire_bus', 'soundwire_generic_allocation',  # soundwire
 'ledtrig_audio', 'ac97_bus', # misc
