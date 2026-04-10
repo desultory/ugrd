@@ -44,7 +44,7 @@ class GeneratorHelpers:
             build_dir = self.build_dir.with_name(self.build_dir.name + "-" + _RANDOM_BUILD_ID)
         else:
             build_dir = self.build_dir
-        if  build_dir.is_absolute():
+        if build_dir.is_absolute():
             return get_subpath(build_dir, path)
         return get_subpath(get_subpath(self.tmpdir, build_dir), path)
 
@@ -328,11 +328,15 @@ class GeneratorHelpers:
                     def reorder_func(direction):
                         """Reorders the function based on the direction."""
                         if direction == "before":  # Move the function before the other function
-                            self.logger.debug(f"[{c_(func_name, 'green')}] Moving function before: {c_(other_func, 'blue')}")
+                            self.logger.debug(
+                                f"[{c_(func_name, 'green')}] Moving function before: {c_(other_func, 'blue')}"
+                            )
                             func_names.insert(other_index, func_names.pop(func_index))
                             self["imports"][hook].insert(other_index, self["imports"][hook].pop(func_index))
                         elif direction == "after":  # Move the other function before the current function
-                            self.logger.debug(f"[{c_(func_name, 'green')}] Moving function after: {c_(other_func, 'blue')}")
+                            self.logger.debug(
+                                f"[{c_(func_name, 'green')}] Moving function after: {c_(other_func, 'blue')}"
+                            )
                             func_names.insert(func_index, func_names.pop(other_index))
                             self["imports"][hook].insert(func_index, self["imports"][hook].pop(other_index))
                         else:
@@ -346,13 +350,17 @@ class GeneratorHelpers:
                             reorder_func("before")  # Move the current function before the other function)
                             changed = True
                         else:  # Log otherwise
-                            self.logger.log(5, f"[{c_(func_name, 'green')}] Function already before: {c_(other_func, 'blue')}")
+                            self.logger.log(
+                                5, f"[{c_(func_name, 'green')}] Function already before: {c_(other_func, 'blue')}"
+                            )
                     elif direction == "after":  # func_index should be after other_index
                         if func_index < other_index:  # If the current function is before the other function
                             reorder_func("after")  # Move the current function after the other function
                             changed = True
                         else:
-                            self.logger.log(5, f"[{c_(func_name, 'green')}] Function already after: {c_(other_func, 'blue')}")
+                            self.logger.log(
+                                5, f"[{c_(func_name, 'green')}] Function already after: {c_(other_func, 'blue')}"
+                            )
                     else:
                         raise ValueError("Invalid direction: %s" % direction)
                     func_index = func_names.index(func_name)  # Update the index after moving
