@@ -7,10 +7,26 @@ from zenlib.util import colorize as c_
 from ugrd.exceptions import AutodetectError, ValidationError
 from ugrd.kmod import MissingModuleError
 from ugrd.initramfs_generator import InitramfsGenerator
+from ugrd.config_helpers import get_parameters
+
+
+def print_params(hide_internal=True) -> None:
+    """ Prints all available config parameters, optionally hiding those which start with an underscore.
+    Colors internal modules blue, and external modules magenta. Parameter names are green and types are cyan. """
+    for module, params in get_parameters().items():
+        if module.startswith("ugrd"):
+            print(f"{c_(module, 'blue', bold=True)}:")
+        else:
+            print(f"{c_(module, 'magenta', bold=True)}:")
+        for name, param_type in params.items():
+            if name.startswith("_"):
+                continue
+            print(f"  {c_(name, color='green')} ({c_(param_type, color='cyan')})")
 
 
 def main():
     arguments = [
+        {"flags": ["--parameters"], "action": "store_true", "help": "print available config parameters"},
         {"flags": ["--build-logging"], "action": "store_true", "help": "enable additional build logging"},
         {
             "flags": ["--no-build-logging"],
@@ -146,9 +162,14 @@ def main():
         strict=True,
     )
     kwargs = get_kwargs_from_args(args, logger=logger)
+    parameters = kwargs.pop("parameters", None)  # This is not a valid kwarg for InitramfsGenerator
     kwargs.pop("print_config", None)  # This is not a valid kwarg for InitramfsGenerator
     kwargs.pop("print_init", None)  # This is not a valid kwarg for InitramfsGenerator
     test = kwargs.pop("test", False)
+
+    if parameters:
+        print_params()
+        exit(0)
 
     if kwargs.get("livecd_label") and "ugrd.fs.livecd" not in kwargs.get("modules", ""):
         kwargs["modules"] = kwargs["modules"] + ",ugrd.fs.livecd" if kwargs.get("modules") else "ugrd.fs.livecd"
