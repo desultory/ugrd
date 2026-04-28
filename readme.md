@@ -13,11 +13,11 @@
 
 Generated images are as static and secure as possible, only including components and features required to mount the root and switch to it.
 
-µgRD itself is written in pure Python, and generates POSIX shell scripts to mount the rootfs and continue booting.
+µgRD itself is written in Python, and generates POSIX shell scripts to mount the rootfs and continue booting.
 
 The final build environment is left in the specified `build_dir`, where it can be examined or repacked.
 
-Unless validation is disabled, µgRD attempts to validate most configuration against the host system, raising exceptions or logging warnings warnings if the configuration is invalid.
+Unless validation is disabled, µgRD attempts to validate most configuration against the host system, raising exceptions or logging warnings if the configuration is invalid.
 
 ## Project goal and features
 
