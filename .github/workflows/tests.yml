@@ -83,6 +83,48 @@ jobs:
         sudo venv/bin/ugrd -d
         sudo venv/bin/python -m unittest discover tests -v
 
+  ubuntu-locale:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.13']
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Obtain dependency projects
+      run: |
+        git clone https://github.com/desultory/zenlib
+        git clone https://github.com/desultory/pycpio
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install system deps
+      run: |
+        sudo apt update
+        sudo apt install -y pax-utils qemu-system-x86 locales
+    - name: Install python deps
+      run: |
+        python -m venv venv
+        venv/bin/pip install --upgrade pip
+        venv/bin/pip install ./zenlib
+        venv/bin/pip install zstandard
+        venv/bin/pip install ./pycpio
+        venv/bin/pip install .
+    - name: Generate ISO-8859-1 locale
+      run: |
+        sudo locale-gen es_ES.ISO-8859-1
+        locale -a | grep -i '^es_ES'
+    - name: Test fullauto.toml with ISO-8859-1 locale
+      run: |
+        sudo env LANG=es_ES.ISO-8859-1 LC_ALL=es_ES.ISO-8859-1 PYTHONUTF8=0 venv/bin/python - <<'PY'
+        import locale
+
+        assert locale.getpreferredencoding(False).lower() in {"iso-8859-1", "iso8859-1"}
+        PY
+        sudo env LANG=es_ES.ISO-8859-1 LC_ALL=es_ES.ISO-8859-1 PYTHONUTF8=0 venv/bin/ugrd -d
+        sudo env LANG=es_ES.ISO-8859-1 LC_ALL=es_ES.ISO-8859-1 PYTHONUTF8=0 venv/bin/python -m unittest discover tests -v
+
   ubuntu-ksh:
     runs-on: ubuntu-latest
     strategy:
