@@ -1,7 +1,7 @@
 __author__ = "desultory"
 __version__ = "4.8.0"
 
-from os import environ, makedev, mknod, uname
+from os import environ, fsdecode, makedev, mknod, uname
 from pathlib import Path
 from shutil import rmtree, which
 from stat import S_IFCHR
@@ -351,10 +351,11 @@ def _get_ldconfig(self) -> list:
         raise LDConfigError("ldconfig -p not supported, musl libc is likely in use.")
 
     if cmd.returncode != 0:
-        raise LDConfigError("ldconfig failed to run: %s" % cmd.stderr.decode("utf-8"))
+        raise LDConfigError("ldconfig failed to run: %s" % fsdecode(cmd.stderr))
 
-    self.logger.log(5, "ldconfig -p output:\n%s" % cmd.stdout.decode())
-    return cmd.stdout.decode().splitlines()
+    ldconfig_output = fsdecode(cmd.stdout)
+    self.logger.log(5, "ldconfig -p output:\n%s" % ldconfig_output)
+    return ldconfig_output.splitlines()
 
 
 @unset("musl_libc", "Skipping libgcc_s dependency resolution, musl_libc is enabled.", log_level=20)
