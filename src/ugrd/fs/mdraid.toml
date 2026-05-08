@@ -1,5 +1,7 @@
 binaries = ['mdadm']
-dependencies = ['/etc/mdadm.conf']
+
+[imports.build_tasks]
+"ugrd.fs.mdraid" = [ "generate_mdadm_conf" ]
 
 [imports.init_main]
 "ugrd.fs.mdraid" = [ "md_init" ]
