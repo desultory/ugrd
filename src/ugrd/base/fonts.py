@@ -1,4 +1,4 @@
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 from pathlib import Path
 from subprocess import run
@@ -36,7 +36,10 @@ def _get_font_name(self, font_name: str) -> str:
     if r.returncode != 0:
         if font_name:
             raise AutodetectError("Could not find a default font using fc-match.")
-        raise ValidationError(f"Font could not be found: {c_(font_name, 'red')}")
+        if not self["fonts_allow_missing"]:
+            raise ValidationError(f"Font could not be found: {c_(font_name, 'red')}\nThis check can be bypassed by setting `fonts_allow_missing` to True.")
+        else:
+            self.logger.warning(f"Font could not be found, but 'fonts_allow_missing' is True, so continuing: {c_(font_name, 'yellow')}")
 
     # Split after the colon, then get the first part and remove quotes
     matched_name = r.stdout.split(":")[1].split('" "')[0].strip('" ')
