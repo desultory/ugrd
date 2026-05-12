@@ -1,11 +1,11 @@
 __author__ = "desultory"
 __version__ = "0.1.0"
 
-import gzip
-import os
+from gzip import open as gzip_open
+from os import uname
 from pathlib import Path
-from typing import Optional
 
+from zenlib.util import colorize as c_
 
 # Distro-aware search paths for the *target* kernel's .config.
 # Each entry is a template containing {kver}. Tried in order; first hit wins.
@@ -60,8 +60,8 @@ def _emit_install_hint(self, kver: str) -> None:
     for distro_id in _read_os_release_ids():
         if hint := _DISTRO_INSTALL_HINTS.get(distro_id):
             self.logger.info(
-                "Hint: install the kernel headers/source to enable kernel config checks: %s"
-                % hint.format(kver=kver)
+                f"Hint: install the kernel headers/source to enable kernel config checks: "
+                f"{c_(hint.format(kver=kver), 'cyan')}"
             )
             return
 
@@ -88,7 +88,7 @@ def _parse_kernel_config(self, path: Path) -> dict[str, str]:
     Values are stored without quotes: 'y', 'm', 'n', integer strings, or string contents.
     Lines like '# CONFIG_FOO is not set' are recorded as 'n'.
     """
-    opener = gzip.open if path.suffix == ".gz" else open
+    opener = gzip_open if path.suffix == ".gz" else open
     options: dict[str, str] = {}
     with opener(path, "rt", encoding="utf-8", errors="replace") as f:
         for raw in f:
@@ -112,7 +112,7 @@ def _parse_kernel_config(self, path: Path) -> dict[str, str]:
             if len(value) >= 2 and value[0] == '"' and value[-1] == '"':
                 value = value[1:-1]
             options[name] = value
-    self.logger.debug("Parsed %d kernel config options from: %s" % (len(options), path))
+    self.logger.debug(f"Parsed {len(options)} kernel config options from: {c_(path, 'cyan')}")
     return options
 
 
@@ -132,12 +132,13 @@ def find_kernel_config(self) -> None:
     if user_override and Path(user_override) != Path("."):
         override_path = Path(user_override)
         if override_path.is_file():
-            self.logger.info("Using user-provided kernel config: %s" % override_path)
+            self.logger.info(f"Using user-provided kernel config: {c_(override_path, 'cyan', bold=True)}")
             self["_kernel_config_file"] = override_path
             self["_kernel_config_options"] = _parse_kernel_config(self, override_path)
             return
         self.logger.warning(
-            "kernel_config_file '%s' is not a regular file; falling back to autodetection." % override_path
+            f"kernel_config_file is not a regular file, falling back to autodetection: "
+            f"{c_(override_path, 'yellow', bold=True)}"
         )
 
     kver = self.get("kernel_version")
@@ -149,12 +150,12 @@ def find_kernel_config(self) -> None:
     for candidate in _candidate_paths(kver):
         tried.append(str(candidate))
         if candidate.exists() and candidate.is_file():
-            self.logger.info("Found kernel config: %s" % candidate)
+            self.logger.info(f"Found kernel config: {c_(candidate, 'cyan', bold=True)}")
             self["_kernel_config_file"] = candidate
             try:
                 self["_kernel_config_options"] = _parse_kernel_config(self, candidate)
             except OSError as e:
-                self.logger.warning("Failed to read kernel config '%s': %s" % (candidate, e))
+                self.logger.warning(f"[{c_(candidate, 'yellow', bold=True)}] Failed to read kernel config: {e}")
                 continue
             return
 
@@ -162,23 +163,27 @@ def find_kernel_config(self) -> None:
     proc_config = Path("/proc/config.gz")
     use_proc = self.get("kernel_config_use_proc", True)
     if use_proc and proc_config.exists():
-        running = os.uname().release
+        running = uname().release
         if kver == running:
-            self.logger.info("Using /proc/config.gz (target kernel matches running kernel %s)" % running)
+            self.logger.info(
+                f"Using /proc/config.gz (target kernel matches running): {c_(running, 'magenta', bold=True)}"
+            )
             self["_kernel_config_file"] = proc_config
             try:
                 self["_kernel_config_options"] = _parse_kernel_config(self, proc_config)
                 return
             except OSError as e:
-                self.logger.warning("Failed to read /proc/config.gz: %s" % e)
+                self.logger.warning(f"Failed to read /proc/config.gz: {e}")
         else:
             self.logger.debug(
-                "Ignoring /proc/config.gz: running kernel is %s, target is %s." % (running, kver)
+                f"Ignoring /proc/config.gz, running kernel [{c_(running, 'cyan')}] does not match target "
+                f"[{c_(kver, 'magenta')}]"
             )
             tried.append("/proc/config.gz (skipped: target != running)")
 
     self.logger.warning(
-        "Kernel config for '%s' not found. Tried:\n  %s" % (kver, "\n  ".join(tried))
+        f"Kernel config not found for kernel [{c_(kver, 'magenta', bold=True)}]. Tried:\n  "
+        + "\n  ".join(tried)
     )
     _emit_install_hint(self, kver)
 
@@ -190,7 +195,7 @@ def _normalize_option(option: str) -> str:
     return option
 
 
-def check_kernel_config(self, option: str) -> Optional[bool]:
+def check_kernel_config(self, option: str) -> bool | None:
     """Returns True if CONFIG_<option> is set to 'y' or 'm', False if 'n' (or absent),
     or None when the kernel config wasn't available (caller should assume support).
     """
@@ -201,7 +206,7 @@ def check_kernel_config(self, option: str) -> Optional[bool]:
     return value in ("y", "m")
 
 
-def get_kernel_config_value(self, option: str) -> Optional[str]:
+def get_kernel_config_value(self, option: str) -> str | None:
     """Returns the raw value of CONFIG_<option> (without surrounding quotes),
     or None when the config wasn't available or the option is unset.
     """

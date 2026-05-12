@@ -5,9 +5,9 @@ from importlib.util import find_spec
 from pathlib import Path
 
 from pycpio.cpio.symlink import CPIO_Symlink
-from zenlib.util import colorize, contains, unset
-
 from ugrd.kmod.config import check_kernel_config
+from zenlib.util import colorize as c_
+from zenlib.util import contains, unset
 
 # Fallback chain per user request. pycpio only supports xz and zstd.
 # Order: most preferred first; "false" means "no compression".
@@ -76,18 +76,17 @@ def _check_in_cpio(self, file, lines=[], quiet=False) -> None:
 
 
 def _compression_unavailable_reason(self, name: str) -> str | None:
-    """Returns None when the compression can be used, otherwise a human-readable reason."""
+    """Returns None when the compression can be used, otherwise a colored human-readable reason."""
     if name == "false":
         return None
     if name == "zstd" and find_spec("zstandard") is None:
-        return "Python module 'zstandard' is not installed"
+        return f"Python module {c_('zstandard', 'red', bold=True)} is not installed"
+    config_option = f"CONFIG_RD_{name.upper()}"
     kernel_support = check_kernel_config(self, "RD_" + name.upper())
     if kernel_support is False:
-        return "kernel does not have CONFIG_RD_%s enabled" % name.upper()
+        return f"kernel does not have {c_(config_option, 'red', bold=True)} enabled"
     if kernel_support is None:
-        self.logger.debug(
-            "Kernel config not available; assuming CONFIG_RD_%s support for '%s'." % (name.upper(), name)
-        )
+        self.logger.debug(f"Kernel config not available, assuming support for: {c_(config_option, 'cyan')}")
     return None
 
 
@@ -107,8 +106,8 @@ def select_cpio_compression(self) -> None:
     raw = str(self.get("cpio_compression", "true")).lower()
     if raw not in _COMPRESSION_FALLBACK:
         self.logger.warning(
-            "Unknown cpio_compression value '%s'; supported values: true, xz, zstd, false. Using 'true'."
-            % raw
+            f"Unknown cpio_compression value, falling back to 'true' (supported: true, xz, zstd, false): "
+            f"{c_(raw, 'yellow', bold=True)}"
         )
         raw = "true"
 
@@ -120,22 +119,27 @@ def select_cpio_compression(self) -> None:
             selected = candidate
             break
         if candidate == raw:
-            self.logger.warning("Requested CPIO compression '%s' is not available: %s." % (raw, reason))
+            self.logger.warning(
+                f"[{c_(raw, 'yellow', bold=True)}] Requested CPIO compression is not available: {reason}"
+            )
         else:
-            self.logger.warning("CPIO compression fallback '%s' is not available: %s." % (candidate, reason))
+            self.logger.warning(
+                f"[{c_(candidate, 'yellow')}] CPIO compression fallback is not available: {reason}"
+            )
 
     if selected is None:  # "false" is always last so this should not happen
         selected = "false"
 
     if raw in ("xz", "zstd") and selected != raw:
         self.logger.warning(
-            "Falling back to CPIO compression '%s' instead of '%s'." % (selected, raw)
+            f"Falling back to CPIO compression [{c_(selected, 'cyan', bold=True)}] instead of: "
+            f"{c_(raw, 'yellow', bold=True)}"
         )
     elif raw == "true" and selected == "false":
-        self.logger.warning("No supported CPIO compression available; building uncompressed initramfs.")
+        self.logger.warning("No supported CPIO compression available, building uncompressed initramfs.")
 
     self["cpio_compression"] = selected
-    self.logger.info("Selected CPIO compression: %s" % colorize(selected, "cyan", bold=True))
+    self.logger.info(f"Selected CPIO compression: {c_(selected, 'cyan', bold=True)}")
 
 
 @unset("out_file")
@@ -179,7 +183,7 @@ def make_cpio(self) -> None:
         if self["cpio_rotate"]:
             self._rotate_old(out_cpio)
         elif self["clean"]:
-            self.logger.warning("Removing existing file: %s" % colorize(out_cpio, "red", bold=True, bright=True))
+            self.logger.warning(f"Removing existing file: {c_(out_cpio, 'red', bold=True, bright=True)}")
             out_cpio.unlink()
         else:
             raise FileExistsError("File already exists, and cleaning/rotation are disabled: %s" % out_cpio)
