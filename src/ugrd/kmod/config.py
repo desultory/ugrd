@@ -126,15 +126,18 @@ def find_kernel_config(self) -> None:
     Resilient: never raises. If no config is found, logs a warning plus a
     distro-specific tip, and consumers fall back to "couldn't verify".
     """
-    if user_override := self.get("kernel_config_file"):
+    # The default for an unset Path-typed parameter is PosixPath('.'), so a plain
+    # truthy check would treat "not set" as if the user provided ".".
+    user_override = self.get("kernel_config_file")
+    if user_override and Path(user_override) != Path("."):
         override_path = Path(user_override)
-        if override_path.exists():
+        if override_path.is_file():
             self.logger.info("Using user-provided kernel config: %s" % override_path)
             self["_kernel_config_file"] = override_path
             self["_kernel_config_options"] = _parse_kernel_config(self, override_path)
             return
         self.logger.warning(
-            "kernel_config_file is set but does not exist: %s; falling back to autodetection." % override_path
+            "kernel_config_file '%s' is not a regular file; falling back to autodetection." % override_path
         )
 
     kver = self.get("kernel_version")
