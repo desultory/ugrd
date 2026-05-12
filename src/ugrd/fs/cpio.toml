@@ -1,10 +1,10 @@
-cpio_compression = "xz"
+cpio_compression = true
 cpio_deduplicate = true
 cpio_rotate = true
 check_cpio = true
 
 [imports.build_pre]
-"ugrd.fs.cpio" = [ "get_archive_name" ]
+"ugrd.fs.cpio" = [ "select_cpio_compression", "get_archive_name" ]
 
 [imports.pack]
 "ugrd.fs.cpio" = [ "make_cpio" ]
@@ -12,9 +12,12 @@ check_cpio = true
 [imports.checks]
 "ugrd.fs.cpio" = [ "check_cpio_deps", "check_cpio_funcs", "check_in_cpio" ]
 
+[import_order.before]
+"select_cpio_compression" = "get_archive_name"
+
 [custom_parameters]
 cpio_rotate = "bool"  # makes a .old backup of the cpio file if it already exists.
-cpio_compression = "str"  # The compression method to use for the cpio file. XZ and ZSTD are supported.
+cpio_compression = "str"  # CPIO compression preference: true (auto, default), "xz", "zstd", or false (none).
 cpio_deduplicate = "bool"  # When enabled, duplicate files are hardlinked in the cpio archive.
 _cpio_archive = "PyCPIO"  # The cpio archive object.
 check_cpio = "bool"  # When enabled, the CPIO archive contents are checked for errors.

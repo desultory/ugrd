@@ -34,8 +34,12 @@ modules = [
 # create device nodes in build dir, requires root
 #make_nodes = true
 
-# By default, xz compression is used. This can be disabled or set to zstd if the zstandard python module is installed
-#cpio_compression = "zstd"  # Use zstd compression
+# cpio_compression auto-selects the best supported algorithm by default.
+# Priorities: true -> xz, zstd, none; xz -> xz, zstd, none; zstd -> zstd, xz, none; false -> none.
+# Kernel CONFIG_RD_XZ / CONFIG_RD_ZSTD and the python 'zstandard' module are checked at build time.
+#cpio_compression = true   # Auto-select (default)
+#cpio_compression = "xz"   # Prefer xz, fall back to zstd or none
+#cpio_compression = "zstd" # Prefer zstd, fall back to xz or none
 #cpio_compression = false  # No compression
 
 # Optionally supply a kernel version, uses the current kernel version if not specified
