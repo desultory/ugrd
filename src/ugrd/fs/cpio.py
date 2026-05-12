@@ -7,6 +7,8 @@ from pathlib import Path
 from pycpio.cpio.symlink import CPIO_Symlink
 from zenlib.util import colorize, contains, unset
 
+from ugrd.kmod.config import check_kernel_config
+
 # Fallback chain per user request. pycpio only supports xz and zstd.
 # Order: most preferred first; "false" means "no compression".
 _COMPRESSION_FALLBACK = {
@@ -73,48 +75,13 @@ def _check_in_cpio(self, file, lines=[], quiet=False) -> None:
                 self.logger.debug("Line found in CPIO: %s" % line)
 
 
-def _find_kernel_config_file(self) -> Path | None:
-    """Returns the path to the kernel .config, or None if it can't be located."""
-    if config_file := self.get("kernel_config_file"):
-        config_file = Path(config_file)
-        if config_file.exists():
-            return config_file
-    if kmod_dir := self.get("_kmod_dir"):
-        for sub in ("build", "source"):
-            candidate = Path(kmod_dir) / sub / ".config"
-            if candidate.exists():
-                return candidate
-    return None
-
-
-def _kernel_supports(self, option: str) -> bool | None:
-    """Checks whether a CONFIG_* option is enabled (y or m) in the kernel config.
-    Returns True/False when the config file is readable, None when it is unavailable
-    (so callers can decide whether to assume support)."""
-    config_file = _find_kernel_config_file(self)
-    if not config_file:
-        return None
-    option = option.upper()
-    if not option.startswith("CONFIG_"):
-        option = "CONFIG_" + option
-    try:
-        with open(config_file, "r") as f:
-            for line in f:
-                if line.startswith(option + "="):
-                    return line.split("=", 1)[1].strip()[:1] in ("y", "m")
-    except OSError as e:
-        self.logger.debug("Failed to read kernel config '%s': %s" % (config_file, e))
-        return None
-    return False
-
-
 def _compression_unavailable_reason(self, name: str) -> str | None:
     """Returns None when the compression can be used, otherwise a human-readable reason."""
     if name == "false":
         return None
     if name == "zstd" and find_spec("zstandard") is None:
         return "Python module 'zstandard' is not installed"
-    kernel_support = _kernel_supports(self, "RD_" + name.upper())
+    kernel_support = check_kernel_config(self, "RD_" + name.upper())
     if kernel_support is False:
         return "kernel does not have CONFIG_RD_%s enabled" % name.upper()
     if kernel_support is None:

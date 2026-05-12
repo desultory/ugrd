@@ -3,6 +3,6 @@ initramfs/*
 *.swo
 __pycache__/*
 *.pyc
-config.toml
+/config.toml
 build/*
 *.egg-info/

@@ -1,3 +1,5 @@
+modules = [ "ugrd.kmod.config" ]
+
 cpio_compression = true
 cpio_deduplicate = true
 cpio_rotate = true
