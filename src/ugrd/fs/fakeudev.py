@@ -1,5 +1,5 @@
 """
-UDEV is amazing and well desinged software.
+UDEV is amazing and well designed software.
 
 In order to make systemd not time out on boot, we need to fake it.
 To do this, we simply need to read /sys/block/dm-*/uevent,
@@ -15,7 +15,7 @@ def fake_dm_udev(self) -> str:
 
     Checks for the existence of /sys/block/dm-* entries,
     for each entry, it checks if the device has a 'dev' and name file, it not, skips it.
-    Fully initailzed deviecs should have a 'dm/name' file.
+    Fully initialized devices should have a 'dm/name' file.
 
     Reads the 'dev' file to get the device's major and minor numbers,
     uses these to create a udev database file in /run/udev/data/b<MAJOR>:<MINOR>.

@@ -11,7 +11,7 @@ Log lines info (20) level or greater should be formatted such that:
 * The device/volume/mountpoint where info is obtained from should be in brackets at the start of the line
 * Error lines dumping config should be prefaced with a newline
 * Messages adding context should be printed before any exceptions are raised
-* Format strings should be used for any log line with substituded values
+* Format strings should be used for any log line with substituted values
 
 
 #### Examples
