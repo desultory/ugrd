@@ -98,7 +98,7 @@ Init functions should return a string or list of strings that contain shell line
 
 The `InitramfsGenerator.generate_init_main()` function (often called from `self`) can be used to output all init hook levels but `init_pre` and `init_final`.
 
-A general overview of the procedure used for generating the init is to write the chosen `shebang`, then every init hook. The `custom_init` import can be used for more advanced confugrations, such as running another script in `agetty`.
+A general overview of the procedure used for generating the init is to write the chosen `shebang`, then every init hook. The `custom_init` import can be used for more advanced configurations, such as running another script in `agetty`.
 
 ### custom_init
 
@@ -106,7 +106,7 @@ To change how everything but `init_pre` and `init_file` are handled at runtime, 
 
 The `console` module uses the `custom_init` hook to change the init creation procedure.
 
-Like with the typical flow, it starts by creating the base `init` file with the shebang and `init_pre` portions. Once this is done, execution is handed off to all fucntions present in the `custom_init` imports.
+Like with the typical flow, it starts by creating the base `init` file with the shebang and `init_pre` portions. Once this is done, execution is handed off to all functions present in the `custom_init` imports.
 
 Finally, like the standard init build, the `init_final` is written to the main `init` file.
 
@@ -197,7 +197,7 @@ The name of `config_prcessing` functions is very important, it must be formatted
 
 If the function name has `_multi` at the end, it will be called using the `handle_plural` function, iterating over passed lists/dicts automatically.
 
-A new root varaible named `oops` could be defined, and a function `_process_oops` could be created and imported, raising an error when this vlaue is found, for example.
+A new root variable named `oops` could be defined, and a function `_process_oops` could be created and imported, raising an error when this value is found, for example.
 
 This module is loaded in the imports section of the `base.yaml` file:
 

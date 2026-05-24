@@ -16,7 +16,7 @@ When a module is loaded, `initramfs_dict.py` will try to load the toml file for 
 
 Modules can load other modules, and can therefore be used as aliases for a set of modules.
 
-> Not to be confused with `kmod_init` for specifing kmods to pull and initialize at boot
+> Not to be confused with `kmod_init` for specifying kmods to pull and initialize at boot
 
 ## Base modules
 
@@ -41,18 +41,18 @@ Modules write to a shared config dict that is accessible by other modules.
 * `validate` (true) adds additional checks to verify the initramfs will work on the build host.
 * `tmpdir` (/tmp) Sets the temporary directory as the base for the build and out dir.
 * `build_dir` (initramfs_build) If relative, it will be placed under `tmpdir`, defines the build directory.
-* `random_build_dir` (false) Adds a uuid to the end of the build dir name when true.
+* `random_build_dir` (false) Adds an uuid to the end of the build dir name when true.
 * `build_logging` (false) Enables additional logging during the build process.
-* `make_nodes` (false) Create real device nodes in the build dir. Otherwise they are created in the CPIO archive. 
+* `make_nodes` (false) Create real device nodes in the build dir. Otherwise, they are created in the CPIO archive. 
 * `find_libgcc` (true) Automatically locates libgcc using ldconfig -p and adds it to the initramfs.
 * `musl_libc` (false) Disable ldconfig -p usage for libgcc detection, skip ld.so.cache regeneration.
 * `out_dir` (initramfs_out) If relative, it will be placed under `tmpdir`, defines the output directory.
 * `out_file` Sets the name of the output file, under `out_dir`.
 * `clean` (true) forces the build dir to be cleaned on each run.
 * `old_count` (1) Sets the number of old file to keep when running the `_rotate_old` function.
-* `binaries` - A list used to define programs to be pulled into the initrams. `which` is used to find the path of added entries, and `lddtree` is used to resolve dependendies.
+* `binaries` - A list used to define programs to be pulled into the initrams. `which` is used to find the path of added entries, and `lddtree` is used to resolve dependencies.
 * `binary_search_paths` ("/bin", "/sbin", "/usr/bin", "/usr/sbin") - Paths to search for binaries, automatically updated when binaries are added.
-* `libraries` - A list of libaries searched for and added to the initramfs, by name.
+* `libraries` - A list of libraries searched for and added to the initramfs, by name.
 * `library_paths` ("/lib", /lib64") - Paths to search for libraries, automatically updated when libraries are added.
 * `paths` - A list of directores to create in the `build_dir`. They do not need a leading `/`.
 * `shell` (/bin/sh) Sets the shell to be used in the init script.
@@ -195,9 +195,9 @@ This is to prevent plymouth from hanging onto the display after the initramfs is
 
 ### Kernel modules
 
-`ugrd.kmod.kmod` is the core of the kernel module loading..
+`ugrd.kmod.kmod` is the core of the kernel module loading.
 
-#### ugrd.kmod.kmod confugration parameters
+#### ugrd.kmod.kmod configuration parameters
 
 The following parameters can be used to change the kernel module pulling and initializing behavior:
 
@@ -232,7 +232,7 @@ Some helper modules have been created to make importing required kernel modules 
 
 #### Kernel module masks
 
-By default, most unnecesaary modules are masked, by the following categories:
+By default, most unnecessary modules are masked, by the following categories:
 
 * `kmod_ignore_video` (true) - Ignores video modules.
 * `kmod_ignore_network` (true) - Ignores network modules.
@@ -441,7 +441,7 @@ Cryptsetup global config:
 
 ##### Key type definitions
 
-New key types can defined using the `cryptsetup_key_types` dict. At least `key_command` must be specified. The name of the key file is added to the end of this command:
+New key types can define using the `cryptsetup_key_types` dict. At least `key_command` must be specified. The name of the key file is added to the end of this command:
 
 ```
 [cryptsetup_key_types.gpg]

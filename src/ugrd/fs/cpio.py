@@ -9,7 +9,7 @@ from zenlib.util import colorize, contains, unset
 
 @contains("check_cpio")
 def check_cpio_deps(self) -> str:
-    """Checks that all dependenceis are in the generated CPIO file."""
+    """Checks that all dependencies are in the generated CPIO file."""
     for dep in self["dependencies"]:
         _check_in_cpio(self, dep)
     return "All dependencies found in CPIO."
