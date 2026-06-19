@@ -55,7 +55,7 @@ def autodetect_net_device(self):
     gateways = {}
     for route in routes:
         if route["dst"] == "default":
-            gateways[route["metric"]] = route
+            gateways[route("metric", 0)] = route
 
     if not gateways:
         raise AutodetectError("No default route found")
