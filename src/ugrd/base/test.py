@@ -88,6 +88,10 @@ def _get_qemu_cmd_args(self, test_image):
         arglist.append("-drive")
         arglist.append(f"file={self._get_out_path('swap.img')},format=raw")
 
+    if self["test_netdev"]:
+        arglist.append("-nic")
+        arglist.append(f"model={self.test_netdev},mac={self['net_device_mac']}")
+
     return arglist
 
 

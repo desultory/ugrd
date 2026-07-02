@@ -25,6 +25,7 @@ test_kernel = "Path"  # Define the kernel to use for the test
 test_memory = "str"  # Define the amount of memory to use for the test image (passed to qemu)
 test_cpu = "str"  # Define the CPU to use for the test image (passed to qemu)
 test_arch = "str"  # Define the qemu arch (added to the qemu-system- command)
+test_netdev = "str"  # Define the test network device
 test_cmdline = "str"  # Define the kernel command line for the test image
 test_timeout = "int"  # Define the timeout for the test
 test_image_size = "int"  # Define the size of the test image, in MB
