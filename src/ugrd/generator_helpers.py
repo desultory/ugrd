@@ -39,7 +39,7 @@ class GeneratorHelpers:
 
     def _get_build_path(self, path: Union[Path, str]) -> Path:
         """Returns the path relative to the build directory, under the tmpdir.
-        if random_build_dir is true, appends a uuid4() to the build directory."""
+        If random_build_dir is true, appends a uuid4() to the build directory."""
         if self.random_build_dir:
             build_dir = self.build_dir.with_name(self.build_dir.name + "-" + _RANDOM_BUILD_ID)
         else:
@@ -245,7 +245,7 @@ class GeneratorHelpers:
         return cmd
 
     def _rotate_old(self, file_name: Path, sequence=0) -> None:
-        """Copies a file to file_name.old then file_nane.old.n, where n is the next number in the sequence"""
+        """Copies a file to file_name.old then file_name.old.n, where n is the next number in the sequence"""
         # Nothing to do if the file doesn't exist
         if not file_name.is_file():
             self.logger.debug("File does not exist: %s" % file_name)

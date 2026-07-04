@@ -25,7 +25,7 @@ def get_module_name(module_path: Path) -> str:
 
 def get_parameters() -> dict[str, dict[str, str]]:
     """Returns a dictionary of modules and their corresponding variables
-    these are defined in the "custom_paramaters" section of the config file
+    these are defined in the "custom_parameters" section of the config file
     """
     parameters = {}
     for module in get_module_paths():

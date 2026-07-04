@@ -30,7 +30,7 @@ class InitramfsConfigDict(UserDict):
     By default ugrd.base.base is loaded, which is a very minimal config.
     If NO_BASE is set to True, ugrd.base.core is loaded instead, which contains absolute essentials.
 
-    If parameters which are not registerd are set, they are added to the processing queue and processed when the type is known.
+    If parameters which are not registered are set, they are added to the processing queue and processed when the type is known.
     """
 
     builtin_parameters = {
@@ -125,7 +125,7 @@ class InitramfsConfigDict(UserDict):
 
         # Don't use masked processing functions for custom values, fall back to standard setters
         def check_mask(import_name: str) -> bool:
-            """Checks if the funnction is masked."""
+            """Checks if the function is masked."""
             return import_name in self.get("masks", [])
 
         if func := self["custom_processing"].get(f"_process_{key}"):
@@ -235,7 +235,7 @@ class InitramfsConfigDict(UserDict):
 
     def _process_import_functions(self, module, functions: list) -> list[Callable]:
         """Processes defined import functions, importing them and adding them to the returned list.
-        the 'function' key is required if dicts are used,
+        The 'function' key is required if dicts are used,
         'before' and 'after' keys can be used to specify order requirements."""
         function_list = []
         for f in functions:
@@ -390,7 +390,7 @@ class InitramfsConfigDict(UserDict):
             self.logger.debug("[%s] Processing custom parameters: %s" % (module, custom_parameters))
             self["custom_parameters"] = custom_parameters
 
-        # If custom paramters were added, process unprocessed values
+        # If custom parameters were added, process unprocessed values
         for custom_parameter in custom_parameters:
             self._process_unprocessed(custom_parameter)
 
