@@ -1,6 +1,6 @@
 # Bootloader configuration
 
-Once the initramfs image has been created, the system must be configured to use it. Depending on the booloader, this can be done in different ways.
+Once the initramfs image has been created, the system must be configured to use it. Depending on the bootloader, this can be done in different ways.
 
 ## efibootmgr configuration
 
@@ -24,7 +24,7 @@ The `build_dir`can be embedded into the Linux kernel with:
 CONFIG_INITRAMFS_SOURCE="/tmp/initramfs"
 ```
 
-Take care to set `make_nodes = true` to create `/dev/console` in the build dir (instead of in the cpio when packing it).
+Take care to set `make_nodes = true` to create `/dev/console` in the build directory (instead of in the cpio when packing it).
 The console device node file is required in builtin initrds.
 
 A CPIO file can be embedded into the Linux kernel with: 
