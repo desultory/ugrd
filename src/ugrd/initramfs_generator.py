@@ -1,8 +1,9 @@
 from importlib.metadata import version
 from textwrap import dedent
 from tomllib import TOMLDecodeError, load
+from typing import Any
 
-from zenlib.logging import loggify
+from zenlib.logging import ClassLogger
 from zenlib.util import colorize as c_
 from zenlib.util import pretty_print
 
@@ -12,13 +13,14 @@ from .exceptions import ValidationError
 from .generator_helpers import GeneratorHelpers
 
 
-@loggify
-class InitramfsGenerator(GeneratorHelpers):
-    def __init__(self, config="/etc/ugrd/config.toml", *args, **kwargs):
+class InitramfsGenerator(GeneratorHelpers, ClassLogger):
+    def __init__(self, config="/etc/ugrd/config.toml", *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
         self.config_dict = InitramfsConfigDict(NO_BASE=kwargs.pop("NO_BASE", False), logger=self.logger)
 
         # Used for functions that are added to the shell profile
-        self.included_functions = {}
+        # The key name is the function name, the value is the content
+        self.included_functions: dict[str, str | list[str]] = {}
 
         # Used for functions that are run as part of the build process
         self.build_tasks = ["build_enum", "build_pre", "build_tasks", "build_late", "build_deploy", "build_final"]
@@ -65,23 +67,23 @@ class InitramfsGenerator(GeneratorHelpers):
         self.logger.debug("Loaded config:\n%s" % self.config_dict)
 
     #  If the initramfs generator is used as a dictionary, it will use the config_dict.
-    def __setitem__(self, key, value):
+    def __setitem__(self, key, value) -> None:
         self.config_dict[key] = value
 
-    def __getitem__(self, item):
+    def __getitem__(self, item) -> Any:
         return self.config_dict[item]
 
-    def __contains__(self, item):
+    def __contains__(self, item) -> bool:
         return item in self.config_dict
 
-    def get(self, item, default=None):
+    def get(self, item, default=None) -> Any:
         return self.config_dict.get(item, default)
 
-    def __getattr__(self, item):
+    def __getattr__(self, item) -> Any:
         """Allows access to the config dict via the InitramfsGenerator object."""
         if item not in self.__dict__ and item != "config_dict":
             return self[item]
-        return super().__getattr__(item)
+        return object.__getattribute__(self, item)
 
     def build(self) -> None:
         """Builds the initramfs image."""
@@ -99,51 +101,56 @@ class InitramfsGenerator(GeneratorHelpers):
         self.run_checks()
         self.run_tests()
 
-    def run_func(self, function, force_include=False, force_exclude=False) -> list[str]:
+    def run_func(self, function, force_include=False, force_exclude=False) -> list[str] | None:
         """
         Runs an imported function.
+        The function should return str | list[str] | none
+
+        Normalizes output to list[str] and removes any empty lines or indentation
+
+        If the function name is already included or conflicts with a binary name, raises a ValueError
+
         If force_include is set, forces the function to be included in the shell profile.
-        if force_exclude is set, does not include the output of the function in the shell profile.
+        If force_exclude is set, does not include the output of the function in the shell profile and returns output early
         """
-        self.logger.log(self["_build_log_level"], "Running function: %s" % c_(function.__name__, "blue", bold=True))
-
+        self.logger.log(self["_build_log_level"], f"Running function: {c_(function.__name__, 'blue', bold=True)}")
         if function_output := function(self):
-            if isinstance(function_output, list) and len(function_output) == 1:
-                self.logger.debug(
-                    "[%s] Function returned list with one element: %s" % (function.__name__, function_output[0])
-                )
-                function_output = function_output[0]
+            if force_exclude:
+                # Log the contents and return early
+                self.logger.log(5, f"[{c_(function.__name__, 'yellow')}] Excluded function output:\n{function_output}")
+                return function_output if isinstance(function_output, list) else [function_output]
 
+            # Check after running for functions which will not be included in the init scripts/profile
             if function.__name__ in self.included_functions:
-                raise ValueError("Function has already been included in the shell profile: %s" % function.__name__)
+                raise ValueError(f"Function already included in the shell profile: {c_(function.__name__, 'red')}")
 
             if function.__name__ in self["binaries"]:
-                raise ValueError("Function name collides with defined binary: %s" % (function.__name__))
-                return function_output
+                raise ValueError(f"Function name collides with defined binary: {c_(function.__name__, 'red')}")
 
-            if isinstance(function_output, str) and "\n" in function_output:
-                function_output = dedent(function_output)
-                function_output = [  # If the output string has a newline, split and get rid of empty lines
-                    line for line in function_output.split("\n") if line and line != "\n" and not line.isspace()
+            # If the output is only a string, convert it to a list of strings
+            if isinstance(function_output, str):
+                function_output = [
+                    line for line in dedent(function_output).split("\n") if line and line != "\n" and not line.isspace()
                 ]
 
-            if isinstance(function_output, str) and not force_include:
-                self.logger.debug("[%s] Function returned string: %s" % (function.__name__, function_output))
+            # If the output is a single line, and force_include is not set, return the contents (not the function name)
+            if len(function_output) == 1 and not force_include:
+                self.logger.log(
+                    5, f"[{c_(function.__name__, 'blue')}] Function returned single line: {function_output[0]}"
+                )
                 return function_output
 
-            if not force_exclude:
-                self.logger.debug(
-                    "[%s] Function returned output: %s" % (function.__name__, pretty_print(function_output))
-                )
-                self.included_functions[function.__name__] = function_output
-                self.logger.debug("Created function alias: %s" % function.__name__)
-            elif function_output:
-                self.logger.debug("[%s] Function output was not included: %s" % (function.__name__, function_output))
-            return function.__name__
+            # Otherwise add it to the included functions and return the function name
+            self.logger.debug(
+                f"[{c_(function.__name__, 'blue')}] Function returned output:\n{pretty_print(function_output)}"
+            )
+            self.included_functions[function.__name__] = function_output
+            self.logger.debug(f"Created function alias: {c_(function.__name__, 'blue')}")
+            return [function.__name__]
         elif force_include:
-            raise ValueError("Force included function returned no output: %s" % function.__name__)
+            raise ValueError(f"Force included function returned no output:{c_(function.__name_, 'red')}")
         else:
-            self.logger.debug("[%s] Function returned no output" % function.__name__)
+            return self.logger.debug(f"Function returned no output: {c_(function.__name__, 'yellow')}")
 
     def run_hook(self, hook: str, *args, **kwargs) -> list[str]:
         """Runs all functions for the specified hook.
@@ -160,11 +167,14 @@ class InitramfsGenerator(GeneratorHelpers):
                 continue
 
             if function_output := self.run_func(function, *args, **kwargs):
-                out.append(function_output)
+                out += function_output
         return out
 
     def generate_profile(self) -> list[str]:
-        """Generates the shell profile file based on self.included_functions."""
+        """Generates the shell profile file based on self.included_functions.
+
+        !!! MUST BE RUN AFTER ALL HOOKS ARE RUN !!!
+        """
         ver = version(__package__) or 9999  # Version won't be found unless the package is installed
         out = [
             self["shebang"].split(" ")[0],  # Don't add arguments to the shebang (for the profile)
@@ -183,13 +193,8 @@ class InitramfsGenerator(GeneratorHelpers):
 
         for func_name, func_content in self.included_functions.items():
             out.append("\n\n" + func_name + "() {")
-            if isinstance(func_content, str):
-                out.append(f"    {func_content}")
-            elif isinstance(func_content, list):
-                for line in func_content:
-                    out.append(f"    {line}")
-            else:
-                raise TypeError("[%s] Function content is not a string or list: %s" % (func_name, func_content))
+            for line in func_content:
+                out.append(f"    {line}")
             out.append("}")
 
         return out
@@ -212,7 +217,8 @@ class InitramfsGenerator(GeneratorHelpers):
         self._log_run("Generating init functions")
         init = [self["shebang"]]  # Add the shebang to the top of the init file
 
-        # Run all included functions, so they get included
+        # Run all included functions, so they get included when the profile is generated
+        # Run before any other hooks to ensure there are no name conflicts later
         self.run_hook("functions", force_include=True)
 
         init.extend(self.run_init_hook("init_pre"))  # Always run init_pre first
@@ -244,22 +250,50 @@ class InitramfsGenerator(GeneratorHelpers):
         self.logger.debug("Final config:\n%s" % self)
 
     def run_build(self) -> None:
-        """Runs all build tasks."""
+        """Runs all build tasks based on all build tasks
+        Enable force exclude so the output is not used to generate profile functions
+        """
         self._log_run("Running build tasks")
         for task in self.build_tasks:
             self.logger.debug("Running build task: %s" % task)
             self.run_hook(task, force_exclude=True)
 
     def pack_build(self) -> None:
-        """Packs the initramfs based on self['imports']['pack']."""
+        """Packs the initramfs based on self['imports']['pack']
+        Enable force exclude so the output is not used to generate profile function.
+        """
         self._log_run("Packing build")
         if self["imports"].get("pack"):
-            self.run_hook("pack")
+            self.run_hook("pack", force_exclude=True)
         else:
             self.logger.warning(
                 "No pack functions specified, the final build is present in: %s"
                 % c_(self.build_dir, "green", bold=True, bright=True)
             )
+
+    def run_checks(self) -> None:
+        """Runs checks if defined in self['imports']['checks'].
+        Enable force exclude so the output is not used to generate profile function.
+        """
+        self._log_run("Running checks")
+        try:
+            if check_output := self.run_hook("checks", force_exclude=True):
+                for check in check_output:
+                    self.logger.debug(check)
+            else:
+                self.logger.warning("No checks executed.")
+        except (FileNotFoundError, ValueError) as e:
+            raise ValidationError(f"Error running checks: {e}") from e
+
+    def run_tests(self) -> None:
+        """Runs tests if defined in self['imports']['tests'].
+        Enable force exclude so any output is not included to generate profile functions.
+        """
+        if test_output := self.run_hook("tests", force_exclude=True):
+            self._log_run("Running tests")
+            self.logger.info("Completed tests:\n%s", test_output)
+        else:
+            self.logger.debug("No tests executed.")
 
     def run_init_hook(self, level: str) -> list[str]:
         """Runs the specified init hook, returning the output."""
@@ -270,26 +304,6 @@ class InitramfsGenerator(GeneratorHelpers):
         else:
             self.logger.debug("No output for init level: %s" % level)
             return []
-
-    def run_checks(self) -> None:
-        """Runs checks if defined in self['imports']['checks']."""
-        self._log_run("Running checks")
-        try:
-            if check_output := self.run_hook("checks"):
-                for check in check_output:
-                    self.logger.debug(check)
-            else:
-                self.logger.warning("No checks executed.")
-        except (FileNotFoundError, ValueError) as e:
-            raise ValidationError(f"Error running checks: {e}") from e
-
-    def run_tests(self) -> None:
-        """Runs tests if defined in self['imports']['tests']."""
-        if test_output := self.run_hook("tests"):
-            self._log_run("Running tests")
-            self.logger.info("Completed tests:\n%s", test_output)
-        else:
-            self.logger.debug("No tests executed.")
 
     def _log_run(self, logline) -> None:
         self.logger.info(f"-- | {c_(logline, 'blue', bold=True)}")
