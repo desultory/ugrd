@@ -143,14 +143,14 @@ def main():
         },
         {"flags": ["--print-config"], "action": "store_true", "help": "print the final config dict"},
         {"flags": ["--print-init"], "action": "store_true", "help": "print the final init structure"},
-        {"flags": ["--test"], "action": "store_true", "help": "Tests the image with qemu"},
+        {"flags": ["--test"], "action": "store_true", "help": "Tests the image with QEMU"},
         {
             "flags": ["--test-kernel"],
             "action": "store",
-            "help": "Tests the image with qemu using a specific kernel file.",
+            "help": "Tests the image with QEMU using a specific kernel file.",
         },
         {"flags": ["--livecd-label"], "action": "store", "help": "Sets the label for the livecd"},
-        {"flags": ["--squashfs-image"], "action": "store", "help": "Sets the filename for the livede squashfs image"},
+        {"flags": ["--squashfs-image"], "action": "store", "help": "Sets the filename for the livecd squashfs image"},
         {"flags": ["out_file"], "action": "store", "help": "set the output image location", "nargs": "?"},
     ]
 
