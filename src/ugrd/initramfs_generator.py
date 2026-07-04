@@ -1,8 +1,9 @@
 from importlib.metadata import version
 from textwrap import dedent
 from tomllib import TOMLDecodeError, load
+from typing import Any
 
-from zenlib.logging import loggify
+from zenlib.logging import ClassLogger
 from zenlib.util import colorize as c_
 from zenlib.util import pretty_print
 
@@ -12,13 +13,14 @@ from .exceptions import ValidationError
 from .generator_helpers import GeneratorHelpers
 
 
-@loggify
-class InitramfsGenerator(GeneratorHelpers):
-    def __init__(self, config="/etc/ugrd/config.toml", *args, **kwargs):
+class InitramfsGenerator(GeneratorHelpers, ClassLogger):
+    def __init__(self, config="/etc/ugrd/config.toml", *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
         self.config_dict = InitramfsConfigDict(NO_BASE=kwargs.pop("NO_BASE", False), logger=self.logger)
 
         # Used for functions that are added to the shell profile
-        self.included_functions = {}
+        # The key name is the function name, the value is the content
+        self.included_functions: dict[str, str | list[str]] = {}
 
         # Used for functions that are run as part of the build process
         self.build_tasks = ["build_enum", "build_pre", "build_tasks", "build_late", "build_deploy", "build_final"]
@@ -65,23 +67,23 @@ class InitramfsGenerator(GeneratorHelpers):
         self.logger.debug("Loaded config:\n%s" % self.config_dict)
 
     #  If the initramfs generator is used as a dictionary, it will use the config_dict.
-    def __setitem__(self, key, value):
+    def __setitem__(self, key, value) -> None:
         self.config_dict[key] = value
 
-    def __getitem__(self, item):
+    def __getitem__(self, item) -> Any:
         return self.config_dict[item]
 
-    def __contains__(self, item):
+    def __contains__(self, item) -> bool:
         return item in self.config_dict
 
-    def get(self, item, default=None):
+    def get(self, item, default=None) -> Any:
         return self.config_dict.get(item, default)
 
-    def __getattr__(self, item):
+    def __getattr__(self, item) -> Any:
         """Allows access to the config dict via the InitramfsGenerator object."""
         if item not in self.__dict__ and item != "config_dict":
             return self[item]
-        return super().__getattr__(item)
+        return object.__getattribute__(self, item)
 
     def build(self) -> None:
         """Builds the initramfs image."""
@@ -99,7 +101,7 @@ class InitramfsGenerator(GeneratorHelpers):
         self.run_checks()
         self.run_tests()
 
-    def run_func(self, function, force_include=False, force_exclude=False) -> list[str]:
+    def run_func(self, function, force_include=False, force_exclude=False) -> list[str] | str:
         """
         Runs an imported function.
         If force_include is set, forces the function to be included in the shell profile.
@@ -145,7 +147,7 @@ class InitramfsGenerator(GeneratorHelpers):
         else:
             self.logger.debug("[%s] Function returned no output" % function.__name__)
 
-    def run_hook(self, hook: str, *args, **kwargs) -> list[str]:
+    def run_hook(self, hook: str, *args, **kwargs) -> list[str | list[str]] | str:
         """Runs all functions for the specified hook.
         If the function is masked, it will be skipped.
         If the function is in import_order, handle the ordering
@@ -164,7 +166,10 @@ class InitramfsGenerator(GeneratorHelpers):
         return out
 
     def generate_profile(self) -> list[str]:
-        """Generates the shell profile file based on self.included_functions."""
+        """Generates the shell profile file based on self.included_functions.
+
+        !!! MUST BE RUN AFTER ALL HOOKS ARE RUN !!!
+        """
         ver = version(__package__) or 9999  # Version won't be found unless the package is installed
         out = [
             self["shebang"].split(" ")[0],  # Don't add arguments to the shebang (for the profile)
