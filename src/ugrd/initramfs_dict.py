@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "2.5.0"
+__version__ = "3.0.0"
 
 from collections import UserDict
 from importlib import import_module
@@ -10,7 +10,7 @@ from tomllib import TOMLDecodeError, load
 from typing import Callable
 
 from pycpio import PyCPIO
-from zenlib.logging import loggify
+from zenlib.logging import LoggerMixIn
 from zenlib.types import NoDupFlatList
 from zenlib.util import colorize as c_
 from zenlib.util import handle_plural, pretty_print
@@ -18,8 +18,7 @@ from zenlib.util import handle_plural, pretty_print
 from .exceptions import ValidationError
 
 
-@loggify
-class InitramfsConfigDict(UserDict):
+class InitramfsConfigDict(LoggerMixIn, UserDict):
     """
     Dict for ugrd config
 
@@ -47,7 +46,9 @@ class InitramfsConfigDict(UserDict):
     }
 
     def __init__(self, NO_BASE=False, *args, **kwargs):
+        self.init_logger(args, kwargs)
         super().__init__(*args, **kwargs)
+
         # Define the default parameters
         for parameter, default_type in self.builtin_parameters.items():
             if default_type == NoDupFlatList:
@@ -267,12 +268,26 @@ class InitramfsConfigDict(UserDict):
                 self.logger.debug("Attempting to sideload module from: %s" % module_path)
                 if not module_path.exists():
                     raise ModuleNotFoundError("Module not found: %s" % module_name) from e
-                try:  # If the module is not built in, try to lade it from /var/lib/ugrd
+                try:  # If the module is not built in, try to load it from /var/lib/ugrd
+                    # Extra checks are added for logging but mostly to make type checking happy
                     spec = spec_from_file_location(module_name, module_path)
+                    if spec is None:
+                        raise ModuleNotFoundError(f"[{c_(module_name, 'yellow')}] Failed to load spec from file: {c_(module_path, 'red')}")
+
+                    spec_loader = spec.loader
+                    if spec_loader is None:
+                        raise RuntimeError(f"Failed to initialize loader for spec: {c_(spec, 'yellow')}")
+
                     module = module_from_spec(spec)
-                    spec.loader.exec_module(module)
+
+                    if module is None:
+                        raise ModuleNotFoundError(f"[{c_(module_name, 'yellow')}] Failed to load module from spec: {c_(spec, 'red')}")
+
+                    spec_loader.exec_module(module)
+                    self.logger.debug(f"Loaded external module: {c_(module_name, 'blue')}")
+
                 except Exception as e:
-                    raise ModuleNotFoundError("Unable to load module: %s" % module_name) from e
+                    raise ModuleNotFoundError(f"[{c_(module_name, 'yellow')}] Unable to load module: {e}") from e
 
             self.logger.log(5, "[%s] Imported module contents: %s" % (module_name, dir(module)))
             if "_module_name" in dir(module) and module._module_name != module_name:
