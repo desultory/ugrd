@@ -4,7 +4,7 @@ At runtime, µgRD will try to read `/etc/ugrd/config.toml` for configuration opt
 
 There is very little to configure in the base image, unless you are just interested in specifying a few required kmods/files to be pulled into the initramfs.
 
-Modules may be imported to extend the functionality of the build system and resulting image. Many modules are automatically included whn their features are used.
+Modules may be imported to extend the functionality of the build system and resulting image. Many modules are automatically included when their features are used.
 
 ## Modules (Plugins)
 
@@ -12,7 +12,7 @@ The `modules` config directive should contain a list with names specifying the p
 
 > By default `ugrd.base.base` and `ugrd.base.core` are loaded. These modules include the cmdline, kmod, and mounts modules.
 
-When a module is loaded, `initramfs_dict.py` will try to load the toml file for that module, parsing it in the same manner `config.toml` is parsed.
+When a module is loaded, `initramfs_dict.py` will try to load the TOML file for that module, parsing it in the same manner `config.toml` is parsed.
 
 Modules can load other modules, and can therefore be used as aliases for a set of modules.
 
@@ -32,29 +32,29 @@ Modules write to a shared config dict that is accessible by other modules.
 * `init_target` Sets the init target for `switch_root`.
 * `autodetect_init` (true) Automatically set the init target based `which init`.
 * `loglevel` (5) Sets the kernel log level in the init script.
-* `shebang_args` (-l) sets the args for the shebang on the init script.
+* `shebang_args` (-l) sets the arguments for the shebang on the init script.
 * `shebang` (#!/bin/sh) sets the shebang on the init script. (DEPRECATED, use shell and shebang_args)
 
 ### base.core
 
 * `hostonly` (true) Builds the initramfs for the current host, if disabled, validation is automatically disabled.
 * `validate` (true) adds additional checks to verify the initramfs will work on the build host.
-* `tmpdir` (/tmp) Sets the temporary directory as the base for the build and out dir.
+* `tmpdir` (/tmp) Sets the temporary directory as the base for the build and out directory.
 * `build_dir` (initramfs_build) If relative, it will be placed under `tmpdir`, defines the build directory.
-* `random_build_dir` (false) Adds an uuid to the end of the build dir name when true.
+* `random_build_dir` (false) Adds an UUID to the end of the build directory name when true.
 * `build_logging` (false) Enables additional logging during the build process.
-* `make_nodes` (false) Create real device nodes in the build dir. Otherwise, they are created in the CPIO archive. 
+* `make_nodes` (false) Create real device nodes in the build directory. Otherwise, they are created in the CPIO archive. 
 * `find_libgcc` (true) Automatically locates libgcc using ldconfig -p and adds it to the initramfs.
 * `musl_libc` (false) Disable ldconfig -p usage for libgcc detection, skip ld.so.cache regeneration.
 * `out_dir` (initramfs_out) If relative, it will be placed under `tmpdir`, defines the output directory.
 * `out_file` Sets the name of the output file, under `out_dir`.
-* `clean` (true) forces the build dir to be cleaned on each run.
+* `clean` (true) forces the build directory to be cleaned on each run.
 * `old_count` (1) Sets the number of old file to keep when running the `_rotate_old` function.
-* `binaries` - A list used to define programs to be pulled into the initrams. `which` is used to find the path of added entries, and `lddtree` is used to resolve dependencies.
+* `binaries` - A list used to define programs to be pulled into the initramfs. `which` is used to find the path of added entries, and `lddtree` is used to resolve dependencies.
 * `binary_search_paths` ("/bin", "/sbin", "/usr/bin", "/usr/sbin") - Paths to search for binaries, automatically updated when binaries are added.
 * `libraries` - A list of libraries searched for and added to the initramfs, by name.
 * `library_paths` ("/lib", /lib64") - Paths to search for libraries, automatically updated when libraries are added.
-* `paths` - A list of directores to create in the `build_dir`. They do not need a leading `/`.
+* `paths` - A list of directories to create in the `build_dir`. They do not need a leading `/`.
 * `shell` (/bin/sh) Sets the shell to be used in the init script.
 
 #### Copying files
@@ -85,7 +85,7 @@ source = "/home/larry/.gnupg/pubkey.gpg"
 destination = "/etc/ugrd/pub.gpg"
 ```
 
-#### symlink creation
+#### Symlink creation
 
 Symlinks are defined in the `symlinks` dict. Each entry must have a name, `source` and `target`:
 
@@ -117,7 +117,7 @@ Creates `/dev/console` with permissions `0o644`
 
 By default, they will be processed by `ugrd.fs.cpio` and added to the CPIO archive.
 
-To create device nodes in the build dir, set `make_nodes` to `true`.
+To create device nodes in the build directory, set `make_nodes` to `true`.
 
 ### base.cmdline
 
@@ -178,7 +178,7 @@ No configuration options are available.
 
 ### base.plymouth
 
-experimental plymouth module. Depends on `base.udev`
+Experimental plymouth module. Depends on `base.udev`
 
 This module requires manual user configuration outside of ugrd, specifically for "quiet" and "splash" to be set on the kernel command line.
 
@@ -205,7 +205,7 @@ The following parameters can be used to change the kernel module pulling and ini
 * `kmod_pull_firmware` (true) Adds kernel module firmware to dependencies
 * `kmod_init` - Kernel modules to `modprobe` at boot.
 * `kmod_init_optional` - Modules to attempt to add to `kmod_init`, failing with a warning if not found.
-* `kmod_autodetect_lspci` (false) Finds kernel modules for PCI devices using `/sys/bus/pci/drivers`, formely used `lspci -k`.
+* `kmod_autodetect_lspci` (false) Finds kernel modules for PCI devices using `/sys/bus/pci/drivers`, formerly used `lspci -k`.
 * `kmod_autodetect_lsmod` (false) Pulls kernel modules using `/proc/modules`, formerly used `lsmod`.
 * `kernel_modules` - Kernel modules to pull into the initramfs. These modules will not be `modprobe`'d automatically.
 * `kmod_ignore` - Kernel modules to ignore. Modules which depend on ignored modules will also be ignored.
@@ -228,7 +228,7 @@ The following parameters can be used to change the kernel module pulling and ini
 
 Some helper modules have been created to make importing required kernel modules easier.
 
-`ugrd.kmod.nvme`, `usb`, and `fat` can be used to load modules for NVME's, USB storage, and the FAT file system respectively.
+`ugrd.kmod.nvme`, `usb`, and `fat` can be used to load modules for NVMEs, USB storage, and the FAT file system respectively.
 
 #### Kernel module masks
 
@@ -249,7 +249,7 @@ Additional modules include:
 * `ugrd.fs.bcachefs` - Adds the bcachefs module and binary for mounting.
 * `ugrd.fs.btrfs` - Helps with multi-device BTRFS mounts, subvolume selection.
 * `ugrd.fs.fakeudev` - Makes 'fake' udev entries for DM devices.
-* `ugrd.fs.cpio` - Packs the build dir into a CPIO archive with PyCPIO.
+* `ugrd.fs.cpio` - Packs the build directory into a CPIO archive with PyCPIO.
 * `ugrd.fs.livecd` - Assists in livecd image creation.
 * `ugrd.fs.lvm` - Activates LVM mounts.
 * `ugrd.fs.mdraid` - For MDRAID mounts.
@@ -259,7 +259,7 @@ Additional modules include:
 
 #### ugrd.fs.mounts
 
-* `autodetect_root` (true) Set the root mount parameter based on the current root label or uuid.
+* `autodetect_root` (true) Set the root mount parameter based on the current root label or UUID.
 * `autodetect_dm` (true) Attempt to automatically configure virtual block devices such as LUKS/LVM/MDRAID.
 * `autodetect_luks` (true) Attempt to automatically configure LUKS mounts for the root device.
 * `autodetect_lvm` (true) Attempt to automatically configure LVM mounts for the root device.
@@ -336,7 +336,7 @@ This module handles CPIO creation.
 
 * `cpio_compression` (xz) Sets the compression method for the CPIO file, passed to PyCPIO.
 * `cpio_rotate` (true) Rotates old CPIO files, keeping `old_count` number of old files.
-* `cpio_deduplicate` (true) Deduplicates files in the CPIO archive to save space (make hardlinks).
+* `cpio_deduplicate` (true) De-duplicates files in the CPIO archive to save space (makes hardlinks).
 
 ##### General mount options
 
@@ -352,14 +352,14 @@ Importing this module will run `btrfs device scan` and pull btrfs modules.
 * `subvol_selector` (false) The root subvolume will be selected at runtime based on existing subvolumes. Overridden by `root_subvol`.
 * `autodetect_root_subvol` (true) Autodetect the root subvolume, unless `root_subvol` or `subvol_selector` is set. Depends on `hostonly`.
 * `root_subvol` - Set the desired root subvolume.
-* `_base_mount_path` (/root_base) Sets where the subvolume selector mounts the base filesytem to scan for subvolumes.
+* `_base_mount_path` (/root_base) Sets where the subvolume selector mounts the base filesystem to scan for subvolumes.
 * `btrfs_userspace` (true) Add btrfs binary to be able to mount multi-device btrfs partitions.
 
 #### ugrd.fs.resume
 
 When enabled, attempts to resume after hibernation if resume= is passed on the kernel command line.
 
-* `late_resume` (false) If true, the resume process will be handled in after cryptsetup/luks operations. This is required if the resume device is encrypted by LUKS, but has a small risk of filesystem damage if writes are performed
+* `late_resume` (false) If true, the resume process will be handled in after cryptsetup/LUKS operations. This is required if the resume device is encrypted by LUKS, but has a small risk of filesystem damage if writes are performed
 * `strict_resume` (false) If true, the initramfs will fail to boot if resume= is not passed on the kernel command line or if the resume device cannot be found.
 
 ### Cryptographic modules
@@ -368,12 +368,12 @@ Several cryptographic modules are provided, mostly to assist in mounting encrypt
 
 #### ugrd.crypto.gpg
 
-This module is required to perform GPG decryption within the initramfs. It depends on the `ugrd.base.console` module for agetty, which is required for input. Additionally, it depends on the `ugrd.crypt.cryptsetup` module, so both do not need to be defind.
+This module is required to perform GPG decryption within the initramfs. It depends on the `ugrd.base.console` module for agetty, which is required for input. Additionally, it depends on the `ugrd.crypt.cryptsetup` module, so both do not need to be defined.
 
 `gpg_agent_args` is an append-only list which defines arguments passed to `gpg-agent`.
 
 This module sets the `primary_console` to `tty0` and creates the console entry for it.
-This configuration can be overriden in the specified user config if an actual serial interface is used, this is demonstrated in `config_raid_crypt_serial.toml`
+This configuration can be overridden in the specified user config if an actual serial interface is used, this is demonstrated in `config_raid_crypt_serial.toml`
 
 #### ugrd.crypto.smartcard
 
@@ -381,7 +381,7 @@ Depends on the `ugrd.crypto.gpg` submodule, meant to be used with a YubiKey.
 
 > Sets `cryptsetup_autoretry` to false
 
-`sc_public_key` should point to the public key associated with the smarcard used to decrypt the GPG protected LUKS keyfile.
+`sc_public_key` should point to the public key associated with the smartcard used to decrypt the GPG protected LUKS keyfile.
 This file is added as a dependency and pulled into the initramfs.
 
 #### ugrd.crypto.cryptsetup
@@ -395,9 +395,9 @@ Cryptsetup mounts can be configured with the following options:
 * `key_file` - The path of a key file.
 * `key_command` - The command used to unlock or use the key.
 * `reset_command` - The command to be used between unlock attempts.
-* `header_file` - The path of the luks header file.
+* `header_file` - The path of the LUKS header file.
 * `partuuid` - The partition UUID of the LUKS volume.
-* `uuid` - The UUID fo the LUKS filesystem.
+* `uuid` - The UUID of the LUKS filesystem.
 * `path` - The device path of the LUKS volume (validation must be disabled).
 * `retries` (5) The number of times to attempt to unlock a key or cryptsetup volume.
 * `try_nokey` (false) Whether or not to attempt unlocking with a passphrase if key usage fails
@@ -411,7 +411,7 @@ Cryptsetup mounts can be configured with the following options:
 > If `validate` is set to true, additional checks will be used to verify specified LUKS volumes
 > Validation cannot be used with `path`, since storage paths may change at boot time.
 
-A minimal defintion to decrypt a volume protected by a passphrase:
+A minimal definition to decrypt a volume protected by a passphrase:
 
 ```
 [cryptsetup.root]

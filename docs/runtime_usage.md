@@ -1,6 +1,6 @@
 # Runtime usage
 
-`ugrd` runs the `init` script generated in the build dir. In cases where `agetty` is needed, all but basic initialization and the final switch_root are performed in `init_main.sh`.
+`ugrd` runs the `init` script generated in the build directory. In cases where `agetty` is needed, all but basic initialization and the final switch_root are performed in `init_main.sh`.
 
 µgRD should prompt for relevant input or warn if devices are missing at runtime.
 
@@ -10,6 +10,6 @@
 
 In the event of a failure, modules will either fail through, or re-exec the init script.
 
-The `ugrd_recovery` cmdline arg will allow a shell to be spawned in the event of a failure. This is useful for debugging.
+The `ugrd_recovery` cmdline argument will allow a shell to be spawned in the event of a failure. This is useful for debugging.
 
 > This can be set by simply adding `ugrd_recovery` to the kernel command line, or `ugrd_recovery=1`

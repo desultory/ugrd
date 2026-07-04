@@ -44,7 +44,7 @@ The original goal of this project was to create an initramfs suitable for decryp
 ### Validation
 
 * Configuration validation against the host config in `validate` mode
-* LUKS header and crypto backend validation
+* LUKS header and cryptographic backend validation
 * Imported binary and shell function collision detection
 * Static output image checks, ensuring necessary files are packed
 * QEMU based test framework with `--test` or using the `ugrd.base.test` module

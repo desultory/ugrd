@@ -111,7 +111,7 @@ sys     0m0.643s
 | dracut    | zstd          | 49M    | hostonly |
 | ugrd      | xz (default)  | 18.89M | hostonly |
 
-> For this image, luks, gpg, and yubikey modules are required, greatly increasing the image size
+> For this image, LUKS, GPG, and yubikey modules are required, greatly increasing the image size
 
 ### Boot time
 

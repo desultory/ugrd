@@ -2,7 +2,7 @@
 
 Modules can be created to extend the functionality of the initramfs generator.
 
-Modules only require a toml definition, and can import other modules to act as meta-modules.
+Modules only require a TOML definition, and can import other modules to act as meta-modules.
 
 Python functions can be added imported into `init` and `build` runlevels to execute build tasks or output init lines.
 
@@ -36,9 +36,9 @@ There are two primary categories for imports, `build` and `init`. Build imports 
 
 `config_processing` imports are used to automatically process config values when they are modified at runtime.
 
-The `pack` import is primarly used for packing the CPIO archive.
+The `pack` import is primarily used for packing the CPIO archive.
 
-The `checks` import is used for static checks, such as ensuring required files are included in the CPIO and have reasonbale contents.
+The `checks` import is used for static checks, such as ensuring required files are included in the CPIO and have reasonable contents.
 
 The `test` import is used for testing the initramfs, and is mostly used by the `test` module for QEMU wrapping.
 
@@ -92,7 +92,7 @@ By default, the following init hooks are available:
 
 > These hooks are defined under the `init_types` list in the `InitramfsGenerator` object.
 
-When the init scripts are generated, functions under dicts in the config defined by the names in this list will be called to generate the init scripts.
+When the init scripts are generated, functions under dictionaries in the config defined by the names in this list will be called to generate the init scripts.
 
 Init functions should return a string or list of strings that contain shell lines to be added to the `init` file.
 
@@ -193,7 +193,7 @@ def _process_mounts_multi(self, key, mount_config):
 
 This module manages mount management, and loads new mounts into fstab objects, also defined in the base module.
 
-The name of `config_prcessing` functions is very important, it must be formatted like `_process_{name}` where the name is the root variable name in the yaml config.
+The name of `config_prcessing` functions is very important, it must be formatted like `_process_{name}` where the name is the root variable name in the TOML config.
 
 If the function name has `_multi` at the end, it will be called using the `handle_plural` function, iterating over passed lists/dicts automatically.
 
