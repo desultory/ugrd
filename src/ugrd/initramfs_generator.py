@@ -121,7 +121,6 @@ class InitramfsGenerator(GeneratorHelpers, ClassLogger):
 
             if function.__name__ in self["binaries"]:
                 raise ValueError("Function name collides with defined binary: %s" % (function.__name__))
-                return function_output
 
             if isinstance(function_output, str) and "\n" in function_output:
                 function_output = dedent(function_output)
