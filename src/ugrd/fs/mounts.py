@@ -3,7 +3,6 @@ __version__ = "7.3.5"
 
 from pathlib import Path
 from re import search
-from typing import Union
 
 from ugrd.exceptions import AutodetectError, ValidationError
 from ugrd.kmod.platform import _get_platform_mmc_drivers
@@ -24,11 +23,11 @@ MOUNT_PARAMETERS = [
     *SOURCE_TYPES,
 ]
 
-# Filesysms types where options should be inherited from active mounts, other than 'rw'
+# Filesystems types where options should be inherited from active mounts, other than 'rw'
 MOUNT_INHERIT_OPTIONS = ["f2fs"]
 
 
-def _get_device_id(device: str) -> str:
+def _get_device_id(device: Path | str) -> tuple[int, int]:
     """Gets the device id from the device path."""
     return Path(device).stat().st_rdev >> 8, Path(device).stat().st_rdev & 0xFF
 
@@ -68,7 +67,7 @@ def _resolve_dev(self, device_path) -> str:
     return device_path
 
 
-def _find_mountpoint(self, path: str) -> str:
+def _find_mountpoint(self, path: Path | str) -> str:
     """Finds the mountpoint of a file or directory,
     Checks if the parent dir is a mountpoint, if not, recursively checks the parent dir."""
     check_path = Path(path).resolve()
@@ -116,7 +115,7 @@ def _resolve_overlay_lower_device(self, mountpoint) -> dict:
     return self["_mounts"][mountpoint]["device"]
 
 
-def _get_mount_dev_fs_type(self, device: str, raise_exception=True) -> str:
+def _get_mount_dev_fs_type(self, device: str, raise_exception=True) -> str | None:
     """Taking the device of an active mount, returns the filesystem type."""
     for info in self["_mounts"].values():
         if info["device"] == device:
@@ -129,9 +128,10 @@ def _get_mount_dev_fs_type(self, device: str, raise_exception=True) -> str:
         raise ValueError("No mount found for device: %s" % device)
     else:
         self.logger.debug("No mount found for device: %s" % device)
+        return None
 
 
-def _get_mount_source(self, mount: dict) -> str:
+def _get_mount_source(self, mount: dict) -> tuple[str, str]:
     """Gets the source from the mount config.
     Uses the order of SOURCE_TYPES to determine the source type.
         uuid, partuuid, label, path.
@@ -144,7 +144,7 @@ def _get_mount_source(self, mount: dict) -> str:
     raise ValueError(f"No source type found in mount: {c_(mount, 'red', bold=True)}")
 
 
-def _merge_mounts(self, mount_name: str, mount_config, mount_class) -> None:
+def _merge_mounts(self, mount_name: str, mount_config, mount_class) -> dict[str, dict[str, str]]:
     """Merges the passed mount config with the existing mount."""
     if mount_name not in self[mount_class]:
         self.logger.debug("[%s] Skipping mount merge, mount not found: %s" % (mount_class, mount_name))
@@ -266,7 +266,7 @@ def _get_mount_str(self, mount: dict, pad=False, pad_size=44) -> str:
     return out_str
 
 
-def _to_mount_cmd(self, mount: dict, mkdir=False) -> str:
+def _to_mount_cmd(self, mount: dict, mkdir=False) -> list[str]:
     """Prints the object as a mount command."""
     out = [f"if ! grep -qs {mount['destination']} /proc/mounts; then"]
 
@@ -391,7 +391,7 @@ def get_blkid_info(self, device=None) -> dict:
     return self["_blkid_info"][device] if device else self["_blkid_info"]
 
 
-def get_zpool_info(self, poolname=None) -> Union[dict, None]:
+def get_zpool_info(self, poolname=None) -> dict[str, set[str]] | None:
     """Enumerates ZFS pools and devices, adds them to the zpools dict."""
     if poolname:  # If a pool name is passed, try to get the pool info
         if "/" in poolname:
@@ -428,9 +428,11 @@ def get_zpool_info(self, poolname=None) -> Union[dict, None]:
     if poolname:  # If a poolname was passed, try return the pool info, raise an error if not found
         return self["_zpool_info"][poolname]
 
+    return None
+
 
 @contains("hostonly", "Skipping virtual block device enumeration, hostonly mode is disabled.", log_level=30)
-def get_virtual_block_info(self):
+def get_virtual_block_info(self) -> None:
     """Populates the virtual block device info. (previously device mapper only)
     Disables device mapper autodetection if no virtual block devices are found.
     """
@@ -506,7 +508,7 @@ def _autodetect_dm(self, mountpoint, device=None) -> None:
     Ensures it's a device mapper mount, then autodetects the mount type.
     Adds kmods to the autodetect list based on the mount source.
     """
-    # If a device is explicity passed, set it as the source device
+    # If a device is explicitly passed, set it as the source device
     if device:
         self.logger.debug("[%s] Using provided device for mount autodetection: %s" % (mountpoint, device))
         source_device = device
@@ -807,12 +809,12 @@ def _autodetect_mount(self, mountpoint, mount_class="mounts", missing_ok=False) 
     # Attempt to get the fs type, use auto if not found
     fs_type = mount_info.get("type", fs_type) or "auto"
     if fs_type == "auto":
-        self.logger.warning("Failed to autodetect mount type for mountpoint:" % (c_(mountpoint, "yellow")))
+        self.logger.warning(f"Failed to autodetect mount type for mountpoint: {c_(mountpoint, 'yellow')}")
     else:
         self.logger.info(
             "[%s] Autodetected mount type from device: %s" % (c_(mount_device, "blue"), c_(fs_type, "cyan"))
         )
-    # Get mount options based on the mount tyoe
+    # Get mount options based on the mount type
     if mount_class == "mounts":
         # Inherit mount options from the host mount for certain mount types
         if fs_type in MOUNT_INHERIT_OPTIONS:
@@ -853,8 +855,9 @@ def _autodetect_mount(self, mountpoint, mount_class="mounts", missing_ok=False) 
                 )
                 _autodetect_dm(self, mountpoint, device)
         elif fs_type == "zfs":
-            for device in get_zpool_info(self, mount_device)["devices"]:
-                _autodetect_dm(self, mountpoint, device)
+            if zfs_info := get_zpool_info(self, mount_device):
+                for device in zfs_info["devices"]:
+                    _autodetect_dm(self, mountpoint, device)
         else:
             _autodetect_dm(self, mountpoint)
 
@@ -896,7 +899,7 @@ def mount_base(self) -> list[str]:
     return out
 
 
-def _process_run_dirs_multi(self, run_dir: Union[str, Path]) -> None:
+def _process_run_dirs_multi(self, run_dir: str | Path) -> None:
     """Processes run_dirs items.
     Ensures the path starts with /run, adds it if it does not"""
     run_dir = Path(run_dir)
@@ -1072,7 +1075,7 @@ def export_mount_info(self) -> None:
     except ValueError as e:
         self.logger.critical(f"Failed to get source info for the root mount: {e}")
         if not self["hostonly"]:
-            self.logger.info("Root mount infomrmation can be defined under the '[mounts.root]' section.")
+            self.logger.info("Root mount information can be defined under the '[mounts.root]' section.")
             raise ValidationError(
                 "Root mount source information is not set. When hostonly mode is disabled, it must be manually defined."
             )
@@ -1085,19 +1088,20 @@ def export_mount_info(self) -> None:
     self["exports"]["ugrd_mount_timeout"] = self.get("mount_timeout", 1)
 
 
-def autodetect_zfs_device_kmods(self, poolname) -> list[str]:
+def autodetect_zfs_device_kmods(self, poolname) -> None:
     """Gets kmods for all devices in a ZFS pool and adds them to _kmod_auto."""
-    for device in get_zpool_info(self, poolname)["devices"]:
-        if device_kmods := resolve_blkdev_kmod(self, device):
-            self.logger.info(
-                "[%s:%s] Auto-enabling kernel modules for ZFS device: %s"
-                % (
-                    c_(poolname, "blue", bright=True),
-                    c_(device, "blue", bold=True),
-                    c_(", ".join(device_kmods), "cyan"),
+    if zfs_info := get_zpool_info(self, poolname):
+        for device in zfs_info["devices"]:
+            if device_kmods := resolve_blkdev_kmod(self, device):
+                self.logger.info(
+                    "[%s:%s] Auto-enabling kernel modules for ZFS device: %s"
+                    % (
+                        c_(poolname, "blue", bright=True),
+                        c_(device, "blue", bold=True),
+                        c_(", ".join(device_kmods), "cyan"),
+                    )
                 )
-            )
-            self["_kmod_auto"] = device_kmods
+                self["_kmod_auto"] = device_kmods
 
 
 def autodetect_mount_kmods(self, device) -> None:
