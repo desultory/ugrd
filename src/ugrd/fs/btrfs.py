@@ -21,7 +21,7 @@ class RootNotBtrfs(Exception):
 
 
 def _get_btrfs_mount_devices(self, mountpoint: str, dev=None) -> list:
-    """Returns a list of device paths for a btfrs mountpoint."""
+    """Returns a list of device paths for a btrfs mountpoint."""
     fs_dev = dev or self["_mounts"][mountpoint]["device"]
     fs_uuid = self["_blkid_info"][fs_dev]["uuid"]
     return [str(p.name) for p in Path(f"/sys/fs/btrfs/{fs_uuid}/devices").iterdir()]
@@ -149,7 +149,10 @@ def set_root_subvol(self) -> str:
     _validate_root_subvol(self)
     return f"""setvar root_extra_options ',subvol={self["root_subvol"]}'"""
 
-@contains("btrfs_userspace", message="btrfs_userspace is disabled, skipping adding btrfs to binaries list.", log_level=30)
+
+@contains(
+    "btrfs_userspace", message="btrfs_userspace is disabled, skipping adding btrfs to binaries list.", log_level=30
+)
 def pull_btrfs_userspace(self):
     self.logger.debug("Adding btrfs to binaries list.")
     self["binaries"] = "btrfs"
