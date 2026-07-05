@@ -1,10 +1,11 @@
-__version__ = "0.1.2"
+__version__ = "0.2.0"
 
 from json import loads
 from pathlib import Path
 
 from ugrd.exceptions import AutodetectError, ValidationError
-from zenlib.util import colorize, contains, unset
+from zenlib.util import colorize as c_
+from zenlib.util import contains, unset
 
 
 def _process_net_device(self, net_device: str) -> None:
@@ -18,17 +19,18 @@ def _validate_net_device(self, net_device: str) -> None:
     """Validates the given net_device."""
     if not net_device:  # Ensure the net_device is not empty
         if self["net_device_mac"]:
-            return self.logger.warning(
-                "net_device is empty, using net_device_mac without validation: %s" % self["net_device_mac"]
+            self.logger.warning(
+                f"net_device is empty, using net_device_mac without validation: {c_(self['net_device_mac'], 'yellow')}"
             )
+            return None  # Exit early
         raise ValidationError("net_device must not be empty, or net_device_mac must be set.")
 
     dev_path = Path("/sys/class/net") / net_device
     if not dev_path.exists():  # Ensure the net_device exists on the system
         self.logger.error("Network devices: %s", ", ".join([dev.name for dev in Path("/sys/class/net").iterdir()]))
-        raise ValueError("Invalid net_device: %s" % net_device)
+        raise ValueError("Invalid net_device: {c_(net_device, 'red')}")
     if not (dev_path / "address").exists():
-        raise ValueError("Invalid net_device, missing MAC address: %s" % net_device)
+        raise ValueError(f"Invalid net_device, missing MAC address: {c_(net_device, 'red')}")
 
 
 @contains("hostonly")
@@ -36,15 +38,15 @@ def autodetect_net_device_kmods(self) -> None:
     """Autodetects the driver for the net_device."""
     device_path = Path("/sys/class/net") / self["net_device"] / "device"
     if not device_path.exists():
-        raise AutodetectError("Unable to determine device driver for device: %s" % self["net_device"])
+        raise AutodetectError(f"Unable to determine device driver for network device: {c_(self['net_device'], 'red')}")
 
     driver_path = Path("/sys/class/net") / self["net_device"] / "device" / "driver"
     if driver_path.is_symlink():
         driver_name = driver_path.resolve().name
-        self.logger.info("Autodetected net_device_driver: %s" % colorize(driver_name, "cyan"))
+        self.logger.info(f"Autodetected net_device_driver: {c_(driver_name, 'cyan')}")
         self["kmod_init"] = driver_name
     else:
-        raise AutodetectError("Unable to determine device driver for device: %s" % self["net_device"])
+        raise AutodetectError(f"Unable to determine device driver for network device: {c_(self['net_device'], 'red')}")
 
 
 @unset("net_device", log_level=40)
@@ -62,7 +64,7 @@ def autodetect_net_device(self) -> None:
         raise AutodetectError("No default route found")
 
     self["net_device"] = gateways[min(gateways.keys())]["dev"]
-    self.logger.info("Autodetected net_device: %s" % colorize(self["net_device"], "cyan"))
+    self.logger.info(f"Autodetected net_device: {c_(self['net_device'], 'cyan')}")
 
 
 def resolve_mac(self) -> str:
