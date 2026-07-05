@@ -1,4 +1,4 @@
-__version__ = '0.3.0'
+__version__ = "0.3.1"
 
 from zenlib.util import contains
 
@@ -25,7 +25,7 @@ def generate_mdadm_conf(self) -> None:
     self._write("/etc/mdadm.conf", contents)
 
 
-def md_init(self):
+def md_init(self) -> str:
     """Assemble MD arrays. With ugrd.base.udev, udev rules already ran `mdadm -I`
     incrementally; the scan is just a backstop. Without it (or with only fakeudev,
     which does not run udevd), force MDADM_NO_UDEV=1 and drive assembly from mdadm.conf.
