@@ -158,7 +158,7 @@ def export_exports(self) -> list[str]:
 
     return check_lines + export_lines + ["setvar exported 1"]
 
-def check_proc_cmdline(self):
+def check_proc_cmdline(self) -> None:
     """ Checks for possible invalid cmdline args in /proc/cmdline. """
     cmdline = Path("/proc/cmdline").read_text().strip()
     self.logger.debug(f"Current cmdline: {c_(cmdline, 'green')}")
