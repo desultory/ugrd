@@ -13,7 +13,7 @@ from zenlib.util import unset
 def _process_test_swap_partition(self, value):
     """Processes the 'test_swap_partition' configuration option to set up the swap UUID and related parameters"""
     if value and "ugrd.fs.resume" not in self["modules"]:
-        self.logger.log(33, "test_swap_partiton enabled but 'ugrd.fs.resume' module not loaded, enabling it")
+        self.logger.log(33, "test_swap_partition enabled but 'ugrd.fs.resume' module not loaded, enabling it")
         self["modules"] = "ugrd.fs.resume"
 
     if not self["swap_uuid"]:
@@ -54,12 +54,12 @@ def init_test_vars(self):
 
 
 def _get_qemu_cmd_args(self, test_image):
-    """Returns arguements to run QEMU for the current test configuration."""
+    """Returns arguments to run QEMU for the current test configuration."""
     test_initrd = self._get_out_path(self["out_file"])
-    self.logger.log(33, f"Testing initramfs image: { c_(test_initrd, 'blue', bold=True)}")
+    self.logger.log(33, f"Testing initramfs image: {c_(test_initrd, 'blue', bold=True)}")
     test_rootfs = test_image._get_out_path(test_image["out_file"])
-    self.logger.log(33, f"Test rootfs image: { c_(test_rootfs, 'green', bold=True)}")
-    self.logger.log(33, f"Test kernel: { c_(self['test_kernel'], 'magenta')}")
+    self.logger.log(33, f"Test rootfs image: {c_(test_rootfs, 'green', bold=True)}")
+    self.logger.log(33, f"Test kernel: {c_(self['test_kernel'], 'magenta')}")
     self.logger.info("Test kernel: %s", c_(self["test_kernel"], "yellow"))
     cmdline = self["test_cmdline"]
     if self["test_swap_partition"]:
