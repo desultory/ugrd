@@ -65,7 +65,7 @@ def autodetect_net_device(self):
 
 
 def resolve_mac(self):
-    """Returns a shell script to resolve a MAC address to a deviec name"""
+    """Returns a shell script to resolve a MAC address to a device name"""
     return """
     for dev in /sys/class/net/*; do
         if [ "$(cat $dev/address)" = "$1" ]; then
