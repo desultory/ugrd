@@ -230,10 +230,10 @@ def _detect_luks_header_sha(self: InitramfsProtocol, luks_info: dict) -> None:
     enables the corresponding kernel module using _crypto_ciphers"""
     for keyslot in luks_info.get("keyslots", {}).values():
         if keyslot.get("af", {}).get("hash", "").startswith("sha"):
-            self["kernel_modules"] = self._crypto_ciphers[keyslot["af"]["hash"]]["driver"]
+            self["kernel_modules"] = self["_crypto_ciphers"][keyslot["af"]["hash"]]["driver"]
     for digest in luks_info.get("digests", {}).values():
         if digest.get("hash", "").startswith("sha"):
-            self["kernel_modules"] = self._crypto_ciphers[digest["hash"]]["driver"]
+            self["kernel_modules"] = self["_crypto_ciphers"][digest["hash"]]["driver"]
 
 
 def _detect_luks_header_integrity(self: InitramfsProtocol, luks_info: dict, mapped_name: str) -> None:
@@ -410,13 +410,13 @@ def detect_ciphers(self: InitramfsProtocol) -> None:
         for line in crypto_file:
             if line.startswith("name"):
                 current_name = get_value(line)
-                self._crypto_ciphers[current_name] = {}
+                self["_crypto_ciphers"][current_name] = {}
             elif not current_name:
                 continue  # Skip lines until a name is found
             elif line.startswith("driver"):
-                self._crypto_ciphers[current_name]["driver"] = get_value(line)
+                self["_crypto_ciphers"][current_name]["driver"] = get_value(line)
             elif line.startswith("module"):
-                self._crypto_ciphers[current_name]["module"] = get_value(line)
+                self["_crypto_ciphers"][current_name]["module"] = get_value(line)
 
 
 @contains("validate", "Skipping cryptsetup configuration validation.", log_level=30)
