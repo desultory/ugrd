@@ -1,6 +1,6 @@
 __version__ = "0.1.0"
 
-def add_kmod_masks(self):
+def add_kmod_masks(self) -> None:
     """Adds kmod masks based on the ignore settings:
         - kmod_ignore_video: ugrd.fs.novideo
         - kmod_ignore_sound: ugrd.fs.nosound
