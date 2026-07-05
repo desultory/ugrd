@@ -1,0 +1,10 @@
+[MASTER]
+disable=missing-module-docstring,consider-using-f-string
+suggestion-mode=yes
+
+[FORMAT]
+max-line-length=120
+ignore-long-lines=^\s*f?["'].*['"],?
+
+[VARIABLES]
+ignored-argument-names=self
