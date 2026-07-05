@@ -1,4 +1,5 @@
 __version__ = "0.5.0"
+from ugrd import InitramfsProtocol
 
 
 """ Shell lines to sanity check the environment for resuming, logs any issues """
@@ -54,7 +55,7 @@ _STRICT_CHECK_RESUME = [
 ]
 
 
-def handle_resume(self) -> list[str]:
+def handle_resume(self: InitramfsProtocol) -> list[str]:
     """Returns a shell script handling resume from hibernation.
     Checks that /sys/power/resume is writable, resume= is set, and noresume is not set
 
@@ -92,7 +93,7 @@ def handle_resume(self) -> list[str]:
     return out_lines
 
 
-def determine_resume_order(self) -> None:
+def determine_resume_order(self: InitramfsProtocol) -> None:
     """If late_resume is enabled, runs handle_resume at the very end of init_main
     Otherwise, runs it before mount_fstab is run
     """
