@@ -65,7 +65,7 @@ def autodetect_init(self) -> None:
         self["init_target"] = init_path
         return
     except PermissionError:
-        self.logger.eror("Unable to read /proc/1/exe, permission denied.")
+        self.logger.error("Unable to read /proc/1/exe, permission denied.")
 
     raise AutodetectError("init_target is not specified and could not be detected.")
 
