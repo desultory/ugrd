@@ -111,19 +111,21 @@ def get_conditional_dependencies(self) -> None:
     for dependency, condition in self["conditional_dependencies"].items():
         condition_type, condition_value = condition
         match condition_type:
+            # Ignore errors because mypy doesn't understand the decorators used here
             case "contains":
-                contains(condition_value)(add_dep(dependency))
+                contains(condition_value)(add_dep(dependency))  # type: ignore[func-returns-value]
             case "unset":
-                unset(condition_value)(add_dep(dependency))
+                unset(condition_value)(add_dep(dependency))  # type: ignore[func-returns-value]
 
 
-def _determine_interpreter(self, binary: Path) -> str:
+def _determine_interpreter(self, binary: Path) -> str | None:
     """Checks the shebang of a file, returning the interpreter if it exists."""
     with binary.open("rb") as f:
         try:
             first_line = f.readline().decode("utf-8").strip()
         except UnicodeDecodeError:
-            return self.logger.debug(f"Binary is not a text file, skipping shebang check: {c_(binary, 'yellow')}")
+            self.logger.debug(f"Binary is not a text file, skipping shebang check: {c_(binary, 'yellow')}")
+            return None
 
         if first_line.startswith("#!"):
             interpreter = first_line[2:].split()[0]
@@ -131,6 +133,7 @@ def _determine_interpreter(self, binary: Path) -> str:
             return interpreter
         else:
             self.logger.log(5, "No shebang found in: %s" % binary)
+            return None
 
 
 def _get_lddtree_deps(self, binary_path: Union[str, Path]) -> list[Path]:
@@ -172,11 +175,12 @@ def calculate_dependencies(self, binary: str) -> list[Path]:
     self.logger.log(
         5, f"Calculating dependencies for binary: {c_(binary, 'blue')} with PATH: {c_(search_paths, 'cyan')}"
     )
-    binary_path = which(binary, path=search_paths)
-    if not binary_path:
+
+    which_path = which(binary, path=search_paths)
+    if not which_path:
         raise AutodetectError(f"[{c_(binary, 'red')}] Binary not found not found in PATH: {c_(search_paths, 'yellow')}")
 
-    binary_path = Path(binary_path)
+    binary_path = Path(which_path)
     if interpreter := _determine_interpreter(self, binary_path):
         if interpreter not in self["binaries"]:
             self.logger.info(f"[{c_(binary, 'blue')}] Adding interpreter to binaries: {c_(interpreter, 'cyan')}")
@@ -187,9 +191,11 @@ def calculate_dependencies(self, binary: str) -> list[Path]:
     return _get_lddtree_deps(self, binary_path)
 
 
-def find_library(self, library: str) -> None:
-    """Given a library file name, searches for it in the library paths, adds it to the dependencies list."""
-    search_paths = NoDupFlatList(self["library_paths"], logger=self.logger)
+def find_library(self, library: str) -> Path:
+    """Given a library file name, searches for it in the library paths, adds it to the dependencies list.
+    Returns the library path if found, otherwise raises an AutodetectError
+    """
+    search_paths: NoDupFlatList[Path] = NoDupFlatList(self["library_paths"], logger=self.logger)
     search_paths.append(["/lib64", "/lib", "/usr/lib64", "/usr/lib"])
 
     for path in search_paths:
@@ -210,7 +216,7 @@ def handle_usr_symlinks(self) -> None:
     """
     Adds symlinks for /bin and /sbin to /usr/bin
     Adds a symlink for /usr/sbin to /usr/bin (-> bin)
-    Adds smlinks for /lib to /usr/lib and /lib64 to /usr/lib64
+    Adds symlinks for /lib to /usr/lib and /lib64 to /usr/lib64
     Warns if the symlink path is a directory on the host system.
     """
     bin_symlink = ("bin", "usr/bin")
@@ -268,7 +274,7 @@ def _deploy_compressed(self, compression_type: str, decompressor, compression_ex
         try:
             data = decompressor(dependency.read_bytes())
         except Exception as e:
-            raise DecompressorError(f"[{compression_type}] Unable to decompress ependency: {dependency} ({e})")
+            raise DecompressorError(f"[{compression_type}] Unable to decompress dependency: {dependency} ({e})")
 
         with out_path.open("wb") as out_file:
             out_file.write(data)
@@ -290,7 +296,7 @@ def deploy_zstd_dependencies(self) -> None:
     """Decompresses all zstd dependencies into the build directory.
     Entries should only be added to zstd_dependencies if the zstandard library is available.
     """
-    from zstandard import decompress
+    from zstandard import decompress  # type: ignore
 
     _deploy_compressed(self, "zstd", decompress, compression_extensions=[".zst", ".zstd"])
 
@@ -415,7 +421,7 @@ def regen_ld_so_cache(self) -> None:
     Checks if a 'real' ldconfig is available, if so, regenerates the ld.so.cache file in the build dir.
     Uses defined library paths to generate the config file.
 
-    If ldconfig is not available, _get_ldconfiig will warn about setting `musl_libc` to true.
+    If ldconfig is not available, _get_ldconfig will warn about setting `musl_libc` to true.
     Here, warn about this and that this is a fatal error if glibc is being used.
     """
     try:
@@ -444,26 +450,24 @@ def _process_out_file(self, out_file: str) -> None:
         self["out_dir"] = current_dir
         return
 
-    if "/" in out_file:  # If the out_file contains a path, resolve it
-        out_file = Path(out_file)
-        resolved_out_file = out_file.resolve()
-        if resolved_out_file != out_file:
-            out_file = resolved_out_file
-            self.logger.info("Resolved relative output path: %s" % out_file)
-    else:
-        out_file = Path(out_file)
+    out_file_path = Path(out_file)
 
-    if out_file.is_dir():
-        self.logger.info("Specified out_file is a directory, setting out_dir: %s" % out_file)
-        self["out_dir"] = out_file
+    if "/" in out_file:  # If the out_file contains a path, resolve it
+        resolved_out_file = out_file_path.resolve()
+        if resolved_out_file != out_file_path:
+            self.logger.info(f"Resolved relative output path: {c_(resolved_out_file, 'cyan')}")
+            out_file_path = resolved_out_file
+
+    if out_file_path.is_dir():
+        self.logger.info(f"Specified out_file is a directory, setting out_dir: {c_(out_file_path, 'blue')})")
+        self["out_dir"] = out_file_path
         return
 
-    if str(out_file.parent) != ".":  # If the parent isn't the curent dir, set the out_dir to the parent
-        self["out_dir"] = out_file.parent
-        self.logger.info("Resolved out_dir to: %s" % c_(self["out_dir"], "green"))
-        out_file = out_file.name
+    if str(out_file_path.parent) != ".":  # If the parent isn't the current dir, set the out_dir to the parent
+        self["out_dir"] = out_file_path.parent
+        self.logger.info(f"Resolved out_dir to: {c_(self['out_dir'], 'green')}")
 
-    self.data["out_file"] = out_file
+    self.data["out_file"] = out_file_path.name
 
 
 def _process_paths_multi(self, path: Union[Path, str]) -> None:
@@ -485,7 +489,7 @@ def _process_paths_multi(self, path: Union[Path, str]) -> None:
 
 
 def _process_libraries_multi(self, library: Union[str]) -> None:
-    """Prociesses libraries into the libraries list, adding the parent directory to the library paths."""
+    """Processes libraries into the libraries list, adding the parent directory to the library paths."""
     if library in self["libraries"]:
         return self.logger.debug("Library already in libraries list, skipping: %s" % library)
 
@@ -544,7 +548,7 @@ def _process_binaries_multi(self, binary: str) -> None:
 
 
 def _validate_dependency(self, dependency: Union[Path, str]) -> Path:
-    """Performas basic validation and normalization for dependencies.
+    """Performs basic validation and normalization for dependencies.
     Returns the dependency as a Path object.
     Raises a ValidationError if the dependency path does not exist.
     """
