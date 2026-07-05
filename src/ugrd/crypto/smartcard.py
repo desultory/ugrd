@@ -1,8 +1,9 @@
 __author__ = "desultory"
 __version__ = "1.2.1"
 
-from zenlib.util import contains, colorize
 from pathlib import Path
+
+from zenlib.util import colorize, contains
 
 
 def _process_sc_public_key(self, key: str) -> None:
@@ -18,4 +19,4 @@ def _process_sc_public_key(self, key: str) -> None:
 @contains("sc_public_key", "Smartcard public key file not specified (sc_public_key)", raise_exception=True)
 def import_keys(self) -> str:
     """Import GPG public keys at runtime."""
-    return f'einfo "Importing GPG keys: $(gpg --import {self['sc_public_key']} 2>&1)"'
+    return f'''einfo "Importing GPG keys: $(gpg --import {self["sc_public_key"]} 2>&1)"'''
