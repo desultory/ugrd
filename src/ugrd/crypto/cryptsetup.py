@@ -578,7 +578,8 @@ def _open_crypt_dev(self: InitramfsProtocol, name: str, parameters: dict) -> lis
         ]
     else:
         if "ugrd.base.plymouth" in self["modules"]:
-            out += [  # When plymouth is used, write the entered key to the key data file, where it will be used by open_crypt_dev
+            # When plymouth is used, write the entered key to the key data file, where it will be used by open_crypt_dev
+            out += [
                 "    if plymouth --ping; then",
                 f'        plymouth ask-for-password --prompt "[${{i}} / ${{retries}}] Enter passphrase to unlock: {name}" > /run/ugrd/key_data',
                 "    fi",
