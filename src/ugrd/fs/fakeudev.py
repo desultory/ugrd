@@ -8,8 +8,10 @@ We can then write 'E:DM_UDEV_PRIMARY_SOURCE_FLAG=1\n' to each:
 This will make systemd think that udev is working and not time out.
 """
 
+from ugrd import InitramfsProtocol
 
-def fake_dm_udev(self) -> str:
+
+def fake_dm_udev(self: InitramfsProtocol) -> str:
     """returns a shell function to fake udev for dm devices.
     Previously, ${dm}/uevent was sourced, but this has the potential to crash the shell
 
@@ -38,3 +40,5 @@ def fake_dm_udev(self) -> str:
         printf 'E:DM_UDEV_PRIMARY_SOURCE_FLAG=1\n' > "${udev_db_file}"
     done
     """
+
+

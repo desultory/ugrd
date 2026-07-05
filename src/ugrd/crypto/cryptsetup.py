@@ -1,11 +1,12 @@
 __author__ = "desultory"
-__version__ = "4.2.0"
+__version__ = "4.2.1"
 
 from json import loads
 from pathlib import Path
 from re import search
 from textwrap import dedent
 
+from ugrd import InitramfsProtocol
 from ugrd.exceptions import AutodetectError, ValidationError
 from zenlib.util import colorize as c_
 from zenlib.util import contains, unset
@@ -28,11 +29,11 @@ CRYPTSETUP_PARAMETERS = [
     "include_header",
     "validate_key",
     "validate_header",
-    "_dm-integrity",  # Internal parameter for when dm-integrity was detected. mostly used for test automation
+    "_dm-integrity",  # Internal parameter for when dm-integrity was detected. Mostly used for test automation
 ]
 
 
-def _merge_cryptsetup(self, mapped_name: str, config: dict) -> None:
+def _merge_cryptsetup(self: InitramfsProtocol, mapped_name: str, config: dict[str, str]) -> dict[str, str]:
     """Merges the cryptsetup configuration"""
     if mapped_name not in self["cryptsetup"]:
         return config
@@ -42,7 +43,7 @@ def _merge_cryptsetup(self, mapped_name: str, config: dict) -> None:
     return dict(self["cryptsetup"][mapped_name], **config)
 
 
-def _process_cryptsetup_key_types_multi(self, key_type: str, config: dict) -> None:
+def _process_cryptsetup_key_types_multi(self: InitramfsProtocol, key_type: str, config: dict[str, str]) -> None:
     """Processes the cryptsetup key types.
     Updates the key type configuration if it already exists, otherwise creates a new key type."""
     self.logger.debug("[%s] Processing cryptsetup key type configuration: %s" % (key_type, config))
@@ -62,12 +63,14 @@ def _process_cryptsetup_key_types_multi(self, key_type: str, config: dict) -> No
 
 
 @contains("validate", "Skipping cryptsetup keyfile validation.", log_level=30)
-def _validate_crypysetup_key(self, key_parameters: dict) -> None:
-    """Validates the cryptsetup key"""
+def _validate_cryptsetup_key(self: InitramfsProtocol, key_parameters: dict[str, str]) -> None:
+    """Validates the cryptsetup keyfile config
+    key_parameters is actually all config but this function only makes use of bits related to keyfiles
+    """
     if key_parameters.get("include_key"):
         return self.logger.info("Skipping key validation for included key.")
     elif key_parameters.get("validate_key") is False:
-        return self.logger.info("Skipping key validation for: %s" % c_(key_parameters["key_file"], "yellow"))
+        return self.logger.info(f"Skipping key validation for: {c_(key_parameters['key_file'], 'yellow')}")
 
     key_path = Path(key_parameters["key_file"])
 
@@ -78,7 +81,7 @@ def _validate_crypysetup_key(self, key_parameters: dict) -> None:
 
 
 @contains("validate", "Skipping cryptsetup configuration validation.", log_level=30)
-def _validate_cryptsetup_config(self, mapped_name: str) -> None:
+def _validate_cryptsetup_config(self: InitramfsProtocol, mapped_name: str) -> None:
     try:
         config = self["cryptsetup"][mapped_name]
     except KeyError:
@@ -106,10 +109,10 @@ def _validate_cryptsetup_config(self, mapped_name: str) -> None:
             )
 
     if config.get("key_file"):
-        _validate_crypysetup_key(self, config)
+        _validate_cryptsetup_key(self, config)
 
 
-def _process_cryptsetup_multi(self, mapped_name: str, config: dict) -> None:
+def _process_cryptsetup_multi(self: InitramfsProtocol, mapped_name: str, config: dict[str, str]) -> None:
     """Processes the cryptsetup configuration"""
     for parameter in config:
         if parameter not in CRYPTSETUP_PARAMETERS:
@@ -137,7 +140,7 @@ def _process_cryptsetup_multi(self, mapped_name: str, config: dict) -> None:
     self["cryptsetup"][mapped_name] = config
 
 
-def _get_dm_info(self, mapped_name: str) -> dict:
+def _get_dm_info(self: InitramfsProtocol, mapped_name: str) -> dict[str, str]:
     """Gets the device mapper information for a particular device."""
     for device_info in self["_vblk_info"].values():
         if device_info["name"] == mapped_name:
@@ -145,7 +148,7 @@ def _get_dm_info(self, mapped_name: str) -> dict:
     raise AutodetectError("No device mapper information found for: %s" % mapped_name)
 
 
-def _get_dm_slave_info(self, device_info: dict) -> (str, dict):
+def _get_dm_slave_info(self: InitramfsProtocol, device_info: dict) -> tuple[str, dict]:
     """Gets the device mapper slave information for a particular device."""
     slave_source = device_info["slaves"][0]
     # For integrity backed devices, get the slave's slave
@@ -165,7 +168,7 @@ def _get_dm_slave_info(self, device_info: dict) -> (str, dict):
     raise AutodetectError("No slave device information found for: %s" % device_info)
 
 
-def _read_cryptsetup_header(self, mapped_name: str, slave_device: str = None) -> dict:
+def _read_cryptsetup_header(self: InitramfsProtocol, mapped_name: str, slave_device: str | None= None) -> dict:
     """Reads LUKS header information from a device or header file into a dict"""
     header_file = self["cryptsetup"][mapped_name].get("header_file")
     if not header_file:
@@ -195,7 +198,7 @@ def _read_cryptsetup_header(self, mapped_name: str, slave_device: str = None) ->
             raise ValidationError(f"[{mapped_name}] Unable to read detached LUKS header: {header_file}") from e
 
 
-def _detect_luks_aes_module(self, luks_cipher_name: str) -> None:
+def _detect_luks_aes_module(self: InitramfsProtocol, luks_cipher_name: str) -> None:
     """Using the cipher name from the LUKS header, detects the corresponding kernel module."""
     aes_type = luks_cipher_name.split("-")[1]  # Get the cipher type from the name
     self["_kmod_auto"] = aes_type  # Add the aes type to the kernel modules
@@ -211,7 +214,7 @@ def _detect_luks_aes_module(self, luks_cipher_name: str) -> None:
         self["_kmod_auto"] = crypto_config["module"]
 
 
-def _detect_luks_header_aes(self, luks_info: dict) -> None:
+def _detect_luks_header_aes(self: InitramfsProtocol, luks_info: dict) -> None:
     """Checks the cipher type in the LUKS header, reads /proc/crypto to find the
     corresponding driver. If it's not builtin, adds the module to the kernel modules."""
     for keyslot in luks_info.get("keyslots", {}).values():
@@ -222,7 +225,7 @@ def _detect_luks_header_aes(self, luks_info: dict) -> None:
             _detect_luks_aes_module(self, segment["encryption"])
 
 
-def _detect_luks_header_sha(self, luks_info: dict) -> None:
+def _detect_luks_header_sha(self: InitramfsProtocol, luks_info: dict) -> None:
     """Reads the hash algorithm from the LUKS header,
     enables the corresponding kernel module using _crypto_ciphers"""
     for keyslot in luks_info.get("keyslots", {}).values():
@@ -233,7 +236,7 @@ def _detect_luks_header_sha(self, luks_info: dict) -> None:
             self["kernel_modules"] = self._crypto_ciphers[digest["hash"]]["driver"]
 
 
-def _detect_luks_header_integrity(self, luks_info: dict, mapped_name: str) -> None:
+def _detect_luks_header_integrity(self: InitramfsProtocol, luks_info: dict, mapped_name: str) -> None:
     """Reads the integrity algorithm from the LUKS header,
     Enables the dm-integrity module, and returns the integrity type."""
     for segment in luks_info.get("segments", {}).values():
@@ -249,7 +252,7 @@ def _detect_luks_header_integrity(self, luks_info: dict, mapped_name: str) -> No
 
 
 @contains("cryptsetup_header_validation", "Skipping cryptsetup header validation.", log_level=30)
-def _validate_cryptsetup_header(self, mapped_name: str) -> None:
+def _validate_cryptsetup_header(self: InitramfsProtocol, mapped_name: str) -> None:
     """Validates configured cryptsetup volumes against the LUKS header."""
     cryptsetup_info = self["cryptsetup"][mapped_name]
     if cryptsetup_info.get("validate_header") is False:
@@ -296,7 +299,7 @@ def _validate_cryptsetup_header(self, mapped_name: str) -> None:
 
 
 @contains("validate", "Skipping cryptsetup device check.", log_level=30)
-def _validate_cryptsetup_device(self, mapped_name) -> None:
+def _validate_cryptsetup_device(self: InitramfsProtocol, mapped_name) -> None:
     """Validates a cryptsetup device against the device mapper information,
     blkid information, and cryptsetup information.
     Uses `cryptsetup luksDump` to check that the device is a LUKS device."""
@@ -326,7 +329,7 @@ def _validate_cryptsetup_device(self, mapped_name) -> None:
 
 
 @unset("_cryptsetup_backend")
-def detect_cryptsetup_backend(self) -> None:
+def detect_cryptsetup_backend(self: InitramfsProtocol) -> None:
     """Determines the cryptsetup backend by running 'cryptsetup --debug luksDump' on this file"""
     try:
         raw_luks_info = (
@@ -336,14 +339,15 @@ def detect_cryptsetup_backend(self) -> None:
         )
         for line in raw_luks_info:
             if line.startswith("# Crypto backend"):
-                backend = search(r"backend \((.+)\)", line).group(1)
-                self["_cryptsetup_backend"] = backend.split()[0].lower()
-                return self.logger.info("Detected cryptsetup backend: %s" % c_(self["_cryptsetup_backend"], "cyan"))
+                if results := search(r"backend \((.+)\)", line):
+                    backend = results.group(1)
+                    self["_cryptsetup_backend"] = backend.split()[0].lower()
+                    return self.logger.info("Detected cryptsetup backend: %s" % c_(self["_cryptsetup_backend"], "cyan"))
     except RuntimeError as e:
         self.logger.error("Unable to determine cryptsetup backend: %s" % e)
 
 
-def _get_openssl_kdfs(self) -> list[str]:
+def _get_openssl_kdfs(self: InitramfsProtocol) -> list[str]:
     """Gets the available KDFs from OpenSSL"""
     kdfs = (
         self._run(["openssl", "list", "-kdf-algorithms"], fail_hard=False, fail_silent=True)
@@ -359,7 +363,7 @@ def _get_openssl_kdfs(self) -> list[str]:
 
 
 @unset("argon2")
-def detect_argon2(self) -> None:
+def detect_argon2(self: InitramfsProtocol) -> None:
     """Validates that argon2 is available when argon2id is used."""
     from ugrd.base.core import calculate_dependencies
 
@@ -395,7 +399,7 @@ def detect_argon2(self) -> None:
 
 
 @contains("hostonly")
-def detect_ciphers(self) -> None:
+def detect_ciphers(self: InitramfsProtocol) -> None:
     """Populates _crypto_ciphers using /proc/crypto"""
 
     def get_value(line):
@@ -416,13 +420,13 @@ def detect_ciphers(self) -> None:
 
 
 @contains("validate", "Skipping cryptsetup configuration validation.", log_level=30)
-def _validate_luks_config(self, mapped_name: str) -> None:
+def _validate_luks_config(self: InitramfsProtocol, mapped_name: str) -> None:
     """Checks that a LUKS config portion is valid."""
     _validate_cryptsetup_device(self, mapped_name)
     _validate_cryptsetup_config(self, mapped_name)
 
 
-def export_crypt_sources(self) -> list[str]:
+def export_crypt_sources(self: InitramfsProtocol) -> None:
     """Validates the cryptsetup configuration (if enabled).
     Sets CRYPTSETUP_HEADER_{name} if a header file is set.
     Adds the cryptsetup source and token to the exports.
@@ -457,7 +461,7 @@ def export_crypt_sources(self) -> list[str]:
             raise ValidationError("A partuuid or uuid must be specified for cryptsetup mount: %s" % name)
 
 
-def get_crypt_dev(self) -> str:
+def get_crypt_dev(self: InitramfsProtocol) -> str:
     """Gets the device path for a particular cryptsetup device at runtime.
     First attempts to read CRYPTSETUP_SOURCE_{name} if it exists.
     If it doesn't exist, or the device is not found, it will attempt to resolve the device using the token.
@@ -480,7 +484,7 @@ def get_crypt_dev(self) -> str:
     """
 
 
-def open_crypt_dev(self) -> str:
+def open_crypt_dev(self: InitramfsProtocol) -> str:
     """Returns a shell script to open a cryptsetup device.
     The first argument is the device name, for get_crypt_dev, and as the mapped name
     The second argument is a key file, if it exists.
@@ -519,7 +523,7 @@ def open_crypt_dev(self) -> str:
     )
 
 
-def _open_crypt_dev(self, name: str, parameters: dict) -> list[str]:
+def _open_crypt_dev(self: InitramfsProtocol, name: str, parameters: dict) -> list[str]:
     """Generates a loop to open a cryptsetup device with the given parameters."""
     retries = parameters.get("retries", self["cryptsetup_retries"])
     out = [
@@ -615,7 +619,7 @@ def _open_crypt_dev(self, name: str, parameters: dict) -> list[str]:
     return out
 
 
-def crypt_init(self) -> list[str]:
+def crypt_init(self: InitramfsProtocol) -> list[str]:
     """Generates the shell script portion to prompt for keys."""
     if self["loglevel"] > 5:
         self.logger.warning("loglevel > 5, cryptsetup prompts may not be visible.")

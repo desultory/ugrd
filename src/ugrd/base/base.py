@@ -54,18 +54,18 @@ def autodetect_init(self) -> None:
     """
     if init := which("init"):
         self.logger.info("Detected init at: %s", c_(init, "cyan", bright=True))
-        self["init_target"] = init
+        self["init_target"] = init  # Gets typed as a Path by helpers
         return
 
     self.logger.info(f"No init found in PATH, checking {c_('/proc/1/exe', 'green')}")
     try:
-        init = Path("/proc/1/exe").readlink()
-        init = init.resolve()  # Resolve the symlink to get the actual path
-        self.logger.info("Detected from process 1: %s", c_(init, "cyan", bright=True))
-        self["init_target"] = init
+        # Get the resolved path of the program used fir PID 1
+        init_path = Path("/proc/1/exe").readlink().resolve()
+        self.logger.info(f"Detected init path from PID 1: {c_(init_path, 'cyan', bright=True)}")
+        self["init_target"] = init_path
         return
     except PermissionError:
-        self.logger.eror("Unable to read /proc/1/exe, permission denied.")
+        self.logger.error("Unable to read /proc/1/exe, permission denied.")
 
     raise AutodetectError("init_target is not specified and could not be detected.")
 
@@ -80,7 +80,7 @@ def set_shebang(self) -> None:
 
 
 def set_init_final_order(self) -> None:
-    """Adds a "before" do_switch_root order to everything in the init_final hook, excep do_switch_root."""
+    """Adds a "before" do_switch_root order to everything in the init_final hook, except do_switch_root."""
     for hook in self["imports"]["init_final"]:
         if hook.__name__ != "do_switch_root":
             self["import_order"] = {"before": {hook.__name__: "do_switch_root"}}

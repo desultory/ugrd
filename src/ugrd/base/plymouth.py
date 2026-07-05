@@ -1,4 +1,4 @@
-__version__ = "0.6.0"
+__version__ = "0.6.1"
 
 from configparser import ConfigParser
 from pathlib import Path
@@ -62,14 +62,14 @@ def _process_plymouth_themes_multi(self, theme) -> None:
     self.data["plymouth_themes"].append(theme)
 
 
-def _get_plymouth_theme_fonts(self, theme_name: str) -> NoDupFlatList[Path]:
+def _get_plymouth_theme_fonts(self, theme_name: str) -> NoDupFlatList[str]:
     """Reads Font and TitleFont from plymouth theme .plymouth files
     returns a list of paths for all fonts found
     """
     config_file = Path("/usr/share/plymouth/themes") / theme_name / f"{theme_name}.plymouth"
     theme_config = ConfigParser()
     theme_config.read(config_file)
-    font_files = NoDupFlatList(logger=self.logger)
+    font_files: NoDupFlatList[str] = NoDupFlatList(logger=self.logger)
 
     for section in theme_config.sections():
         for key in ["Font", "TitleFont"]:

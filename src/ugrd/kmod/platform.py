@@ -21,8 +21,8 @@ VM_VENDOR_NAMES = {
 
 
 @contains("hostonly", "hostonly is not enabled, skipping platform detection.", log_level=30)
-def get_platform_info(self):
-    """Detects plaform information such as the vendor and product name"""
+def get_platform_info(self) -> None:
+    """Detects platform information such as the vendor and product name"""
     try:
         with open("/sys/class/dmi/id/product_name", "r") as f:
             self["_dmi_product_name"] = f.read().strip()
@@ -39,7 +39,7 @@ def get_platform_info(self):
 
 
 @contains("hostonly", "hostonly is not enabled, skipping VM detection.", log_level=30)
-def autodetect_virtual_machine(self):
+def autodetect_virtual_machine(self) -> None:
     """Detects if the system is running in a virtual machine, using DMI information.
     Uses the system vendor to add required kmods
     uses the product name to add additional kmods.
@@ -60,9 +60,10 @@ def autodetect_virtual_machine(self):
         if product_kmods:
             self["_kmod_auto"] = product_kmods
 
+
 @contains("hostonly", "hostonly is not enabled, skipping regulator driver detection.", log_level=30)
-def autodetect_regulator_drivers(self):
-    """ Detects regulator drivers from /sys/class/regulator and adds them to the _kmod_auto list."""
+def autodetect_regulator_drivers(self) -> None:
+    """Detects regulator drivers from /sys/class/regulator and adds them to the _kmod_auto list."""
     regulators_path = Path("/sys/class/regulator")
     if not regulators_path.exists():
         self.logger.warning(f"[{c_(regulators_path, 'yellow')}] Regulator path does not exist, skipping detection.")
@@ -75,7 +76,9 @@ def autodetect_regulator_drivers(self):
             name = (regulator / "name").read_text().strip() if (regulator / "name").exists() else regulator.name
             driver = (regulator / "device" / "driver").resolve().name
             kmods.add(driver)
-            self.logger.debug(f"[{c_(name, 'cyan', bright=True)}] Detected regulator driver: {c_(driver, 'magenta', bright=True)}")
+            self.logger.debug(
+                f"[{c_(name, 'cyan', bright=True)}] Detected regulator driver: {c_(driver, 'magenta', bright=True)}"
+            )
 
     if not kmods:
         self.logger.info("No regulator drivers detected.")
@@ -84,14 +87,20 @@ def autodetect_regulator_drivers(self):
         self["_kmod_auto"] = list(kmods)
 
 
-@contains("kmod_autodetect_platform_bus_drivers", "kmod_autodetect_platform_bus_drivers is not enabled, skipping platform bus driver detection.", log_level=10)
+@contains(
+    "kmod_autodetect_platform_bus_drivers",
+    "kmod_autodetect_platform_bus_drivers is not enabled, skipping platform bus driver detection.",
+    log_level=10,
+)
 @contains("hostonly", "hostonly is not enabled, skipping platform bus driver detection.", log_level=30)
-def autodetect_platform_bus_drivers(self):
-    """ Reads drivers from /sys/bus/platform/drivers and adds them to the _kmod_auto list."""
+def autodetect_platform_bus_drivers(self) -> None:
+    """Reads drivers from /sys/bus/platform/drivers and adds them to the _kmod_auto list."""
 
     drivers_path = Path("/sys/bus/platform/drivers")
     if not drivers_path.exists():
-        self.logger.warning(f"[{c_(drivers_path, 'yellow')}] Platform bus drivers path does not exist, skipping detection.")
+        self.logger.warning(
+            f"[{c_(drivers_path, 'yellow')}] Platform bus drivers path does not exist, skipping detection."
+        )
         return
 
     drivers = [driver.name for driver in drivers_path.iterdir() if driver.is_dir()]
@@ -102,11 +111,11 @@ def autodetect_platform_bus_drivers(self):
         self.logger.info("No platform bus drivers detected.")
 
 
-def _get_platform_mmc_drivers(self, mmc_dev):
+def _get_platform_mmc_drivers(self, mmc_dev) -> list[str]:
     """Helper function to get MMC drivers from a given device.
     Strips the partition number from the device name if present.
     """
-    mmc_name = mmc_dev.split("p")[0].replace('blk', '')  # Strip partition number if present, and 'blk' prefix
+    mmc_name = mmc_dev.split("p")[0].replace("blk", "")  # Strip partition number if present, and 'blk' prefix
     mmc_path = Path(f"/sys/class/mmc_host/{mmc_name}/device")
     if not mmc_path.exists():
         self.logger.warning(f"[{c_(mmc_path, 'yellow')}] MMC device path does not exist, skipping detection.")
@@ -114,7 +123,9 @@ def _get_platform_mmc_drivers(self, mmc_dev):
 
     drivers = set()
     if driver := (mmc_path / "driver").resolve().name:
-        self.logger.info(f"[{c_(mmc_dev, 'green', bright=True)}] Detected MMC driver: {c_(driver, 'magenta', bright=True)}")
+        self.logger.info(
+            f"[{c_(mmc_dev, 'green', bright=True)}] Detected MMC driver: {c_(driver, 'magenta', bright=True)}"
+        )
         drivers.add(driver)
 
     # Check for supplier drivers
@@ -122,13 +133,17 @@ def _get_platform_mmc_drivers(self, mmc_dev):
         if not supplier.name.startswith("supplier:"):
             continue
 
-        supplier_driver = (supplier / "supplier" / "driver")
+        supplier_driver = supplier / "supplier" / "driver"
         if not supplier_driver.exists():
-            self.logger.warning(f"[{c_(mmc_dev, 'yellow', bright=True)}] Supplier driver not found, skipping: {c_(supplier_driver, 'red', bright=True)}")
+            self.logger.warning(
+                f"[{c_(mmc_dev, 'yellow', bright=True)}] Supplier driver not found, skipping: {c_(supplier_driver, 'red', bright=True)}"
+            )
             continue
 
         supplier_driver = supplier_driver.resolve()
-        self.logger.debug(f"[{c_(mmc_dev, 'green', bright=True)}:{c_(supplier, 'blue')}] Detected MMC supplier driver: {c_(supplier_driver.name, 'magenta', bright=True)}")
+        self.logger.debug(
+            f"[{c_(mmc_dev, 'green', bright=True)}:{c_(supplier, 'blue')}] Detected MMC supplier driver: {c_(supplier_driver.name, 'magenta', bright=True)}"
+        )
         drivers.add(supplier_driver.name)
 
     return list(drivers)

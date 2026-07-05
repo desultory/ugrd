@@ -14,6 +14,7 @@ FORCE_NAMESPACE = ["debug"]
 # Check for old args being used
 DEPRECATED_ARGS = ["debug", "recovery"]
 
+
 def _check_namespaced_arg(self, arg: str) -> bool:
     """Checks if the argument is namespaced or not.
     Unless explicitly allowed, all arguments should be namespaced.
@@ -32,11 +33,13 @@ def _check_namespaced_arg(self, arg: str) -> bool:
     else:
         return False
 
+
 def _process__non_namespaced_cmdline_args(self, arg: str) -> None:
-    """ Ensures the non-namespaced arg name is valid."""
+    """Ensures the non-namespaced arg name is valid."""
     if arg in FORCE_NAMESPACE:
         raise ValueError(f"Invalid non-namespaced cmdline arg: {arg}")
     self.data["_non_namespaced_cmdline_args"].append(arg)
+
 
 def _process_cmdline_bools_multi(self, cmdline_bool: str) -> None:
     """Processes a cmdline bool.
@@ -158,8 +161,9 @@ def export_exports(self) -> list[str]:
 
     return check_lines + export_lines + ["setvar exported 1"]
 
-def check_proc_cmdline(self):
-    """ Checks for possible invalid cmdline args in /proc/cmdline. """
+
+def check_proc_cmdline(self) -> None:
+    """Checks for possible invalid cmdline args in /proc/cmdline."""
     cmdline = Path("/proc/cmdline").read_text().strip()
     self.logger.debug(f"Current cmdline: {c_(cmdline, 'green')}")
 
@@ -168,4 +172,3 @@ def check_proc_cmdline(self):
         if search(rf"(?:^|\s){arg}(?=\s|=|$)", cmdline):
             self.logger.warning(f"Detected deprecated cmdline arg: {c_(arg, 'red')}")
             self.logger.warning("Please check the documentation for the updated usage.")
-

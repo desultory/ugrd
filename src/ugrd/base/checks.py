@@ -39,14 +39,15 @@ def _check_in_file(self, file, lines):
             raise ValueError("Failed to find line '%s' in file '%s'" % (check_line, file))
 
 
-def _find_mount_with_dest(self, check_path: Path) -> str:
+def _find_mount_with_dest(self, check_path: Path) -> str | None:
     """Returns the mount name which has a destination matching the check path."""
     for mount_name, mount_config in self.mounts.items():
         if mount_config["destination"] == check_path:
             return mount_name
+    return None
 
 
-def _find_in_mounts(self, file) -> str:
+def _find_in_mounts(self, file) -> str | None:
     """Finds a corresponding mount config for a file, if defined."""
     file_path = Path(file)
     while parent := file_path.parent:
@@ -57,6 +58,7 @@ def _find_in_mounts(self, file) -> str:
         if mount_name := _find_mount_with_dest(self, parent):
             return mount_name
         file_path = parent
+    return None
 
 
 @contains("check_included_or_mounted")

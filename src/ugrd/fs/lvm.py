@@ -22,7 +22,7 @@ def _process_lvm_multi(self, mapped_name: str, config: dict) -> None:
 @contains("lvm", "Skipping early LVM initialization, no LVM configurations found.", log_level=30)
 def early_lvm(self) -> str:
     """If early_lvm is set, return a shell function to initialize LVM"""
-    return "init_lvm 'Early initialzing LVM'"
+    return "init_lvm 'Early initializing LVM'"
 
 
 @contains("lvm", "Skipping LVM initialization, no LVM configurations found.", log_level=30)

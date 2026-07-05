@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "1.0.1"
+__version__ = "1.0.2"
 
 from pathlib import Path
 
@@ -64,9 +64,9 @@ def _add_keymap_file(self, keymap_file: str) -> None:
         self["dependencies"] = keymap_file
         keymap_data = open(keymap_file, "rb").read()
 
-    keymap_data = keymap_data.decode(errors="ignore")
+    keymap_content = keymap_data.decode(errors="ignore")
 
-    for line in keymap_data.splitlines():
+    for line in keymap_content.splitlines():
         if line.startswith("include"):  # Handle keymap includes
             include_name = line.split()[1].replace('"', "")
             include_file = _find_keymap_include(self, keymap_file, include_name)

@@ -7,10 +7,10 @@ from zenlib.util import contains
 @contains("livecd_label", "livecd_label must be set to the label of the livecd storage root.", raise_exception=True)
 def mount_livecd(self) -> str:
     """Returns shell lines to mount the livecd storage root.
-    exports the set livecd_label,
-    if a livecd_label cmdline arg is passed, uses that value instead of the exported value
+    Exports the set livecd_label,
+    If a livecd_label cmdline arg is passed, uses that value instead of the exported value
 
-    Because this mount is made manulally, no mount entry/validation/unmounting is done
+    Because this mount is made manually, no mount entry/validation/unmounting is done
     All mount handling happens strictly at runtime
     """
     return f"""
@@ -69,4 +69,3 @@ def set_squashfs_root_source(self) -> str:
         rd_fail "Squashfs image does not exist: $squashfs_image"
     fi
     """
-
