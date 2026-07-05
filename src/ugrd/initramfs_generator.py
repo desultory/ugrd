@@ -150,7 +150,8 @@ class InitramfsGenerator(GeneratorHelpers, LoggerMixIn):
         elif force_include:
             raise ValueError(f"Force included function returned no output:{c_(function.__name_, 'red')}")
         else:
-            return self.logger.debug(f"Function returned no output: {c_(function.__name__, 'yellow')}")
+            self.logger.debug(f"Function returned no output: {c_(function.__name__, 'yellow')}")
+            return None
 
     def run_hook(self, hook: str, *args, **kwargs) -> list[str]:
         """Runs all functions for the specified hook.

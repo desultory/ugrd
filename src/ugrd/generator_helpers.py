@@ -8,6 +8,7 @@ from zenlib.util import colorize as c_
 from zenlib.util import pretty_print
 
 from .exceptions import ValidationError
+from .initramfs_protocol import InitramfsProtocol
 
 __version__ = "1.7.1"
 
@@ -27,7 +28,7 @@ def get_subpath(path: Path, subpath: Union[Path, str]) -> Path:
     return path / subpath
 
 
-class GeneratorHelpers:
+class GeneratorHelpers(InitramfsProtocol):
     """Mixin class for the InitramfsGenerator class."""
 
     def _get_out_path(self, path: Union[Path, str]) -> Path:
