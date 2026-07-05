@@ -3,7 +3,7 @@ from textwrap import dedent
 from tomllib import TOMLDecodeError, load
 from typing import Any
 
-from zenlib.logging import ClassLogger
+from zenlib.logging import LoggerMixIn
 from zenlib.util import colorize as c_
 from zenlib.util import pretty_print
 
@@ -13,9 +13,9 @@ from .exceptions import ValidationError
 from .generator_helpers import GeneratorHelpers
 
 
-class InitramfsGenerator(GeneratorHelpers, ClassLogger):
+class InitramfsGenerator(GeneratorHelpers, LoggerMixIn):
     def __init__(self, config="/etc/ugrd/config.toml", *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
+        self.init_logger(args, kwargs)
         self.config_dict = InitramfsConfigDict(NO_BASE=kwargs.pop("NO_BASE", False), logger=self.logger)
 
         # Used for functions that are added to the shell profile
