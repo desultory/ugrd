@@ -2,8 +2,8 @@ __author__ = "desultory"
 __version__ = "1.3.0"
 
 
-def custom_init(self) -> list[str]:
-    """ init override for the console module.
+def custom_init(self) -> tuple[str, list[str]]:
+    """init override for the console module.
     Adds the shebang to the top of the file, runs the banner, followed by
     most of the main init runlevels
     Write the main init runlevels to self._custom_init_file.
@@ -19,8 +19,8 @@ def custom_init(self) -> list[str]:
     return console_init(self), custom_init_contents
 
 
-def console_init(self) -> list[str]:
-    """ Returns the command to start agetty on the primary console.
+def console_init(self) -> str:
+    """Returns the command to start agetty on the primary console.
     If the console is a serial port, set the baud rate.
     """
     name = self["primary_console"]

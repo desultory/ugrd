@@ -8,8 +8,9 @@ from zenlib.util import colorize as c_
 from zenlib.util import pretty_print
 
 from .exceptions import ValidationError
+from .initramfs_protocol import InitramfsProtocol
 
-__version__ = "1.7.1"
+__version__ = "2.0.0"
 
 _RANDOM_BUILD_ID = str(uuid4())
 
@@ -27,7 +28,7 @@ def get_subpath(path: Path, subpath: Union[Path, str]) -> Path:
     return path / subpath
 
 
-class GeneratorHelpers:
+class GeneratorHelpers(InitramfsProtocol):
     """Mixin class for the InitramfsGenerator class."""
 
     def _get_out_path(self, path: Union[Path, str]) -> Path:
@@ -78,9 +79,9 @@ class GeneratorHelpers:
         else:
             self.logger.debug("Directory already exists: %s" % path_dir)
 
-    def _write(self, file_name: Union[Path, str], contents: list[str], chmod_mask=0o644, append=False) -> None:
+    def _write(self, file_name: Union[Path, str], contents: list[str] | str, chmod_mask=0o644, append=False) -> None:
         """
-        Writes a file within the build directory.
+        Writes test to a file within the build directory.
         Sets the passed chmod_mask.
         If the first line is a shebang, sh -n is run on the file.
         """
