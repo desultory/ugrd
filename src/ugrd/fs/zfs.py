@@ -1,7 +1,8 @@
 __version__ = "0.2.2"
+from ugrd import InitramfsProtocol
 
 
-def zpool_import(self) -> str:
+def zpool_import(self: InitramfsProtocol) -> str:
     """Returns bash lines to import all ZFS pools"""
     return """
     edebug 'Importing all ZFS pools'
