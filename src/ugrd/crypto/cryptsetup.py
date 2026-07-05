@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "4.2.0"
+__version__ = "4.2.1"
 
 from json import loads
 from pathlib import Path
@@ -28,11 +28,11 @@ CRYPTSETUP_PARAMETERS = [
     "include_header",
     "validate_key",
     "validate_header",
-    "_dm-integrity",  # Internal parameter for when dm-integrity was detected. mostly used for test automation
+    "_dm-integrity",  # Internal parameter for when dm-integrity was detected. Mostly used for test automation
 ]
 
 
-def _merge_cryptsetup(self, mapped_name: str, config: dict) -> None:
+def _merge_cryptsetup(self, mapped_name: str, config: dict) -> dict:
     """Merges the cryptsetup configuration"""
     if mapped_name not in self["cryptsetup"]:
         return config
@@ -145,7 +145,7 @@ def _get_dm_info(self, mapped_name: str) -> dict:
     raise AutodetectError("No device mapper information found for: %s" % mapped_name)
 
 
-def _get_dm_slave_info(self, device_info: dict) -> (str, dict):
+def _get_dm_slave_info(self, device_info: dict) -> tuple[str, dict]:
     """Gets the device mapper slave information for a particular device."""
     slave_source = device_info["slaves"][0]
     # For integrity backed devices, get the slave's slave
@@ -165,7 +165,7 @@ def _get_dm_slave_info(self, device_info: dict) -> (str, dict):
     raise AutodetectError("No slave device information found for: %s" % device_info)
 
 
-def _read_cryptsetup_header(self, mapped_name: str, slave_device: str = None) -> dict:
+def _read_cryptsetup_header(self, mapped_name: str, slave_device: str | None= None) -> dict:
     """Reads LUKS header information from a device or header file into a dict"""
     header_file = self["cryptsetup"][mapped_name].get("header_file")
     if not header_file:
@@ -336,9 +336,10 @@ def detect_cryptsetup_backend(self) -> None:
         )
         for line in raw_luks_info:
             if line.startswith("# Crypto backend"):
-                backend = search(r"backend \((.+)\)", line).group(1)
-                self["_cryptsetup_backend"] = backend.split()[0].lower()
-                return self.logger.info("Detected cryptsetup backend: %s" % c_(self["_cryptsetup_backend"], "cyan"))
+                if results := search(r"backend \((.+)\)", line):
+                    backend = results.group(1)
+                    self["_cryptsetup_backend"] = backend.split()[0].lower()
+                    return self.logger.info("Detected cryptsetup backend: %s" % c_(self["_cryptsetup_backend"], "cyan"))
     except RuntimeError as e:
         self.logger.error("Unable to determine cryptsetup backend: %s" % e)
 
@@ -422,7 +423,7 @@ def _validate_luks_config(self, mapped_name: str) -> None:
     _validate_cryptsetup_config(self, mapped_name)
 
 
-def export_crypt_sources(self) -> list[str]:
+def export_crypt_sources(self) -> None:
     """Validates the cryptsetup configuration (if enabled).
     Sets CRYPTSETUP_HEADER_{name} if a header file is set.
     Adds the cryptsetup source and token to the exports.
