@@ -6,7 +6,7 @@ from pathlib import Path
 from re import search
 from textwrap import dedent
 
-from ugrd import InitramfsProtocol
+from ugrd import InitramfsProtocol, InitramfsConfig
 from ugrd.exceptions import AutodetectError, ValidationError
 from zenlib.util import colorize as c_
 from zenlib.util import contains, unset
@@ -33,7 +33,7 @@ CRYPTSETUP_PARAMETERS = [
 ]
 
 
-def _merge_cryptsetup(self: InitramfsProtocol, mapped_name: str, config: dict[str, str]) -> dict[str, str]:
+def _merge_cryptsetup(self: InitramfsConfig, mapped_name: str, config: dict[str, str]) -> dict[str, str]:
     """Merges the cryptsetup configuration"""
     if mapped_name not in self["cryptsetup"]:
         return config
@@ -43,7 +43,7 @@ def _merge_cryptsetup(self: InitramfsProtocol, mapped_name: str, config: dict[st
     return dict(self["cryptsetup"][mapped_name], **config)
 
 
-def _process_cryptsetup_key_types_multi(self: InitramfsProtocol, key_type: str, config: dict[str, str]) -> None:
+def _process_cryptsetup_key_types_multi(self: InitramfsConfig, key_type: str, config: dict[str, str]) -> None:
     """Processes the cryptsetup key types.
     Updates the key type configuration if it already exists, otherwise creates a new key type."""
     self.logger.debug("[%s] Processing cryptsetup key type configuration: %s" % (key_type, config))
@@ -112,7 +112,7 @@ def _validate_cryptsetup_config(self: InitramfsProtocol, mapped_name: str) -> No
         _validate_cryptsetup_key(self, config)
 
 
-def _process_cryptsetup_multi(self: InitramfsProtocol, mapped_name: str, config: dict[str, str]) -> None:
+def _process_cryptsetup_multi(self: InitramfsConfig, mapped_name: str, config: dict[str, str]) -> None:
     """Processes the cryptsetup configuration"""
     for parameter in config:
         if parameter not in CRYPTSETUP_PARAMETERS:
