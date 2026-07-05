@@ -1,0 +1,13 @@
+kernel_config_use_proc = true
+
+[imports.build_enum]
+"ugrd.kmod.config" = [ "find_kernel_config" ]
+
+[import_order.after]
+"find_kernel_config" = "get_kernel_version"
+
+[custom_parameters]
+kernel_config_file = "Path"           # User override for the kernel .config path.
+kernel_config_use_proc = "bool"       # Allow reading /proc/config.gz when target kernel == running kernel.
+_kernel_config_file = "Path"          # Internal: located .config path after autodetection.
+_kernel_config_options = "dict"       # Internal: parsed {CONFIG_FOO: "y"|"m"|"n"|value} cache.

@@ -42,7 +42,7 @@ def main():
         {"flags": ["--no-clean"], "action": "store_false", "help": "disable build directory cleaning", "dest": "clean"},
         {
             "flags": ["--compress"],
-            "help": "compress the final image",
+            "help": "compress the final image: 'true' (auto, default), 'xz', or 'zstd'",
             "dest": "cpio_compression",
         },
         {

@@ -1,10 +1,22 @@
 __author__ = "desultory"
-__version__ = "3.9.0"
+__version__ = "3.10.0"
 
+from importlib.util import find_spec
 from pathlib import Path
 
 from pycpio.cpio.symlink import CPIO_Symlink
-from zenlib.util import colorize, contains, unset
+from ugrd.kmod.config import check_kernel_config
+from zenlib.util import colorize as c_
+from zenlib.util import contains, unset
+
+# Fallback chain per user request. pycpio only supports xz and zstd.
+# Order: most preferred first; "false" means "no compression".
+_COMPRESSION_FALLBACK = {
+    "true": ("xz", "zstd", "false"),
+    "xz": ("xz", "zstd", "false"),
+    "zstd": ("zstd", "xz", "false"),
+    "false": ("false",),
+}
 
 
 @contains("check_cpio")
@@ -63,6 +75,73 @@ def _check_in_cpio(self, file, lines=[], quiet=False) -> None:
                 self.logger.debug("Line found in CPIO: %s" % line)
 
 
+def _compression_unavailable_reason(self, name: str) -> str | None:
+    """Returns None when the compression can be used, otherwise a colored human-readable reason."""
+    if name == "false":
+        return None
+    if name == "zstd" and find_spec("zstandard") is None:
+        return f"Python module {c_('zstandard', 'red', bold=True)} is not installed"
+    config_option = f"CONFIG_RD_{name.upper()}"
+    kernel_support = check_kernel_config(self, "RD_" + name.upper())
+    if kernel_support is False:
+        return f"kernel does not have {c_(config_option, 'red', bold=True)} enabled"
+    if kernel_support is None:
+        self.logger.debug(f"Kernel config not available, assuming support for: {c_(config_option, 'cyan')}")
+    return None
+
+
+def select_cpio_compression(self) -> None:
+    """Picks the best CPIO compression based on user preference, kernel CONFIG_RD_*
+    options, and the availability of the 'zstandard' Python module.
+
+    Priorities:
+        true  -> xz, zstd, no compression
+        xz    -> xz, zstd, no compression
+        zstd  -> zstd, xz, no compression
+        false -> no compression
+
+    Warns when the explicitly requested compression has to be downgraded so the
+    user notices before booting into an unbootable image.
+    """
+    raw = str(self.get("cpio_compression", "true")).lower()
+    if raw not in _COMPRESSION_FALLBACK:
+        self.logger.warning(
+            f"Unknown cpio_compression value, falling back to 'true' (supported: true, xz, zstd, false): "
+            f"{c_(raw, 'yellow', bold=True)}"
+        )
+        raw = "true"
+
+    chain = _COMPRESSION_FALLBACK[raw]
+    selected = None
+    for candidate in chain:
+        reason = _compression_unavailable_reason(self, candidate)
+        if reason is None:
+            selected = candidate
+            break
+        if candidate == raw:
+            self.logger.warning(
+                f"[{c_(raw, 'yellow', bold=True)}] Requested CPIO compression is not available: {reason}"
+            )
+        else:
+            self.logger.warning(
+                f"[{c_(candidate, 'yellow')}] CPIO compression fallback is not available: {reason}"
+            )
+
+    if selected is None:  # "false" is always last so this should not happen
+        selected = "false"
+
+    if raw in ("xz", "zstd") and selected != raw:
+        self.logger.warning(
+            f"Falling back to CPIO compression [{c_(selected, 'cyan', bold=True)}] instead of: "
+            f"{c_(raw, 'yellow', bold=True)}"
+        )
+    elif raw == "true" and selected == "false":
+        self.logger.warning("No supported CPIO compression available, building uncompressed initramfs.")
+
+    self["cpio_compression"] = selected
+    self.logger.info(f"Selected CPIO compression: {c_(selected, 'cyan', bold=True)}")
+
+
 @unset("out_file")
 def get_archive_name(self) -> None:
     """Determines the filename for the output CPIO archive based on the current configuration.
@@ -73,14 +152,9 @@ def get_archive_name(self) -> None:
     else:
         out_file = "ugrd.cpio"
 
-    if compression_type := self["cpio_compression"]:
-        # if --compress or --no-compress is set, the type string will be a bool
-        if compression_type.lower() != "false":
-            # Ignore the extention if compression is set to false
-            if compression_type.lower() == "true":
-                # If set to true, xz is the default compression type
-                compression_type = "xz"
-            out_file += f".{compression_type}"
+    compression_type = self.get("cpio_compression")
+    if compression_type and str(compression_type).lower() != "false":
+        out_file += f".{compression_type}"
     self["out_file"] = out_file
 
 
@@ -109,7 +183,7 @@ def make_cpio(self) -> None:
         if self["cpio_rotate"]:
             self._rotate_old(out_cpio)
         elif self["clean"]:
-            self.logger.warning("Removing existing file: %s" % colorize(out_cpio, "red", bold=True, bright=True))
+            self.logger.warning(f"Removing existing file: {c_(out_cpio, 'red', bold=True, bright=True)}")
             out_cpio.unlink()
         else:
             raise FileExistsError("File already exists, and cleaning/rotation are disabled: %s" % out_cpio)
