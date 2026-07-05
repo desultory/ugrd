@@ -2,15 +2,14 @@ __version__ = "0.2.1"
 
 from json import loads
 
-from zenlib.util import colorize, contains, unset
-
 from ugrd.exceptions import AutodetectError
+from zenlib.util import colorize, contains, unset
 
 
 @unset("ip_gateway")
 @contains("autodetect_gateway")
 @contains("hostonly")
-def autodetect_gateway(self):
+def autodetect_gateway(self) -> None:
     """Detects the default route and sets ip_gateway accordingly.
     Returns the device name of the default route.
     """
@@ -29,7 +28,7 @@ def autodetect_gateway(self):
 @unset("ip_address")
 @contains("autodetect_ip")
 @contains("hostonly")
-def autodetect_ip(self):
+def autodetect_ip(self) -> None:
     """Autodetects the ip address of the network device if not already set."""
     device_info = loads(self._run(["ip", "-d", "-j", "a", "show", self["net_device"]]).stdout.decode())[0]
     if "vlan" == device_info.get("linkinfo", {}).get("info_kind"):  # enable the VLAN module to handle vlans

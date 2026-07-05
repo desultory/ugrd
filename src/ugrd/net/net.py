@@ -3,23 +3,24 @@ __version__ = "0.1.2"
 from json import loads
 from pathlib import Path
 
+from ugrd.exceptions import AutodetectError, ValidationError
 from zenlib.util import colorize, contains, unset
 
-from ugrd.exceptions import AutodetectError, ValidationError
 
-
-def _process_net_device(self, net_device: str):
+def _process_net_device(self, net_device: str) -> None:
     """Sets self.net_device to the given net_device."""
     _validate_net_device(self, net_device)
     self.data["net_device"] = net_device
     self["net_device_mac"] = (Path("/sys/class/net") / net_device / "address").read_text().strip()
 
 
-def _validate_net_device(self, net_device: str):
+def _validate_net_device(self, net_device: str) -> None:
     """Validates the given net_device."""
     if not net_device:  # Ensure the net_device is not empty
         if self["net_device_mac"]:
-            return self.logger.warning("net_device is empty, using net_device_mac without validation: %s" % self["net_device_mac"])
+            return self.logger.warning(
+                "net_device is empty, using net_device_mac without validation: %s" % self["net_device_mac"]
+            )
         raise ValidationError("net_device must not be empty, or net_device_mac must be set.")
 
     dev_path = Path("/sys/class/net") / net_device
@@ -31,7 +32,7 @@ def _validate_net_device(self, net_device: str):
 
 
 @contains("hostonly")
-def autodetect_net_device_kmods(self):
+def autodetect_net_device_kmods(self) -> None:
     """Autodetects the driver for the net_device."""
     device_path = Path("/sys/class/net") / self["net_device"] / "device"
     if not device_path.exists():
@@ -48,7 +49,7 @@ def autodetect_net_device_kmods(self):
 
 @unset("net_device", log_level=40)
 @contains("hostonly")
-def autodetect_net_device(self):
+def autodetect_net_device(self) -> None:
     """Sets self.net_device to the device used for the default route with the lowest metric."""
     routes = loads(self._run(["ip", "-j", "r"]).stdout.decode())
 
@@ -64,7 +65,7 @@ def autodetect_net_device(self):
     self.logger.info("Autodetected net_device: %s" % colorize(self["net_device"], "cyan"))
 
 
-def resolve_mac(self):
+def resolve_mac(self) -> str:
     """Returns a shell script to resolve a MAC address to a device name"""
     return """
     for dev in /sys/class/net/*; do
