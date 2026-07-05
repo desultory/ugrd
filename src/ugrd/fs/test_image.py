@@ -10,13 +10,13 @@ MIN_FS_SIZES = {"btrfs": 110, "f2fs": 50}
 
 
 @contains("test_flag", "A test flag must be set to create a test image", raise_exception=True)
-def init_banner(self):
+def init_banner(self) -> None:
     """Initialize the test image banner, set a random flag if not set."""
     self["banner"] = f"echo {self['test_flag']}"
 
 
 @contains("test_hibernate", "Hibernation testing is disabled", log_level=20)
-def test_hibernate(self):
+def test_hibernate(self) -> str:
     """Returns shell lines to hibernate to the swap device"""
     return """
     echo 1 > /sys/power/pm_debug_messages
@@ -36,13 +36,13 @@ def test_hibernate(self):
     """
 
 
-def add_test_deps(self):
+def add_test_deps(self) -> None:
     """Adds additional dependencies depending on the test image configuration"""
     if self["test_hibernate"]:
         self["binaries"] = ["swapon", "echo", "cat", "ls"]
 
 
-def _allocate_image(self, image_path, padding=0):
+def _allocate_image(self, image_path, padding=0) -> None:
     """Allocate the test image size"""
     self._mkdir(image_path.parent, resolve_build=False)  # Make sure the parent directory exists
     if image_path.exists():
@@ -66,7 +66,7 @@ def _allocate_image(self, image_path, padding=0):
         f.write(b"\0" * total_size)
 
 
-def _copy_fs_contents(self, image_path, build_dir):
+def _copy_fs_contents(self, image_path, build_dir) -> None:
     """Mount and copy the filesystem contents into the image,
     for filesystems which cannot be created directly from a directory"""
     try:
@@ -78,7 +78,7 @@ def _copy_fs_contents(self, image_path, build_dir):
         raise RuntimeError("Could not mount the test image: %s", e)
 
 
-def _get_luks_config(self):
+def _get_luks_config(self) -> dict[str, str]:
     """Gets the LUKS configuration from the passed cryptsetup config using _cryptsetup_root as the key,
     if not found, uses the first defined luks device if there is only one, otherwise raises an exception"""
     if dev := self["cryptsetup"].get(self["_cryptsetup_root"]):
@@ -88,12 +88,12 @@ def _get_luks_config(self):
     raise ValueError("Could not find a LUKS configuration")
 
 
-def _get_luks_uuid(self):
+def _get_luks_uuid(self) -> str | None:
     """Gets the uuid from the cryptsetup root config"""
     return _get_luks_config(self).get("uuid")
 
 
-def _get_luks_keyfile(self):
+def _get_luks_keyfile(self) -> str:
     """Gets the luks keyfile from the root cryptsetup device."""
     config = _get_luks_config(self)
     if keyfile := config.get("key_file"):
@@ -101,7 +101,7 @@ def _get_luks_keyfile(self):
     raise ValueError("No LUKS key_file is set.")
 
 
-def make_test_luks_image(self, image_path):
+def make_test_luks_image(self, image_path) -> None:
     """Creates a LUKS image to hold the test image"""
     try:
         self._run(["cryptsetup", "status", "test_image"], fail_silent=True)  # Check if the LUKS device is already open
@@ -140,7 +140,7 @@ def make_test_luks_image(self, image_path):
     self._run(["cryptsetup", "luksOpen", image_path, "test_image", "--key-file", keyfile_path])
 
 
-def make_test_image(self):
+def make_test_image(self) -> None:
     """Creates a test image from the build dir"""
     build_dir = self._get_build_path("/").resolve()
     self.logger.log(33, f"Creating test image from build directory: {c_(build_dir, 'blue', bold=True)}")
