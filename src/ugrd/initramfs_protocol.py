@@ -2,11 +2,11 @@ from typing import Any, Protocol
 
 from zenlib.typing import HasLogger
 
-from ugrd.initramfs_dict import InitramfsConfigDict
+from ugrd import InitramfsConfig
 
 
 class InitramfsProtocol(HasLogger, Protocol):
-    config_dict: InitramfsConfigDict
+    config_dict: InitramfsConfig
     included_functions: dict[str, str | list[str]]
     build_tasks: list[str]
     init_types: list[str]

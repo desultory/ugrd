@@ -7,7 +7,7 @@ from zenlib.logging import LoggerMixIn
 from zenlib.util import colorize as c_
 from zenlib.util import pretty_print
 
-from ugrd.initramfs_dict import InitramfsConfigDict
+from ugrd import InitramfsConfig
 
 from .exceptions import ValidationError
 from .generator_helpers import GeneratorHelpers
@@ -16,7 +16,7 @@ from .generator_helpers import GeneratorHelpers
 class InitramfsGenerator(GeneratorHelpers, LoggerMixIn):
     def __init__(self, config="/etc/ugrd/config.toml", *args, **kwargs) -> None:
         self.init_logger(args, kwargs)
-        self.config_dict = InitramfsConfigDict(NO_BASE=kwargs.pop("NO_BASE", False), logger=self.logger)
+        self.config_dict = InitramfsConfig(NO_BASE=kwargs.pop("NO_BASE", False), logger=self.logger)
 
         # Used for functions that are added to the shell profile
         # The key name is the function name, the value is the content
