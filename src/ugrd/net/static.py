@@ -18,9 +18,10 @@ def autodetect_gateway(self) -> None:
     for route in routes:
         if route["dev"] == self["net_device"]:
             self["ip_gateway"] = route["gateway"]
-            return self.logger.info(
+            self.logger.info(
                 "[%s] Detected gateway: %s", colorize(self["net_device"], "blue"), colorize(self["ip_gateway"], "cyan")
             )
+            break
     else:
         raise AutodetectError("No default route found")
 
