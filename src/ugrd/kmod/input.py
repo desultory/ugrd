@@ -65,4 +65,6 @@ def autodetect_input(self):
 
     # Maybe raise an exception once detection is more well tested
     if not found_keyboard:
-        self.logger.warning(f"Unable to detect a keyboard with keyboard_key_threshold is set to: {c_(self.keyboard_key_threshold, 'yellow')}")
+        self.logger.warning(
+            f"Unable to detect a keyboard with keyboard_key_threshold is set to: {c_(self.keyboard_key_threshold, 'yellow')}"
+        )
