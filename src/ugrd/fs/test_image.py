@@ -14,9 +14,10 @@ def init_banner(self):
     """Initialize the test image banner, set a random flag if not set."""
     self["banner"] = f"echo {self['test_flag']}"
 
+
 @contains("test_hibernate", "Hibernation testing is disabled", log_level=20)
 def test_hibernate(self):
-    """ Returns shell lines to hibernate to the swap device """
+    """Returns shell lines to hibernate to the swap device"""
     return """
     echo 1 > /sys/power/pm_debug_messages
     if [ ! -f "/sys/power/resume" ] ; then
@@ -34,10 +35,12 @@ def test_hibernate(self):
     echo "Hibernation completed"
     """
 
+
 def add_test_deps(self):
-    """ Adds additional dependencies depending on the test image configuration """
+    """Adds additional dependencies depending on the test image configuration"""
     if self["test_hibernate"]:
         self["binaries"] = ["swapon", "echo", "cat", "ls"]
+
 
 def _allocate_image(self, image_path, padding=0):
     """Allocate the test image size"""
@@ -91,7 +94,7 @@ def _get_luks_uuid(self):
 
 
 def _get_luks_keyfile(self):
-    """Gets the luks keyfile from the root cryptsetup devuce."""
+    """Gets the luks keyfile from the root cryptsetup device."""
     config = _get_luks_config(self)
     if keyfile := config.get("key_file"):
         return keyfile
