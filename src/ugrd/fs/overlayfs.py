@@ -1,7 +1,7 @@
 __version__ = "0.3.1"
 
 
-def update_root_lowerdir(self):
+def update_root_lowerdir(self) -> None:
     """Updates the root mount to use the lowerdir,
     Sets the switch_root_target to /target_rootfs"""
     self["mounts"] = {"root": {"destination": "/run/lowerdir"}}
