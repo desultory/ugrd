@@ -1,13 +1,14 @@
 __version__ = "0.3.1"
+from ugrd import InitramfsProtocol
 
 
-def update_root_lowerdir(self) -> None:
+def update_root_lowerdir(self: InitramfsProtocol) -> None:
     """Updates the root mount to use the lowerdir,
     Sets the switch_root_target to /target_rootfs"""
     self["mounts"] = {"root": {"destination": "/run/lowerdir"}}
     self["switch_root_target"] = "/target_rootfs"
 
 
-def mount_overlayfs(self) -> str:
+def mount_overlayfs(self: InitramfsProtocol) -> str:
     """Returns shell lines to mount the overlayfs based on the defined lowerdir"""
     return 'edebug "Mounting overlayfs at $(readvar SWITCH_ROOT_TARGET)): $(mount -t overlay overlay -o lowerdir=/run/lowerdir,upperdir=/run/upperdir,workdir=/run/workdir "$(readvar SWITCH_ROOT_TARGET)")"'
