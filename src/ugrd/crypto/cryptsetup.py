@@ -6,7 +6,7 @@ from pathlib import Path
 from re import search
 from textwrap import dedent
 
-from ugrd import InitramfsProtocol
+from ugrd import InitramfsProtocol, InitramfsConfig
 from ugrd.exceptions import AutodetectError, ValidationError
 from zenlib.util import colorize as c_
 from zenlib.util import contains, unset
@@ -33,7 +33,7 @@ CRYPTSETUP_PARAMETERS = [
 ]
 
 
-def _merge_cryptsetup(self: InitramfsProtocol, mapped_name: str, config: dict[str, str]) -> dict[str, str]:
+def _merge_cryptsetup(self: InitramfsConfig, mapped_name: str, config: dict[str, str]) -> dict[str, str]:
     """Merges the cryptsetup configuration"""
     if mapped_name not in self["cryptsetup"]:
         return config
@@ -43,7 +43,7 @@ def _merge_cryptsetup(self: InitramfsProtocol, mapped_name: str, config: dict[st
     return dict(self["cryptsetup"][mapped_name], **config)
 
 
-def _process_cryptsetup_key_types_multi(self: InitramfsProtocol, key_type: str, config: dict[str, str]) -> None:
+def _process_cryptsetup_key_types_multi(self: InitramfsConfig, key_type: str, config: dict[str, str]) -> None:
     """Processes the cryptsetup key types.
     Updates the key type configuration if it already exists, otherwise creates a new key type."""
     self.logger.debug("[%s] Processing cryptsetup key type configuration: %s" % (key_type, config))
@@ -112,7 +112,7 @@ def _validate_cryptsetup_config(self: InitramfsProtocol, mapped_name: str) -> No
         _validate_cryptsetup_key(self, config)
 
 
-def _process_cryptsetup_multi(self: InitramfsProtocol, mapped_name: str, config: dict[str, str]) -> None:
+def _process_cryptsetup_multi(self: InitramfsConfig, mapped_name: str, config: dict[str, str]) -> None:
     """Processes the cryptsetup configuration"""
     for parameter in config:
         if parameter not in CRYPTSETUP_PARAMETERS:
@@ -230,10 +230,10 @@ def _detect_luks_header_sha(self: InitramfsProtocol, luks_info: dict) -> None:
     enables the corresponding kernel module using _crypto_ciphers"""
     for keyslot in luks_info.get("keyslots", {}).values():
         if keyslot.get("af", {}).get("hash", "").startswith("sha"):
-            self["kernel_modules"] = self._crypto_ciphers[keyslot["af"]["hash"]]["driver"]
+            self["kernel_modules"] = self["_crypto_ciphers"][keyslot["af"]["hash"]]["driver"]
     for digest in luks_info.get("digests", {}).values():
         if digest.get("hash", "").startswith("sha"):
-            self["kernel_modules"] = self._crypto_ciphers[digest["hash"]]["driver"]
+            self["kernel_modules"] = self["_crypto_ciphers"][digest["hash"]]["driver"]
 
 
 def _detect_luks_header_integrity(self: InitramfsProtocol, luks_info: dict, mapped_name: str) -> None:
@@ -410,13 +410,13 @@ def detect_ciphers(self: InitramfsProtocol) -> None:
         for line in crypto_file:
             if line.startswith("name"):
                 current_name = get_value(line)
-                self._crypto_ciphers[current_name] = {}
+                self["_crypto_ciphers"][current_name] = {}
             elif not current_name:
                 continue  # Skip lines until a name is found
             elif line.startswith("driver"):
-                self._crypto_ciphers[current_name]["driver"] = get_value(line)
+                self["_crypto_ciphers"][current_name]["driver"] = get_value(line)
             elif line.startswith("module"):
-                self._crypto_ciphers[current_name]["module"] = get_value(line)
+                self["_crypto_ciphers"][current_name]["module"] = get_value(line)
 
 
 @contains("validate", "Skipping cryptsetup configuration validation.", log_level=30)

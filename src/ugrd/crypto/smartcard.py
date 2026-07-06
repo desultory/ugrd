@@ -2,11 +2,11 @@ __author__ = "desultory"
 __version__ = "1.2.2"
 from pathlib import Path
 
-from ugrd import InitramfsProtocol
+from ugrd import InitramfsConfig, InitramfsProtocol
 from zenlib.util import colorize, contains
 
 
-def _process_sc_public_key(self: InitramfsProtocol, key: str) -> None:
+def _process_sc_public_key(self: InitramfsConfig, key: str) -> None:
     """Processes the smartcard public key file."""
     key_path = Path(key)
     if not key_path.exists():

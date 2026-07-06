@@ -18,7 +18,7 @@ from zenlib.util import handle_plural, pretty_print
 from .exceptions import ValidationError
 
 
-class InitramfsConfigDict(LoggerMixIn, UserDict):
+class InitramfsConfig(LoggerMixIn, UserDict):
     """
     Dict for ugrd config
 

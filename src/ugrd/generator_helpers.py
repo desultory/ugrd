@@ -1,7 +1,6 @@
 from pathlib import Path
 from shutil import copy2
 from subprocess import CompletedProcess, TimeoutExpired, run
-from typing import Union
 from uuid import uuid4
 
 from zenlib.util import colorize as c_
@@ -15,7 +14,7 @@ __version__ = "2.0.0"
 _RANDOM_BUILD_ID = str(uuid4())
 
 
-def get_subpath(path: Path, subpath: Union[Path, str]) -> Path:
+def get_subpath(path: Path, subpath: Path | str) -> Path:
     """Returns the subpath of a path."""
     if not isinstance(subpath, Path):
         subpath = Path(subpath)
@@ -31,23 +30,23 @@ def get_subpath(path: Path, subpath: Union[Path, str]) -> Path:
 class GeneratorHelpers(InitramfsProtocol):
     """Mixin class for the InitramfsGenerator class."""
 
-    def _get_out_path(self, path: Union[Path, str]) -> Path:
+    def _get_out_path(self, path: Path | str) -> Path:
         """Takes a filename, if the out_dir is relative, returns the path relative to the tmpdir.
         If the out_dir is absolute, returns the path relative to the out_dir."""
-        if self.out_dir.is_absolute():
-            return get_subpath(self.out_dir, path)
-        return get_subpath(get_subpath(self.tmpdir, self.out_dir), path)
+        if self["out_dir"].is_absolute():
+            return get_subpath(self["out_dir"], path)
+        return get_subpath(get_subpath(self["tmpdir"], self["out_dir"]), path)
 
-    def _get_build_path(self, path: Union[Path, str]) -> Path:
+    def _get_build_path(self, path: Path | str) -> Path:
         """Returns the path relative to the build directory, under the tmpdir.
         If random_build_dir is true, appends a uuid4() to the build directory."""
-        if self.random_build_dir:
-            build_dir = self.build_dir.with_name(self.build_dir.name + "-" + _RANDOM_BUILD_ID)
+        if self["random_build_dir"]:
+            build_dir = self["build_dir"].with_name(self["build_dir"].name + "-" + _RANDOM_BUILD_ID)
         else:
-            build_dir = self.build_dir
+            build_dir = self["build_dir"]
         if build_dir.is_absolute():
             return get_subpath(build_dir, path)
-        return get_subpath(get_subpath(self.tmpdir, build_dir), path)
+        return get_subpath(get_subpath(self["tmpdir"], build_dir), path)
 
     def _mkdir(self, path: Path, resolve_build=True) -> None:
         """
@@ -79,7 +78,7 @@ class GeneratorHelpers(InitramfsProtocol):
         else:
             self.logger.debug("Directory already exists: %s" % path_dir)
 
-    def _write(self, file_name: Union[Path, str], contents: list[str] | str, chmod_mask=0o644, append=False) -> None:
+    def _write(self, file_name: Path | str, contents: list[str] | str, chmod_mask=0o644, append=False) -> None:
         """
         Writes test to a file within the build directory.
         Sets the passed chmod_mask.
@@ -100,7 +99,7 @@ class GeneratorHelpers(InitramfsProtocol):
                 self.logger.debug("Contents:\n%s" % contents)
                 return self.logger.warning("Contents are already present, skipping write: %s" % file_path)
 
-            if self.clean and not append:
+            if self["clean"] and not append:
                 self.logger.warning("Deleting file: %s" % c_(file_path, "red", bright=True, bold=True))
                 file_path.unlink()
 
@@ -122,7 +121,7 @@ class GeneratorHelpers(InitramfsProtocol):
         file_path.chmod(chmod_mask)
         self.logger.debug("[%s] Set file permissions: %s" % (file_path, chmod_mask))
 
-    def _copy(self, source: Union[Path, str], dest=None) -> None:
+    def _copy(self, source: Path | str, dest=None) -> None:
         """Copies a file into the initramfs build directory.
         If a destination is not provided, the source is used, under the build directory.
 
@@ -164,7 +163,7 @@ class GeneratorHelpers(InitramfsProtocol):
         self.logger.log(self["_build_log_level"], "Copying '%s' to '%s'" % (c_(source, "blue"), c_(dest_path, "green")))
         copy2(source, dest_path)
 
-    def _symlink(self, source: Union[Path, str], target: Union[Path, str]) -> None:
+    def _symlink(self, source: Path | str, target: Path | str) -> None:
         """Creates a symlink in the build directory.
         If the target is a directory, the source filename is appended to the target path.
 
@@ -196,7 +195,7 @@ class GeneratorHelpers(InitramfsProtocol):
         if target.is_symlink():
             if target.resolve() == source:
                 return self.logger.debug("Symlink already exists: %s -> %s" % (target, source))
-            elif self.clean:
+            elif self["clean"]:
                 self.logger.warning("Deleting symlink: %s" % c_(target, "red", bright=True))
                 target.unlink()
             else:
@@ -227,7 +226,7 @@ class GeneratorHelpers(InitramfsProtocol):
             if stderr := ret.stderr:
                 self.logger.error("Command error:\n%s" % stderr.decode())
 
-        timeout = timeout or self.timeout
+        timeout = timeout or self["timeout"]
         cmd_args = [str(arg) for arg in args]
         self.logger.debug("Running command: %s" % " ".join(cmd_args))
         try:
@@ -253,8 +252,8 @@ class GeneratorHelpers(InitramfsProtocol):
             return
 
         # If the cycle count is not set, attempt to clean
-        if not self.old_count:
-            if self.clean:
+        if not self["old_count"]:
+            if self["clean"]:
                 self.logger.warning("Deleting file: %s" % c_(file_name, "red", bold=True, bright=True))
                 file_name.unlink()
                 return
@@ -274,9 +273,9 @@ class GeneratorHelpers(InitramfsProtocol):
         # If the target file exists, cycle again
         if target_file.is_file():
             # First check if we've reached the cycle limit
-            if sequence >= self.old_count:
+            if sequence >= self["old_count"]:
                 # Clean the last file in the sequence if clean is enabled
-                if self.clean:
+                if self["clean"]:
                     self.logger.warning("Deleting old file: %s" % c_(target_file, "red", bold=True, bright=True))
                     target_file.unlink()
                 else:
