@@ -8,6 +8,7 @@ from stat import S_IFCHR
 from subprocess import run
 from typing import Union
 
+from ugrd import InitramfsProtocol
 from ugrd.exceptions import AutodetectError, ValidationError
 from zenlib.types import NoDupFlatList
 from zenlib.util import colorize as c_
@@ -97,25 +98,37 @@ def generate_structure(self) -> None:
         self._mkdir(subdir)
 
 
-def get_conditional_dependencies(self) -> None:
+def _add_dep(self, dep: str) -> None:
+    """Helper to add a dependency to the config
+    First tries to add it as a binary, if that fails, adds it as a plain dependency
+
+    Raises a FileNotFoundError if it is not a binary in an existing PATH and does not point to a file
+    """
+    try:  # Try to add it as a binary, if it fails, add it as a dependency
+        self["binaries"] = dep
+    except (ValueError, AutodetectError):
+        dep_path = Path(dep)
+        if dep_path.exists():
+            self["dependencies"] = dep
+        else:
+            raise FileNotFoundError(
+                f"Dependency is not a binary and does not point to an existing file: {c_(dep, 'red')}"
+            )
+
+
+def get_conditional_dependencies(self: InitramfsProtocol) -> None:
     """Adds conditional dependencies to the dependencies list.
     Keys are the dependency, values are a tuple of the condition type and value.
     """
-
-    def add_dep(dep: str) -> None:
-        try:  # Try to add it as a binary, if it fails, add it as a dependency
-            self["binaries"] = dep
-        except (ValueError, ValidationError):
-            self["dependencies"] = dep
-
     for dependency, condition in self["conditional_dependencies"].items():
         condition_type, condition_value = condition
         match condition_type:
-            # Ignore errors because mypy doesn't understand the decorators used here
             case "contains":
-                contains(condition_value)(add_dep(dependency))  # type: ignore[func-returns-value]
+                c = contains(condition_value)(_add_dep)
+                c(self, dependency)
             case "unset":
-                unset(condition_value)(add_dep(dependency))  # type: ignore[func-returns-value]
+                u = unset(condition_value)(_add_dep)
+                u(self, dependency)
 
 
 def _determine_interpreter(self, binary: Path) -> str | None:

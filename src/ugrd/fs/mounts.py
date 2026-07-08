@@ -358,19 +358,18 @@ def get_mounts_info(self) -> None:
 
 
 @contains("hostonly", "Skipping blkid enumeration, hostonly mode is disabled.", log_level=30)
-def get_blkid_info(self, device=None) -> dict:
+def get_blkid_info(self, device=None) -> None:
     """Gets the blkid info for all devices if no device is passed.
     Gets the blkid info for the passed device if a device is passed.
     The info is stored in self['_blkid_info']."""
-
     try:
         if device:
             blkid_output = self._run(["blkid", device]).stdout.decode().strip()
         else:
             blkid_output = self._run(["blkid"]).stdout.decode().strip()
     except RuntimeError:
-        self.logger.error("Blkid output: %s" % blkid_output)
-        raise AutodetectError("Failed to get blkid info for: %s" % device)
+        self.logger.error(f"Blkid output:\n{blkid_output}")
+        raise AutodetectError(f"Failed to get blkid info for device: {c_(device, 'red')}")
 
     if not blkid_output:
         raise AutodetectError("Unable to get blkid info.")
@@ -384,11 +383,7 @@ def get_blkid_info(self, device=None) -> dict:
             if match := search(f' {field.upper()}="(.+?)"', info):
                 self["_blkid_info"][dev][field] = match.group(1)
 
-    if device and not self["_blkid_info"][device]:
-        raise ValueError("[%s] Failed to parse blkid info: %s" % (device, info))
-
-    self.logger.debug("Blkid info: %s" % pretty_print(self["_blkid_info"]))
-    return self["_blkid_info"][device] if device else self["_blkid_info"]
+    self.logger.debug(f"Blkid info:\n{pretty_print(self['_blkid_info'])}")
 
 
 def get_zpool_info(self, poolname=None) -> dict[str, set[str]] | None:
@@ -535,8 +530,10 @@ def _autodetect_dm(self, mountpoint, device=None) -> None:
                 source_device = f"/dev/{source_name}"
             elif f"/dev/mapper/{source_name}" in self["_blkid_info"]:
                 source_device = f"/dev/mapper/{source_name}"
-            elif not get_blkid_info(self, source_device):
-                raise AutodetectError("[%s] No blkid info for virtual device: %s" % (mountpoint, source_device))
+            elif source_device not in self["_blkid_info"]:
+                raise AutodetectError(
+                    f"[{c_(mountpoint, 'yellow')}] No blkid info for virtual device: {c_(source_device, 'red')}"
+                )
         else:
             raise AutodetectError("[%s] No blkid info for virtual device: %s" % (mountpoint, source_device))
 
@@ -787,8 +784,10 @@ def _autodetect_mount(self, mountpoint, mount_class="mounts", missing_ok=False) 
     # zfs devices are not in blkid, so we don't need to check for them
     if fs_type == "zfs":
         mount_info = {"type": "zfs", "path": mount_device}
+    elif mount_device in self["_blkid_info"]:
+        mount_info = self["_blkid_info"][mount_device]
     else:
-        mount_info = get_blkid_info(self, mount_device)  # Raises an exception if the device is not found
+        raise AutodetectError(f"Unable to get mount info for device: {c_(mount_device, 'red')}")
 
     if ":" in mount_device:  # Handle bcachefs
         for alt_devices in mount_device.split(":"):
