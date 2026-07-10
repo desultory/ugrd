@@ -114,9 +114,18 @@ def parse_cmdline_str(self) -> str:
         setvar "$1" "$val"
     else
         # If the variable is not set in the environment, check /proc/cmdline
-        val=$(grep -oP "(?<=^|\s)$1=\K[^ ]+" /proc/cmdline)
+        val=$(xargs -n 1 -E '--' < /proc/cmdline | {
+            res=""
+            while read -r arg; do
+                case "$arg" in
+                    "$1"=*) res="${arg#*=}" ;;
+                esac
+            done
+            printf '%s' "$res"
+        })
+
         if [ -n "$val" ]; then
-            edebug "[$1] Got cmdline string: ${val}"
+            edebug "[$1] Got cmdline string: $val"
             setvar "$1" "$val"
         fi
     fi
