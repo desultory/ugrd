@@ -119,14 +119,15 @@ class InitramfsConfig(LoggerMixIn, UserDict):
         if any(key in d for d in (self.builtin_parameters, self["custom_parameters"])):
             return self.handle_parameter(key, value)
 
-        self.logger.debug(
-            f"[{c_(key, 'yellow')}] Unable to determine expected type, valid builtin types:\n{c_(self.builtin_parameters.keys(), bold=True)}"
+        self.logger.log(
+            5,
+            f"[{c_(key, 'yellow')}] Unable to determine expected type, valid builtin types:\n{c_(self.builtin_parameters.keys(), 'blue', bold=True)}",
         )
-        self.logger.debug("f[{c_(key, 'blue')}] Custom types: {c_(self['custom_parameters'].keys(), bold=True')}")
+        self.logger.log(5, f"[{c_(key, 'blue')}] Custom types: {c_(self['custom_parameters'].keys(), bold=True)}")
         # for anything but the logger, add to the processing queue
         if key != "logger":
             self.logger.debug(
-                f"[{c_(key, 'yellow')}] Adding unknown internal parameter to processing queue: {c_(value, bold=True)}"
+                f"[{c_(key, 'blue', background=True)}] Adding unknown internal parameter to processing queue: {c_(value, 'yellow')}"
             )
             if key not in self["_processing"]:
                 self["_processing"][key] = Queue()
@@ -145,13 +146,13 @@ class InitramfsConfig(LoggerMixIn, UserDict):
             if expected_type:
                 if expected_type.__name__ == "InitramfsGenerator":
                     self.data[key] = value
-                    return self.logger.debug("Setting InitramfsGenerator: %s" % key)
+                    return self.logger.debug(f"Setting InitramfsGenerator: {c_(key, 'magenta', bold=True)}")
                 break  # Break and raise an exception if the type is not found
         else:
-            raise KeyError("Parameter not registered: %s" % key)
+            raise KeyError(f"Parameter not registered: {c_(key, 'red')}")
 
         if hasattr(self, f"_process_{key}"):  # The builtin function is decorated and can handle plural
-            self.logger.log(5, "[%s] Using builtin setitem: %s" % (key, f"_process_{key}"))
+            self.logger.log(5, f"[{c_(key, 'blue')}] Using builtin setitem: _process_{key}")
             return getattr(self, f"_process_{key}")(value)
 
         # Don't use masked processing functions for custom values, fall back to standard setters
@@ -161,31 +162,39 @@ class InitramfsConfig(LoggerMixIn, UserDict):
 
         if func := self["custom_processing"].get(f"_process_{key}"):
             if check_mask(func.__name__):
-                self.logger.debug("Skipping masked function: %s" % func.__name__)
+                self.logger.debug(f"Skipping masked function: {c_(func.__name__, 'yellow', background=True)}")
             else:
-                self.logger.log(5, "[%s] Using custom setitem: %s" % (key, func.__name__))
+                self.logger.log(
+                    5, f"[{c_(key, 'blue')}] Using custom setitem: {c_(func.__name__, 'blue', underline=True)}"
+                )
                 return func(self, value)
 
         if func := self["custom_processing"].get(f"_process_{key}_multi"):
             if check_mask(func.__name__):
-                self.logger.debug("Skipping masked function: %s" % func.__name__)
+                self.logger.debug(f"Skipping masked function: {c_(func.__name__, 'yellow', background=True)}")
             else:
-                self.logger.log(5, "[%s] Using custom plural setitem: %s" % (key, func.__name__))
+                self.logger.log(
+                    5,
+                    f"[{c_(key, 'blue')}] Using custom plural setitem: {c_(func.__name__, 'blue', underline=True, bold=True)}",
+                )
                 return handle_plural(func)(self, value)
 
         if expected_type in (list, NoDupFlatList):  # Append to lists, don't replace
-            self.logger.log(5, "Using list setitem for: %s" % key)
+            self.logger.log(5, f"[{c_(key, 'blue')}] Using list setitem")
             return self[key].append(value)
 
         if expected_type is dict:  # Create new keys, update existing
             if key not in self:
-                self.logger.log(5, "Setting dict '%s' to: %s" % (key, value))
+                self.logger.log(5, f"[{c_(key, 'blue')}] Setting dict to: {value}")
                 return super().__setitem__(key, value)
-            self.logger.log(5, "Updating dict '%s' with: %s" % (key, value))
+            self.logger.log(5, f"[{c_(key, 'blue')}] Updating dict with: {value}")
             return self[key].update(value)
 
-        self.logger.debug("Setting custom parameter: %s" % key)
-        self.data[key] = expected_type(value)  # For everything else, simply set it
+        casted_value = expected_type(value)
+        self.logger.debug(
+            f"[{c_(key, 'blue')}]{c_(expected_type, 'red', dim=True)} Setting value: {c_(casted_value, bold=True)}"
+        )
+        self.data[key] = casted_value  # For everything else, simply set it
 
     @handle_plural
     def _process_custom_parameters(self, parameter_name: str, parameter_type: type) -> None:
@@ -197,7 +206,9 @@ class InitramfsConfig(LoggerMixIn, UserDict):
             parameter_type = eval(parameter_type)
 
         self["custom_parameters"][parameter_name] = parameter_type
-        self.logger.debug("Registered custom parameter '%s' with type: %s" % (parameter_name, parameter_type))
+        self.logger.debug(
+            f"[{c_(parameter_name, 'blue')}] Registered custom parameter with type: {c_(parameter_type, 'red', dim=True)}"
+        )
 
         match parameter_type.__name__:
             case "NoDupFlatList":
@@ -217,7 +228,9 @@ class InitramfsConfig(LoggerMixIn, UserDict):
             case "PyCPIO":
                 self.data[parameter_name] = PyCPIO(logger=self.logger, _log_bump=10)
             case _:  # For strings and things, don't init them so they are None
-                self.logger.warning("Leaving '%s' as None" % parameter_name)
+                self.logger.warning(
+                    f"[{c_(parameter_name, 'blue')}] Leaving unknown parameter type as None! <{c_(parameter_type.__name__, 'red')}>"
+                )
                 self.data[parameter_name] = None
 
         # Process queued values if they exist
@@ -226,16 +239,15 @@ class InitramfsConfig(LoggerMixIn, UserDict):
     def _process_unprocessed(self, parameter_name: str) -> None:
         """Processes queued values for a parameter."""
         if parameter_name not in self["_processing"]:
-            self.logger.log(5, "No queued values for: %s" % parameter_name)
+            self.logger.log(5, f"No queued values for: {c_(parameter_name, 'yellow', dim=True)}")
             return
 
         value_queue = self["_processing"].pop(parameter_name)
         while not value_queue.empty():
             value = value_queue.get()
-            if self["validated"]:  # Log at info level if the config has been validated
-                self.logger.info("[%s] Processing queued value: %s" % (parameter_name, value))
-            else:
-                self.logger.debug("[%s] Processing queued value: %s" % (parameter_name, value))
+            self.logger.debug(
+                f"[{c_(parameter_name, 'blue')}] Processing queued value: {c_(value, 'yellow', bold=True)}"
+            )
             self[parameter_name] = value
 
     def _process_import_order(self, import_order: dict) -> None:
@@ -305,18 +317,21 @@ class InitramfsConfig(LoggerMixIn, UserDict):
     def _process_imports(self, import_type: str, import_value: dict) -> None:
         """Processes imports in a module, importing the functions and adding them to the appropriate list."""
         for module_name, function_names in import_value.items():
-            self.logger.debug("[%s]<%s> Importing module functions : %s" % (module_name, import_type, function_names))
+            f_name = f"[{c_(module_name, 'green')}]({c_(import_type, underline=True)})"
+            self.logger.debug(f"{f_name} Importing module functions: {function_names}")
             try:  # First, the module must be imported, so its functions can be accessed
                 module = import_module(module_name)
             except ModuleNotFoundError:  # If it can't be natively imported, try to sideload it
                 module = self._import_external_module(module_name)
 
-            self.logger.log(5, "[%s] Imported module contents: %s" % (module_name, dir(module)))
+            self.logger.log(5, f"{f_name} Imported module contents:{dir(module)}")
             if "_module_name" in dir(module) and module._module_name != module_name:
-                self.logger.warning("Module name mismatch: %s != %s" % (module._module_name, module_name))
+                self.logger.warning(
+                    f"Module name mismatch: {c_(module._module_name, 'green')} != {c_(module_name, 'red')}"
+                )
 
             if import_type not in self["imports"]:  # Import types are only actually created when needed
-                self.logger.log(5, "Creating import type: %s" % import_type)
+                self.logger.log(5, f"Creating import type: {c_(import_type, underline=True)}")
                 self["imports"][import_type] = NoDupFlatList(_log_bump=10, logger=self.logger)
 
             if import_masks := self.get("masks", {}).get(import_type, []):
@@ -328,7 +343,7 @@ class InitramfsConfig(LoggerMixIn, UserDict):
                         )
                         function_names.remove(mask)
                         if import_type == "custom_init":
-                            self.logger.warning("Skipping custom init function: %s" % mask)
+                            self.logger.warning(f"Skipping masked custom init function: {c_(mask, 'yellow')}")
                             continue
 
             try:
@@ -351,24 +366,26 @@ class InitramfsConfig(LoggerMixIn, UserDict):
                     custom_init = function_list
 
                 if self["imports"]["custom_init"]:
-                    self.logger.warning("Custom init function already defined: %s" % self["imports"]["custom_init"])
+                    self.logger.warning(
+                        f"Custom init function already defined: {c_(self['imports']['custom_init'], 'yellow')}"
+                    )
                 else:
                     self["imports"]["custom_init"] = custom_init
                     self.logger.info(
-                        "Registered custom init function: %s" % c_(custom_init.__name__, "blue", bold=True)
+                        f"[{c_(module_name, 'green')}] Registered custom init function: {c_(custom_init.__name__, 'blue', bold=True)}"
                     )
                     continue
 
             if import_type == "funcs":  # Check for collisions with defined binaries and functions
                 for function in function_list:
                     if function.__name__ in self["imports"]["funcs"]:
-                        raise ValueError("Function '%s' already registered" % function.__name__)
+                        raise ValueError(f"Function already registered: {c_(function.__name__, 'red')}")
                     if function.__name__ in self["binaries"]:
-                        raise ValueError("Function collides with defined binary: %s'" % function.__name__)
+                        raise ValueError(f"Function collides with defined binary: {c_(function.__name__, 'red')}")
 
             # Append the functions to the appropriate list
             self["imports"][import_type] += function_list
-            self.logger.debug("[%s] Updated import functions: %s" % (import_type, function_list))
+            self.logger.log(5, f"[{c_(import_type, underline=True)}] Updated import functions: {function_list}")
 
             if import_type == "config_processing":  # Register the functions for processing after all imports are done
                 for function in function_list:
@@ -397,7 +414,7 @@ class InitramfsConfig(LoggerMixIn, UserDict):
 
         Finally, registers custom values so queued values can be processed and registers provided tags if present
         """
-        self.logger.info(f"Processing module: {c_(module, bold=True)}")
+        self.logger.info(f"Processing module: {c_(module, 'green', bold=True)}")
 
         if imports := module_config.get("imports"):
             self.logger.debug(f"[{c_(module, 'green')}] Processing imports: {imports}")
@@ -420,7 +437,7 @@ class InitramfsConfig(LoggerMixIn, UserDict):
                 self.logger.log(5, f"[{c_(module, 'green')}] Skipping: {c_(name, 'yellow')}")
                 continue
 
-            self.logger.debug(f"[{c_(module, 'green')}] ({c_(name, bold=True)}) Setting value: {c_(value, 'blue')}")
+            self.logger.log(5, f"[{c_(module, 'green')}]({c_(name, 'blue')}) Setting value: {c_(value, bold=True)}")
             self[name] = value
 
         # If custom parameters are defined, process them and then process any unprocessed values
