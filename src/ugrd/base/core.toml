@@ -11,6 +11,7 @@ validate = true
 library_paths = [ "/lib64", "/lib" ]
 old_count = 1
 timeout = 15
+_late_args = ["binaries"]
 
 [nodes.console]
 mode = 0o644
