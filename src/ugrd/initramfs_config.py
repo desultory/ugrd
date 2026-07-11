@@ -264,6 +264,41 @@ class InitramfsConfig(LoggerMixIn, UserDict):
 
         self.logger.debug("Registered import order requirements: %s" % import_order)
 
+    def _import_external_module(self, module_name: str):
+        """Given a module name, attempts to load it from /var/lib/ugrd, returning the module"""
+        module_path = Path("/var/lib/ugrd/" + module_name.replace(".", "/")).with_suffix(".py")
+        self.logger.debug(f"Attempting to sideload module from: {c_(module_path, 'green')}")
+        if not module_path.exists():
+            raise ModuleNotFoundError(f"Module not found: {c_(module_name, 'red')}")
+
+        try:  # If the module is not built in, try to load it from /var/lib/ugrd
+            # Extra checks are added for logging but mostly to make type checking happy
+            spec = spec_from_file_location(module_name, module_path)
+            if spec is None:
+                raise ModuleNotFoundError(
+                    f"[{c_(module_name, 'yellow')}] Failed to load spec from file: {c_(module_path, 'red')}"
+                )
+
+            spec_loader = spec.loader
+            if spec_loader is None:
+                raise RuntimeError(f"Failed to initialize loader for spec: {c_(spec, 'yellow')}")
+
+            module = module_from_spec(spec)
+
+            if module is None:
+                raise ModuleNotFoundError(
+                    f"[{c_(module_name, 'yellow')}] Failed to load module from spec: {c_(spec, 'red')}"
+                )
+
+            spec_loader.exec_module(module)
+            self.logger.debug(f"Loaded external module: {c_(module_name, 'blue')}")
+
+        except Exception as e:
+            raise ModuleNotFoundError(f"[{c_(module_name, 'yellow')}] Unable to load module: {e}") from e
+
+        self.logger.info(f"Sideloaded module: {c_(module_name, 'green')}")
+        return module
+
     @handle_plural
     def _process_imports(self, import_type: str, import_value: dict) -> None:
         """Processes imports in a module, importing the functions and adding them to the appropriate list."""
@@ -271,35 +306,8 @@ class InitramfsConfig(LoggerMixIn, UserDict):
             self.logger.debug("[%s]<%s> Importing module functions : %s" % (module_name, import_type, function_names))
             try:  # First, the module must be imported, so its functions can be accessed
                 module = import_module(module_name)
-            except ModuleNotFoundError as e:
-                module_path = Path("/var/lib/ugrd/" + module_name.replace(".", "/")).with_suffix(".py")
-                self.logger.debug("Attempting to sideload module from: %s" % module_path)
-                if not module_path.exists():
-                    raise ModuleNotFoundError("Module not found: %s" % module_name) from e
-                try:  # If the module is not built in, try to load it from /var/lib/ugrd
-                    # Extra checks are added for logging but mostly to make type checking happy
-                    spec = spec_from_file_location(module_name, module_path)
-                    if spec is None:
-                        raise ModuleNotFoundError(
-                            f"[{c_(module_name, 'yellow')}] Failed to load spec from file: {c_(module_path, 'red')}"
-                        )
-
-                    spec_loader = spec.loader
-                    if spec_loader is None:
-                        raise RuntimeError(f"Failed to initialize loader for spec: {c_(spec, 'yellow')}")
-
-                    module = module_from_spec(spec)
-
-                    if module is None:
-                        raise ModuleNotFoundError(
-                            f"[{c_(module_name, 'yellow')}] Failed to load module from spec: {c_(spec, 'red')}"
-                        )
-
-                    spec_loader.exec_module(module)
-                    self.logger.debug(f"Loaded external module: {c_(module_name, 'blue')}")
-
-                except Exception as e:
-                    raise ModuleNotFoundError(f"[{c_(module_name, 'yellow')}] Unable to load module: {e}") from e
+            except ModuleNotFoundError:  # If it can't be natively imported, try to sideload it
+                module = self._import_external_module(module_name)
 
             self.logger.log(5, "[%s] Imported module contents: %s" % (module_name, dir(module)))
             if "_module_name" in dir(module) and module._module_name != module_name:
