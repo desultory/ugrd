@@ -377,10 +377,7 @@ class InitramfsConfig(LoggerMixIn, UserDict):
             if import_type == "config_processing":  # Register the functions for processing after all imports are done
                 for function in function_list:
                     self["custom_processing"][function.__name__] = function
-                    self.logger.debug("Registered config processing function: %s" % function.__name__)
-                    self._process_unprocessed(
-                        function.__name__.removeprefix("_process_")
-                    )  # Re-process any queued values
+                    self.logger.debug(f"Registered config processing function: {c_(function.__name__, 'blue')}")
 
     @handle_plural
     def _process_modules(self, module: str) -> None:
@@ -395,7 +392,7 @@ class InitramfsConfig(LoggerMixIn, UserDict):
 
     def _load_module(self, module_config: dict[str, Any], module: str = "config") -> None:
         """Loads a module given a config dict module_config
-        the module var is used for logging
+        the module var is used for logging and tracking loaded modules
 
         'imports' are registered first as they may have processing functions
         Checks needs before processing the module further
