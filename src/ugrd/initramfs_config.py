@@ -118,19 +118,19 @@ class InitramfsConfig(LoggerMixIn, UserDict):
         # If the type is registered, use the appropriate update function
         if any(key in d for d in (self.builtin_parameters, self["custom_parameters"])):
             return self.handle_parameter(key, value)
-        else:
+
+        self.logger.debug(
+            f"[{c_(key, 'yellow')}] Unable to determine expected type, valid builtin types:\n{c_(self.builtin_parameters.keys(), bold=True)}"
+        )
+        self.logger.debug("f[{c_(key, 'blue')}] Custom types: {c_(self['custom_parameters'].keys(), bold=True')}")
+        # for anything but the logger, add to the processing queue
+        if key != "logger":
             self.logger.debug(
-                f"[{c_(key, 'yellow')}] Unable to determine expected type, valid builtin types:\n{c_(self.builtin_parameters.keys(), bold=True)}"
+                f"[{c_(key, 'yellow')}] Adding unknown internal parameter to processing queue: {c_(value, bold=True)}"
             )
-            self.logger.debug("f[{c_(key, 'blue')}] Custom types: {c_(self['custom_parameters'].keys(), bold=True')}")
-            # for anything but the logger, add to the processing queue
-            if key != "logger":
-                self.logger.debug(
-                    f"[{c_(key, 'yellow')}] Adding unknown internal parameter to processing queue: {c_(value, bold=True)}"
-                )
-                if key not in self["_processing"]:
-                    self["_processing"][key] = Queue()
-                self["_processing"][key].put(value)
+            if key not in self["_processing"]:
+                self["_processing"][key] = Queue()
+            self["_processing"][key].put(value)
 
     def handle_parameter(self, key: str, value) -> None:
         """
@@ -181,9 +181,8 @@ class InitramfsConfig(LoggerMixIn, UserDict):
             if key not in self:
                 self.logger.log(5, "Setting dict '%s' to: %s" % (key, value))
                 return super().__setitem__(key, value)
-            else:
-                self.logger.log(5, "Updating dict '%s' with: %s" % (key, value))
-                return self[key].update(value)
+            self.logger.log(5, "Updating dict '%s' with: %s" % (key, value))
+            return self[key].update(value)
 
         self.logger.debug("Setting custom parameter: %s" % key)
         self.data[key] = expected_type(value)  # For everything else, simply set it
@@ -419,6 +418,7 @@ class InitramfsConfig(LoggerMixIn, UserDict):
             if name in ["imports", "custom_parameters", "provides", "needs"]:
                 self.logger.log(5, f"[{c_(module, 'green')}] Skipping: {c_(name, 'yellow')}")
                 continue
+
             if name in self["_processing"] and custom_parameters.get(name) not in ["list", "NoDupFlatList", "dict"]:
                 self.logger.debug(f"Skipping setting defaults for parameter with queued values: {c_(name, 'yellow')}")
             else:
