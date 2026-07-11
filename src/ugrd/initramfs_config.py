@@ -53,6 +53,17 @@ class InitramfsConfig(LoggerMixIn, UserDict):
         *args,
         **kwargs,
     ) -> None:
+        """Initialize the initramfs config
+
+        First, init the logger and UserDict superclass
+        Then, define all default parameters
+
+        With those defined, the base config can be loaded.
+        As config modules are loaded, parameters which are not built in are queued for later processing
+        The last queued value will take precedence
+
+        The order is: base config -> user config -> arguments
+        """
         self.init_logger(args, kwargs)
         super().__init__(*args, **kwargs)
 
@@ -69,10 +80,6 @@ class InitramfsConfig(LoggerMixIn, UserDict):
         else:
             self["modules"] = "ugrd.base.core"
 
-        # If startup args are defined, process them
-        if startup_args:
-            self.import_args(startup_args)
-
         # If config is defined, load everything but the modules defined in it
         if config_file:
             try:
@@ -87,28 +94,20 @@ class InitramfsConfig(LoggerMixIn, UserDict):
         else:
             self.logger.info("No config file specified, using the base config.")
 
-        # Import args again so they take precedence over other config
+        # Import args last so they take precedence over other config
         if startup_args:
-            self.import_args(startup_args, quiet=True, late=True)
+            self.import_args(startup_args)
 
-    def import_args(self, args: dict, quiet=False, late=False) -> None:
+    def import_args(self, args: dict) -> None:
         """Imports data from an argument dict."""
-        log_level = 10 if quiet else 20
         for arg, value in args.items():
-            self.logger.log(log_level, f"[{c_(arg, 'blue')}] Setting from arguments: {c_(value, 'green')}")
+            self.logger.info(f"[{c_(arg, 'blue')}] Setting from arguments: {c_(value, 'blue', bold=True)}")
 
             if arg == "modules":  # allow loading modules by name from the command line
                 for module in value.split(","):
                     self[arg] = module
-            elif arg in self["_late_args"] and not late:
-                self.logger.debug(
-                    f"[{c_(arg, 'yellow')}] Deferring late argument processing until after config load: {c_(value, 'green')}",
-                )
-                continue
-            elif getattr(self, arg, None) != value:  # Only set the value if it differs:
-                self[arg] = value
             else:
-                self.logger.debug("Skipping unchanged argument '%s' with value: %s" % (arg, value))
+                self[arg] = value
 
     def __setitem__(self, key: str, value) -> None:
         if self["validated"]:
