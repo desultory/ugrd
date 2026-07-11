@@ -6,7 +6,6 @@ from importlib import import_module
 from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 from queue import Queue
-from tomllib import TOMLDecodeError, load
 from typing import Callable
 
 from pycpio import PyCPIO
@@ -15,8 +14,8 @@ from zenlib.types import NoDupFlatList
 from zenlib.util import colorize as c_
 from zenlib.util import handle_plural, pretty_print
 
-from .exceptions import ValidationError
 from .config_helpers import read_ugrd_module
+from .exceptions import ValidationError
 
 
 class InitramfsConfig(LoggerMixIn, UserDict):
@@ -273,7 +272,9 @@ class InitramfsConfig(LoggerMixIn, UserDict):
                     # Extra checks are added for logging but mostly to make type checking happy
                     spec = spec_from_file_location(module_name, module_path)
                     if spec is None:
-                        raise ModuleNotFoundError(f"[{c_(module_name, 'yellow')}] Failed to load spec from file: {c_(module_path, 'red')}")
+                        raise ModuleNotFoundError(
+                            f"[{c_(module_name, 'yellow')}] Failed to load spec from file: {c_(module_path, 'red')}"
+                        )
 
                     spec_loader = spec.loader
                     if spec_loader is None:
@@ -282,7 +283,9 @@ class InitramfsConfig(LoggerMixIn, UserDict):
                     module = module_from_spec(spec)
 
                     if module is None:
-                        raise ModuleNotFoundError(f"[{c_(module_name, 'yellow')}] Failed to load module from spec: {c_(spec, 'red')}")
+                        raise ModuleNotFoundError(
+                            f"[{c_(module_name, 'yellow')}] Failed to load module from spec: {c_(spec, 'red')}"
+                        )
 
                     spec_loader.exec_module(module)
                     self.logger.debug(f"Loaded external module: {c_(module_name, 'blue')}")
@@ -348,9 +351,6 @@ class InitramfsConfig(LoggerMixIn, UserDict):
                     self._process_unprocessed(
                         function.__name__.removeprefix("_process_")
                     )  # Re-process any queued values
-
-
-
 
     @handle_plural
     def _process_modules(self, module: str) -> None:
