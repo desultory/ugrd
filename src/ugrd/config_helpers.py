@@ -3,6 +3,7 @@ from typing import Any
 
 from zenlib.util import parse_toml
 
+DEFAULT_CONFIG_PATH = "/etc/ugrd/config.toml"
 MODULE_SEARCH_PATHS = [Path(__file__).parent, Path("/var/lib/ugrd")]
 
 

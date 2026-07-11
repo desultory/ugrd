@@ -12,9 +12,9 @@ from pycpio import PyCPIO
 from zenlib.logging import LoggerMixIn
 from zenlib.types import NoDupFlatList
 from zenlib.util import colorize as c_
-from zenlib.util import handle_plural, pretty_print
+from zenlib.util import handle_plural, parse_toml, pretty_print
 
-from .config_helpers import read_ugrd_module
+from .config_helpers import DEFAULT_CONFIG_PATH, read_ugrd_module
 from .exceptions import ValidationError
 
 
@@ -45,7 +45,14 @@ class InitramfsConfig(LoggerMixIn, UserDict):
         "test_copy_config": NoDupFlatList,  # A list of config values which are copied into test images, from the parent
     }
 
-    def __init__(self, NO_BASE=False, *args, **kwargs):
+    def __init__(
+        self,
+        startup_args: dict | None = None,
+        config_file: Path | str | None = None,
+        NO_BASE: bool = False,
+        *args,
+        **kwargs,
+    ) -> None:
         self.init_logger(args, kwargs)
         super().__init__(*args, **kwargs)
 
@@ -56,10 +63,33 @@ class InitramfsConfig(LoggerMixIn, UserDict):
             else:
                 self.data[parameter] = default_type()
         self["import_order"] = {"before": {}, "after": {}}
+
         if not NO_BASE:
             self["modules"] = "ugrd.base.base"
         else:
             self["modules"] = "ugrd.base.core"
+
+        # If startup args are defined, process them
+        if startup_args:
+            self.import_args(startup_args)
+
+        # If config is defined, load everything but the modules defined in it
+        if config_file:
+            try:
+                self._load_module(parse_toml(config_file))
+            except FileNotFoundError as e:
+                if str(config_file) == DEFAULT_CONFIG_PATH:
+                    self.logger.warning(
+                        f"Using base config because default config not found: {c_(config_file, 'yellow')}"
+                    )
+                else:
+                    raise e
+        else:
+            self.logger.info("No config file specified, using the base config.")
+
+        # Import args again so they take precedence over other config
+        if startup_args:
+            self.import_args(startup_args, quiet=True, late=True)
 
     def import_args(self, args: dict, quiet=False, late=False) -> None:
         """Imports data from an argument dict."""
