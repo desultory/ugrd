@@ -1,16 +1,50 @@
 # Dev manual
 
-Modules can be created to extend the functionality of the initramfs generator.
+Modules are defined using TOML and extend the functionality of the initramfs generator.
 
-Modules only require a TOML definition, and can import other modules to act as meta-modules.
+> Modules do not need to have executable code and can serve as meta-modules referencing sets of other modules and setting config
 
-Python functions can be added imported into `init` and `build` runlevels to execute build tasks or output init lines.
+Functionality is added by defining `imports` in modules which define functions which can modify all build/config/init generation.
 
 > `build` functions are allowed to mutate config, init functions are not. Init is the final build task where bash files are generated.
 
-Within modules, all config values are imported, then processed according to the order of the `custom_parameters` list.
+# Configuration Architecture
 
-> If config values have validation which may fail if other config is not loaded, those values can be added to the `_late_args' list to be processed last.
+All config is stored in a magic UserDict, not really but it may seem that way.
+
+Essentially all parameters are defined in modules, with a few being built in, mostly to hold the structure for the import system and parameter registration.
+
+Parameters defined within modules are imported after `modules` and `imports`, and the last module (highest level) setting a value will take precedence.
+
+## Custom parameters
+
+Parameters are defined in the `custom_parameters` dict, where the key is the name, and the value is the expected type.
+
+The order of this dict defines the order in which enqueued values will be processed (where relevant)
+
+### Parameter Initialization
+
+All parameters are initialized to 'empty/zero' values, this is defined in the `_process_custom_parameters` builtin.
+
+### Modifying parameters
+
+Scalar values can be updated normally, but this can be changed with a  `custom_processing` function.
+
+Iterables such as dicts and lists are automatically appended/updated unless a `custom_processing` function is associated with that parameter.
+
+### late_args
+
+Parameters defined in `_late_args` will only be loaded just before the build phase (after all defined modules are loaded).
+
+This can be used to ensure parameters with dynamic processors can change functionality based on config which may be defined in other modules.
+
+A key example is the `no_kmod` parameter which could interfere with a `kernel_version` being set by tooling such as installkernel on a system where no kernel modules are needed.
+
+Another example is the `binaries` parameter which may need to be short circuited for certain utilities if busybox is used.
+
+# Modules
+
+All µgRD components take the form of modules. Modules consist of a TOML definition which may `import` code from a python file.
 
 `_module_name` can be set within a module for logging purposes, it is verified to be accurate when imported but optional.
 
@@ -20,70 +54,41 @@ Within modules, all config values are imported, then processed according to the 
 
 `imports` entries have a key which is the name of the hook to import into, and a value which is a dict of module names and lists of functions to import.
 
-## Import order
-
-Imports can be ordered using the `import_order` dict.
-
-The key name defined in `before` will be run before values in the `after` list (value) by name.
-
-Likewise, keys in the `after` list will be run after the key in the `before` value.
-
-> `after` targets are moved before the key when creating the hook order, not literally after.
-
-### Import types
-
-There are two primary categories for imports, `build` and `init`. Build imports are used to mutate the config and build the base structure of the initramfs, while init imports are used to generate the init scripts.
-
-`config_processing` imports are used to automatically process config values when they are modified at runtime.
-
-The `pack` import is primarily used for packing the CPIO archive.
-
-The `checks` import is used for static checks, such as ensuring required files are included in the CPIO and have reasonable contents.
-
-The `test` import is used for testing the initramfs, and is mostly used by the `test` module for QEMU wrapping.
-
-### Importing functions
-
-Functions are imported from modules by specifying the hook they are to be added to in the `imports` dict, with the module name as the key and a list of functions to import as the value.
-
-For example, the `generate_fstab` function is added to the `build_tasks` book from the `ugrd.fs.mounts` module with:
+For example, to import function `get_foo` into runlevel `bar` from module `baz`:
 
 ```
-[imports.build_tasks]
-"ugrd.fs.mounts" = [ "generate_fstab" ]
+[imports.bar]
+"baz" = ["get_foo"]
 ```
 
-## Build imports
+### Import hooks (types)
+
+There are two primary categories for imports, `build` and `init`.
+
+`build` imports are used to mutate the config and build the base structure of the initramfs.
+
+`init` imports are used to generate the init scripts.
+
+For config which requires special validation or handling, `config_processing` hooks can be made to process parameters as soon as they are set.
+
+The `pack`, `checks`, and `test` hooks should be self explanatory and are explained below.
+
+#### Build imports
 
 Build imports are used to mutate config and build the base structure of the initramfs.
 
-### build_enum
+The following hooks are used internally and are defined in `InitramfsGenerator.build_tasks`:
 
-`build_enum` is used for system enumeration, such as finding the root device, loaded kernel mods, etc.
-
-### build_pre
-
-`build_pre` contains build tasks which are run at the very start of the build, such as build directory cleaning and additional config processing based on enumerated info.
-
-### build_tasks
-
-`build_tasks` are functions which will be executed after `build_pre`, which make up the majority of the build process.
-
-### build_late
-
-`build_late` are finalizing build functions, immediately before files are deployed
-
-### build_deploy
-
-`build_deploy` is mostly for builtin functions and is where components are actually copied into the build directory.
-
-### build_final
-
-`build_final` is the last build hook, where finalizing tasks take place.
+* `build_enum` - Used for system enumeration, such as finding the root device, loaded kernel mods, etc.
+* `build_pre` - For build tasks run at the very start of the build, such as directory cleaning and possibly late enumeration/config processing.
+* `build_tasks` - Functions which will be executed after `build_pre`, which make up the majority of the build process.
+* `build_deploy` Where components are actually copied/created in the build directory.
+* `build_final` The last  default build hook, where finalizing tasks such as image metadata regeneration take place.
 
 ## Init imports
 
 By default, the following init hooks are available:
+
 * `init_pre` - Where the base initramfs environment is set up; basic mounts are initialized and the kernel cmdline is read.
 * `init_debug` - Where a shell is started if `start_shell` is enabled in the debug module.
 * `init_main` - Most important initramfs activities should take place here.
@@ -154,23 +159,15 @@ def console_init(self) -> str:
     return out_str
 ```
 
-## pack
+### Config processing
 
-Packing functions, such as CPIO generation can be defined in the `pack` import.
+`config_processing` imports are used to automatically process config values when they are modified at runtime.
 
-The `cpio` module imports the `make_cpio_list` packing function with:
-
-```
-[imports.pack]
-"ugrd.fs.cpio" = [ "make_cpio" ]
-```
-## Config processing
-
-`config_processing` imports are different from typical imports. They are configured similarly, with a dict of module names and functions to import.
-
-Instead of running once at a particular build level, `config_processing` functions are run whenever a config value is modified at runtime.
+While defined similarly to other imports, they are not associated with any runlevel and run whenever the associated parameter is modified.
 
 This can be used to validate config values, or to automatically process them.
+
+> Functions added to `config_processing` should be named in the format `_process_<varname>{,_multi}` where _multi is added to run values through @handle_plural
 
 A good example of this is in `base.py`:
 
@@ -193,17 +190,67 @@ def _process_mounts_multi(self, key, mount_config):
 
 This module manages mount management, and loads new mounts into fstab objects, also defined in the base module.
 
-The name of `config_prcessing` functions is very important, it must be formatted like `_process_{name}` where the name is the root variable name in the TOML config.
+A new root variable named `foo` could be defined, and a function `_process_foo` could be created and imported, raising an error when this value is found, for example.
 
-If the function name has `_multi` at the end, it will be called using the `handle_plural` function, iterating over passed lists/dicts automatically.
-
-A new root variable named `oops` could be defined, and a function `_process_oops` could be created and imported, raising an error when this value is found, for example.
-
-This module is loaded in the imports section of the `base.yaml` file:
+This module is loaded in the imports section of the `base.toml` file:
 
 ```
 [imports.config_processing]
 "ugrd.fs.mounts" = [ "_process_mounts_multi" ]
+```
+
+### Pack
+
+The `pack` import is primarily used for packing the CPIO archive.
+
+The `cpio` module imports the `make_cpio_list` packing function with:
+
+```
+[imports.pack]
+"ugrd.fs.cpio" = [ "make_cpio" ]
+```
+
+### Checks
+
+The `checks` import is used for static checks, such as ensuring required files are included in the CPIO and have reasonable contents.
+
+### Test
+
+The `test` import is used for testing the initramfs, and is mostly used by the `test` module for QEMU wrapping.
+
+## Importing functions
+
+Functions are imported from modules by specifying the hook they are to be added to in the `imports` dict, with the module name as the key and a list of functions to import as the value.
+
+For example, the `generate_fstab` function is added to the `build_tasks` book from the `ugrd.fs.mounts` module with:
+
+```
+[imports.build_tasks]
+"ugrd.fs.mounts" = [ "generate_fstab" ]
+```
+
+## Import order
+
+Imports can be ordered using the `import_order` dict.
+
+The key name defined in `before` will be run before values in the `after` list (value) by name.
+
+Likewise, keys in the `after` list will be run after the key in the `before` value.
+
+> `after` targets are moved before the key when creating the hook order, not literally after.
+
+For example, to run function "foo" before function "bar":
+
+```
+[import_order.before]
+"foo" = "bar"
+```
+
+To run function "baz" after "foo" and "bar":
+
+```
+[import_order.after]
+"baz" = ["foo", "bar"]
 ```
 
 ## Provides/needs
@@ -217,8 +264,7 @@ When a module has a `needs` string or list of strings, those will be checked aga
 
 Needed tags are checked after module imports and before any module config. Provided tags are set upon successful module import.
 
-
-## Example module
+# Example module
 
 The following is an example module which prints "hello world" during the init process:
 ```
