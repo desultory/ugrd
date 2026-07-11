@@ -52,10 +52,12 @@ class InitramfsGenerator(GeneratorHelpers, LoggerMixIn):
 
     def build(self) -> None:
         """Builds the initramfs image."""
+        self.config_dict["stage"] = "late"  # Set the config stage to late, loading deferred config
         self._log_run(f"Running ugrd v{version('ugrd')}")
         self.run_build()
-        self.config_dict.validate()  # Validate the config after the build tasks have been run
+        self.config_dict["stage"] = "final"  # Finalize the config, triggering validation
 
+        # If validation fails, raise an error if validation mode is enabled
         if self.validate and not self.validated:
             raise ValidationError(
                 f"Failed to validate config. Unprocessed values: {', '.join(list(self['_processing'].keys()))}"

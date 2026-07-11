@@ -42,6 +42,7 @@ class InitramfsConfig(LoggerMixIn, UserDict):
         "custom_processing": dict,  # Custom processing functions which will be run to validate and process parameters
         "_processing": dict,  # A dict of queues containing parameters which have been set before the type was known
         "_late_args": NoDupFlatList,  # A list of arguments which could be passed as command line args but need to be processed after the config is loaded
+        "stage": str,  # The current processing stage (early, late, final)
         "test_copy_config": NoDupFlatList,  # A list of config values which are copied into test images, from the parent
     }
 
@@ -73,6 +74,7 @@ class InitramfsConfig(LoggerMixIn, UserDict):
                 self.data[parameter] = default_type(no_warn=True, _log_bump=5, logger=self.logger)
             else:
                 self.data[parameter] = default_type()
+        self["stage"] = "early"
         self["import_order"] = {"before": {}, "after": {}}
 
         if not NO_BASE:
@@ -109,11 +111,38 @@ class InitramfsConfig(LoggerMixIn, UserDict):
             else:
                 self[arg] = value
 
+    def _enqueue(self, key: str, value: Any) -> None:
+        """Adds a value to the processing queue"""
+        if key not in self["_processing"]:
+            self["_processing"][key] = Queue()
+        self["_processing"][key].put(value)
+        self.logger.debug(
+            f"[{c_(key, 'blue', background=True)}] Adding parameter to processing queue: {c_(value, 'yellow')}"
+        )
+
     def __setitem__(self, key: str, value) -> None:
+        """Custom setitem for the config dict
+        If the dict is validated, refuse to set config
+        If it's the final stage and it's not validated, raise a critical warning
+
+        If a _late_arg is being set and it's not in the late stage, also add it to the queue
+
+        For registered config values, use the handle_parameter function
+
+        For everything but the logger, queue values if they are not registered
+        """
         if self["validated"]:
             return self.logger.error(
                 f"[{c_(key, 'yellow')}] Config is validated, refusing to set value: {c_(value, 'red')}"
             )
+        if self["stage"] == "final" and not self["validated"]:
+            return self.logger.critical(
+                f"[{c_(key, 'yellow')}] Config is finalized but invalid, refusing to set value: {c_(value, 'red')}"
+            )
+
+        if not self._check_late(key):
+            return self._enqueue(key, value)
+
         # If the type is registered, use the appropriate update function
         if any(key in d for d in (self.builtin_parameters, self["custom_parameters"])):
             return self.handle_parameter(key, value)
@@ -125,17 +154,14 @@ class InitramfsConfig(LoggerMixIn, UserDict):
         self.logger.log(5, f"[{c_(key, 'blue')}] Custom types: {c_(self['custom_parameters'].keys(), bold=True)}")
         # for anything but the logger, add to the processing queue
         if key != "logger":
-            self.logger.debug(
-                f"[{c_(key, 'blue', background=True)}] Adding unknown internal parameter to processing queue: {c_(value, 'yellow')}"
-            )
-            if key not in self["_processing"]:
-                self["_processing"][key] = Queue()
-            self["_processing"][key].put(value)
+            self._enqueue(key, value)
 
     def handle_parameter(self, key: str, value) -> None:
         """
         Handles a config parameter, setting the value and processing it if the type is known.
         Raises a KeyError if the parameter is not registered.
+
+        If the value is a _late_arg, and it's not in the late stage, skip it
 
         Uses custom processing functions if they are defined, otherwise uses the standard setters.
         """
@@ -200,6 +226,8 @@ class InitramfsConfig(LoggerMixIn, UserDict):
         """
         Updates the custom_parameters attribute.
         Sets the initial value of the parameter based on the type.
+
+        Processes any queued values if they exist (unless they are _late_args and it is not the late stage)
         """
         if isinstance(parameter_type, str):
             parameter_type = eval(parameter_type)
@@ -236,9 +264,17 @@ class InitramfsConfig(LoggerMixIn, UserDict):
         self._process_unprocessed(parameter_name)
 
     def _process_unprocessed(self, parameter_name: str) -> None:
-        """Processes queued values for a parameter."""
+        """Processes queued values for a parameter.
+        Does nothing if there are no queued values
+
+        If the value is a _late_arg and it's not the late stage, skip
+            this leaves the processing queue untouched
+        """
         if parameter_name not in self["_processing"]:
             self.logger.log(5, f"No queued values for: {c_(parameter_name, 'yellow', dim=True)}")
+            return
+
+        if not self._check_late(parameter_name):
             return
 
         value_queue = self["_processing"].pop(parameter_name)
@@ -460,13 +496,47 @@ class InitramfsConfig(LoggerMixIn, UserDict):
                 self["provided"] = tag
                 self.logger.info(f"[{c_(module, bright=True)}] Registered provided tag: {c_(tag, 'green', bold=True)}")
 
-    def validate(self) -> None:
+    def _check_late(self, parameter_name: str) -> bool:
+        """Checks if it is time to run a late arg"""
+        if self["stage"] != "late" and parameter_name in self["_late_args"]:
+            self.logger.debug(
+                f"[{c_(self['stage'], underline=True)}] Deferring processing for late arg: {c_(parameter_name, 'yellow')}"
+            )
+            return False
+        return True
+
+    def _process_late_values(self) -> None:
+        """Processes all late values"""
+        if self["stage"] != "late":
+            raise RuntimeError(
+                f"Cannot process late values in current stage: {c_(self['stage'], 'red', underline=True)}"
+            )
+
+        for arg in self["_late_args"]:
+            self._process_unprocessed(arg)
+
+    def _process_stage(self, stage: str) -> None:
+        """Sets the stage
+        When the stage is changed to final, calls validation and does not allow it to be changed again
+        """
+        if self["stage"] == "final":
+            raise RuntimeError("Cannot change stage after finalized")
+
+        self.data["stage"] = stage
+        self.logger.debug(f"Entering config stage: {c_(stage, 'blue', underline=True, bold=True)}")
+
+        if stage == "late":
+            self._process_late_values()
+        elif stage == "final":
+            self._validate()
+
+    def _validate(self) -> None:
         """Validate config, checks that all values are processed, sets validated flag."""
         if self["_processing"]:
             return self.logger.critical(
                 "Unprocessed config values: %s" % c_(", ".join(list(self["_processing"].keys())), "red", bold=True)
             )
-        self["validated"] = True
+        self.data["validated"] = True
 
     def __str__(self) -> str:
         return pretty_print(self.data)
