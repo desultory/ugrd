@@ -6,7 +6,7 @@ from importlib import import_module
 from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 from queue import Queue
-from typing import Any, Callable
+from typing import Any
 
 from pycpio import PyCPIO
 from zenlib.logging import LoggerMixIn
@@ -264,28 +264,6 @@ class InitramfsConfig(LoggerMixIn, UserDict):
 
         self.logger.debug("Registered import order requirements: %s" % import_order)
 
-    def _process_import_functions(self, module, functions: list) -> list[Callable]:
-        """Processes defined import functions, importing them and adding them to the returned list.
-        The 'function' key is required if dicts are used,
-        'before' and 'after' keys can be used to specify order requirements."""
-        function_list = []
-        for f in functions:
-            match type(f).__name__:
-                case "str":
-                    function_list.append(getattr(module, f))
-                case "dict":
-                    if "function" not in f:
-                        raise ValueError("Function key not found in import dict: %s" % functions)
-                    func = f["function"]
-                    function_list.append(getattr(module, func))
-                    if "before" in f:
-                        self["import_order"] = {"before": {func: f["before"]}}
-                    if "after" in f:
-                        self["import_order"] = {"after": {func: f["after"]}}
-                case _:
-                    raise ValueError("Invalid type for import function: %s" % type(f))
-        return function_list
-
     @handle_plural
     def _process_imports(self, import_type: str, import_value: dict) -> None:
         """Processes imports in a module, importing the functions and adding them to the appropriate list."""
@@ -343,9 +321,17 @@ class InitramfsConfig(LoggerMixIn, UserDict):
                             self.logger.warning("Skipping custom init function: %s" % mask)
                             continue
 
-            function_list = self._process_import_functions(module, function_names)
+            try:
+                function_list = [getattr(module, func) for func in function_names]
+            except AttributeError as e:
+                raise AttributeError(
+                    f"[{c_(module_name, 'yellow')}] Failed to import function: {c_(e.name, 'red')}"
+                ) from e
+
             if not function_list:
-                self.logger.warning("[%s] No functions found for import: %s" % (module_name, import_type))
+                self.logger.warning(
+                    f"[{c_(module_name, 'yellow')}] No functions found for import: {c_(import_type, 'red')}"
+                )
                 continue
 
             if import_type == "custom_init":  # Only get the first function for custom init (should be 1)
