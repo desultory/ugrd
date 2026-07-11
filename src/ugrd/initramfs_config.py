@@ -6,7 +6,7 @@ from importlib import import_module
 from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 from queue import Queue
-from typing import Callable
+from typing import Any, Callable
 
 from pycpio import PyCPIO
 from zenlib.logging import LoggerMixIn
@@ -354,15 +354,26 @@ class InitramfsConfig(LoggerMixIn, UserDict):
 
     @handle_plural
     def _process_modules(self, module: str) -> None:
-        """processes a single module into the config
+        """processes a single module (by name) into the config
         If that module (by name) has already been loaded, does nothing
-
         """
         if module in self["modules"]:
             self.logger.debug(f"Module already loaded: {c_(module, 'yellow')}")
             return
 
-        module_config = read_ugrd_module(module)
+        self._load_module(read_ugrd_module(module), module)
+
+    def _load_module(self, module_config: dict[str, Any], module: str = "config") -> None:
+        """Loads a module given a config dict module_config
+        the module var is used for logging
+
+        'imports' are registered first as they may have processing functions
+        Checks needs before processing the module further
+
+        Adds unregistered values to the processing queue if they are not lists/dicts
+
+        Finally, registers custom values so queued values can be processed and registers provided tags if present
+        """
         self.logger.info(f"Processing module: {c_(module, bold=True)}")
 
         if imports := module_config.get("imports"):
@@ -403,7 +414,9 @@ class InitramfsConfig(LoggerMixIn, UserDict):
             self._process_unprocessed(custom_parameter)
 
         # Append the module to the list of loaded modules, avoid recursion
-        self["modules"].append(module)
+        # Do not do this for modules called the default name 'config'
+        if module != "config":
+            self["modules"].append(module)
 
         # Handle provides tags, ensure only a single module provides a tag
         if provides := module_config.get("provides"):
