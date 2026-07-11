@@ -57,12 +57,6 @@ class InitramfsGenerator(GeneratorHelpers, LoggerMixIn):
         self.run_build()
         self.config_dict["stage"] = "final"  # Finalize the config, triggering validation
 
-        # If validation fails, raise an error if validation mode is enabled
-        if self.validate and not self.validated:
-            raise ValidationError(
-                f"Failed to validate config. Unprocessed values: {', '.join(list(self['_processing'].keys()))}"
-            )
-
         self.generate_init()
         self.pack_build()
         self.run_checks()

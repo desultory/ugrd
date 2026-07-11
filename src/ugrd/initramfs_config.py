@@ -533,9 +533,12 @@ class InitramfsConfig(LoggerMixIn, UserDict):
     def _validate(self) -> None:
         """Validate config, checks that all values are processed, sets validated flag."""
         if self["_processing"]:
-            return self.logger.critical(
-                "Unprocessed config values: %s" % c_(", ".join(list(self["_processing"].keys())), "red", bold=True)
-            )
+            unprocessed_values = ", ".join(list(self["_processing"].keys()))
+            if self["validate"]:
+                raise ValidationError(
+                    f"Failed to validate config. Unprocessed values: {c_(unprocessed_values, 'red', bold=True)}"
+                )
+            return self.logger.critical(f"Unprocessed config values: {c_(unprocessed_values, 'red', bold=True)}")
         self.data["validated"] = True
 
     def __str__(self) -> str:
