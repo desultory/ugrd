@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Any
 
 from zenlib.util import parse_toml
 
@@ -21,6 +22,15 @@ def get_module_name(module_path: Path) -> str:
         parent_name += module_path.parent.name + "."
         module_path = module_path.parent
     return parent_name + module_name
+
+
+def read_ugrd_module(module_name: str) -> dict[str, Any]:
+    """Reads a ugrd module given a module name. Returns the config"""
+    for module in get_module_paths():
+        if module_name == get_module_name(module):
+            return parse_toml(module)
+
+    raise FileNotFoundError(f"Unable to find module: {module_name}")
 
 
 def get_parameters() -> dict[str, dict[str, str]]:

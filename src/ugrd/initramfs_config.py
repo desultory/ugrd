@@ -16,6 +16,7 @@ from zenlib.util import colorize as c_
 from zenlib.util import handle_plural, pretty_print
 
 from .exceptions import ValidationError
+from .config_helpers import read_ugrd_module
 
 
 class InitramfsConfig(LoggerMixIn, UserDict):
@@ -348,29 +349,21 @@ class InitramfsConfig(LoggerMixIn, UserDict):
                         function.__name__.removeprefix("_process_")
                     )  # Re-process any queued values
 
+
+
+
     @handle_plural
     def _process_modules(self, module: str) -> None:
-        """processes a single module into the config"""
+        """processes a single module into the config
+        If that module (by name) has already been loaded, does nothing
+
+        """
         if module in self["modules"]:
-            self.logger.debug("Module '%s' already loaded" % module)
+            self.logger.debug(f"Module already loaded: {c_(module, 'yellow')}")
             return
 
-        self.logger.info("Processing module: %s" % c_(module, bold=True))
-
-        module_subpath = module.replace(".", "/") + ".toml"
-
-        module_path = Path(__file__).parent.parent / module_subpath
-        if not module_path.exists():
-            module_path = Path("/var/lib/ugrd") / module_subpath
-            if not module_path.exists():
-                raise FileNotFoundError("Unable to locate module: %s" % module)
-        self.logger.debug("Module path: %s" % module_path)
-
-        with open(module_path, "rb") as module_file:
-            try:
-                module_config = load(module_file)
-            except TOMLDecodeError as e:
-                raise TOMLDecodeError("Unable to load module config: %s" % module) from e
+        module_config = read_ugrd_module(module)
+        self.logger.info(f"Processing module: {c_(module, bold=True)}")
 
         if imports := module_config.get("imports"):
             self.logger.debug("[%s] Processing imports: %s" % (module, imports))
