@@ -220,6 +220,9 @@ class InitramfsConfig(LoggerMixIn, UserDict):
                 self.logger.warning("Leaving '%s' as None" % parameter_name)
                 self.data[parameter_name] = None
 
+        # Process queued values if they exist
+        self._process_unprocessed(parameter_name)
+
     def _process_unprocessed(self, parameter_name: str) -> None:
         """Processes queued values for a parameter."""
         if parameter_name not in self["_processing"]:
@@ -411,28 +414,19 @@ class InitramfsConfig(LoggerMixIn, UserDict):
             else:
                 raise ValueError(f"[{c_(module, 'green')}] Invalid needs value: {c_(needs, 'red')}")
 
-        custom_parameters = module_config.get("custom_parameters", {})
-
         # Process other config such as import orders, defined values
         for name, value in module_config.items():
             if name in ["imports", "custom_parameters", "provides", "needs"]:
                 self.logger.log(5, f"[{c_(module, 'green')}] Skipping: {c_(name, 'yellow')}")
                 continue
 
-            if name in self["_processing"] and custom_parameters.get(name) not in ["list", "NoDupFlatList", "dict"]:
-                self.logger.debug(f"Skipping setting defaults for parameter with queued values: {c_(name, 'yellow')}")
-            else:
-                self.logger.debug(f"[{c_(module, 'green')}] ({c_(name, bold=True)}) Setting value: {c_(value, 'blue')}")
-                self[name] = value
+            self.logger.debug(f"[{c_(module, 'green')}] ({c_(name, bold=True)}) Setting value: {c_(value, 'blue')}")
+            self[name] = value
 
-        # Add custom parameters after values are added, so they are processed in the correct order
-        if custom_parameters:
+        # If custom parameters are defined, process them and then process any unprocessed values
+        if custom_parameters := module_config.get("custom_parameters", {}):
             self.logger.debug(f"[{c_(module, 'green')}] Processing custom parameters: {custom_parameters}")
             self["custom_parameters"] = custom_parameters
-
-        # If custom parameters were added, process unprocessed values
-        for custom_parameter in custom_parameters:
-            self._process_unprocessed(custom_parameter)
 
         # Append the module to the list of loaded modules, avoid recursion
         # Do not do this for modules called the default name 'config'
