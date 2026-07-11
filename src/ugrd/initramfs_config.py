@@ -377,36 +377,36 @@ class InitramfsConfig(LoggerMixIn, UserDict):
         self.logger.info(f"Processing module: {c_(module, bold=True)}")
 
         if imports := module_config.get("imports"):
-            self.logger.debug("[%s] Processing imports: %s" % (module, imports))
+            self.logger.debug(f"[{c_(module, 'green')}] Processing imports: {imports}")
             self["imports"] = imports
 
         if needs := module_config.get("needs"):
             if isinstance(needs, str):
                 if needs not in self["provided"]:
-                    raise ValueError("[%s] Required tag not provided: %s" % (module, needs))
+                    raise ValueError(f"[{c_(module, 'green')}] Required tag not provided: {c_(needs, 'red')}")
             elif isinstance(needs, list):
                 for need in needs:
                     if need not in self["provided"]:
-                        raise ValueError("[%s] Required tag not provided: %s" % (module, need))
+                        raise ValueError(f"[{c_(module, 'green')}] Required tag not provided: {c_(need, 'red')}")
             else:
-                raise ValueError("[%s] Invalid needs value: %s" % (module, needs))
+                raise ValueError(f"[{c_(module, 'green')}] Invalid needs value: {c_(needs, 'red')}")
 
         custom_parameters = module_config.get("custom_parameters", {})
 
         # Process other config such as import orders, defined values
         for name, value in module_config.items():
             if name in ["imports", "custom_parameters", "provides", "needs"]:
-                self.logger.log(5, "[%s] Skipping '%s'" % (module, name))
+                self.logger.log(5, f"[{c_(module, 'green')}] Skipping: {c_(name, 'yellow')}")
                 continue
             if name in self["_processing"] and custom_parameters.get(name) not in ["list", "NoDupFlatList", "dict"]:
                 self.logger.debug(f"Skipping setting defaults for parameter with queued values: {c_(name, 'yellow')}")
             else:
-                self.logger.debug("[%s] (%s) Setting value: %s" % (module, name, value))
+                self.logger.debug(f"[{c_(module, 'green')}] ({c_(name, bold=True)}) Setting value: {c_(value, 'blue')}")
                 self[name] = value
 
         # Add custom parameters after values are added, so they are processed in the correct order
         if custom_parameters:
-            self.logger.debug("[%s] Processing custom parameters: %s" % (module, custom_parameters))
+            self.logger.debug(f"[{c_(module, 'green')}] Processing custom parameters: {custom_parameters}")
             self["custom_parameters"] = custom_parameters
 
         # If custom parameters were added, process unprocessed values
