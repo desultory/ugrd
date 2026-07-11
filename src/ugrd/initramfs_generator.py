@@ -1,11 +1,10 @@
 from importlib.metadata import version
 from textwrap import dedent
-from tomllib import TOMLDecodeError, load
 from typing import Any
 
 from zenlib.logging import LoggerMixIn
 from zenlib.util import colorize as c_
-from zenlib.util import pretty_print
+from zenlib.util import parse_toml, pretty_print
 
 from ugrd import InitramfsConfig
 
@@ -30,18 +29,19 @@ class InitramfsGenerator(GeneratorHelpers, LoggerMixIn):
 
         # Passed kwargs must be imported early, so they will be processed against the base configuration
         self.config_dict.import_args(kwargs)
-        try:  # Attempt to load the config file, if it exists
+
+        # don't attempt to load config if not specified
+        if not config:
+            self.logger.info("No config file specified, using the base config.")
+            return
+
+        try:
             self.load_config(config)  # The user config is loaded over the base config, clobbering kwargs
             self.config_dict.import_args(
                 kwargs, quiet=True, late=True
             )  # Re-import kwargs (cmdline params) to apply them over the config
         except FileNotFoundError:
-            if config:  # If a config file was specified, log an error that it's missing
-                self.logger.critical("[%s] Config file not found, using the base config." % config)
-            else:  # Otherwise, log info that the base config is being used
-                self.logger.info("No config file specified, using the base config.")
-        except TOMLDecodeError as e:
-            raise ValueError("[%s] Error decoding config file: %s" % (config, e))
+            self.logger.critical(f"[{c_(config, 'red')}] Config file not found, using the base config.")
 
     def load_config(self, config_filename) -> None:
         """
@@ -49,22 +49,17 @@ class InitramfsGenerator(GeneratorHelpers, LoggerMixIn):
         Populates self.config_dict with the config.
         Ensures that the required parameters are present.
         """
-        if not config_filename:
-            raise FileNotFoundError("Config file not specified.")
+        self.logger.info(f"Loading config file: {c_(config_filename, 'blue', bold=True, bright=True)}")
+        raw_config = parse_toml(config_filename)
 
-        with open(config_filename, "rb") as config_file:
-            self.logger.info("Loading config file: %s" % c_(config_file.name, "blue", bold=True, bright=True))
-            raw_config = load(config_file)
-
-        # Process into the config dict, it should handle parsing
+        # Process all config into the config dict, which will handle processing/validation
         for config, value in raw_config.items():
-            self.logger.debug("[%s] (%s) Processing config value: %s" % (config_file.name, config, value))
-            try:
-                self[config] = value
-            except FileNotFoundError as e:
-                raise ValueError("[%s] Error loading config parameter '%s': %s" % (config_file.name, config, e))
+            self.logger.debug(
+                f"[{c_(config_filename, 'blue')}] ({c_(config, bold=True)}) Processing config value: {c_(value, 'green')}"
+            )
+            self[config] = value
 
-        self.logger.debug("Loaded config:\n%s" % self.config_dict)
+        self.logger.debug(f"Loaded config:\n{self.config_dict}")
 
     #  If the initramfs generator is used as a dictionary, it will use the config_dict.
     def __setitem__(self, key, value) -> None:
