@@ -1,7 +1,7 @@
 from importlib.metadata import version
 from pathlib import Path
 from textwrap import dedent
-from typing import Any
+from typing import Any, Callable
 
 from zenlib.logging import LoggerMixIn
 from zenlib.util import colorize as c_
@@ -15,7 +15,7 @@ from .generator_helpers import GeneratorHelpers
 
 
 class InitramfsGenerator(GeneratorHelpers, LoggerMixIn):
-    def __init__(self, config: Path | str | None = DEFAULT_CONFIG_PATH, *args, **kwargs) -> None:
+    def __init__(self, config: Path | str | None = DEFAULT_CONFIG_PATH, *args: Any, **kwargs: Any) -> None:
         self.init_logger(args, kwargs)
         self.config_dict = InitramfsConfig(
             NO_BASE=kwargs.pop("NO_BASE", False), logger=self.logger, startup_args=kwargs, config_file=config
@@ -32,19 +32,19 @@ class InitramfsGenerator(GeneratorHelpers, LoggerMixIn):
         self.init_types = ["init_debug", "init_main", "init_mount"]
 
     #  If the initramfs generator is used as a dictionary, it will use the config_dict.
-    def __setitem__(self, key, value) -> None:
+    def __setitem__(self, key: str, value: Any) -> None:
         self.config_dict[key] = value
 
-    def __getitem__(self, item) -> Any:
+    def __getitem__(self, item: str) -> Any:
         return self.config_dict[item]
 
-    def __contains__(self, item) -> bool:
+    def __contains__(self, item: str) -> bool:
         return item in self.config_dict
 
-    def get(self, item, default=None) -> Any:
+    def get(self, item: str, default: Any = None) -> Any:
         return self.config_dict.get(item, default)
 
-    def __getattr__(self, item) -> Any:
+    def __getattr__(self, item: str) -> Any:
         """Allows access to the config dict via the InitramfsGenerator object."""
         if item not in self.__dict__ and item != "config_dict":
             return self[item]
@@ -62,7 +62,9 @@ class InitramfsGenerator(GeneratorHelpers, LoggerMixIn):
         self.run_checks()
         self.run_tests()
 
-    def run_func(self, function, force_include=False, force_exclude=False) -> list[str] | None:
+    def run_func(
+        self, function: Callable[..., list[str] | str | None], force_include: bool = False, force_exclude: bool = False
+    ) -> list[str] | None:
         """
         Runs an imported function.
         The function should return str | list[str] | none
@@ -109,12 +111,12 @@ class InitramfsGenerator(GeneratorHelpers, LoggerMixIn):
             self.logger.debug(f"Created function alias: {c_(function.__name__, 'blue')}")
             return [function.__name__]
         elif force_include:
-            raise ValueError(f"Force included function returned no output:{c_(function.__name_, 'red')}")
+            raise ValueError(f"Force included function returned no output:{c_(function.__name__, 'red')}")
         else:
             self.logger.debug(f"Function returned no output: {c_(function.__name__, 'yellow')}")
             return None
 
-    def run_hook(self, hook: str, *args, **kwargs) -> list[str]:
+    def run_hook(self, hook: str, *args: Any, **kwargs: Any) -> list[str]:
         """Runs all functions for the specified hook.
         If the function is masked, it will be skipped.
         If the function is in import_order, handle the ordering
@@ -267,7 +269,7 @@ class InitramfsGenerator(GeneratorHelpers, LoggerMixIn):
             self.logger.debug("No output for init level: %s" % level)
             return []
 
-    def _log_run(self, logline) -> None:
+    def _log_run(self, logline: str) -> None:
         self.logger.info(f"-- | {c_(logline, 'blue', bold=True)}")
 
     def __str__(self) -> str:

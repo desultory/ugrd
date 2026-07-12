@@ -48,7 +48,7 @@ class GeneratorHelpers(InitramfsProtocol):
             return get_subpath(build_dir, path)
         return get_subpath(get_subpath(self["tmpdir"], build_dir), path)
 
-    def _mkdir(self, path: Path, resolve_build=True) -> None:
+    def _mkdir(self, path: Path, resolve_build: bool = True) -> None:
         """
         Creates a directory within the build directory.
         If resolve_build is True, the path is resolved to the build directory.
@@ -78,7 +78,9 @@ class GeneratorHelpers(InitramfsProtocol):
         else:
             self.logger.debug("Directory already exists: %s" % path_dir)
 
-    def _write(self, file_name: Path | str, contents: list[str] | str, chmod_mask=0o644, append=False) -> None:
+    def _write(
+        self, file_name: Path | str, contents: list[str] | str, chmod_mask: int = 0o644, append: bool = False
+    ) -> None:
         """
         Writes test to a file within the build directory.
         Sets the passed chmod_mask.
@@ -121,7 +123,7 @@ class GeneratorHelpers(InitramfsProtocol):
         file_path.chmod(chmod_mask)
         self.logger.debug("[%s] Set file permissions: %s" % (file_path, chmod_mask))
 
-    def _copy(self, source: Path | str, dest=None) -> None:
+    def _copy(self, source: Path | str, dest: Path | str | None = None) -> None:
         """Copies a file into the initramfs build directory.
         If a destination is not provided, the source is used, under the build directory.
 
@@ -209,14 +211,16 @@ class GeneratorHelpers(InitramfsProtocol):
         )
         target.symlink_to(source)
 
-    def _run(self, args: list[str], timeout=None, fail_silent=False, fail_hard=True) -> CompletedProcess:
+    def _run(
+        self, args: list[str], timeout: int | None = None, fail_silent: bool = False, fail_hard: bool = True
+    ) -> CompletedProcess:  # type: ignore[type-arg]
         """Runs a command, returns the CompletedProcess object on success.
         If a timeout is set, the command will fail hard if it times out.
         If fail_silent is set, non-zero return codes will not log stderr/stdout.
         If fail_hard is set, non-zero return codes will raise a RuntimeError.
         """
 
-        def print_err(ret) -> None:
+        def print_err(ret: CompletedProcess | TimeoutExpired) -> None:  # type: ignore[type-arg]
             if args := ret.args:
                 if isinstance(args, tuple):
                     args = args[0]  # When there's a timeout, args is a (args, timeout) tuple
@@ -244,7 +248,7 @@ class GeneratorHelpers(InitramfsProtocol):
 
         return cmd
 
-    def _rotate_old(self, file_name: Path, sequence=0) -> None:
+    def _rotate_old(self, file_name: Path, sequence: int = 0) -> None:
         """Copies a file to file_name.old then file_name.old.n, where n is the next number in the sequence"""
         # Nothing to do if the file doesn't exist
         if not file_name.is_file():
@@ -308,7 +312,7 @@ class GeneratorHelpers(InitramfsProtocol):
         if not before and not after:
             return self.logger.debug("No import order specified for hook: %s" % hook)
 
-        def iter_order(order, direction):
+        def iter_order(order: dict[str, list[str]], direction: str) -> bool:
             """Iterate over all functions in an import order list,
             using this information to move the order of function names in the import list.
 
@@ -325,7 +329,7 @@ class GeneratorHelpers(InitramfsProtocol):
                         continue
                     assert other_index >= 0, "Function not found in import list: %s" % other_func
 
-                    def reorder_func(direction):
+                    def reorder_func(direction: str) -> None:
                         """Reorders the function based on the direction."""
                         if direction == "before":  # Move the function before the other function
                             self.logger.debug(
