@@ -7,6 +7,7 @@ from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 from queue import Queue
 from typing import Any
+from types import ModuleType
 
 from pycpio import PyCPIO
 from zenlib.logging import LoggerMixIn
@@ -48,11 +49,11 @@ class InitramfsConfig(LoggerMixIn, UserDict):
 
     def __init__(
         self,
-        startup_args: dict | None = None,
+        startup_args: dict[str, Any] | None = None,
         config_file: Path | str | None = None,
         NO_BASE: bool = False,
-        *args,
-        **kwargs,
+        *args: Any,
+        **kwargs: Any,
     ) -> None:
         """Initialize the initramfs config
 
@@ -120,7 +121,7 @@ class InitramfsConfig(LoggerMixIn, UserDict):
             f"[{c_(key, 'blue', background=True)}] Adding parameter to processing queue: {c_(value, 'yellow')}"
         )
 
-    def __setitem__(self, key: str, value) -> None:
+    def __setitem__(self, key: str, value: Any) -> None:
         """Custom setitem for the config dict
         If the dict is validated, refuse to set config
         If it's the final stage and it's not validated, raise a critical warning
@@ -132,13 +133,13 @@ class InitramfsConfig(LoggerMixIn, UserDict):
         For everything but the logger, queue values if they are not registered
         """
         if self["validated"]:
-            return self.logger.error(
-                f"[{c_(key, 'yellow')}] Config is validated, refusing to set value: {c_(value, 'red')}"
-            )
+            self.logger.error(f"[{c_(key, 'yellow')}] Config is validated, refusing to set value: {c_(value, 'red')}")
+            return
         if self["stage"] == "final" and not self["validated"]:
-            return self.logger.critical(
+            self.logger.critical(
                 f"[{c_(key, 'yellow')}] Config is finalized but invalid, refusing to set value: {c_(value, 'red')}"
             )
+            return
 
         if not self._check_late(key):
             return self._enqueue(key, value)
@@ -156,7 +157,7 @@ class InitramfsConfig(LoggerMixIn, UserDict):
         if key != "logger":
             self._enqueue(key, value)
 
-    def handle_parameter(self, key: str, value) -> None:
+    def handle_parameter(self, key: str, value: Any) -> None:
         """
         Handles a config parameter, setting the value and processing it if the type is known.
         Raises a KeyError if the parameter is not registered.
@@ -171,14 +172,16 @@ class InitramfsConfig(LoggerMixIn, UserDict):
             if expected_type:
                 if expected_type.__name__ == "InitramfsGenerator":
                     self.data[key] = value
-                    return self.logger.debug(f"Setting InitramfsGenerator: {c_(key, 'magenta', bold=True)}")
+                    self.logger.debug(f"Setting InitramfsGenerator: {c_(key, 'magenta', bold=True)}")
+                    return
                 break  # Break and raise an exception if the type is not found
         else:
             raise KeyError(f"Parameter not registered: {c_(key, 'red')}")
 
         if hasattr(self, f"_process_{key}"):  # The builtin function is decorated and can handle plural
             self.logger.log(5, f"[{c_(key, 'blue')}] Using builtin setitem: _process_{key}")
-            return getattr(self, f"_process_{key}")(value)
+            getattr(self, f"_process_{key}")(value)
+            return
 
         # Don't use masked processing functions for custom values, fall back to standard setters
         def check_mask(import_name: str) -> bool:
@@ -192,7 +195,8 @@ class InitramfsConfig(LoggerMixIn, UserDict):
                 self.logger.log(
                     5, f"[{c_(key, 'blue')}] Using custom setitem: {c_(func.__name__, 'blue', underline=True)}"
                 )
-                return func(self, value)
+                func(self, value)
+                return
 
         if func := self["custom_processing"].get(f"_process_{key}_multi"):
             if check_mask(func.__name__):
@@ -202,18 +206,22 @@ class InitramfsConfig(LoggerMixIn, UserDict):
                     5,
                     f"[{c_(key, 'blue')}] Using custom plural setitem: {c_(func.__name__, 'blue', underline=True, bold=True)}",
                 )
-                return handle_plural(func)(self, value)
+                handle_plural(func)(self, value)
+                return
 
         if expected_type in (list, NoDupFlatList):  # Append to lists, don't replace
             self.logger.log(5, f"[{c_(key, 'blue')}] Using list setitem")
-            return self[key].append(value)
+            self[key].append(value)
+            return
 
         if expected_type is dict:  # Create new keys, update existing
             if key not in self:
                 self.logger.log(5, f"[{c_(key, 'blue')}] Setting dict to: {value}")
-                return super().__setitem__(key, value)
+                super().__setitem__(key, value)
+                return
             self.logger.log(5, f"[{c_(key, 'blue')}] Updating dict with: {value}")
-            return self[key].update(value)
+            self[key].update(value)
+            return
 
         casted_value = expected_type(value)
         self.logger.debug(
@@ -285,35 +293,35 @@ class InitramfsConfig(LoggerMixIn, UserDict):
             )
             self[parameter_name] = value
 
-    def _process_import_order(self, import_order: dict) -> None:
+    def _process_import_order(self, import_order: dict[str, dict[str, list[str] | str]]) -> None:
         """Processes the import order, setting the order requirements for import functions.
         Ensures the order type is valid (before, after),
         that the function is not ordered after itself.
         Ensures that the same function/target is not in another order type.
         """
-        self.logger.debug("Processing import order:\n%s" % pretty_print(import_order))
+        self.logger.debug(f"Processing import order:\n{pretty_print(import_order)}")
         order_types = ["before", "after"]
         for order_type, order_dict in import_order.items():
             if order_type not in order_types:
-                raise ValueError("Invalid import order type: %s" % order_type)
+                raise ValueError(f"Invalid import order type: {c_(order_type, 'red')}")
             for function in order_dict:
                 targets = order_dict[function]
                 if not isinstance(targets, list):
                     targets = [targets]
                 if function in targets:
-                    raise ValueError("Function cannot be ordered after itself: %s" % function)
+                    raise ValueError(f"Function cannot be ordered after itself: {c_(function, 'red')}")
                 for other_target in [self["import_order"].get(ot, {}) for ot in order_types if ot != order_type]:
                     if function in other_target and any(target in other_target[function] for target in targets):
-                        raise ValueError("Function cannot be ordered in multiple types: %s" % function)
+                        raise ValueError(f"Function cannot be ordered in multiple types: {c_(function, 'red')}")
                 order_dict[function] = targets
 
             if order_type not in self["import_order"]:
                 self["import_order"][order_type] = {}
             self["import_order"][order_type].update(order_dict)
 
-        self.logger.debug("Registered import order requirements: %s" % import_order)
+        self.logger.debug(f"Registered import order requirements:\n{import_order}")
 
-    def _import_external_module(self, module_name: str):
+    def _import_external_module(self, module_name: str) -> ModuleType:
         """Given a module name, attempts to load it from /var/lib/ugrd, returning the module"""
         module_path = Path("/var/lib/ugrd/" + module_name.replace(".", "/")).with_suffix(".py")
         self.logger.debug(f"Attempting to sideload module from: {c_(module_path, 'green')}")
@@ -349,7 +357,7 @@ class InitramfsConfig(LoggerMixIn, UserDict):
         return module
 
     @handle_plural
-    def _process_imports(self, import_type: str, import_value: dict) -> None:
+    def _process_imports(self, import_type: str, import_value: dict[str, list[str]]) -> None:
         """Processes imports in a module, importing the functions and adding them to the appropriate list."""
         for module_name, function_names in import_value.items():
             f_name = f"[{c_(module_name, 'green')}]({c_(import_type, underline=True)})"
@@ -538,7 +546,8 @@ class InitramfsConfig(LoggerMixIn, UserDict):
                 raise ValidationError(
                     f"Failed to validate config. Unprocessed values: {c_(unprocessed_values, 'red', bold=True)}"
                 )
-            return self.logger.critical(f"Unprocessed config values: {c_(unprocessed_values, 'red', bold=True)}")
+            self.logger.critical(f"Unprocessed config values: {c_(unprocessed_values, 'red', bold=True)}")
+            return
         self.data["validated"] = True
 
     def __str__(self) -> str:
