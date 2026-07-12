@@ -243,7 +243,7 @@ def check_var(self) -> str:
     value=$(readvar "$1")
     if [ -z "$value" ]; then
         cmdline=$(awk -F '--' '{print $1}' /proc/cmdline)  # Get everything before '--'
-        if echo "$cmdline" | grep -qE "(^|\s)$1(\s|$)"; then
+        if echo "$cmdline" | grep -qE "(^|[[:space:]])$1([[:space:]]|$)"; then
             return 0
         fi
         return 1

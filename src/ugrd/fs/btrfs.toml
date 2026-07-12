@@ -1,4 +1,5 @@
-kmod_init = [ "btrfs", "crc32c" ] # crc32c is a softdep but more or less required
+kmod_init = [ "btrfs" ]
+kmod_init_optional = [ "crc32c" ]
 
 _base_mount_path = "/root_base"
 subvol_selector = false

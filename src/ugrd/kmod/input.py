@@ -57,7 +57,7 @@ def autodetect_input(self):
                 continue
 
             # Check for USB devices if the USB module is not already enabled
-            for part in input_dev.parts:
+            for part in input_dev.resolve().parts:
                 if part.startswith("usb") and "ugrd.kmod.usb" not in self["modules"]:
                     self.logger.info(f"Detected USB device, enabling ugrd.kmod.usb: {c_(input_dev.name, 'cyan')}")
                     self["modules"] = "ugrd.kmod.usb"

@@ -128,7 +128,8 @@ def select_subvol(self) -> str:
         done
 
         while true; do
-            read -p "Select a subvolume (1-$((i-1))): " selection
+            printf "Select a subvolume (1-%s): " "$((i-1))"
+            IFS= read -r selection
             if [ "$selection" -ge 1 ] 2>/dev/null && [ "$selection" -lt "$i" ]; then
                 break
             else

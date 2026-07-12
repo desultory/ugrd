@@ -78,7 +78,7 @@ def parse_cmdline_bool(self) -> str:
     """
     return r"""
     edebug "Parsing cmdline bool: $1"
-    if grep -qE "(^|\s)$1(\s|$)" /proc/cmdline; then
+    if grep -qE "(^|[[:space:]])$1([[:space:]]|$)" /proc/cmdline; then
         setvar "$1" 1
         edebug "[$1] Got cmdline bool: 1"
     else
