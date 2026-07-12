@@ -1,6 +1,6 @@
 from importlib.metadata import version
+from pathlib import Path
 from textwrap import dedent
-from tomllib import TOMLDecodeError, load
 from typing import Any
 
 from zenlib.logging import LoggerMixIn
@@ -9,14 +9,17 @@ from zenlib.util import pretty_print
 
 from ugrd import InitramfsConfig
 
+from .config_helpers import DEFAULT_CONFIG_PATH
 from .exceptions import ValidationError
 from .generator_helpers import GeneratorHelpers
 
 
 class InitramfsGenerator(GeneratorHelpers, LoggerMixIn):
-    def __init__(self, config="/etc/ugrd/config.toml", *args, **kwargs) -> None:
+    def __init__(self, config: Path | str | None = DEFAULT_CONFIG_PATH, *args, **kwargs) -> None:
         self.init_logger(args, kwargs)
-        self.config_dict = InitramfsConfig(NO_BASE=kwargs.pop("NO_BASE", False), logger=self.logger)
+        self.config_dict = InitramfsConfig(
+            NO_BASE=kwargs.pop("NO_BASE", False), logger=self.logger, startup_args=kwargs, config_file=config
+        )
 
         # Used for functions that are added to the shell profile
         # The key name is the function name, the value is the content
@@ -27,44 +30,6 @@ class InitramfsGenerator(GeneratorHelpers, LoggerMixIn):
 
         # init_pre and init_final are run as part of generate_initramfs_main
         self.init_types = ["init_debug", "init_main", "init_mount"]
-
-        # Passed kwargs must be imported early, so they will be processed against the base configuration
-        self.config_dict.import_args(kwargs)
-        try:  # Attempt to load the config file, if it exists
-            self.load_config(config)  # The user config is loaded over the base config, clobbering kwargs
-            self.config_dict.import_args(
-                kwargs, quiet=True, late=True
-            )  # Re-import kwargs (cmdline params) to apply them over the config
-        except FileNotFoundError:
-            if config:  # If a config file was specified, log an error that it's missing
-                self.logger.critical("[%s] Config file not found, using the base config." % config)
-            else:  # Otherwise, log info that the base config is being used
-                self.logger.info("No config file specified, using the base config.")
-        except TOMLDecodeError as e:
-            raise ValueError("[%s] Error decoding config file: %s" % (config, e))
-
-    def load_config(self, config_filename) -> None:
-        """
-        Loads the config from the specified toml file.
-        Populates self.config_dict with the config.
-        Ensures that the required parameters are present.
-        """
-        if not config_filename:
-            raise FileNotFoundError("Config file not specified.")
-
-        with open(config_filename, "rb") as config_file:
-            self.logger.info("Loading config file: %s" % c_(config_file.name, "blue", bold=True, bright=True))
-            raw_config = load(config_file)
-
-        # Process into the config dict, it should handle parsing
-        for config, value in raw_config.items():
-            self.logger.debug("[%s] (%s) Processing config value: %s" % (config_file.name, config, value))
-            try:
-                self[config] = value
-            except FileNotFoundError as e:
-                raise ValueError("[%s] Error loading config parameter '%s': %s" % (config_file.name, config, e))
-
-        self.logger.debug("Loaded config:\n%s" % self.config_dict)
 
     #  If the initramfs generator is used as a dictionary, it will use the config_dict.
     def __setitem__(self, key, value) -> None:
@@ -87,14 +52,10 @@ class InitramfsGenerator(GeneratorHelpers, LoggerMixIn):
 
     def build(self) -> None:
         """Builds the initramfs image."""
+        self.config_dict["stage"] = "late"  # Set the config stage to late, loading deferred config
         self._log_run(f"Running ugrd v{version('ugrd')}")
         self.run_build()
-        self.config_dict.validate()  # Validate the config after the build tasks have been run
-
-        if self.validate and not self.validated:
-            raise ValidationError(
-                f"Failed to validate config. Unprocessed values: {', '.join(list(self['_processing'].keys()))}"
-            )
+        self.config_dict["stage"] = "final"  # Finalize the config, triggering validation
 
         self.generate_init()
         self.pack_build()
