@@ -15,7 +15,7 @@ from zenlib.types import NoDupFlatList
 from zenlib.util import colorize as c_
 from zenlib.util import handle_plural, parse_toml, pretty_print
 
-from .config_helpers import DEFAULT_CONFIG_PATH, read_ugrd_module
+from .config_helpers import DEFAULT_CONFIG_PATH, read_ugrd_module, resolve_type
 from .exceptions import ValidationError
 
 
@@ -238,7 +238,7 @@ class InitramfsConfig(LoggerMixIn, UserDict):
         Processes any queued values if they exist (unless they are _late_args and it is not the late stage)
         """
         if isinstance(parameter_type, str):
-            parameter_type = eval(parameter_type)
+            parameter_type = resolve_type(parameter_type)
 
         self["custom_parameters"][parameter_name] = parameter_type
         self.logger.debug(

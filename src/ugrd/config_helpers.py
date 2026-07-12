@@ -1,10 +1,16 @@
 from pathlib import Path
 from typing import Any
 
+from pycpio import PyCPIO
+from zenlib.types import NoDupFlatList
 from zenlib.util import parse_toml
 
 DEFAULT_CONFIG_PATH = "/etc/ugrd/config.toml"
 MODULE_SEARCH_PATHS = [Path(__file__).parent, Path("/var/lib/ugrd")]
+
+ALLOWED_PARAMETER_TYPES: dict[str, type] = {
+    t.__name__: t for t in (bool, str, int, float, dict, list, Path, NoDupFlatList, PyCPIO)
+}
 
 
 def get_module_paths() -> list[Path]:
@@ -32,6 +38,14 @@ def read_ugrd_module(module_name: str) -> dict[str, Any]:
             return parse_toml(module)
 
     raise FileNotFoundError(f"Unable to find module: {module_name}")
+
+
+def resolve_type(type_name: str) -> type:
+    """Resolves a type name to a type"""
+    try:
+        return ALLOWED_PARAMETER_TYPES[type_name]
+    except KeyError as e:
+        raise ValueError(f"Unknown type: {type_name}, Allowed types: {ALLOWED_PARAMETER_TYPES}") from e
 
 
 def get_parameters() -> dict[str, dict[str, str]]:
