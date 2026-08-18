@@ -31,6 +31,12 @@ class TestCryptsetup(TestCase):
         generator = InitramfsGenerator(logger=self.logger, config="tests/cryptsetup_included_key.toml")
         generator.build()
 
+    def test_cryptsetup_bad_key_no_verify(self):
+        """Tests LUKS based roots using an invalid keyfile but verification is disabled"""
+        generator = InitramfsGenerator(logger=self.logger, config="tests/cryptsetup_included_key.toml", cryptsetup={"root": {"key_file": "asdfasdfasdfasdfasdfasdfasdf", "validate": False, "include_key": False}})
+        with self.assertRaises(RuntimeError):
+            generator.build()
+
     def test_cryptsetup_integrity(self):
         """Tests LUKS based roots using a keyfile included in the initramfs with integrity protection"""
         generator = InitramfsGenerator(

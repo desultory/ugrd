@@ -6,7 +6,7 @@ from pathlib import Path
 from re import search
 from textwrap import dedent
 
-from ugrd import InitramfsProtocol, InitramfsConfig
+from ugrd import InitramfsConfig, InitramfsProtocol
 from ugrd.exceptions import AutodetectError, ValidationError
 from zenlib.util import colorize as c_
 from zenlib.util import contains, unset
@@ -27,6 +27,7 @@ CRYPTSETUP_PARAMETERS = [
     "try_nokey",
     "include_key",
     "include_header",
+    "validate",
     "validate_key",
     "validate_header",
     "_dm-integrity",  # Internal parameter for when dm-integrity was detected. Mostly used for test automation
@@ -63,18 +64,18 @@ def _process_cryptsetup_key_types_multi(self: InitramfsConfig, key_type: str, co
 
 
 @contains("validate", "Skipping cryptsetup keyfile validation.", log_level=30)
-def _validate_cryptsetup_key(self: InitramfsProtocol, key_parameters: dict[str, str]) -> None:
+def _validate_cryptsetup_key(self: InitramfsProtocol, config: dict[str, str]) -> None:
     """Validates the cryptsetup keyfile config
     key_parameters is actually all config but this function only makes use of bits related to keyfiles
     """
-    if key_parameters.get("include_key"):
+    if config.get("include_key"):
         return self.logger.info("Skipping key validation for included key.")
-    elif key_parameters.get("validate_key") is False:
-        return self.logger.info(f"Skipping key validation for: {c_(key_parameters['key_file'], 'yellow')}")
+    elif config.get("validate_key") is False or config.get("validate") is False:
+        return self.logger.info(f"Skipping key validation for: {c_(config['key_file'], 'yellow')}")
 
-    key_path = Path(key_parameters["key_file"])
+    key_path = Path(config["key_file"])
 
-    if self["cryptsetup_keyfile_validation"] and key_parameters.get("validate_key") is not False:
+    if self["cryptsetup_keyfile_validation"] and config.get("validate_key") is not False:
         if not key_path.exists():  # Do a preliminary check to see if the key file exists
             raise FileNotFoundError("Key file not found: %s" % key_path)
         self["check_included_or_mounted"] = key_path  # Add a proper check for later
@@ -85,7 +86,8 @@ def _validate_cryptsetup_config(self: InitramfsProtocol, mapped_name: str) -> No
     try:
         config = self["cryptsetup"][mapped_name]
     except KeyError:
-        raise KeyError("No cryptsetup configuration found for: %s" % mapped_name)
+        raise KeyError(f"No cryptsetup configuration found for: {c_(mapped_name, 'red')}")
+
     self.logger.log(5, "[%s] Validating cryptsetup configuration: %s" % (mapped_name, config))
     for parameter in config:
         if parameter not in CRYPTSETUP_PARAMETERS:
@@ -97,15 +99,17 @@ def _validate_cryptsetup_config(self: InitramfsProtocol, mapped_name: str) -> No
                 "A partuuid or device path must be specified when using detached headers: %s" % mapped_name
             )
             if config.get("uuid"):
-                raise ValueError("A UUID cannot be used with a detached header: %s" % mapped_name)
+                raise ValueError(f"A UUID cannot be used with a detached header: {c_(mapped_name, 'red')}")
         if not Path(
             config["header_file"]
         ).exists():  # Make sure the header file exists, it may not be present at build time
-            self.logger.warning("[%s] Header file not found: %s" % (mapped_name, c_(config["header_file"], "yellow")))
+            self.logger.warning(
+                f"[{c_(mapped_name, 'blue')}] Header file not found: {c_(config['header_file'], 'yellow')}"
+            )
     elif not any([config.get("partuuid"), config.get("uuid"), config.get("path")]):
         if not self["autodetect_luks"]:
             raise ValidationError(
-                "A device uuid, partuuid, or path must be specified for cryptsetup mount: %s" % mapped_name
+                f"A device uuid, partuuid, or path must be specified for cryptsetup mount: {c_(mapped_name, 'red')}"
             )
 
     if config.get("key_file"):
@@ -168,7 +172,7 @@ def _get_dm_slave_info(self: InitramfsProtocol, device_info: dict) -> tuple[str,
     raise AutodetectError("No slave device information found for: %s" % device_info)
 
 
-def _read_cryptsetup_header(self: InitramfsProtocol, mapped_name: str, slave_device: str | None= None) -> dict:
+def _read_cryptsetup_header(self: InitramfsProtocol, mapped_name: str, slave_device: str | None = None) -> dict:
     """Reads LUKS header information from a device or header file into a dict"""
     header_file = self["cryptsetup"][mapped_name].get("header_file")
     if not header_file:
@@ -303,14 +307,14 @@ def _validate_cryptsetup_device(self: InitramfsProtocol, mapped_name) -> None:
     """Validates a cryptsetup device against the device mapper information,
     blkid information, and cryptsetup information.
     Uses `cryptsetup luksDump` to check that the device is a LUKS device."""
+    cryptsetup_info = self["cryptsetup"][mapped_name]  # Get the cryptsetup information
+    if cryptsetup_info.get("validate") is False:
+        return self.logger.warning(f"Skipping cryptsetup device validation: {c_(mapped_name, 'yellow')}")
+
     dm_info = _get_dm_info(self, mapped_name)
 
     if not dm_info["uuid"].startswith("CRYPT-LUKS"):  # Ensure the device is a crypt device
-        raise ValueError("Device is not a crypt device: %s" % dm_info)
-
-    cryptsetup_info = self["cryptsetup"][mapped_name]  # Get the cryptsetup information
-    if cryptsetup_info.get("validate") is False:
-        return self.logger.warning("Skipping cryptsetup device validation: %s" % c_(mapped_name, "yellow"))
+        raise ValueError(f"Device is not a crypt device: {c_(dm_info, 'red')}")
 
     slave_device, blkid_info = _get_dm_slave_info(self, dm_info)  # Get the blkid information
 
