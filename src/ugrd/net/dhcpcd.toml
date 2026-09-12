@@ -3,8 +3,18 @@ provides = "net"
 
 binaries = [ "dhcpcd" ]
 
+paths = [ "var/lib/dhcpcd" ]
+
+dhcpcd_stop = true
+
 [imports.init_pre]
 "ugrd.net.dhcpcd" = [ "init_dhcpcd" ]
 
+[imports.init_final]
+"ugrd.net.dhcpcd" = [ "stop_dhcpcd" ]
+
 [import_order.after]
 "init_dhcpcd" = "load_modules"
+
+[custom_parameters]
+dhcpcd_stop = "bool"  # Stop dhcpcd before switch_root

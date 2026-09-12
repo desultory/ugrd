@@ -483,6 +483,8 @@ If a static IP is required, the following parameters can be used:
 
 If enabled, this module will attempt to use `dhcpcd` to configure the primary network interface.
 
+* `dhcpcd_stop` (true) Whether or not to stop dhcpcd before switching to the root filesystem.
+
 ### masks
 
 To mask an import used by another module, the mask parameter can be used:
