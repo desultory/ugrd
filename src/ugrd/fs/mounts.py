@@ -526,10 +526,10 @@ def _autodetect_dm(self, mountpoint, device=None) -> None:
     if source_device not in self["_blkid_info"]:
         if device_name in self["_vblk_info"]:
             source_name = self["_vblk_info"][device_name]["name"]
-            if f"/dev/{source_name}" in self["_blkid_info"]:
-                source_device = f"/dev/{source_name}"
-            elif f"/dev/mapper/{source_name}" in self["_blkid_info"]:
+            if f"/dev/mapper/{source_name}" in self["_blkid_info"]:
                 source_device = f"/dev/mapper/{source_name}"
+            elif f"/dev/{source_name}" in self["_blkid_info"]:
+                source_device = f"/dev/{source_name}"
             elif source_device not in self["_blkid_info"]:
                 raise AutodetectError(
                     f"[{c_(mountpoint, 'yellow')}] No blkid info for virtual device: {c_(source_device, 'red')}"
