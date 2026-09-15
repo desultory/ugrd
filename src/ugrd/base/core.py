@@ -425,7 +425,15 @@ def autodetect_musl(self) -> None:
         self.logger.info(f"Detected musl search path: {c_(musl_path, 'green')}")
         self["dependencies"] = musl_path
     elif self["musl_libc"]:
-        raise AutodetectError("Musl libc is enabled, but the musl search path was not found: %s" % musl_path)
+        fallback_paths = ["/lib", "/usr/lib"]
+        self.logger.warning(
+            "Musl search path is absent: %s; using fallback library paths: %s",
+            musl_path,
+            ":".join(fallback_paths),
+        )
+        for path in fallback_paths:
+            if path not in self["library_paths"]:
+                self["library_paths"] = path
 
 
 @unset("musl_libc", "Skipping ld.so.cache regeneration, musl_libc is enabled.", log_level=30)
