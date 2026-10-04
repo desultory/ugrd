@@ -1,5 +1,5 @@
 __author__ = "desultory"
-__version__ = "4.2.1"
+__version__ = "4.3.0"
 
 from json import loads
 from pathlib import Path
@@ -533,6 +533,11 @@ def _open_crypt_dev(self: InitramfsProtocol, name: str, parameters: dict) -> lis
     out = [
         f"einfo 'Opening cryptsetup device: {name}'",
         f'retries={retries}; i=0; while [ "$((i=i+1))" -le $retries ]; do',
+        # it may have been opened since the last attempt
+        f"    if cryptsetup status {name} > /dev/null 2>&1; then",
+        f"        einfo '[{name}] Device was opened by another process'",
+        "        break",
+        "    fi",
     ]
 
     key_file = parameters.get("key_file")

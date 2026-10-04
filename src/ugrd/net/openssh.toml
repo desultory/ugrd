@@ -1,0 +1,40 @@
+needs = "net"
+binaries = [ "sshd" ]
+paths = [ "etc/ssh", "root/.ssh", "var/empty" ]
+mount_devpts = true
+openssh_port = 22
+openssh_libexec_paths = [ "/usr/lib64/misc", "/usr/lib/misc", "/usr/libexec/openssh",
+                          "/usr/libexec", "/usr/lib64/openssh", "/usr/lib/openssh", "/usr/lib/ssh" ]
+
+[imports.config_processing]
+"ugrd.net.openssh" = [ "_process_openssh_authorized_keys", "_process_openssh_host_keys_multi" ]
+
+[imports.build_enum]
+"ugrd.net.openssh" = [ "find_sshd_helpers" ]
+
+[imports.build_tasks]
+"ugrd.net.openssh" = [ "add_openssh_keys" ]
+
+[imports.build_final]
+"ugrd.net.openssh" = [ "openssh_finalize" ]
+
+# force include nudge_crypt_prompt
+[imports.functions]
+"ugrd.net.openssh" = [ "nudge_crypt_prompt" ]
+
+[imports.init_pre]
+"ugrd.net.openssh" = [ "start_sshd" ]
+
+[imports.init_final]
+"ugrd.net.openssh" = [ "stop_sshd" ]
+
+[import_order.after]
+"start_sshd" = [ "init_dhcpcd", "init_net" ]
+
+[custom_parameters]
+openssh_authorized_keys = "Path"
+openssh_host_keys = "NoDupFlatList"  # Host keys to include (required)
+openssh_port = "int"
+openssh_args = "NoDupFlatList"  # Extra arguments to pass to sshd
+openssh_config = "NoDupFlatList"  # Extra lines to append to the generated sshd_config
+openssh_libexec_paths = "NoDupFlatList"  # Directories searched for sshd-session/sshd-auth
